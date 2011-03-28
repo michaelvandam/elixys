@@ -5,6 +5,8 @@ __date__ ="$Mar 25, 2011 3:35:38 PM$"
 
 from devices.factory import factory
 from util.logger import logger
+import config
+
 
 def main():
     pass
