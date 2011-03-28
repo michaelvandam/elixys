@@ -24,23 +24,38 @@ class StateMachineError(Exception):
 class StateData(dict):
     """StateData that can change within a state (thread-safe)"""
     def __init__(self, *args, **kwargs):
+        self._modified = True
         self.lock = Lock()
         self.lock.acquire()
         dict.__init__(self,*args,**kwargs)
         self.lock.release()
         
     def __getitem__(self,y):
+        
         self.lock.acquire()
-        value = dict.__getitem__(self,y)
-        self.lock.release()
+        try:
+            value = dict.__getitem__(self,y)
+        finally:
+            self.lock.release()
         return value
     
     def __setitem__(self,y,x):
         self.lock.acquire()
         dict.__setitem__(self,y,x)
+        self._modified = True
         self.lock.release()
+    
+    def isModified(self):
+        self.lock.acquire()
+        value = self._modified
+        self.lock.release()
+        return value
         
-        
+    def clearModified(self):
+        self.lock.acquire()
+        self._modified = False
+        self.lock.release()
+    
 class StateUpdateThread(Thread):
     """StateUpdateThread Class"""
     
@@ -76,14 +91,14 @@ class StateUpdateThread(Thread):
         
 class State(object):
     """State Class"""
-    def __init__(self, description, update_tasks=None, entryfxn=None, exitfxn=None):
+    def __init__(self, description, update_tasks=None, entryfxn=None, exitfxn=None, data=None):
 
         self.entryfxn = entryfxn
         self.exitfxn = exitfxn
         self.updatethread = StateUpdateThread(update_tasks)
         self.description = description
         logger.debug("Initialize %s" % self)
-        self.data = StateData()
+        self.data = data
 
     def exit(self):
         if isinstance(self.updatethread, StateUpdateThread):
@@ -157,8 +172,10 @@ if __name__ == "__main__":
         print "We are UP"
         time.sleep(5)
     
-    downState = State("Down", down_tasks, enterdown, exitdown)
-    upState = State("Up", up_tasks, enterup, exitup)
+    downData = StateData()
+    upData = StateData()
+    downState = State("Down", down_tasks, enterdown, exitdown, downData)
+    upState = State("Up", up_tasks, enterup, exitup, upData)
     
     pushDown = TransitionEvent(upState,downState)
     pushUp = TransitionEvent(downState,upState)
