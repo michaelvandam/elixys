@@ -68,7 +68,7 @@ class StateUpdateThread(Thread):
         self.do_tasks= tasks
         StateUpdateThread.threads.append(self)
         self.daemon=True
-
+        
     def run(self):
         logger.debug("Running StateUpdateThread")
         while(not self.stop_event.isSet()):
@@ -91,40 +91,87 @@ class StateUpdateThread(Thread):
         
 class State(object):
     """State Class"""
-    def __init__(self, description, update_tasks=None, entryfxn=None, exitfxn=None, data=None):
+
+    states = []
+    def __init__(self, description, update_thread_tasks=None, updatefxn=None, entryfxn=None, exitfxn=None, data=None):
 
         self.entryfxn = entryfxn
         self.exitfxn = exitfxn
-        self.updatethread = StateUpdateThread(update_tasks)
+        if not updatefxn is None:
+            self._update = updatefxn
+        if not update_thread_tasks is None:
+            self._update = StateUpdateThread(update_thread_tasks)      
+        if not hasattr(self,"_update"):
+            self._update=None
+        
         self.description = description
         logger.debug("Initialize %s" % self)
         self.data = data
+        self.active = False
+        State.states.append(self)
+        self.substates = []
+        self._needs_to_run = False
+        self._entry_has_run = False
+    
+    def addSubstate(self, state):
+        self.substates.append(state)
+
+    def removeSubstate(self, state):
+        self.substates.remove(state)
 
     def exit(self):
-        if isinstance(self.updatethread, StateUpdateThread):
-            self.updatethread.stop()
+        if isinstance(self._update, StateUpdateThread):
+            self._update.stop()
         if callable(self.exitfxn):
             self.exitfxn()
+        
+        if callable(self.update):
+            logger.debug("FXN type update, deactivate")
+            
         logger.debug("Exit %s" % self)
-    
+        self.active=False
+        self._entry_has_run = False
+        
+        
     def run(self):
-        self.enter()
-        self.update()
-
+        if self._needs_to_run:
+            self.enter()
+            self.update()
+        elif self.isActive():
+            self.exit()
+        
+        for substate in self.substates:
+            substate.run()
+        
     def enter(self):
+        if self._entry_has_run:
+            logger.debug("No Need to Run Enter %s" % self)
+            return
         if callable(self.entryfxn):
             self.entryfxn()
-        logger.debug("Enter %s" % self)
+            logger.debug("Enter %s" % self)
+        else:
+            logger.debug("Nothing to Call on Enter %s" % self)
+        
+        self.active = True
 
-    def update(self):
-        if isinstance(self.updatethread, StateUpdateThread):
-            if not self.updatethread.isAlive():
-                self.updatethread.start()
+    def update(self, no_enter=False):
+        
+        if no_enter and not self.active:
+            logger.debug("%s Not active, nothing to update" % self)
+            return
+        
+        if isinstance(self._update, StateUpdateThread):
+            if not self._update.isAlive():
+                self._update.start()
                 logger.debug("Start Updating %s" % self)
             else:
                 logger.debug("%s Already Active" % self)
+        elif callable(self._update):
+            self._update()
         else:
             logger.debug("%s Nothing to update" % self)
+        
         
     def __repr__(self):
         return "<State(description=%s)>" % self.description
@@ -133,9 +180,22 @@ class State(object):
         return self.__repr__()
     
     def isActive(self):
-        return self.updatethread.isAlive()
+        if isinstance(self._update,  StateUpdateThread):
+            active = self._update.isAlive()
+        else:
+            active = False
+        if self.active or active:
+            return True
+        else:
+            return 
 
+    def activate(self):
+        self._needs_to_run = True
+    
+    def deactivate(self):
+        self._needs_to_run = False
 
+        
 class TransitionEvent(object):
     """Transition Class"""
     def __init__(self, fromState, toState):
@@ -144,9 +204,10 @@ class TransitionEvent(object):
     
     def __call__(self):
         if self.fromState.isActive():
+            self.fromState.deactivate()
             self.fromState.exit()
-        self.toState.enter()
-        self.toState.update()
+        self.toState.activate()
+        self.toState.run()
     
 if __name__ == "__main__":
 
@@ -172,10 +233,17 @@ if __name__ == "__main__":
         print "We are UP"
         time.sleep(5)
     
+    
+    
     downData = StateData()
     upData = StateData()
-    downState = State("Down", down_tasks, enterdown, exitdown, downData)
-    upState = State("Up", up_tasks, enterup, exitup, upData)
+    downState = State("Down", down_tasks, None,enterdown, exitdown, downData)
+    upState = State("Up", None,up_tasks, enterup, exitup, upData)
+    upStateDoorOpen = State("UpStateDoorOpen", None, None, None, None, None)
+    upStateDoorClosed = State("UpStateDoorClosed", None,None,None,None,None)
+    
+    upState.addSubstate(upStateDoorOpen)
+    upState.addSubstate(upStateDoorClosed)
     
     pushDown = TransitionEvent(upState,downState)
     pushUp = TransitionEvent(downState,upState)
