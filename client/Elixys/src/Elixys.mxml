@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		minWidth="955" minHeight="600">
+	<fx:Script>
+		<![CDATA[
+			private var m_nButtonClicks:uint = 0;
+			
+			public function ButtonClicked():void
+			{
+				++m_nButtonClicks;
+				outputText.text = "Button clicked " + m_nButtonClicks;
+				if (m_nButtonClicks == 1)
+				{
+					outputText.text += " time.";
+				}
+				else
+				{
+					outputText.text += " times.";
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<s:VGroup width="500" height="300" verticalAlign="middle" horizontalAlign="center">
+		<s:Label id="outputText" text="Click the button" />
+		<s:Spacer height="30" />
+		<s:Button width="400" height="200" label="Elixys Easy Button" click="ButtonClicked();" />
+	</s:VGroup>
+</s:Application>
