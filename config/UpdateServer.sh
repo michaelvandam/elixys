@@ -12,12 +12,16 @@ fi
 git clone --depth 1 git://github.com/michaelvandam/elixys.git
 
 # Update the Apache configuration file
-#mv -f elixys/bin/Web\ Server\ Content/* /var/www/html/
+mv -f elixys/config/httpd.conf /etc/httpd/conf
+chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Update the static web content
 rm -rf /var/www/https/*
-mv -f elixys/bin/Web\ Server\ Content/* /var/www/html/
-chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/html/*
+mv -f elixys/bin/WebContent/* /var/www/https/
+chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/https/*
+
+# Update the current dummy server
+mv -f elixys/server/DummyServer.py /var/www/wsgi
 
 # Restart Apache
 /usr/sbin/apachectl restart
