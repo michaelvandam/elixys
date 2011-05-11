@@ -22,6 +22,7 @@ chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/https
 
 # Update the current dummy server
 mv -f elixys/server/DummyServer.py /var/www/wsgi
+chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
 # Restart Apache
 /usr/sbin/apachectl restart

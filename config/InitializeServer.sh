@@ -29,7 +29,7 @@ mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
 
 # Install Apache and Python WSGI
-yum -y install mod_wsgi python-wgsiref
+yum -y install mod_wsgi python-wsgiref
 
 # Set Apache and MySQL to start at boot
 echo "/usr/sbin/apachectl start" >> /etc/rc.local
@@ -70,6 +70,3 @@ mkdir /var/www/wsgi
 
 # Remove the git repository
 rm -rf /root/elixys
-
-# Do the initial pull from source control
-./UpdateServer.sh
