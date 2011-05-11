@@ -8,8 +8,8 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Start in the home directory
-cd ~
+# Start in the root directory
+cd /root
 
 # Install git from the EPEL repository
 wget http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.rpm
@@ -26,7 +26,7 @@ yum -y install mysql mysql-server apr-util-mysql
 mysql -e "CREATE DATABASE Elixys;"
 mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
-mysql Elixys < CreateDatabase.sql
+mysql Elixys < elixys/config/CreateDatabase.sql
 
 # Install Apache and Python WSGI
 yum -y install mod_wsgi python-wgsiref
@@ -59,8 +59,8 @@ cp ElixysCA.crt /etc/httpd/conf/ssl.crt
 openssl rsa -in /etc/httpd/conf/ssl.key/Elixys.key.orig -out /etc/httpd/conf/ssl.key/Elixys.key -passin pass:elixys
 chmod 400 /etc/httpd/conf/ssl.key/Elixys.key
 
-# Remove the default SSH config
-mv /etc/httpd/conf.d/ssh.conf /etc/httpd/conf.d/ssh.conf.unused
+# Remove the default TLS config
+mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.unused
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
@@ -69,7 +69,7 @@ mkdir /var/www/https
 mkdir /var/www/wsgi
 
 # Remove the git repository
-rm -rf elixys
+rm -rf /root/elixys
 
 # Do the initial pull from source control
 ./UpdateServer.sh

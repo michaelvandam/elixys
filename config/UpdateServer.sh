@@ -11,6 +11,8 @@ fi
 # Get the current git repository
 git clone --depth 1 git://github.com/michaelvandam/elixys.git
 
+mv elixys/bin/Web\ Server\ Content elixys/bin/WebContent
+
 # Update the Apache configuration file
 mv -f elixys/config/httpd.conf /etc/httpd/conf
 chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
