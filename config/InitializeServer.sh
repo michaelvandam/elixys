@@ -40,11 +40,11 @@ mkdir /root/CA
 chmod 770 /root/CA
 cd /root/CA
 openssl genrsa -des3 -out ElixysCA.key -passout pass:elixys 2048
-openssl req -new -x509 -days 3650 -key ElixysCA.key -out ElixysCA.crt -passin pass:elixys -config ~/elixys/config/openssl.conf
+openssl req -new -x509 -days 3650 -key ElixysCA.key -out ElixysCA.crt -passin pass:elixys -config ~/elixys/config/openssl1.conf
 
 # Generate the server key and certificate
 openssl genrsa -des3 -out Elixys.key -passout pass:elixys 1024
-openssl req -new -key Elixys.key -out Elixys.csr -passin pass:elixys -config ~/elixys/config/openssl.conf
+openssl req -new -key Elixys.key -out Elixys.csr -passin pass:elixys -config ~/elixys/config/openssl2.conf
 openssl x509 -req -in Elixys.csr -out Elixys.crt -sha1 -CA ElixysCA.crt -CAkey ElixysCA.key -CAcreateserial -days 3650 -passin pass:elixys
 chmod 400 *.key
 
