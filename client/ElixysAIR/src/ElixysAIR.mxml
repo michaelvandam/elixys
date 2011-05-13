@@ -1,30 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		creationComplete="OnCreationComplete();">
+		creationComplete="OnCreationComplete();" showStatusBar="false" >
 	<fx:Script>
 		<![CDATA[
+			import Elixys.ExceptionEvent;
+			import Elixys.HTTPConnection;
+			
+			import flash.events.HTTPStatusEvent;
+			
+			import mx.containers.TitleWindow;
 			import mx.controls.Alert;
 			import mx.controls.SWFLoader;
-			import mx.rpc.events.FaultEvent;
-			import mx.rpc.events.ResultEvent;
-			import mx.rpc.http.HTTPService;
-		
-			/*** 
-			 *** Member functions
-			 ***/
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
 
-			// Called when the application loads
-			protected function OnCreationComplete():void
+			/*** 
+			 * Member functions
+			 ***/
+		
+			// Called when the application is created
+			public function OnCreationComplete():void
 			{
-				// Initialize the HTTP object
-				m_pHTTPService = new HTTPService();
-				m_pHTTPService.useProxy = false;
-				m_pHTTPService.addEventListener(ResultEvent.RESULT, OnHTTPResultEvent);
-				m_pHTTPService.addEventListener(FaultEvent.FAULT, OnHTTPFaultEvent);
+				// Add event listeners
+				addEventListener(ResizeEvent.RESIZE, OnResizeEvent);
+
+				// Determine the client IP address
+				var netInterfaces:Vector.<NetworkInterface> = NetworkInfo.networkInfo.findInterfaces();
+				for each (var netInterface:NetworkInterface in netInterfaces)
+				{
+					for each(var interfaceAddress:InterfaceAddress in netInterface.addresses)
+					{
+						if ((interfaceAddress.ipVersion == "IPv4") && (interfaceAddress.address != "127.0.0.1"))
+						{
+							m_sClientIP = interfaceAddress.address;
+							break;
+						}
+					}
+					if (m_sClientIP != "")
+					{
+						break;
+					}
+				}
+				
+				// Use localhost as our fallback IP
+				if (m_sClientIP == "")
+				{
+					m_sClientIP = "127.0.0.1";
+				}
 			}
 			
 			// Called when the user clicks "Connect"
-			protected function OnConnect():void
+			private function OnConnect():void
 			{
 				// Make sure the user has entered text in each field
 				if (_serverip.text.length == 0)
@@ -42,52 +68,119 @@
 					Alert.show("Please enter your password.");
 					return;
 				}
-				
-				// Load the SWF from the remote server
-				m_pHTTPService.method = "GET";
-				m_pHTTPService.url = "http://" + _serverip + ":80/index.html";
-				m_pHTTPService.setCredentials(_username.text, _password.text);
-				m_pHTTPService.send();
+
+				// Create the HTTP connection and wait until it opens a socket connection to the server
+				m_pHTTPConnection = new HTTPConnection(m_sClientIP);
+				m_pHTTPConnection.addEventListener(Event.CONNECT, OnHTTPConnectEvent);
+				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnection.SetCredentials(_username.text, _password.text);
+				m_pHTTPConnection.Connect(_serverip.text, 443);
+
+				// Set the progress text and show the progress pop up
+				m_pProgressPopUp = new ProgressPopUp();
+				PopUpManager.addPopUp(m_pProgressPopUp, this, true);
+				PopUpManager.centerPopUp(m_pProgressPopUp); 
+				m_pProgressPopUp.SetProgress(0);
 			}
 
-			// Called when the HTTP response is received from the server
-			private function OnHTTPResultEvent(event:ResultEvent):void
+			// Called when the socket connects to the server
+			private function OnHTTPConnectEvent(event:Event):void
 			{
-				Alert.show("Request succeeded");
+				// Get the SWF from the server
+				m_pHTTPConnection.SendRequest("GET", "/Elixys.swf?donot=redirect", HTTPConnection.MIME_FLASH);
+
+				// Set the progress text
+				m_pProgressPopUp.SetProgress(15);
+			}
+
+			// Called when the status of the HTTP request is know
+			private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
+			{
+				// Notify the user of any error
+				if (event.status != 200)
+				{
+					Alert.show("HTTP request failed: " + event.status);
+				}
+
+				// Set the progress text
+				m_pProgressPopUp.SetProgress(30);
+			}
+
+			// Called as the HTTP download progresses
+			private function OnHTTPProgressEvent(event:ProgressEvent):void
+			{
+				// Check if we are still loading or complete
+				if (event.bytesLoaded < event.bytesTotal)
+				{
+					// We're still loading.  Update the progress bar
+					var nProgress:Number = 30 + (event.bytesLoaded * 70 / event.bytesTotal );
+					m_pProgressPopUp.SetProgress(nProgress);
+				}
+				else
+				{
+					// The download is complete.  Update the progress bar
+					m_pProgressPopUp.SetProgress(100);
+
+					// Interpret the HTTP response body as a SWF
+					var pSWFLoader:SWFLoader = new SWFLoader();
+					pSWFLoader.percentWidth = 100;
+					pSWFLoader.percentHeight = 100;
+					pSWFLoader.loaderContext = new LoaderContext();
+					pSWFLoader.loaderContext.allowCodeImport = true;
+					pSWFLoader.loaderContext.parameters =
+						{
+							"clientip": m_sClientIP,
+							"serverip": _serverip.text
+						};
+					pSWFLoader.load(m_pHTTPConnection.GetResponseBody());
+
+					// Hide the progress bar and show the SWF
+					PopUpManager.removePopUp(m_pProgressPopUp);
+					m_pProgressPopUp = null;
+					_viewApplication.addChild(pSWFLoader);
+					_viewStack.selectedChild = _viewApplication;
+				}
 			}
 			
-			// Called when an HTTP error occurs
-			private function OnHTTPFaultEvent(event:FaultEvent):void
+			// Called when an exception occurs in a child
+			public function OnChildExceptionEvent(event:ExceptionEvent):void
 			{
-				Alert.show("Connection to server failed: " + event.message);				
+				Alert.show("Error: " + event.exception);
 			}
 
+			// Called when the application resizes
+			public function OnResizeEvent(event:ResizeEvent):void
+			{
+				if (m_pProgressPopUp != null)
+				{
+					PopUpManager.centerPopUp(m_pProgressPopUp);
+				}
+			}
+			
 			/*** 
 			 *** Data members
 			 ***/
-			
-			// HTTP service
-			private var m_pHTTPService:HTTPService = null;
 
-			protected function OnButtonClick():void
-			{
-				var pSWFLoader:SWFLoader = new SWFLoader();
-				pSWFLoader.percentWidth = 100;
-				pSWFLoader.percentHeight = 100;
-				pSWFLoader.load("C:\\Elixys\\bin\\Web Server Content\\Elixys.swf");
-				_viewApplication.addChild(pSWFLoader);
-				_viewStack.selectedChild = _viewApplication;
-			}
+			// Client IP address
+			private var m_sClientIP:String = "";
+			
+			// HTTP connection to the server
+			private var m_pHTTPConnection:HTTPConnection = null;
+			
+			// Progress pop up window
+			private var m_pProgressPopUp:ProgressPopUp = null;
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
 	</fx:Declarations>
 
-	<!-- The layout of this AIR application is straightforward: two views in a ViewStack container, one for login and another
-	     to display the Elixys SWF that is hosted on a remote server. -->
-	<mx:ViewStack id="_viewStack" borderStyle="solid" width="100%" height="100%">
-		<mx:Canvas id="_viewLogin" width="100%" height="100%" backgroundColor="0xFF00FF">
+	<!-- The layout of this AIR application is straightforward: two views in a ViewStack container, one for login and the other for
+		displaying the Elixys SWF. -->
+	<mx:ViewStack id="_viewStack" borderStyle="solid" creationPolicy="all" width="100%" height="100%">
+		<mx:Canvas id="_viewLogin" width="100%" height="100%" backgroundColor="0xdddddd">
 			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="70%" height="70%">
 				<s:Label text = "Enter the server IP address and your credentials:" />
 				<s:HGroup width="100%">
@@ -97,7 +190,7 @@
 						<s:Label text="Password" verticalAlign="middle" height="25" />
 					</s:VGroup>
 					<s:VGroup width="70%">
-						<s:TextArea id="_serverip" text="127.0.0.1" width="100%" height="25" />
+						<s:TextArea id="_serverip" text="192.168.1.107" width="100%" height="25" />
 						<s:TextArea id="_username" text="devel" width="100%" height="25" />
 						<s:TextArea id="_password" text="devel" displayAsPassword="true" width="100%" height="25" />
 					</s:VGroup>
@@ -107,6 +200,14 @@
 					<s:Button label="Connect" click="OnConnect();" />
 				</s:HGroup>
 			</s:VGroup>
+		</mx:Canvas>
+		<mx:Canvas id="_viewProgress" width="100%" height="100%">
+			<mx:Box horizontalAlign="center" verticalAlign="middle" backgroundColor="0x000000" backgroundAlpha="0.2" width="100%" height="100%">
+				<mx:Box horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" backgroundColor="0xffffff"
+						borderVisible="true" borderColor="0x000000" width="100%" height="100%" maxWidth="400" maxHeight="300">
+					<mx:Label id="_progress" text="Enter progress text here" width="100%" />
+				</mx:Box>
+			</mx:Box>
 		</mx:Canvas>
 		<mx:Canvas id="_viewApplication" width="100%" height="100%">
 		</mx:Canvas>
