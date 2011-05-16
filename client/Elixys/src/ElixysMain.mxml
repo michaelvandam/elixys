@@ -5,23 +5,23 @@
 		<![CDATA[
 			import mx.utils.URLUtil;
 			
-			// Determine the server's IP
-			private function GetServerIP():String
+			// Determine the server's name
+			private function GetServer():String
 			{
-				// Determine the server's IP address in one of four ways:
+				// Determine the server's name in one of four ways:
 				
 				// (1) Be given it by the containing class
-				if (m_sServerIP != "")
+				if (m_sServer != "")
 				{
-					return m_sServerIP;
+					return m_sServer;
 				}
 				
 				// (2) Look in the SWF URL parameters.
 				if (loaderInfo != null)
 				{
-					if (loaderInfo.parameters["serverip"] != null)
+					if (loaderInfo.parameters["server"] != null)
 					{
-						return loaderInfo.parameters["serverip"];
+						return loaderInfo.parameters["server"];
 					}
 				}
 				
@@ -38,7 +38,7 @@
 				return "127.0.0.1";
 			}
 			
-			public var m_sServerIP:String = "";
+			public var m_sServer:String = "";
 			private var m_nButtonClicks:uint = 0;
 			
 			public function ButtonClicked():void
@@ -49,7 +49,7 @@
 				{
 					outputText1.text += "s";
 				}
-				outputText2.text = "Server IP: " + GetServerIP();
+				outputText2.text = "Server: " + GetServer();
 			}
 		]]>
 	</fx:Script>
