@@ -22,10 +22,8 @@ package Elixys
 		 **/
 		
 		// Constructor
-		public function HTTPConnection(sClientIP:String)
+		public function HTTPConnection()
 		{
-			// Remember the client IP
-			m_sClientIP = sClientIP;
 		}
 		
 		// Sets the user's credentials
@@ -82,7 +80,7 @@ package Elixys
 			pEncoder.encode(m_sUsername + ":" + m_sPassword);
 			
 			var sRequest:String = "GET " + sResource + " HTTP/1.1\r\n" +
-				"Host: " + m_sClientIP + "\r\n" +
+				"Host: " + m_sServer + "\r\n" +
 				"User-Agent: AdobeAIR\r\n" +
 				"Accept: " + sAcceptMIME + "\r\n" +
 				"Authorization: Basic " + pEncoder.toString() + "\r\n" +
@@ -256,9 +254,6 @@ package Elixys
 		 * Data members
 		 **/
 		
-		// Client IP
-		private var m_sClientIP:String = "";
-		
 		// Server and port
 		private var m_sServer:String = "";
 		private var m_nPort:uint = 0;
@@ -283,6 +278,7 @@ package Elixys
 		// Static MIME strings
 		public static var MIME_FLASH:String = "application/x-shockwave-flash";
 		public static var MIME_JSON:String = "application/json";
+		public static var MIME_HTML:String = "text/html";
 			
 		// Static HTTP strings
 		private static var HTTP_STATUS:String = "HTTP/1.1 ";

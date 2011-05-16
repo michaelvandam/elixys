@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		backgroundColor="0xcdcdcd" borderColor="0x333333" headerHeight="0" modalTransparencyColor="0x444444" width="400" >
+		headerHeight="0" modalTransparencyColor="0x444444" width="400" >
+	<!--	backgroundColor="0xcdcdcd" borderColor="0x333333" 	-->
 	<fx:Script>
 		<![CDATA[
 			import mx.managers.PopUpManager;

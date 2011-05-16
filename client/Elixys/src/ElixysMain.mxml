@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import mx.utils.URLUtil;
+			
+			// Determine the server's IP
+			private function GetServerIP():String
+			{
+				// Determine the server's IP address in one of four ways:
+				
+				// (1) Be given it by the containing class
+				if (m_sServerIP != "")
+				{
+					return m_sServerIP;
+				}
+				
+				// (2) Look in the SWF URL parameters.
+				if (loaderInfo != null)
+				{
+					if (loaderInfo.parameters["serverip"] != null)
+					{
+						return loaderInfo.parameters["serverip"];
+					}
+				}
+				
+				// (3) Look at the loader URL
+				if (loaderInfo != null)
+				{
+					if (URLUtil.isHttpURL(loaderInfo.url))
+					{
+						return URLUtil.getServerName(loaderInfo.url);
+					}
+				}
+				
+				// (4) Use localhost
+				return "127.0.0.1";
+			}
+			
+			public var m_sServerIP:String = "";
+			private var m_nButtonClicks:uint = 0;
+			
+			public function ButtonClicked():void
+			{
+				++m_nButtonClicks;
+				outputText1.text = "Button clicked " + m_nButtonClicks + " time";
+				if (m_nButtonClicks != 1)
+				{
+					outputText1.text += "s";
+				}
+				outputText2.text = "Server IP: " + GetServerIP();
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<s:VGroup width="500" height="300" verticalAlign="middle" horizontalAlign="center">
+		<s:Label id="outputText1" text="Click the button" />
+		<s:Label id="outputText2" text="" />
+		<s:Spacer height="30" />
+		<s:Button width="400" height="200" label="Elixys Easy Button" click="ButtonClicked();" />
+	</s:VGroup>
+</s:Group>
