@@ -3,42 +3,107 @@
 		width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
-			import mx.utils.URLUtil;
+			import Elixys.ExceptionEvent;
+			import Elixys.HTTPConnection;
+			import Elixys.JSONObject;
+			import Elixys.Objects.*;
 			
-			// Determine the server's name
-			private function GetServer():String
+			import mx.controls.Alert;
+
+			/***
+			 *** Initialization functions
+			 **/
+			
+			// Step 1: This function is called by the container to set the server
+			public function Init1_SetServer(sServer:String, nPort:uint, sCredentials:String):void
 			{
-				// Determine the server's name in one of four ways:
+				// Create the HTTP connection and wait until it opens a socket connection to the server
+				m_pHTTPConnection = new HTTPConnection();
+				m_pHTTPConnection.addEventListener(Event.CONNECT, Init2_OnHTTPConnect);
+				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnection.SetCredentials2(sCredentials);
+				m_pHTTPConnection.Connect(sServer, nPort);
 				
-				// (1) Be given it by the containing class
-				if (m_sServer != "")
+				outputText2.text = "Server: " + sServer + ":" + nPort + ", " + sCredentials;
+			}
+
+			// Step 2: Called when the connection to the server has been made
+			public function Init2_OnHTTPConnect(sServer:String):void
+			{
+				// Load the system configuration
+				m_pHTTPConnection.SendRequest("GET", "/Elixys/configuration", HTTPConnection.MIME_JSON);
+			}
+
+			// Step 3: Called when the system configuration has been received
+			public function Init3_OnConfiguration(pConfiguration:Configuration):void
+			{
+				// Remember the system configuration
+				m_pServerConfiguration = pConfiguration;
+				
+				// Load the current state
+				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
+			}
+
+			/***
+			 *** Callback functions
+			 **/
+			
+			// Called when the status of the HTTP request is know
+			private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
+			{
+				// Notify the user of any error
+				if (event.status != 200)
 				{
-					return m_sServer;
+					Alert.show("HTTP request failed: " + event.status);
 				}
-				
-				// (2) Look in the SWF URL parameters.
-				if (loaderInfo != null)
-				{
-					if (loaderInfo.parameters["server"] != null)
-					{
-						return loaderInfo.parameters["server"];
-					}
-				}
-				
-				// (3) Look at the loader URL
-				if (loaderInfo != null)
-				{
-					if (URLUtil.isHttpURL(loaderInfo.url))
-					{
-						return URLUtil.getServerName(loaderInfo.url);
-					}
-				}
-				
-				// (4) Use localhost
-				return "127.0.0.1";
 			}
 			
-			public var m_sServer:String = "";
+			// Called as the HTTP download progresses
+			private function OnHTTPProgressEvent(event:ProgressEvent):void
+			{
+				// Check if we are the load is complete
+				if (event.bytesLoaded == event.bytesTotal)
+				{
+					// Parse the JSON string
+					var sJSON:String = m_pHTTPConnection.GetResponseBody().readUTFBytes(m_pHTTPConnection.GetResponseBody().length);
+					var pJSON:JSONObject = new JSONObject(sJSON);
+					switch (pJSON.type)
+					{
+						case (Configuration.TYPE):
+							// Continue initialization process
+							var pConfiguration:Configuration = new Configuration(sJSON);
+							Init3_OnConfiguration(pConfiguration);
+							break;
+						
+						case (ServerError.TYPE):
+							// Notify user of server error
+							var pServerError:ServerError = new ServerError(sJSON);
+							throw new Error("Server error: " + pServerError.Description());
+							break;
+
+						default:
+							// Unhandled server message
+							throw new Error("Message type " + pJSON.type + " not handled");							
+					}
+				}
+			}
+			
+			// Called when an exception occurs in a child
+			public function OnChildExceptionEvent(event:ExceptionEvent):void
+			{
+				Alert.show("Error: " + event.exception);
+			}
+
+			// HTTP connection to the server
+			private var m_pHTTPConnection:HTTPConnection;
+			
+			// Server configuration
+			private var m_pServerConfiguration:Configuration;
+			
+			
+			
 			private var m_nButtonClicks:uint = 0;
 			
 			public function ButtonClicked():void
@@ -49,7 +114,6 @@
 				{
 					outputText1.text += "s";
 				}
-				outputText2.text = "Server: " + GetServer();
 			}
 		]]>
 	</fx:Script>

@@ -26,12 +26,24 @@ package Elixys
 		{
 		}
 		
-		// Sets the user's credentials
-		public function SetCredentials(sUsername:String, sPassword:String):void
+		// Set and get the user's credentials
+		public function SetCredentials1(sUsername:String, sPassword:String):void
 		{
-			// Remember credentials
-			m_sUsername = sUsername;
-			m_sPassword = sPassword;
+			// Encode the username and password using basic authentication
+			var pEncoder:Base64Encoder = new Base64Encoder();
+			pEncoder.insertNewLines = false;
+			pEncoder.encode(sUsername + ":" + sPassword);
+			m_sCredentials = pEncoder.toString();
+		}
+		public function SetCredentials2(sCredentials:String):void
+		{
+			// Remember the credentials
+			m_sCredentials = sCredentials;
+		}
+		public function GetCredentials():String
+		{
+			// Return the credentials that we have
+			return m_sCredentials;
 		}
 
 		// Connects to the given server and port
@@ -74,19 +86,24 @@ package Elixys
 		public function SendRequest(sOperation:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null,
 			sBodyMIME:String = ""):void
 		{
-			// Encode the username and password
-			var pEncoder:Base64Encoder = new Base64Encoder();
-			pEncoder.insertNewLines = false;
-			pEncoder.encode(m_sUsername + ":" + m_sPassword);
-			
+			// Reset our state
+			m_pHTTPResponseHeader.clear();
+			m_nHTTPResponseHeader = 0;
+			m_pHTTPResponseHeaders = null;
+			m_nStatusCode = 0;
+			m_nContentLength = 0;
+			m_pHTTPResponseBody.clear();
+
+			// Format the request string
 			var sRequest:String = "GET " + sResource + " HTTP/1.1\r\n" +
 				"Host: " + m_sServer + "\r\n" +
 				"User-Agent: AdobeAIR\r\n" +
 				"Accept: " + sAcceptMIME + "\r\n" +
-				"Authorization: Basic " + pEncoder.toString() + "\r\n" +
+				"Authorization: Basic " + m_sCredentials + "\r\n" +
 				//"Content-Type: application/x-www-form-urlencoded\r\n" +
 				"Connection: Keep-Alive\r\n\r\n";
 
+			// Send the request
 			for (var i:uint = 0; i < sRequest.length; ++i)
 			{
 				m_pTLSSocket.writeByte(sRequest.charCodeAt(i));
@@ -232,7 +249,7 @@ package Elixys
 			// Failed to find HTTP status code
 			throw new Error("Corrupt HTTP response");
 		}
-		
+
 		// Extract content length from the HTTP response headers
 		private function ExtractContentLength():uint
 		{
@@ -259,8 +276,7 @@ package Elixys
 		private var m_nPort:uint = 0;
 		
 		// User credentials
-		private var m_sUsername:String = "";
-		private var m_sPassword:String = "";
+		private var m_sCredentials:String = "";
 		
 		// Socket classes
 		private var m_pSocket:Socket = null;

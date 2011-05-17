@@ -51,7 +51,7 @@
 				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
 				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
 				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
-				m_pHTTPConnection.SetCredentials(_username.text, _password.text);
+				m_pHTTPConnection.SetCredentials1(_username.text, _password.text);
 				m_pHTTPConnection.Connect(_server.text, 443);
 				
 				// Set the progress text and show the progress pop up
@@ -118,7 +118,12 @@
 						pSWFLoader.percentHeight = 100;
 						pSWFLoader.loaderContext = new LoaderContext();
 						pSWFLoader.loaderContext.allowCodeImport = true;
-						pSWFLoader.loaderContext.parameters = {"server": _server.text};
+						pSWFLoader.loaderContext.parameters =
+							{
+								"server": _server.text,
+								"port": "443",
+								"credentials": m_pHTTPConnection.GetCredentials()
+							};
 						pSWFLoader.load(m_pHTTPConnection.GetResponseBody());
 						pSWF = pSWFLoader;
 					}
@@ -126,7 +131,7 @@
 					{
 						// Create an instance of the static SWF
 						var pElixysSWF:ElixysMain = new ElixysMain();
-						pElixysSWF.m_sServer = _server.text;
+						pElixysSWF.Init1_SetServer(_server.text, 443, m_pHTTPConnection.GetCredentials());
 						pElixysSWF.percentWidth = 100;
 						pElixysSWF.percentHeight = 100;
 						pSWF = pElixysSWF;
@@ -180,13 +185,13 @@
 		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="70%" height="70%">
 			<s:Label text = "Enter the server IP address and your credentials:" />
 			<s:HGroup width="100%">
-				<s:VGroup width="30%">
+				<s:VGroup horizontalAlign="right">
 					<s:Label text="Server" verticalAlign="middle" height="25" />
 					<s:Label text="Username" verticalAlign="middle" height="25" />
 					<s:Label text="Password" verticalAlign="middle" height="25" />
 				</s:VGroup>
-				<s:VGroup width="70%">
-					<s:TextArea id="_server" text="ec2-184-72-76-63.compute-1.amazonaws.com" width="100%" height="25" />
+				<s:VGroup width="100%">
+					<s:TextArea id="_server" text="192.168.1.107" width="100%" height="25" />
 					<s:TextArea id="_username" text="devel" width="100%" height="25" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" width="100%" height="25" />
 				</s:VGroup>

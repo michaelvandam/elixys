@@ -1,5 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		minWidth="955" minHeight="600" xmlns:local="*">
-	<local:ElixysMain width="100%" height="100%" />
+		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600">
+	<fx:Script>
+		<![CDATA[
+			import mx.utils.URLUtil;
+
+			// Called when the application has been loaded and determines startup information
+			private function OnApplicationComplete():void
+			{
+				// These are the three variables we want to fill
+				var sServer:String = "";
+				var nPort:uint = 443;
+				var sCredentials:String = "";
+				
+				// Look in the SWF URL parameters.
+				if (loaderInfo != null)
+				{
+					if (loaderInfo.parameters["server"] != null)
+					{
+						sServer = loaderInfo.parameters["server"];
+					}
+					if (loaderInfo.parameters["port"] != null)
+					{
+						nPort = parseInt(loaderInfo.parameters["port"]);
+					}
+					if (loaderInfo.parameters["credentials"] != null)
+					{
+						sCredentials = loaderInfo.parameters["credentials"];
+					}
+				}
+				
+				// Look at the loader URL
+				if (loaderInfo != null)
+				{
+					if (URLUtil.isHttpURL(loaderInfo.url))
+					{
+						if (sServer == "")
+						{
+							sServer = URLUtil.getServerName(loaderInfo.url);
+						}
+					}
+				}
+				
+				// Do we have all of the variables we need?
+				if ((sServer != "") && (sCredentials != ""))
+				{
+					// Yes, so use them
+					_elixys.Init1_SetServer(sServer, nPort, sCredentials);
+				}
+				else
+				{
+					// No, so use localhost
+					_elixys.Init1_SetServer("127.0.0.1", 80, "");
+				}
+			}
+		]]>
+	</fx:Script>
+	<local:ElixysMain id="_elixys" width="100%" height="100%" />
 </s:Application>
