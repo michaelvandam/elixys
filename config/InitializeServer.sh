@@ -28,9 +28,20 @@ mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
 
-# Install Apache and Python WSGI
-yum -y install mod_wsgi python-wsgiref
+# Install python and JSON libraries
+yum -y install python-wsgiref python-json
 
+# Build mod_wsgi from source so we can point it to Python 2.6
+yum install httpd-devel python26-devel
+wget http://modwsgi.googlecode.com/files/mod_wsgi-3.3.tar.gz
+tar xvfz mod_wsgi-3.3.tar.gz
+cd mod_wsgi-3.3
+./configure --with-python=/usr/bin/python26
+make
+make install
+cd ..
+rm -rf mod_wsgi-3.3*
+	 	
 # Set Apache and MySQL to start at boot
 echo "/usr/sbin/apachectl start" >> /etc/rc.local
 echo "/sbin/service mysqld start" >> /etc/rc.local
