@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		width="100%" height="100%">
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		width="100%" height="100%" xmlns:Views="Elixys.Views.*">
+	<fx:Style source="Elixys.css" />
 	<fx:Script>
 		<![CDATA[
 			import Elixys.ExceptionEvent;
@@ -25,8 +26,6 @@
 				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnection.SetCredentials2(sCredentials);
 				m_pHTTPConnection.Connect(sServer, nPort);
-				
-				outputText2.text = "Server: " + sServer + ":" + nPort + ", " + sCredentials;
 			}
 
 			// Step 2: Called when the connection to the server has been made
@@ -46,6 +45,22 @@
 				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
 			}
 
+			/***
+			 *** Member functions
+			 **/
+			
+			private function UpdateState(pState:State):void
+			{
+				// Show and update the appropriate state
+				switch (pState.ClientState())
+				{
+					case ClientDetailsHome.TYPE:
+						_viewStack.selectedChild = _viewHome;
+						_viewHome.Update(pState);
+						break;
+				}
+			}
+			
 			/***
 			 *** Callback functions
 			 **/
@@ -77,6 +92,12 @@
 							Init3_OnConfiguration(pConfiguration);
 							break;
 						
+						case (State.TYPE):
+							// Update our state
+							var pState:State = new State(sJSON);
+							UpdateState(pState);
+							break;
+						
 						case (ServerError.TYPE):
 							// Notify user of server error
 							var pServerError:ServerError = new ServerError(sJSON);
@@ -101,30 +122,10 @@
 			
 			// Server configuration
 			private var m_pServerConfiguration:Configuration;
-			
-			
-			
-			private var m_nButtonClicks:uint = 0;
-			
-			public function ButtonClicked():void
-			{
-				++m_nButtonClicks;
-				outputText1.text = "Button clicked " + m_nButtonClicks + " time";
-				if (m_nButtonClicks != 1)
-				{
-					outputText1.text += "s";
-				}
-			}
 		]]>
 	</fx:Script>
 	
-	<fx:Declarations>
-	</fx:Declarations>
-	
-	<s:VGroup width="500" height="300" verticalAlign="middle" horizontalAlign="center">
-		<s:Label id="outputText1" text="Click the button" />
-		<s:Label id="outputText2" text="" />
-		<s:Spacer height="30" />
-		<s:Button width="400" height="200" label="Elixys Easy Button" click="ButtonClicked();" />
-	</s:VGroup>
-</s:Group>
+	<mx:ViewStack id="_viewStack" width="100%" height="100%">
+		<Views:HomeView id="_viewHome" width="100%" height="100%" />
+	</mx:ViewStack>
+</mx:Canvas>

@@ -8,26 +8,51 @@ import json
 def HandleGet(sRemoteUser, sPath):
     if sPath == "/configuration":
         return HandleGetConfiguration(sRemoteUser);
+    if sPath == "/state":
+        return HandleGetState(sRemoteUser);
     else:
         raise Exception("Unknown path: " + sPath);
 
 # Handle GET configuration request
 def HandleGetConfiguration(sRemoteUser):
-    supportedoperations = ["Add",
-                           "Evaporate",
-                           "Transfer",
-                           "Elute",
-                           "React",
-                           "Prompt",
-                           "Install",
-                           "Comment",
-                           "Activity"];
-    config = {"type":"configuration",
-              "name":"Mini cell 3",
-              "version":"2.0",
-              "debug":"false",
-              "supportedoperations":supportedoperations};
-    return config;
+    pSupportedoperations = ["Add",
+        "Evaporate",
+        "Transfer",
+        "Elute",
+        "React",
+        "Prompt",
+        "Install",
+        "Comment",
+        "Activity"];
+    pConfig = {"type":"configuration",
+        "name":"Mini cell 3",
+        "version":"2.0",
+        "debug":"false",
+        "supportedoperations":pSupportedoperations};
+    return pConfig;
+
+def HandleGetState(sRemoteUser):
+    pUser = {"type":"user",
+        "username":"devel",
+        "useraccesslevel":"Administrator"};
+    pServerstate = {"type":"serverstate"};
+    pClientButton1 = {"type":"button",
+        "text":"Create, view or run a sequence",
+        "id":"CREATE"};
+    pClientButton2 = {"type":"button",
+        "text":"Operation the system manually",
+        "id":"MANUAL"};
+    pClientButton3 = {"type":"button",
+        "text":"Observe the current run",
+        "id":"OBSERVE"};
+    pClientDetails = {"type":"HOME",
+        "buttons":[pClientButton1, pClientButton2,pClientButton3]};
+    pState = {"type":"state",
+        "user":pUser,
+        "serverstate":pServerstate,
+        "clientstate":"HOME",
+        "clientdetails":pClientDetails};
+    return pState;
 
 # Handle POST requests
 def HandlePost(user, path):

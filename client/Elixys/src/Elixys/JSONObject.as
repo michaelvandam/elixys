@@ -43,9 +43,16 @@ package Elixys
 		private var content:Object;
 		private var contentByIndex:Array;
 	
-		public function JSONObject(data:String = null)
+		public function JSONObject(data:String = null, existingcontent:Object = null)
 		{
-			content = data ? JSON.decode(data) : new Object();
+			if (data != null)
+			{
+				content = JSON.decode(data);
+			}
+			else
+			{
+				content = existingcontent;
+			}
 		}
 	
 		public function populate(data:String):void

@@ -7,18 +7,15 @@ package Elixys.Objects
 	public class Configuration extends JSONObject
 	{
 		// Constructor
-		public function Configuration(data:String = null)
+		public function Configuration(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
-			super(data);
+			super(data, existingcontent);
 			
 			// Validate the object type
-			if (data != null)
+			if ((Type() != null) && (Type() != TYPE))
 			{
-				if (Type() != TYPE)
-				{
-					throw new Error("Object type mismatch");
-				}
+				throw new Error("Object type mismatch");
 			}
 		}
 		

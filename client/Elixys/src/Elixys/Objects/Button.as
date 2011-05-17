@@ -3,11 +3,11 @@ package Elixys.Objects
 	import Elixys.JSONObject;
 	
 	import flash.utils.flash_proxy;
-
-	public class ServerError extends JSONObject
+	
+	public class Button extends JSONObject
 	{
 		// Constructor
-		public function ServerError(data:String = null, existingcontent:Object = null)
+		public function Button(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -18,18 +18,22 @@ package Elixys.Objects
 				throw new Error("Object type mismatch");
 			}
 		}
-
+		
 		// Data wrappers
 		public function Type():String
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Description():String
+		public function Text():String
 		{
-			return super.flash_proxy::getProperty("description");
+			return super.flash_proxy::getProperty("text");
 		}
-			
+		public function ID():String
+		{
+			return super.flash_proxy::getProperty("id");
+		}
+		
 		// Type
-		static public var TYPE:String = "error";
+		static public var TYPE:String = "button";
 	}
 }
