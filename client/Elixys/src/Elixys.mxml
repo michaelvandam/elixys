@@ -8,9 +8,8 @@
 			// Called when the application has been loaded and determines startup information
 			private function OnApplicationComplete():void
 			{
-				// These are the three variables we want to fill
+				// These are the two variables we want to fill
 				var sServer:String = "";
-				var nPort:uint = 443;
 				var sCredentials:String = "";
 				
 				// Look in the SWF URL parameters.
@@ -19,10 +18,6 @@
 					if (loaderInfo.parameters["server"] != null)
 					{
 						sServer = loaderInfo.parameters["server"];
-					}
-					if (loaderInfo.parameters["port"] != null)
-					{
-						nPort = parseInt(loaderInfo.parameters["port"]);
 					}
 					if (loaderInfo.parameters["credentials"] != null)
 					{
@@ -42,16 +37,16 @@
 					}
 				}
 				
-				// Do we have all of the variables we need?
+				// Do we have both of the variables we need?
 				if ((sServer != "") && (sCredentials != ""))
 				{
 					// Yes, so use them
-					_elixys.Init1_SetServer(sServer, nPort, sCredentials);
+					_elixys.Init1_SetServer(sServer, sCredentials);
 				}
 				else
 				{
 					// No, so use localhost
-					_elixys.Init1_SetServer("127.0.0.1", 80, "");
+					_elixys.Init1_SetServer("127.0.0.1", "");
 				}
 			}
 		]]>

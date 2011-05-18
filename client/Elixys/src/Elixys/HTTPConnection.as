@@ -1,7 +1,5 @@
 package Elixys
 {
-	import com.hurlant.crypto.tls.*;
-	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.HTTPStatusEvent;
@@ -53,39 +51,26 @@ package Elixys
 			m_sServer = sServer;
 			m_nPort = nPort;
 	
-			// Determine if we are using encryption
-			if (nPort != 443)
-			{
-				// No, so create a normal socket
-				m_pSocket = new Socket();
-				m_pSocket.addEventListener(Event.CONNECT, OnSocketConnectEvent);
-				m_pSocket.addEventListener(ProgressEvent.SOCKET_DATA, OnSocketProgressEvent);
-				m_pSocket.addEventListener(IOErrorEvent.IO_ERROR, OnSocketIOErrorEvent);
-				m_pSocket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, OnSocketSecurityErrorEvent);
+			// Create a new socket and add event listener
+			m_pSocket = new Socket();
+			m_pSocket.addEventListener(Event.CONNECT, OnSocketConnectEvent);
+			m_pSocket.addEventListener(ProgressEvent.SOCKET_DATA, OnSocketProgressEvent);
+			m_pSocket.addEventListener(IOErrorEvent.IO_ERROR, OnSocketIOErrorEvent);
+			m_pSocket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, OnSocketSecurityErrorEvent);
 					
-				// Connect to the remote server
-				m_pSocket.connect(m_sServer, m_nPort);
-			}
-			else
-			{
-				// Yes, so create a TLS socket
-				var pTLSConfig:TLSConfig = new TLSConfig(TLSEngine.CLIENT);
-				pTLSConfig.trustAllCertificates = true;
-				pTLSConfig.ignoreCommonNameMismatch = true;
-				m_pTLSSocket = new TLSSocket(m_sServer, m_nPort, pTLSConfig);
-				m_pTLSSocket.addEventListener(Event.CONNECT, OnSocketConnectEvent);
-				m_pTLSSocket.addEventListener(ProgressEvent.SOCKET_DATA, OnSocketProgressEvent);
-				m_pTLSSocket.addEventListener(IOErrorEvent.IO_ERROR, OnSocketIOErrorEvent);
-				m_pTLSSocket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, OnSocketSecurityErrorEvent);
-	
-				// Connect to the remote server
-				m_pTLSSocket.connect(m_sServer, m_nPort);
-			}
+			// Connect to the remote server
+			m_pSocket.connect(m_sServer, m_nPort);
 		}
 
 		public function SendRequest(sOperation:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null,
 			sBodyMIME:String = ""):void
 		{
+			// Make sure there is no outstanding request
+			if (m_bRequestComplete)
+			{
+				throw new Error("HTTP request collision");
+			}
+			
 			// Reset our state
 			m_pHTTPResponseHeader.clear();
 			m_nHTTPResponseHeader = 0;
@@ -93,6 +78,7 @@ package Elixys
 			m_nStatusCode = 0;
 			m_nContentLength = 0;
 			m_pHTTPResponseBody.clear();
+			m_bRequestComplete = false;
 
 			// Format the request string
 			var sRequest:String = "GET " + sResource + " HTTP/1.1\r\n" +
@@ -106,9 +92,9 @@ package Elixys
 			// Send the request
 			for (var i:uint = 0; i < sRequest.length; ++i)
 			{
-				m_pTLSSocket.writeByte(sRequest.charCodeAt(i));
+				m_pSocket.writeByte(sRequest.charCodeAt(i));
 			}
-			m_pTLSSocket.flush();
+			m_pSocket.flush();
 		}
 
 		// Returns the HTTP response
@@ -149,7 +135,7 @@ package Elixys
 			try
 			{
 				// Make sure we have data available
-				if (!m_pTLSSocket.bytesAvailable)
+				if (!m_pSocket.bytesAvailable)
 				{
 					return;
 				}
@@ -160,7 +146,7 @@ package Elixys
 					do
 					{
 						// Add the next byte to the header
-						var nByte:uint = m_pTLSSocket.readByte();
+						var nByte:uint = m_pSocket.readByte();
 						m_pHTTPResponseHeader.writeByte(nByte);
 						
 						// Watch for the terminating sequence
@@ -181,7 +167,7 @@ package Elixys
 						{
 							m_nHTTPResponseHeader = 0;
 						}
-					} while ((m_nHTTPResponseHeader != 4) && m_pTLSSocket.bytesAvailable);
+					} while ((m_nHTTPResponseHeader != 4) && m_pSocket.bytesAvailable);
 					
 					// Now we have the HTTP response header.  Break the byte array into an array of strings
 					m_pHTTPResponseHeaders = m_pHTTPResponseHeader.toString().split("\r\n");
@@ -196,19 +182,22 @@ package Elixys
 				}
 			
 				// Continue adding the new bytes to the body until we have it all
-				if ((m_nContentLength - m_pHTTPResponseBody.bytesAvailable) > m_pTLSSocket.bytesAvailable)
+				if ((m_nContentLength - m_pHTTPResponseBody.bytesAvailable) > m_pSocket.bytesAvailable)
 				{
-					m_pTLSSocket.readBytes(m_pHTTPResponseBody, m_pHTTPResponseBody.bytesAvailable, m_pTLSSocket.bytesAvailable);
+					m_pSocket.readBytes(m_pHTTPResponseBody, m_pHTTPResponseBody.bytesAvailable, m_pSocket.bytesAvailable);
 				}
 				else
 				{
-					m_pTLSSocket.readBytes(m_pHTTPResponseBody, m_pHTTPResponseBody.bytesAvailable, m_nContentLength - m_pHTTPResponseBody.bytesAvailable);
+					m_pSocket.readBytes(m_pHTTPResponseBody, m_pHTTPResponseBody.bytesAvailable, m_nContentLength - m_pHTTPResponseBody.bytesAvailable);
 				}
 	
 				// Inform anyone listening of our progress
 				var pProgressEvent:ProgressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, m_pHTTPResponseBody.bytesAvailable,
 					m_nContentLength);
 				dispatchEvent(pProgressEvent);
+				
+				// Remember if this request is complete
+				m_bRequestComplete = (m_pHTTPResponseBody.bytesAvailable == m_nContentLength);
 			}
 			catch (err:Error)
 			{
@@ -280,7 +269,6 @@ package Elixys
 		
 		// Socket classes
 		private var m_pSocket:Socket = null;
-		private var m_pTLSSocket:TLSSocket = null;
 		private var m_bConnected:Boolean = false;
 
 		// HTTP response
@@ -291,6 +279,9 @@ package Elixys
 		private var m_nContentLength:uint = 0;
 		private var m_pHTTPResponseBody:ByteArray = new ByteArray();
 
+		// Request complete flag
+		private var m_bRequestComplete:Boolean = false;
+		
 		// Static MIME strings
 		public static var MIME_FLASH:String = "application/x-shockwave-flash";
 		public static var MIME_JSON:String = "application/json";

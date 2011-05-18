@@ -4,6 +4,13 @@
 from wsgiref.simple_server import make_server
 import json
 
+# States
+STATE_HOME = 0
+STATE_SELECT = 1
+
+# User state
+gState = STATE_HOME
+
 # Handle GET requests
 def HandleGet(sRemoteUser, sPath):
     if sPath == "/configuration":
@@ -15,44 +22,47 @@ def HandleGet(sRemoteUser, sPath):
 
 # Handle GET configuration request
 def HandleGetConfiguration(sRemoteUser):
-    pSupportedoperations = ["Add",
-        "Evaporate",
-        "Transfer",
-        "Elute",
-        "React",
-        "Prompt",
-        "Install",
-        "Comment",
-        "Activity"];
     pConfig = {"type":"configuration",
         "name":"Mini cell 3",
         "version":"2.0",
         "debug":"false",
-        "supportedoperations":pSupportedoperations};
+        "supportedoperations":
+            ["Add",
+            "Evaporate",
+            "Transfer",
+            "Elute",
+            "React",
+            "Prompt",
+            "Install",
+            "Comment",
+            "Activity"]};
+
     return pConfig;
 
 def HandleGetState(sRemoteUser):
-    pUser = {"type":"user",
-        "username":"devel",
-        "useraccesslevel":"Administrator"};
-    pServerstate = {"type":"serverstate"};
-    pClientButton1 = {"type":"button",
-        "text":"Create, view or run a sequence",
-        "id":"CREATE"};
-    pClientButton2 = {"type":"button",
-        "text":"Operation the system manually",
-        "id":"MANUAL"};
-    pClientButton3 = {"type":"button",
-        "text":"Observe the current run",
-        "id":"OBSERVE"};
-    pClientDetails = {"type":"HOME",
-        "buttons":[pClientButton1, pClientButton2,pClientButton3]};
-    pState = {"type":"state",
-        "user":pUser,
-        "serverstate":pServerstate,
+    global gState
+    if gState == STATE_HOME:
+        return HandleGetStateHome(sRemoteUser)
+    else:
+        raise Exception("Unknown state")
+
+def HandleGetStateHome(sRemoteUser):
+    return {"type":"state",
+        "user":{"type":"user",
+            "username":"devel",
+            "useraccesslevel":"Administrator"},
+        "serverstate":{"type":"serverstate"},
         "clientstate":"HOME",
-        "clientdetails":pClientDetails};
-    return pState;
+        "clientdetails":{"type":"HOME",
+            "buttons":[{"type":"button",
+                "text":"Create, view or run a sequence",
+                "id":"CREATE"},
+                {"type":"button",
+                "text":"Operation the system manually",
+                "id":"MANUAL"},
+                {"type":"button",
+                "text":"Observe the current run",
+                "id":"OBSERVE"}]}}
 
 # Handle POST requests
 def HandlePost(user, path):

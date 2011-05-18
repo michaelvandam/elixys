@@ -16,7 +16,7 @@
 			 **/
 			
 			// Step 1: This function is called by the container to set the server
-			public function Init1_SetServer(sServer:String, nPort:uint, sCredentials:String):void
+			public function Init1_SetServer(sServer:String, sCredentials:String):void
 			{
 				// Create the HTTP connection and wait until it opens a socket connection to the server
 				m_pHTTPConnection = new HTTPConnection();
@@ -25,7 +25,7 @@
 				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
 				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnection.SetCredentials2(sCredentials);
-				m_pHTTPConnection.Connect(sServer, nPort);
+				m_pHTTPConnection.Connect(sServer, 80);
 			}
 
 			// Step 2: Called when the connection to the server has been made
@@ -43,6 +43,11 @@
 				
 				// Load the current state
 				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
+				
+				// Start the state timer
+				var pTimer:Timer = new Timer(1000);
+				pTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
+				pTimer.start();
 			}
 
 			/***
@@ -115,6 +120,13 @@
 			public function OnChildExceptionEvent(event:ExceptionEvent):void
 			{
 				Alert.show("Error: " + event.exception);
+			}
+
+			// Called at regular intervals to update the state
+			private function OnStateTimer(event:TimerEvent):void
+			{
+				// Load the current state
+				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
 			}
 
 			// HTTP connection to the server
