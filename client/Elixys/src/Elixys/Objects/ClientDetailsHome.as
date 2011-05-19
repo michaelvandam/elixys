@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class ClientDetailsHome extends JSONObject
 	{
 		// Constructor
-		public function ClientDetailsHome(data:String = null, existingcontent:Object = null)
+		public function ClientDetailsHome(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -26,7 +26,7 @@ package Elixys.Objects
 		}
 		public function Buttons():Array
 		{
-			// Parse the buttons state
+			// Parse the buttons
 			if (m_pButtons == null)
 			{
 				m_pButtons = new Array();

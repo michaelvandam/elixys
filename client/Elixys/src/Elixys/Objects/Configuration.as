@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class Configuration extends JSONObject
 	{
 		// Constructor
-		public function Configuration(data:String = null, existingcontent:Object = null)
+		public function Configuration(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);

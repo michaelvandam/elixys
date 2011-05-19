@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class User extends JSONObject
 	{
 		// Constructor
-		public function User(data:String = null, existingcontent:Object = null)
+		public function User(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);

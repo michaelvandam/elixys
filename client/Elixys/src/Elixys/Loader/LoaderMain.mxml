@@ -2,10 +2,12 @@
 <mx:ViewStack xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
 			  borderStyle="solid" creationPolicy="all" creationComplete="OnCreationComplete();" width="100%" height="100%">
 	<fx:Style source="Elixys.css" />
+
 	<fx:Script>
 		<![CDATA[
 			import Elixys.ExceptionEvent;
 			import Elixys.HTTPConnection;
+			import Elixys.HTTPResponseEvent;
 			
 			import flash.events.HTTPStatusEvent;
 			
@@ -51,6 +53,7 @@
 				m_pHTTPConnection.addEventListener(Event.CONNECT, OnHTTPConnectEvent);
 				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
 				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnection.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
 				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnection.SetCredentials1(_username.text, _password.text);
 				m_pHTTPConnection.Connect(_server.text, 80);
@@ -97,52 +100,47 @@
 			// Called as the HTTP download progresses
 			private function OnHTTPProgressEvent(event:ProgressEvent):void
 			{
-				// Check if we are still loading or complete
-				if (event.bytesLoaded < event.bytesTotal)
+				// Update the progress bar
+				var nProgress:Number = 30 + (event.bytesLoaded * 70 / event.bytesTotal);
+				m_pLoaderPopUp.SetProgress(nProgress);
+			}
+			
+			// Called when the HTTP response is complete
+			private function OnHTTPResponseEvent(event:HTTPResponseEvent):void
+			{
+				// Send a request to the server depending on our mode
+				var pSWF:DisplayObject = null;
+				if (m_bDynamicSWF)
 				{
-					// We're still loading.  Update the progress bar
-					var nProgress:Number = 30 + (event.bytesLoaded * 70 / event.bytesTotal );
-					m_pLoaderPopUp.SetProgress(nProgress);
+					// Interpret the HTTP response body as a SWF
+					var pSWFLoader:SWFLoader = new SWFLoader();
+					pSWFLoader.percentWidth = 100;
+					pSWFLoader.percentHeight = 100;
+					pSWFLoader.loaderContext = new LoaderContext();
+					pSWFLoader.loaderContext.allowCodeImport = true;
+					pSWFLoader.loaderContext.parameters =
+						{
+							"server": _server.text,
+							"credentials": m_pHTTPConnection.GetCredentials()
+						};
+					pSWFLoader.load(event.m_pHTTPResponse.m_pBody);
+					pSWF = pSWFLoader;
 				}
 				else
 				{
-					// The download is complete.  Update the progress bar
-					m_pLoaderPopUp.SetProgress(100);
-
-					// Send a request to the server depending on our mode (dynamic or static)
-					var pSWF:DisplayObject = null;
-					if (m_bDynamicSWF)
-					{
-						// Interpret the HTTP response body as a SWF
-						var pSWFLoader:SWFLoader = new SWFLoader();
-						pSWFLoader.percentWidth = 100;
-						pSWFLoader.percentHeight = 100;
-						pSWFLoader.loaderContext = new LoaderContext();
-						pSWFLoader.loaderContext.allowCodeImport = true;
-						pSWFLoader.loaderContext.parameters =
-							{
-								"server": _server.text,
-								"credentials": m_pHTTPConnection.GetCredentials()
-							};
-						pSWFLoader.load(m_pHTTPConnection.GetResponseBody());
-						pSWF = pSWFLoader;
-					}
-					else
-					{
-						// Create an instance of the static SWF
-						var pElixysSWF:ElixysMain = new ElixysMain();
-						pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnection.GetCredentials());
-						pElixysSWF.percentWidth = 100;
-						pElixysSWF.percentHeight = 100;
-						pSWF = pElixysSWF;
-					}
-
-					// Hide the loader pop up and show the SWF
-					PopUpManager.removePopUp(m_pLoaderPopUp);
-					m_pLoaderPopUp = null;
-					_viewApplication.addChild(pSWF);
-					this.selectedChild = _viewApplication;
+					// Create an instance of the static SWF
+					var pElixysSWF:ElixysMain = new ElixysMain();
+					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnection.GetCredentials());
+					pElixysSWF.percentWidth = 100;
+					pElixysSWF.percentHeight = 100;
+					pSWF = pElixysSWF;
 				}
+
+				// Hide the loader pop up and show the SWF
+				PopUpManager.removePopUp(m_pLoaderPopUp);
+				m_pLoaderPopUp = null;
+				_viewApplication.addChild(pSWF);
+				this.selectedChild = _viewApplication;
 			}
 			
 			// Called when an exception occurs in a child
@@ -188,7 +186,7 @@
 					<s:Label text="Password" verticalAlign="middle" styleName="label" height="40" />
 				</s:VGroup>
 				<s:VGroup gap="15" width="100%">
-					<s:TextArea id="_server" text="192.168.1.106" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_server" text="ec2-50-16-49-219.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 				</s:VGroup>

@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class State extends JSONObject
 	{
 		// Constructor
-		public function State(data:String = null, existingcontent:Object = null)
+		public function State(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -55,6 +55,15 @@ package Elixys.Objects
 			}
 			return m_pClientDetailsHome;
 		}
+		public function ClientDetailsSelect():Elixys.Objects.ClientDetailsSelect
+		{
+			// Parse the client details for the home page
+			if (m_pClientDetailsSelect == null)
+			{
+				m_pClientDetailsSelect = new Elixys.Objects.ClientDetailsSelect(null, super.flash_proxy::getProperty("clientdetails"));
+			}
+			return m_pClientDetailsSelect;
+		}
 		
 		// Type
 		static public var TYPE:String = "state";
@@ -63,5 +72,6 @@ package Elixys.Objects
 		private var m_pUser:Elixys.Objects.User;
 		private var m_pServerState:Elixys.Objects.ServerState;
 		private var m_pClientDetailsHome:Elixys.Objects.ClientDetailsHome;
+		private var m_pClientDetailsSelect:Elixys.Objects.ClientDetailsSelect;
 	}
 }

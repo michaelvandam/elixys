@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class ServerError extends JSONObject
 	{
 		// Constructor
-		public function ServerError(data:String = null, existingcontent:Object = null)
+		public function ServerError(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);

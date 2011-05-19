@@ -3,7 +3,10 @@
 		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
+			import Elixys.HTTPRequest;
+			import Elixys.HTTPRequestEvent;
 			import Elixys.Objects.Button;
+			import Elixys.Objects.PostHome;
 			import Elixys.Objects.State;
 			
 			import spark.components.Button;
@@ -11,38 +14,38 @@
 			// Update function
 			public override function Update(pState:State):void
 			{
-				// Loop through the server and client button arrays
-				var pServerButtons:Array = pState.ClientDetailsHome().Buttons();
-				var nButton:uint, pButtonClient:spark.components.Button, pButtonServer:Elixys.Objects.Button;
-				for (nButton = 0; nButton < pServerButtons.length; ++nButton)
+				// Update our button array with the server data
+				UpdateButtons(_buttonGroup, pState.ClientDetailsHome().Buttons(), CreateNewButton);
+				function CreateNewButton():spark.components.Button
 				{
-					// Either get a pointer to the existing button or create a new one
-					if (nButton < _buttonGroup.numElements)
-					{
-						// Use the existing button
-						pButtonClient = _buttonGroup.getElementAt(nButton) as spark.components.Button;
-					}
-					else
-					{
-						// Create a new button
-						pButtonClient = new spark.components.Button();
-						pButtonClient.percentWidth = 100;
-						pButtonClient.height = 50;
-						pButtonClient.styleName = "button";
-						_buttonGroup.addElement(pButtonClient);
-					}
-
-					// Update the button text and ID
-					pButtonServer = pServerButtons[nButton];
-					pButtonClient.label = pButtonServer.Text();
-					pButtonClient.id = pButtonServer.ID();
+					// Callback to create our new button
+					var pButton:spark.components.Button = new spark.components.Button();
+					pButton.percentWidth = 100;
+					pButton.height = 50;
+					pButton.styleName = "button";
+					pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
+					return pButton;
 				}
+			}
+			
+			// Button click handler
+			private function OnButtonClick(event:MouseEvent):void
+			{
+				// Create a POST request
+				var pPostHome:PostHome = new PostHome();
+				pPostHome.TargetID((event.target as spark.components.Button).id);
 				
-				// Remove any extra buttons
-				while (nButton < _buttonGroup.numElements)
-				{
-					_buttonGroup.removeElementAt(_buttonGroup.numElements - 1);
-				}
+				// Convert the request to a byte array
+				var pBody:ByteArray = new ByteArray();
+				pBody.writeMultiByte(pPostHome.toString(), "utf8");
+				pBody.position = 0;
+				
+				// Pass the request up to be sent to the server
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = "POST";
+				pHTTPRequest.m_sResource = "/Elixys/HOME";
+				pHTTPRequest.m_pBody = pBody;
+				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 			}
 		]]>
 	</fx:Script>

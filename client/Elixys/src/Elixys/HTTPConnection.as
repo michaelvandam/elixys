@@ -8,7 +8,9 @@ package Elixys
 	import flash.events.SecurityErrorEvent;
 	import flash.net.Socket;
 	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
 	
+	import mx.collections.ArrayList;
 	import mx.utils.Base64Encoder;
 
 	// This class performs normal HTTP operations over a socket.  Yes, it's lame that we need to implement this.  It should
@@ -62,53 +64,72 @@ package Elixys
 			m_pSocket.connect(m_sServer, m_nPort);
 		}
 
-		public function SendRequest(sOperation:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null,
-			sBodyMIME:String = ""):void
+		public function SendRequest(sMethod:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null):void
 		{
 			// Make sure there is no outstanding request
-			if (m_bRequestComplete)
+			if (m_bOutstandingRequest)
 			{
-				throw new Error("HTTP request collision");
+				// Store the request in our array so we can send it later
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = sMethod;
+				pHTTPRequest.m_sResource = sResource;
+				pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
+				pHTTPRequest.m_pHeaders = pHeaders;
+				pHTTPRequest.m_pBody = pBody;
+				m_pHTTPRequestQueue.addItem(pHTTPRequest);
 			}
 			
-			// Reset our state
-			m_pHTTPResponseHeader.clear();
-			m_nHTTPResponseHeader = 0;
-			m_pHTTPResponseHeaders = null;
-			m_nStatusCode = 0;
-			m_nContentLength = 0;
-			m_pHTTPResponseBody.clear();
-			m_bRequestComplete = false;
+			// Set our outstanding request flag
+			m_bOutstandingRequest = true;
+			
+			// Create our initial request headers
+			var pHeaderArray:Array = new Array();
+			pHeaderArray.push("Host: " + m_sServer);
+			pHeaderArray.push("User-Agent: AdobeAIR");
+			pHeaderArray.push("Accept: " + sAcceptMIME);
+			pHeaderArray.push("Authorization: Basic " + m_sCredentials);
+			pHeaderArray.push("Connection: Keep-Alive");
+			
+			// Add post headers
+			sMethod = sMethod.toUpperCase();
+			if (sMethod == "POST")
+			{
+				if (pBody != null)
+				{
+					pHeaderArray.push("Content-Length: " + pBody.bytesAvailable);
+				}
+				else
+				{
+					pHeaderArray.push("Content-Length: 0");
+				}
+				pHeaderArray.push("Content-Type: " + MIME_JSON);
+			}
 
+			// Add the specified request headers
+			if (pHeaders != null)
+			{
+				pHeaderArray = pHeaders.concat(pHeaderArray);
+			}
+			
 			// Format the request string
-			var sRequest:String = "GET " + sResource + " HTTP/1.1\r\n" +
-				"Host: " + m_sServer + "\r\n" +
-				"User-Agent: AdobeAIR\r\n" +
-				"Accept: " + sAcceptMIME + "\r\n" +
-				"Authorization: Basic " + m_sCredentials + "\r\n" +
-				//"Content-Type: application/x-www-form-urlencoded\r\n" +
-				"Connection: Keep-Alive\r\n\r\n";
+			var sRequest:String = sMethod + " " + sResource + " HTTP/1.1\r\n";
+			sRequest += pHeaderArray.join("\r\n");
+			sRequest += "\r\n\r\n";
 
 			// Send the request
 			for (var i:uint = 0; i < sRequest.length; ++i)
 			{
 				m_pSocket.writeByte(sRequest.charCodeAt(i));
 			}
+			
+			// Send the body
+			if (pBody != null)
+			{
+				m_pSocket.writeBytes(pBody);
+			}
+			
+			// Flush the socket
 			m_pSocket.flush();
-		}
-
-		// Returns the HTTP response
-		public function GetResponseStatus():uint
-		{
-			return m_nStatusCode;
-		}
-		public function GetResponseHeaders():Array
-		{
-			return m_pHTTPResponseHeaders;
-		}
-		public function GetResponseBody():ByteArray
-		{
-			return m_pHTTPResponseBody;
 		}
 
 		/***
@@ -169,6 +190,12 @@ package Elixys
 						}
 					} while ((m_nHTTPResponseHeader != 4) && m_pSocket.bytesAvailable);
 					
+					// Return if we don't have the entire header yet
+					if (m_nHTTPResponseHeader != 4)
+					{
+						return;
+					}
+					
 					// Now we have the HTTP response header.  Break the byte array into an array of strings
 					m_pHTTPResponseHeaders = m_pHTTPResponseHeader.toString().split("\r\n");
 					
@@ -196,8 +223,34 @@ package Elixys
 					m_nContentLength);
 				dispatchEvent(pProgressEvent);
 				
-				// Remember if this request is complete
-				m_bRequestComplete = (m_pHTTPResponseBody.bytesAvailable == m_nContentLength);
+				// Is this request is complete?
+				if (m_pHTTPResponseBody.length == m_nContentLength)
+				{
+					// Yes, so create and dispatch a HTTP response event
+					var pHTTPResponse:HTTPResponse = new HTTPResponse();
+					pHTTPResponse.m_nStatusCode = m_nStatusCode;
+					pHTTPResponse.m_pHeaders = m_pHTTPResponseHeaders;
+					pHTTPResponse.m_pBody = m_pHTTPResponseBody;
+					dispatchEvent(new HTTPResponseEvent(pHTTPResponse));
+					
+					// Reset our state
+					m_pHTTPResponseHeader.clear();
+					m_nHTTPResponseHeader = 0;
+					m_pHTTPResponseHeaders = null;
+					m_nStatusCode = 0;
+					m_nContentLength = 0;
+					m_pHTTPResponseBody.clear();
+					m_bOutstandingRequest = false;
+					
+					// Submit the next request if one is in our queue
+					if (m_pHTTPRequestQueue.length)
+					{
+						var pHTTPRequest:HTTPRequest = m_pHTTPRequestQueue.getItemAt(0) as HTTPRequest;
+						m_pHTTPRequestQueue.removeItemAt(0);
+						SendRequest(pHTTPRequest.m_sMethod, pHTTPRequest.m_sResource, pHTTPRequest.m_sAcceptMIME, pHTTPRequest.m_pHeaders,
+							pHTTPRequest.m_pBody);
+					}
+				}
 			}
 			catch (err:Error)
 			{
@@ -279,8 +332,11 @@ package Elixys
 		private var m_nContentLength:uint = 0;
 		private var m_pHTTPResponseBody:ByteArray = new ByteArray();
 
-		// Request complete flag
-		private var m_bRequestComplete:Boolean = false;
+		// Outstanding request flag
+		private var m_bOutstandingRequest:Boolean = false;
+		
+		// HTTP request queue
+		private var m_pHTTPRequestQueue:ArrayList = new ArrayList();
 		
 		// Static MIME strings
 		public static var MIME_FLASH:String = "application/x-shockwave-flash";

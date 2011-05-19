@@ -7,7 +7,7 @@ package Elixys.Objects
 	public class Button extends JSONObject
 	{
 		// Constructor
-		public function Button(data:String = null, existingcontent:Object = null)
+		public function Button(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);

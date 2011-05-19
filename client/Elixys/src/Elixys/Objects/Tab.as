@@ -4,10 +4,10 @@ package Elixys.Objects
 	
 	import flash.utils.flash_proxy;
 	
-	public class ServerState extends JSONObject
+	public class Tab extends JSONObject
 	{
 		// Constructor
-		public function ServerState(data:String, existingcontent:Object = null)
+		public function Tab(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -24,8 +24,16 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
+		public function Text():String
+		{
+			return super.flash_proxy::getProperty("text");
+		}
+		public function ID():String
+		{
+			return super.flash_proxy::getProperty("id");
+		}
 		
 		// Type
-		static public var TYPE:String = "serverstate";
+		static public var TYPE:String = "tab";
 	}
 }
