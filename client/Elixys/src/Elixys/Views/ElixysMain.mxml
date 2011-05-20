@@ -147,9 +147,19 @@
 						break;
 						
 					case (ServerError.TYPE):
-						// Notify user of server error
+						// Determine the type of error
 						var pServerError:ServerError = new ServerError(sJSON);
-						throw new Error("Server error: " + pServerError.Description());
+						if (pServerError.Description() == "State misalignment")
+						{
+							// The server is telling us that our request didn't make sense in the context of its copy of our state.  Ignore
+							// this error and simply ask the server for the correct state
+							m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+						}
+						else
+						{
+							// Something went wrong on the server side.  Notify the user
+							throw new Error("Server error: " + pServerError.Description());
+						}
 						break;
 
 					default:
