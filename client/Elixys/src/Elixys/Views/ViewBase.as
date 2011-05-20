@@ -2,6 +2,8 @@ package Elixys.Views
 {
 	import Elixys.Objects.*;
 	
+	import flash.events.EventDispatcher;
+	
 	import mx.collections.ArrayList;
 	import mx.collections.IList;
 	import mx.containers.Canvas;
@@ -20,6 +22,12 @@ package Elixys.Views
 		public function ViewBase()
 		{
 			super();
+		}
+		
+		// Set parent
+		public function SetParent(pParent:EventDispatcher):void
+		{
+			m_pParent = pParent;
 		}
 		
 		// Update functions
@@ -260,5 +268,12 @@ package Elixys.Views
 			// Update the data provider
 			pList.dataProvider = pListData;
 		}
+		
+		/***
+		 * Member variables
+		 **/
+		
+		// Parent
+		protected var m_pParent:EventDispatcher;
 	}
 }

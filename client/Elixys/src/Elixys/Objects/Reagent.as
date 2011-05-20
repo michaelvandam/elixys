@@ -62,11 +62,11 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("componentid", value);
 		}
 		
-		public function get Position():uint
+		public function get Position():String
 		{
-			return parseInt(super.flash_proxy::getProperty("position"));
+			return super.flash_proxy::getProperty("position");
 		}
-		public function set Position(value:uint):void
+		public function set Position(value:String):void
 		{
 			super.flash_proxy::setProperty("position", value);
 		}

@@ -13,8 +13,23 @@
 			// Called when creation is complete
 			public function OnCreationComplete():void
 			{
-				// Tell the child views to use is as the messaging intermediary
-				_viewCassette.SetMessagingParent(this);
+				// Inform the child views of the ViewView object
+				_viewCassette.SetParent(this);
+				_viewAdd.SetParent(this);
+				_viewEvaporate.SetParent(this);
+				_viewTransfer.SetParent(this);
+				_viewElute.SetParent(this);
+				_viewReact.SetParent(this);
+				_viewPrompt.SetParent(this);
+				_viewInstall.SetParent(this);
+				_viewComment.SetParent(this);
+				_viewActivity.SetParent(this);
+			}
+			
+			// Returns the sequence ID to our child views
+			public function GetSequenceID():String
+			{
+				return m_sSequenceID;
 			}
 			
 			// Update functions
@@ -64,33 +79,63 @@
 			}
 			public override function UpdateStateComponent(pComponent:Component):void
 			{
-				// Show and update the appropriate component
+				// Locate the active view
+				var pActiveView:ViewBase;
 				switch (pComponent.ComponentType)
 				{
 					case ComponentCassette.TYPE:
-						var pComponentCassette:ComponentCassette = new ComponentCassette(null, pComponent);
-						_viewStack.selectedChild = _viewCassette;
-						_viewCassette.Update(pComponentCassette, m_sSequenceID);
+						pActiveView = _viewCassette;
 						break;
 					
-					case "ADD":
-						_viewStack.selectedChild = _viewAdd;
+					case ComponentAdd.TYPE:
+						pActiveView = _viewAdd;
 						break;
 					
-					case "EVAPORATE":
-						_viewStack.selectedChild = _viewEvaporate;
+					case ComponentEvaporate.TYPE:
+						pActiveView = _viewEvaporate;
 						break;
-				}
+					
+					case ComponentTransfer.TYPE:
+						pActiveView = _viewTransfer;
+						break;
+					
+					case ComponentElute.TYPE:
+						pActiveView = _viewElute;
+						break;
+					
+					case ComponentReact.TYPE:
+						pActiveView = _viewReact;
+						break;
+					
+					case ComponentPrompt.TYPE:
+						pActiveView = _viewPrompt;
+						break;
+					
+					case ComponentInstall.TYPE:
+						pActiveView = _viewInstall;
+						break;
+						
+					case ComponentComment.TYPE:
+						pActiveView = _viewComment;
+						break;
+					
+					case ComponentActivity.TYPE:
+						pActiveView = _viewActivity;
+						break;
+							
+					default:
+						return;
+				}		
+
+				// Show and update the appropriate component
+				_viewStack.selectedChild = pActiveView;
+				pActiveView.UpdateStateComponent(pComponent);
 			}
 			public override function UpdateStateReagent(pReagent:Reagent):void
 			{
 				// Update the active view
-				switch (_viewStack.selectedChild)
-				{
-					case _viewCassette:
-						_viewCassette.UpdateStateReagent(pReagent);
-						break;
-				}
+				var pViewBase:ViewBase = _viewStack.selectedChild as ViewBase;
+				pViewBase.UpdateStateReagent(pReagent);
 			}
 			
 			// Button click handler
@@ -163,8 +208,15 @@
 			<s:Button label="Previous" styleName="button" width="150" height="40" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
 				<Views:ViewViewCassette id="_viewCassette" width="100%" height="100%" />
-				<mx:Canvas id="_viewAdd" backgroundColor="0xff0021" width="100%" height="100%" />
-				<mx:Canvas id="_viewEvaporate" backgroundColor="0x1200ff" width="100%" height="100%" />
+				<Views:ViewViewAdd id="_viewAdd" width="100%" height="100%" />
+				<Views:ViewViewEvaporate id="_viewEvaporate" width="100%" height="100%" />
+				<Views:ViewViewTransfer id="_viewTransfer" width="100%" height="100%" />
+				<Views:ViewViewElute id="_viewElute" width="100%" height="100%" />
+				<Views:ViewViewReact id="_viewReact" width="100%" height="100%" />
+				<Views:ViewViewPrompt id="_viewPrompt" width="100%" height="100%" />
+				<Views:ViewViewInstall id="_viewInstall" width="100%" height="100%" />
+				<Views:ViewViewComment id="_viewComment" width="100%" height="100%" />
+				<Views:ViewViewActivity id="_viewActivity" width="100%" height="100%" />
 			</mx:ViewStack>
 			<s:Button label="Next" styleName="button" width="150" height="40" />
 		</s:VGroup>

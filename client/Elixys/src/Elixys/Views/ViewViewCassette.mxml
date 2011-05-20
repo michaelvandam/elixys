@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		width="100%" height="100%">
+<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
+			import Elixys.Objects.Component;
 			import Elixys.Objects.ComponentCassette;
 			import Elixys.Objects.Reagent;
 
-			// Sets the messaging parent
-			public function SetMessagingParent(pMessagingParent:EventDispatcher):void
-			{
-				m_pMessagingParent = pMessagingParent;
-			}
-			
-			// Update the view state
-			public function Update(pComponent:ComponentCassette, sSequenceID:String):void
+			// Called when component details arrive from the server
+			public override function UpdateStateComponent(pComponent:Component):void
 			{
 				// Configure the view
-				if (pComponent.Used)
+				m_pComponentCassette = new ComponentCassette(null, pComponent);
+				if (m_pComponentCassette.Used)
 				{
 					// Set visibility
 					_cassetteDisabled.visible = false;
@@ -37,7 +33,7 @@
 					
 					// Make sure we have enough reagent positions in our array
 					var nReagent:uint, pReagent:Reagent;
-					for (nReagent = 0; nReagent < pComponent.Reagents.length; ++nReagent)
+					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
 					{
 						// Get a pointer to the next reagent
 						if (nReagent < pGridData.length)
@@ -52,8 +48,8 @@
 							pGridData.addItem(pReagent);
 						}
 						
-						// Set the reagent position
-						pReagent.Position = nReagent + 1;
+						// Remember the reagent ID
+						pReagent.ID = m_pComponentCassette.Reagents[nReagent];
 					}
 					
 					// Remove any extra reagents
@@ -66,12 +62,13 @@
 					_cassetteGrid.dataProvider = pGridData;
 					
 					// Request the reagents from the server
-					for (nReagent = 0; nReagent < pComponent.Reagents.length; ++nReagent)
+					var sSequenceID:String = (m_pParent as ViewView).GetSequenceID();
+					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
 					{
 						var pHTTPRequest:HTTPRequest = new HTTPRequest();
 						pHTTPRequest.m_sMethod = "GET";
-						pHTTPRequest.m_sResource = "/Elixys/sequence/" + sSequenceID + "/reagent/" + pComponent.Reagents[nReagent];
-						m_pMessagingParent.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+						pHTTPRequest.m_sResource = "/Elixys/sequence/" + sSequenceID + "/reagent/" + m_pComponentCassette.Reagents[nReagent];
+						m_pParent.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 					}
 				}
 				else
@@ -83,30 +80,43 @@
 			}
 
 			// Called when reagent details arrive from the server
-			public function UpdateStateReagent(pReagent:Reagent):void
+			public override function UpdateStateReagent(pReagent:Reagent):void
 			{
-				// Update the corresponding reagent
-				var pClientReagent:Reagent = _cassetteGrid.dataProvider.getItemAt(pReagent.Position - 1) as Reagent;
-				if (pReagent.Used)
+				// Locate the corresponding reagent
+				var pGridData:ArrayList = _cassetteGrid.dataProvider as ArrayList, nReagent:uint;
+				for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
 				{
-					pClientReagent.Copy(pReagent);
+					var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
+					if (pClientReagent.ID == pReagent.ID)
+					{
+						// Found it
+						break;
+					}
 				}
-				else
+				if (nReagent == pGridData.length)
+				{
+					// Failed to find reagent
+					return;
+				}
+				
+				// Update the corresponding reagent
+				pClientReagent.Copy(pReagent);
+				if (!pReagent.Used)
 				{
 					pClientReagent.Name = "Not used";
 					pClientReagent.Description = "Not used";
 				}
-				_cassetteGrid.dataProvider.setItemAt(pClientReagent, pReagent.Position - 1);
+				_cassetteGrid.dataProvider.setItemAt(pClientReagent, nReagent);
 			}
 			
-			// Messaging parent
-			private var m_pMessagingParent:EventDispatcher = null;
+			// Component
+			private var m_pComponentCassette:ComponentCassette;
 		]]>
 	</fx:Script>
 	
 	<s:VGroup id="_cassetteDisabled" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
 		visible="true" width="100%" height="100%">
-		<s:Label text="This cassette is not used in this sequence" styleName="label" />		
+		<s:Label text="This cassette is not used in this sequence." styleName="label" width="80%" />		
 	</s:VGroup>
 	<s:VGroup id="_cassetteEnabled" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
 			  visible="false" width="100%" height="100%">
@@ -120,4 +130,4 @@
 			</s:columns>
 		</s:DataGrid>
 	</s:VGroup>
-</mx:Canvas>
+</Views:ViewBase>
