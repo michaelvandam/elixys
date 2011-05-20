@@ -28,44 +28,27 @@ mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
 
-# Install Apache and Python WSGI
-yum -y install mod_wsgi python-wsgiref
+# Install python and JSON libraries
+yum -y install python-wsgiref python-json
 
+# Build mod_wsgi from source so we can point it to Python 2.6
+yum install httpd-devel python26-devel
+wget http://modwsgi.googlecode.com/files/mod_wsgi-3.3.tar.gz
+tar xvfz mod_wsgi-3.3.tar.gz
+cd mod_wsgi-3.3
+./configure --with-python=/usr/bin/python26
+make
+make install
+cd ..
+rm -rf mod_wsgi-3.3*
+	 	
 # Set Apache and MySQL to start at boot
 echo "/usr/sbin/apachectl start" >> /etc/rc.local
 echo "/sbin/service mysqld start" >> /etc/rc.local
 
-# Generate the CA key and certificate
-mkdir /root/CA
-chmod 770 /root/CA
-cd /root/CA
-openssl genrsa -des3 -out ElixysCA.key -passout pass:elixys 2048
-openssl req -new -x509 -days 3650 -key ElixysCA.key -out ElixysCA.crt -passin pass:elixys -config ~/elixys/config/openssl1.conf
-
-# Generate the server key and certificate
-openssl genrsa -des3 -out Elixys.key -passout pass:elixys 1024
-openssl req -new -key Elixys.key -out Elixys.csr -passin pass:elixys -config ~/elixys/config/openssl2.conf
-openssl x509 -req -in Elixys.csr -out Elixys.crt -sha1 -CA ElixysCA.crt -CAkey ElixysCA.key -CAcreateserial -days 3650 -passin pass:elixys
-chmod 400 *.key
-
-# Copy the keys and certificates to the appropriate directory
-mkdir /etc/httpd/conf/ssl.crt
-mkdir /etc/httpd/conf/ssl.key
-cp Elixys.key /etc/httpd/conf/ssl.key/Elixys.key.orig
-cp Elixys.crt /etc/httpd/conf/ssl.crt
-cp ElixysCA.crt /etc/httpd/conf/ssl.crt
-
-# Remove the Apache startup TLS password
-openssl rsa -in /etc/httpd/conf/ssl.key/Elixys.key.orig -out /etc/httpd/conf/ssl.key/Elixys.key -passin pass:elixys
-chmod 400 /etc/httpd/conf/ssl.key/Elixys.key
-
-# Remove the default TLS config
-mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.unused
-
 # Initialize Apache directory tree
 rm -rf /var/www/*
 mkdir /var/www/http
-mkdir /var/www/https
 mkdir /var/www/wsgi
 
 # Remove the git repository

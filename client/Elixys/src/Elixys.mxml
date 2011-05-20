@@ -1,90 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		minWidth="955" minHeight="600" applicationComplete="OnLoadComplete();">
+		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600" xmlns:Views="Elixys.Views.*">
 	<fx:Script>
 		<![CDATA[
-			import Elixys.HTTPConnection;
-			
 			import mx.utils.URLUtil;
-			
-			// Determine the client's IP
-			private function GetClientIP():String
-			{
-				// Determine the server's IP address in one of two ways:
 
-				// (1) Look in the SWF URL parameters.
-				if (loaderInfo != null)
-				{
-					if (loaderInfo.parameters["clientip"] != null)
-					{
-						return loaderInfo.parameters["clientip"];
-					}
-				}
-
-				// (3) Use localhost
-				return "127.0.0.1";
-			}
-			
-			// Determine the server's IP
-			private function GetServerIP():String
+			// Called when the application has been loaded and determines startup information
+			private function OnApplicationComplete():void
 			{
-				// Determine the server's IP address in one of three ways:
+				// These are the two variables we want to fill
+				var sServer:String = "";
+				var sCredentials:String = "";
 				
-				// (1) Look in the SWF URL parameters.
+				// Look in the SWF URL parameters.
 				if (loaderInfo != null)
 				{
-					if (loaderInfo.parameters["serverip"] != null)
+					if (loaderInfo.parameters["server"] != null)
 					{
-						return loaderInfo.parameters["serverip"];
+						sServer = loaderInfo.parameters["server"];
+					}
+					if (loaderInfo.parameters["credentials"] != null)
+					{
+						sCredentials = loaderInfo.parameters["credentials"];
 					}
 				}
 				
-				// (2) Look at the loader URL
+				// Look at the loader URL
 				if (loaderInfo != null)
 				{
 					if (URLUtil.isHttpURL(loaderInfo.url))
 					{
-						return URLUtil.getServerName(loaderInfo.url);
+						if (sServer == "")
+						{
+							sServer = URLUtil.getServerName(loaderInfo.url);
+						}
 					}
 				}
 				
-				// (3) Use localhost
-				return "127.0.0.1";
-			}
-
-			private function OnLoadComplete():void
-			{
-				// Detemine the client and server IP
-				m_sClientIP = GetClientIP();
-				m_sServerIP = GetServerIP();
-				
-				// Update the output text
-				outputText2.text = "Client IP: " + m_sClientIP + ", Server IP: " + m_sServerIP;
-			}
-			
-			private var m_sClientIP:String = "";
-			private var m_sServerIP:String = "";
-			private var m_nButtonClicks:uint = 0;
-
-			public function ButtonClicked():void
-			{
-				++m_nButtonClicks;
-				outputText1.text = "Button clicked " + m_nButtonClicks + " time";
-				if (m_nButtonClicks != 1)
+				// Hack: hardcode the authentication parameter until we get the server redirect working
+				if ((sServer != "") && (sCredentials == ""))
 				{
-					outputText1.text += "s";
+					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
+				}
+				
+				// Do we have both of the variables we need?
+				if ((sServer != "") && (sCredentials != ""))
+				{
+					// Yes, so use them
+					_elixys.Init1_SetServer(sServer, sCredentials);
+				}
+				else
+				{
+					// No, so use localhost
+					_elixys.Init1_SetServer("127.0.0.1", "");
 				}
 			}
 		]]>
 	</fx:Script>
-	
-	<fx:Declarations>
-	</fx:Declarations>
-	
-	<s:VGroup width="500" height="300" verticalAlign="middle" horizontalAlign="center">
-		<s:Label id="outputText1" text="Click the button" />
-		<s:Label id="outputText2" text="" />
-		<s:Spacer height="30" />
-		<s:Button width="400" height="200" label="Elixys Easy Button" click="ButtonClicked();" />
-	</s:VGroup>
+	<Views:ElixysMain id="_elixys" width="100%" height="100%" />
 </s:Application>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.HTTPRequestEvent;
+			import Elixys.HTTP.HTTPRequest;
+			import Elixys.Objects.Button;
+			import Elixys.Objects.PostSelect;
+			import Elixys.Objects.SequenceMetadata;
+			import Elixys.Objects.State;
+			import Elixys.Objects.StateSelect;
+			
+			import mx.collections.ArrayList;
+			import mx.containers.VBox;
+			import mx.controls.Button;
+			import mx.controls.TabBar;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			
+			// Update function
+			public override function UpdateState(pState:State):void
+			{
+				// Update our tab array with the server data
+				var pStateSelect:StateSelect = pState as StateSelect;
+				UpdateTabs(_tabNavigator, pStateSelect.Tabs(), CreateNewTab, pStateSelect.TabID());
+				function CreateNewTab():SelectViewTab
+				{
+					// Callback to create our new tab
+					return new SelectViewTab();
+				}
+				var pSelectedTab:SelectViewTab = _tabNavigator.selectedChild as SelectViewTab;
+				
+				// Add click listeners on the tabs.  This will throw range errors before everything is up and going
+				try
+				{
+					for (var nTab:uint = 0; nTab < _tabNavigator.getChildren().length; ++nTab)
+					{
+						var pTabButton:mx.controls.Button = _tabNavigator.getTabAt(nTab);
+						if (!pTabButton.hasEventListener(FlexEvent.BUTTON_DOWN))
+						{
+							pTabButton.addEventListener(FlexEvent.BUTTON_DOWN, OnTabClick);
+						}
+					}
+				}
+				catch (err:RangeError)
+				{
+				}
+
+				// Update our navigation button array with the server data
+				UpdateButtons(_navigationbuttons, pStateSelect.NavigationButtons(), CreateNewButton);
+				function CreateNewButton():spark.components.Button
+				{
+					// Callback to create our new button
+					var pButton:spark.components.Button = new spark.components.Button();
+					pButton.width = 150;
+					pButton.height = 40;
+					pButton.styleName = "button";
+					pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
+					return pButton;
+				}
+
+				// Update our options button array with the server data
+				UpdateButtons(pSelectedTab._buttons, pStateSelect.OptionButtons(), CreateNewButton);
+				
+				// Update our sequence list with the server data
+				UpdateDataGrid(pSelectedTab._sequenceGrid, pStateSelect.Sequences(), CreateNewSequence);
+				function CreateNewSequence():SequenceMetadata
+				{
+					// Callback to create our new sequence
+					return new SequenceMetadata();
+				}
+			}
+			
+			// Tab change handler
+			private function OnTabClick(event:FlexEvent):void
+			{
+				// We have to go in a roundabout way to get the SelectViewTab
+				var pTab:DisplayObject = event.target as DisplayObject;
+				var pTabBar:TabBar = event.target.parent as TabBar;
+				var nTabIndex:int = pTabBar.getChildIndex(pTab);
+				var pSelectViewTab:SelectViewTab = _tabNavigator.getChildAt(nTabIndex) as SelectViewTab;
+				
+				// Create a POST request
+				var pPostSelect:PostSelect = new PostSelect();
+				pPostSelect.Type("TABCLICK");
+				pPostSelect.TargetID(pSelectViewTab.id);
+				
+				// Convert the request to a byte array
+				var pBody:ByteArray = new ByteArray();
+				pBody.writeMultiByte(pPostSelect.toString(), "utf8");
+				pBody.position = 0;
+				
+				// Pass the request up to be sent to the server
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = "POST";
+				pHTTPRequest.m_sResource = "/Elixys/SELECT";
+				pHTTPRequest.m_pBody = pBody;
+				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+			}
+
+			// Button click handler
+			private function OnButtonClick(event:MouseEvent):void
+			{
+				// Create a POST request
+				var pPostSelect:PostSelect = new PostSelect();
+				pPostSelect.Type("BUTTONCLICK");
+				pPostSelect.TargetID((event.target as spark.components.Button).id);
+				var pSelectViewTab:SelectViewTab = _tabNavigator.selectedChild as SelectViewTab;
+				var pSequence:SequenceMetadata = pSelectViewTab._sequenceGrid.selectedItem as SequenceMetadata;
+				pPostSelect.SequenceID(pSequence.ID);
+				
+				// Convert the request to a byte array
+				var pBody:ByteArray = new ByteArray();
+				pBody.writeMultiByte(pPostSelect.toString(), "utf8");
+				pBody.position = 0;
+				
+				// Pass the request up to be sent to the server
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = "POST";
+				pHTTPRequest.m_sResource = "/Elixys/SELECT";
+				pHTTPRequest.m_pBody = pBody;
+				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup x="0" y="0" width="100%" height="100%">
+		<mx:TabNavigator id="_tabNavigator" tabHeight="80" tabWidth="250" styleName="label" width="100%" height="100%" />
+	</s:VGroup>
+	<s:VGroup x="0" y="0" horizontalAlign="right" verticalAlign="top" width="100%" height="100%">
+		<s:HGroup id="_navigationbuttons" paddingRight="20" paddingTop="20" gap="20" />
+	</s:VGroup>
+</Views:ViewBase>

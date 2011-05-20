@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ViewStack xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+			  borderStyle="solid" creationPolicy="all" creationComplete="OnCreationComplete();" width="100%" height="100%">
+	<fx:Style source="Elixys.css" />
+
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.ExceptionEvent;
+			import Elixys.Events.HTTPResponseEvent;
+			import Elixys.HTTP.HTTPConnectionPool;
+			import Elixys.Views.ElixysMain;
+			
+			import flash.events.HTTPStatusEvent;
+			
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.SWFLoader;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			
+			/*** 
+			 * Member functions
+			 ***/
+			
+			// Called when the application is created
+			public function OnCreationComplete():void
+			{
+				// Add event listeners
+				addEventListener(ResizeEvent.RESIZE, OnResizeEvent);
+			}
+			
+			// Called when the user clicks "Connect"
+			private function OnConnect():void
+			{
+				// Make sure the user has entered text in each field
+				if (_server.text.length == 0)
+				{
+					Alert.show("Please enter the name of the server.");
+					return;
+				}
+				if (_username.text.length == 0)
+				{
+					Alert.show("Please enter your username.");
+					return;
+				}
+				if (_password.text.length == 0)
+				{
+					Alert.show("Please enter your password.");
+					return;
+				}
+				
+				// Create the HTTP connection pool
+				m_pHTTPConnectionPool = new HTTPConnectionPool(_server.text, 80, 1);
+				m_pHTTPConnectionPool.addEventListener(Event.CONNECT, OnHTTPConnectEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnectionPool.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
+				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnectionPool.SetCredentialsRaw(_username.text, _password.text);
+				
+				// Set the progress text and show the progress pop up
+				m_pLoaderPopUp = new LoaderPopUp();
+				PopUpManager.addPopUp(m_pLoaderPopUp, this, true);
+				PopUpManager.centerPopUp(m_pLoaderPopUp); 
+				m_pLoaderPopUp.SetProgress(0);
+
+				// Send a request to the server depending on our mode (dynamic or static)
+				if (m_bDynamicSWF)
+				{
+					// We are dynamically loading the SWF
+					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys.swf", HTTPConnectionPool.MIME_FLASH);
+				}
+				else
+				{
+					// The SWF is embedded.  Are we in debug mode?
+					if (!m_bDebug)
+					{
+						// No, so we still want to validate the user's credentials
+						m_pHTTPConnectionPool.SendRequestA("GET", "/index.html", HTTPConnectionPool.MIME_HTML);
+					}
+					else
+					{
+						// Yes, so skip the authentication step
+						DisplayElixys(null);
+						return;
+					}
+				}
+			}
+			
+			private function DisplayElixys(pSWFBody:ByteArray):void
+			{
+				// Load and show the main Elixys window
+				var pSWF:DisplayObject = null;
+				if (m_bDynamicSWF)
+				{
+					// Interpret the HTTP response body as a SWF
+					var pSWFLoader:SWFLoader = new SWFLoader();
+					pSWFLoader.percentWidth = 100;
+					pSWFLoader.percentHeight = 100;
+					pSWFLoader.loaderContext = new LoaderContext();
+					pSWFLoader.loaderContext.allowCodeImport = true;
+					pSWFLoader.loaderContext.parameters =
+						{
+							"server": _server.text,
+							"credentials": m_pHTTPConnectionPool.GetCredentials()
+						};
+					pSWFLoader.load(pSWFBody);
+					pSWF = pSWFLoader;
+				}
+				else
+				{
+					// Create an instance of the static SWF
+					var pElixysSWF:ElixysMain = new ElixysMain();
+					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnectionPool.GetCredentials());
+					pElixysSWF.percentWidth = 100;
+					pElixysSWF.percentHeight = 100;
+					pSWF = pElixysSWF;
+				}
+				
+				// Hide the loader pop up and show the SWF
+				PopUpManager.removePopUp(m_pLoaderPopUp);
+				m_pLoaderPopUp = null;
+				_viewApplication.addChild(pSWF);
+				this.selectedChild = _viewApplication;
+			}
+
+			private function OnHTTPConnectEvent(event:Event):void
+			{
+				// Set the progress text
+				m_pLoaderPopUp.SetProgress(15);
+			}
+
+			// Called when the status of the HTTP request is know
+			private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
+			{
+				// Notify the user of any error
+				if (event.status != 200)
+				{
+					Alert.show("HTTP request failed: " + event.status);
+				}
+				
+				// Set the progress text
+				m_pLoaderPopUp.SetProgress(30);
+			}
+			
+			// Called as the HTTP download progresses
+			private function OnHTTPProgressEvent(event:ProgressEvent):void
+			{
+				// Update the progress bar
+				var nProgress:Number = 30 + (event.bytesLoaded * 70 / event.bytesTotal);
+				m_pLoaderPopUp.SetProgress(nProgress);
+			}
+			
+			// Called when the HTTP response is complete
+			private function OnHTTPResponseEvent(event:HTTPResponseEvent):void
+			{
+				// Display the main Elixys window
+				DisplayElixys(event.m_pHTTPResponse.m_pBody);
+			}
+						
+			// Called when an exception occurs in a child
+			public function OnChildExceptionEvent(event:ExceptionEvent):void
+			{
+				Alert.show("Error: " + event.exception);
+			}
+			
+			// Called when the application resizes
+			public function OnResizeEvent(event:ResizeEvent):void
+			{
+				if (m_pLoaderPopUp != null)
+				{
+					PopUpManager.centerPopUp(m_pLoaderPopUp);
+				}
+			}
+			
+			/*** 
+			 *** Data members
+			 ***/
+			
+			// Flag that specifies if the Elixys.swf is loaded dynamically
+			public var m_bDynamicSWF:Boolean = true;
+			
+			// Debug flag
+			public var m_bDebug:Boolean = false;
+						
+			// HTTP connection pool to the server
+			private var m_pHTTPConnectionPool:HTTPConnectionPool;
+			
+			// Loader pop up window
+			private var m_pLoaderPopUp:LoaderPopUp;
+		]]>
+	</fx:Script>
+		
+	<!-- The layout of this AIR application is straightforward: two views in a ViewStack container, one for login and the other for
+	displaying the Elixys SWF. -->
+	<!-- 	<mx:Canvas id="_viewLogin" width="100%" height="100%" backgroundColor="0xdddddd">	-->
+	<mx:Canvas id="_viewLogin" width="100%" height="100%">
+		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="20" width="70%" height="70%">
+			<s:Label text="Enter the server IP address and your credentials:" styleName="label" />
+			<s:HGroup gap="15" width="100%">
+				<s:VGroup horizontalAlign="right" gap="15">
+					<s:Label text="Server" verticalAlign="middle" styleName="label" height="40" />
+					<s:Label text="Username" verticalAlign="middle" styleName="label" height="40" />
+					<s:Label text="Password" verticalAlign="middle" styleName="label" height="40" />
+				</s:VGroup>
+				<s:VGroup gap="15" width="100%">
+					<s:TextArea id="_server" text="ec2-184-72-134-90.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup gap="20">
+				<s:Button label="Exit" styleName="button" width="150" height="40" />	<!-- click="nativeApplication.exit(0);" -->
+				<s:Button label="Connect" styleName="button" click="OnConnect();" width="150" height="40" />
+			</s:HGroup>
+		</s:VGroup>
+	</mx:Canvas>
+	<mx:Canvas id="_viewProgress" width="100%" height="100%">
+<!--		<mx:Box horizontalAlign="center" verticalAlign="middle" backgroundColor="0x000000" backgroundAlpha="0.2" width="100%" height="100%">
+			<mx:Box horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" backgroundColor="0xffffff"
+					borderVisible="true" borderColor="0x000000" width="100%" height="100%" maxWidth="400" maxHeight="300">	-->
+		<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" 
+					width="100%" height="100%" maxWidth="400" maxHeight="300">
+				<mx:Label id="_progress" text="Enter progress text here" width="100%" />
+			</s:VGroup>
+		</s:VGroup>
+	</mx:Canvas>
+	<mx:Canvas id="_viewApplication" width="100%" height="100%">
+	</mx:Canvas>
+</mx:ViewStack>

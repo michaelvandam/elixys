@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.HTTPRequestEvent;
+			import Elixys.HTTP.HTTPRequest;
+			import Elixys.Objects.Button;
+			import Elixys.Objects.PostHome;
+			import Elixys.Objects.State;
+			import Elixys.Objects.StateHome;
+			
+			import spark.components.Button;
+
+			// Update function
+			public override function UpdateState(pState:State):void
+			{
+				// Update our button array with the server data
+				var pStateHome:StateHome = pState as StateHome;
+				UpdateButtons(_buttonGroup, pStateHome.Buttons(), CreateNewButton);
+				function CreateNewButton():spark.components.Button
+				{
+					// Callback to create our new button
+					var pButton:spark.components.Button = new spark.components.Button();
+					pButton.percentWidth = 100;
+					pButton.height = 50;
+					pButton.styleName = "button";
+					pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
+					return pButton;
+				}
+			}
+			
+			// Button click handler
+			private function OnButtonClick(event:MouseEvent):void
+			{
+				// Create a POST request
+				var pPostHome:PostHome = new PostHome();
+				pPostHome.TargetID((event.target as spark.components.Button).id);
+				
+				// Convert the request to a byte array
+				var pBody:ByteArray = new ByteArray();
+				pBody.writeMultiByte(pPostHome.toString(), "utf8");
+				pBody.position = 0;
+				
+				// Pass the request up to be sent to the server
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = "POST";
+				pHTTPRequest.m_sResource = "/Elixys/HOME";
+				pHTTPRequest.m_pBody = pBody;
+				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+			}
+		]]>
+	</fx:Script>
+	
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+		<s:Spacer width="30%" height="100%" />
+		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="60%" height="100%">
+			<s:Spacer height="20%" />
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
+					gap="25" width="100%" height="100%">
+				<s:Label text="What would you like to do?" styleName="label" />
+				<s:VGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
+						  gap="25" width="100%" />
+			</s:VGroup>
+			<s:Spacer height="20%" />
+		</s:VGroup>
+		<s:Spacer width="30%" height="100%" />
+	</s:HGroup>
+</Views:ViewBase>

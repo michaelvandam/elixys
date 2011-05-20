@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete();" width="100%" height="100%">
+	<fx:Style source="Elixys.css" />
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.*;
+			import Elixys.HTTP.*;
+			import Elixys.Objects.*;
+			
+			import mx.controls.Alert;
+
+			/***
+			 *** Initialization functions
+			 **/
+			
+			// Called when the object is created
+			private function OnCreationComplete():void
+			{
+				// Add event listeners
+				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+			}
+
+			// Step 1: This function is called by the container to set the server
+			public function Init1_SetServer(sServer:String, sCredentials:String):void
+			{
+				// Create the HTTP connection pool
+				m_pHTTPConnectionPool = new HTTPConnectionPool(sServer, 80, 5);
+				m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnectionPool.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
+				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnectionPool.SetCredentials(sCredentials);
+
+				// Load the system configuration
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
+			}
+
+			// Step 2: Called when the system configuration has been received
+			public function Init2_OnConfiguration(pConfiguration:Configuration):void
+			{
+				// Remember the system configuration
+				m_pServerConfiguration = pConfiguration;
+				
+				// Load the current state
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+				
+				// Start the state timer
+				var pTimer:Timer = new Timer(1000);
+				pTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
+				pTimer.start();
+			}
+
+			/***
+			 *** Member functions
+			 **/
+			
+			private function UpdateState(pState:State):void
+			{
+				// Show and update the appropriate state
+				switch (pState.ClientState())
+				{
+					case StateHome.TYPE:
+						var pStateHome:StateHome = new StateHome(null, pState);
+						_viewStack.selectedChild = _viewHome;
+						_viewHome.UpdateState(pStateHome);
+						break;
+					
+					case StateSelect.TYPE:
+						var pStateSelect:StateSelect = new StateSelect(null, pState);
+						_viewStack.selectedChild = _viewSelect;
+						_viewSelect.UpdateState(pStateSelect);
+						break;
+					
+					case StateView.TYPE:
+						var pStateView:StateView = new StateView(null, pState);
+						_viewStack.selectedChild = _viewView;
+						_viewView.UpdateState(pStateView);
+				}
+			}
+			
+			/***
+			 *** Callback functions
+			 **/
+			
+			// Called when another object wants to communicate over the HTTP connection
+			private function OnHTTPRequestEvent(event:HTTPRequestEvent):void
+			{
+				// Send the request to the server
+				m_pHTTPConnectionPool.SendRequestB(event.m_pHTTPRequest);
+			}
+
+			// Called when the status of the HTTP request is know
+			private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
+			{
+				// Notify the user of any error
+				if (event.status != 200)
+				{
+					Alert.show("HTTP request failed: " + event.status);
+				}
+			}
+			
+			// Called as the HTTP download progresses
+			private function OnHTTPProgressEvent(event:ProgressEvent):void
+			{
+			}
+			
+			// Called when the HTTP response is complete
+			private function OnHTTPResponseEvent(event:HTTPResponseEvent):void
+			{
+				// Parse the JSON string
+				var pHTTPResponse:HTTPResponse = event.m_pHTTPResponse;
+				var sJSON:String = pHTTPResponse.m_pBody.readUTFBytes(pHTTPResponse.m_pBody.length);
+				var pJSON:JSONObject = new JSONObject(sJSON);
+				switch (pJSON.type)
+				{
+					case (Configuration.TYPE):
+						// Continue initialization process
+						var pConfiguration:Configuration = new Configuration(sJSON);
+						Init2_OnConfiguration(pConfiguration);
+						break;
+						
+					case (State.TYPE):
+						// Update our state
+						var pState:State = new State(sJSON);
+						UpdateState(pState);
+						break;
+					
+					case (Sequence.TYPE):
+						// Update the active view
+						var pSequence:Sequence = new Sequence(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateSequence(pSequence);
+						break;
+					
+					case (Component.TYPE):
+						// Update the active view
+						var pComponent:Component = new Component(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateComponent(pComponent);
+						break;
+					
+					case (Reagent.TYPE):
+						// Update the active view
+						var pReagent:Reagent = new Reagent(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateReagent(pReagent);
+						break;
+						
+					case (ServerError.TYPE):
+						// Determine the type of error
+						var pServerError:ServerError = new ServerError(sJSON);
+						if (pServerError.Description() == "State misalignment")
+						{
+							// The server is telling us that our request didn't make sense in the context of its copy of our state.  Ignore
+							// this error and simply ask the server for the correct state
+							m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+						}
+						else
+						{
+							// Something went wrong on the server side.  Notify the user
+							throw new Error("Server error: " + pServerError.Description());
+						}
+						break;
+
+					default:
+						// Unhandled server message
+						throw new Error("Message type \"" + pJSON.type + "\" not handled");							
+				}
+			}
+			
+			// Called when an exception occurs in a child
+			public function OnChildExceptionEvent(event:ExceptionEvent):void
+			{
+				Alert.show("Error: " + event.exception);
+			}
+
+			// Called at regular intervals to update the state
+			private function OnStateTimer(event:TimerEvent):void
+			{
+				// Load the current state
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+			}
+
+			// HTTP connection pool to the server
+			private var m_pHTTPConnectionPool:HTTPConnectionPool;
+			
+			// Server configuration
+			private var m_pServerConfiguration:Configuration;
+		]]>
+	</fx:Script>
+	
+	<mx:ViewStack id="_viewStack" width="100%" height="100%">
+		<Views:HomeView id="_viewHome" width="100%" height="100%" />
+		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
+		<Views:ViewView id="_viewView" width="100%" height="100%" />
+	</mx:ViewStack>
+</mx:Canvas>
