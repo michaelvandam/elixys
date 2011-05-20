@@ -41,7 +41,10 @@
 			public function Init2_OnHTTPConnect(sServer:String):void
 			{
 				// Load the system configuration
-				m_pHTTPConnection.SendRequest("GET", "/Elixys/configuration", HTTPConnection.MIME_JSON);
+				if (m_pServerConfiguration == null)
+				{
+					m_pHTTPConnection.SendRequest("GET", "/Elixys/configuration", HTTPConnection.MIME_JSON);
+				}
 			}
 
 			// Step 3: Called when the system configuration has been received

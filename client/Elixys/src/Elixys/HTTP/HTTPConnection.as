@@ -1,19 +1,23 @@
 package Elixys.HTTP
 {
+	import Elixys.Events.ExceptionEvent;
+	import Elixys.Events.HTTPResponseEvent;
+	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.HTTPStatusEvent;
 	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.net.Socket;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	
 	import mx.collections.ArrayList;
+	import mx.controls.Alert;
 	import mx.utils.Base64Encoder;
-	import Elixys.Events.ExceptionEvent;
-	import Elixys.Events.HTTPResponseEvent;
 
 	// This class performs normal HTTP operations over a socket.  Yes, it's lame that we need to implement this.  It should
 	// be part of Adobe's library, but their version is severly limited in terms of functionality.
@@ -26,6 +30,8 @@ package Elixys.HTTP
 		// Constructor
 		public function HTTPConnection()
 		{
+			// Add event listeners
+			m_pResponseTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnResponseTimerComplete);
 		}
 		
 		// Set and get the user's credentials
@@ -68,40 +74,55 @@ package Elixys.HTTP
 
 		public function SendRequest(sMethod:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null):void
 		{
+			// Wrap the parameters in an HTTPRequest object
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = sMethod;
+			pHTTPRequest.m_sResource = sResource;
+			pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
+			pHTTPRequest.m_pHeaders = pHeaders;
+			pHTTPRequest.m_pBody = pBody;
+			
+			// Make sure there is no outstanding request
+			if (m_pOutstandingRequest != null)
+			{
+				// Store the request in our array so we can send it later
+				m_pHTTPRequestQueue.addItem(pHTTPRequest);
+				return;
+			}
+
+			// Reset our retry counter
+			m_nRetryCount = 0;
+			
+			// Send the request
+			SendRequestInternal(pHTTPRequest);			
+		}
+
+		/***
+		 * Internal functions
+		 **/
+		
+		private function SendRequestInternal(pHTTPRequest:HTTPRequest):void
+		{
 			try
 			{
-				// Make sure there is no outstanding request
-				if (m_bOutstandingRequest)
-				{
-					// Store the request in our array so we can send it later
-					var pHTTPRequest:HTTPRequest = new HTTPRequest();
-					pHTTPRequest.m_sMethod = sMethod;
-					pHTTPRequest.m_sResource = sResource;
-					pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
-					pHTTPRequest.m_pHeaders = pHeaders;
-					pHTTPRequest.m_pBody = pBody;
-					m_pHTTPRequestQueue.addItem(pHTTPRequest);
-					return;
-				}
-				
-				// Set our outstanding request flag
-				m_bOutstandingRequest = true;
+				// Remember the outstanding request
+				m_pOutstandingRequest = pHTTPRequest;
 				
 				// Create our initial request headers
 				var pHeaderArray:Array = new Array();
 				pHeaderArray.push("Host: " + m_sServer);
 				pHeaderArray.push("User-Agent: AdobeAIR");
-				pHeaderArray.push("Accept: " + sAcceptMIME);
+				pHeaderArray.push("Accept: " + pHTTPRequest.m_sAcceptMIME);
 				pHeaderArray.push("Authorization: Basic " + m_sCredentials);
 				pHeaderArray.push("Connection: Keep-Alive");
 				
 				// Add post headers
-				sMethod = sMethod.toUpperCase();
+				var sMethod:String = pHTTPRequest.m_sMethod.toUpperCase();
 				if (sMethod == "POST")
 				{
-					if (pBody != null)
+					if (pHTTPRequest.m_pBody != null)
 					{
-						pHeaderArray.push("Content-Length: " + pBody.bytesAvailable);
+						pHeaderArray.push("Content-Length: " + pHTTPRequest.m_pBody.bytesAvailable);
 					}
 					else
 					{
@@ -109,18 +130,18 @@ package Elixys.HTTP
 					}
 					pHeaderArray.push("Content-Type: " + MIME_JSON);
 				}
-	
+				
 				// Add the specified request headers
-				if (pHeaders != null)
+				if (pHTTPRequest.m_pHeaders != null)
 				{
-					pHeaderArray = pHeaders.concat(pHeaderArray);
+					pHeaderArray = pHTTPRequest.m_pHeaders.concat(pHeaderArray);
 				}
 				
 				// Format the request string
-				var sRequest:String = sMethod + " " + sResource + " HTTP/1.1\r\n";
+				var sRequest:String = sMethod + " " + pHTTPRequest.m_sResource + " HTTP/1.1\r\n";
 				sRequest += pHeaderArray.join("\r\n");
 				sRequest += "\r\n\r\n";
-	
+				
 				// Send the request
 				for (var i:uint = 0; i < sRequest.length; ++i)
 				{
@@ -128,17 +149,33 @@ package Elixys.HTTP
 				}
 				
 				// Send the body
-				if (pBody != null)
+				if (pHTTPRequest.m_pBody != null)
 				{
-					m_pSocket.writeBytes(pBody);
+					m_pSocket.writeBytes(pHTTPRequest.m_pBody);
 				}
 				
 				// Flush the socket
 				m_pSocket.flush();
+
+				// Start the response timer
+				m_pResponseTimer.start();
 			}
 			catch (err:Error)
 			{
-				trace("Caught error: " + err.message);
+				// Check for invalid sockets
+				if (err.errorID == 2002)
+				{
+					// This socket has gone bad.  Drop the connection and create a new one
+					m_pSocket = null;
+					m_bConnected = false;
+					Connect(m_sServer, m_nPort);
+				}
+				else
+				{
+					// Pass an exception event up to our parent
+					var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Sending HTTP request failed: " + err.message);
+					dispatchEvent(pExceptionEvent);
+				}
 			}
 		}
 
@@ -149,14 +186,24 @@ package Elixys.HTTP
 		// Called when the socket is connected
 		private function OnSocketConnectEvent(event:Event):void
 		{
-			// Check our connected flag to make sure we only dispatch this event once
+			// Check our connected flag to make sure we only acknowledge this event once
 			if (!m_bConnected)
 			{
-				// Pass the connection even to anyone listening
-				dispatchEvent(event);
+				// Are we sitting on an outstanding request?
+				if (m_pOutstandingRequest != null)
+				{
+					// Yes, so send it
+					SendRequestInternal(m_pOutstandingRequest);
+				}
+				else
+				{
+					// No, so dispatch the connection event to anyone listening
+					dispatchEvent(event);
+				}
 				
 				// Set the flag
 				m_bConnected = true;
+				
 			}
 		}
 		
@@ -236,13 +283,16 @@ package Elixys.HTTP
 				// Is this request is complete?
 				if (m_pHTTPResponseBody.length == m_nContentLength)
 				{
-					// Yes, so create and dispatch a HTTP response event
+					// Yes, so stop the timer
+					m_pResponseTimer.stop();
+
+					// Create and dispatch the response
 					var pHTTPResponse:HTTPResponse = new HTTPResponse();
 					pHTTPResponse.m_nStatusCode = m_nStatusCode;
 					pHTTPResponse.m_pHeaders = m_pHTTPResponseHeaders;
 					pHTTPResponse.m_pBody = m_pHTTPResponseBody;
 					dispatchEvent(new HTTPResponseEvent(pHTTPResponse));
-					
+
 					// Reset our state
 					m_pHTTPResponseHeader.clear();
 					m_nHTTPResponseHeader = 0;
@@ -250,8 +300,8 @@ package Elixys.HTTP
 					m_nStatusCode = 0;
 					m_nContentLength = 0;
 					m_pHTTPResponseBody.clear();
-					m_bOutstandingRequest = false;
-					
+					m_pOutstandingRequest = null;
+										
 					// Submit the next request if one is in our queue
 					if (m_pHTTPRequestQueue.length)
 					{
@@ -265,6 +315,32 @@ package Elixys.HTTP
 			catch (err:Error)
 			{
 				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Error when receiving socket data: " + err.message);
+				dispatchEvent(pExceptionEvent);
+			}
+		}
+
+		// Called when the response timer completes
+		private function OnResponseTimerComplete(event:TimerEvent):void
+		{
+			// Have we exceeded out retry limit?
+			if (m_nRetryCount < 3)
+			{
+				// No, so increment our counter and reset our state
+				++m_nRetryCount;
+				m_pHTTPResponseHeader.clear();
+				m_nHTTPResponseHeader = 0;
+				m_pHTTPResponseHeaders = null;
+				m_nStatusCode = 0;
+				m_nContentLength = 0;
+				m_pHTTPResponseBody.clear();
+
+				// Send the failed request again
+				SendRequestInternal(m_pOutstandingRequest);
+			}
+			else
+			{
+				// Give up and send an exception event
+				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("HTTP request timed out");
 				dispatchEvent(pExceptionEvent);
 			}
 		}
@@ -342,8 +418,10 @@ package Elixys.HTTP
 		private var m_nContentLength:uint = 0;
 		private var m_pHTTPResponseBody:ByteArray = new ByteArray();
 
-		// Outstanding request flag
-		private var m_bOutstandingRequest:Boolean = false;
+		// Response timer, outstanding HTTP request and retry count
+		private var m_pResponseTimer:Timer = new Timer(1000, 1);
+		private var m_pOutstandingRequest:HTTPRequest;
+		private var m_nRetryCount:uint;
 		
 		// HTTP request queue
 		private var m_pHTTPRequestQueue:ArrayList = new ArrayList();

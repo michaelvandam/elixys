@@ -636,9 +636,15 @@ def application(pEnvironment, fStartResponse):
     gStateMutex.acquire()
 
     # Extract important input variables
-    sRemoteUser = pEnvironment["REMOTE_USER"]
+    if pEnvironment.has_key("REMOTE_USER"):
+        sRemoteUser = pEnvironment["REMOTE_USER"]
+    else:
+        sRemoteUser = "devel"    # Debugging hack: use "devel" as default user
     sRequestMethod = pEnvironment["REQUEST_METHOD"]
     sPath = pEnvironment["PATH_INFO"]
+    if sPath.startswith("/Elixys"):
+        # Debugging hack: trim off any leading "/Elixys" string
+        sPath = sPath[7:]
 
     # Handle the request
     try:
@@ -666,7 +672,7 @@ def application(pEnvironment, fStartResponse):
 
     # Send the response
     fStartResponse(sStatus, pHeaders)
-    return sResponseJSON
+    return [sResponseJSON]
 
 # Main function used for local execution
 if __name__ == '__main__':
