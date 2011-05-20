@@ -17,7 +17,6 @@ package Elixys.HTTP
 	
 	import mx.collections.ArrayList;
 	import mx.controls.Alert;
-	import mx.utils.Base64Encoder;
 
 	// This class performs normal HTTP operations over a socket.  Yes, it's lame that we need to implement this.  It should
 	// be part of Adobe's library, but their version is severly limited in terms of functionality.
@@ -28,72 +27,36 @@ package Elixys.HTTP
 		 **/
 		
 		// Constructor
-		public function HTTPConnection()
+		public function HTTPConnection(pHTTPConnectionPool:HTTPConnectionPool)
 		{
+			// Remember the connection pool
+			m_pHTTPConnectionPool = pHTTPConnectionPool;
+			
 			// Add event listeners
 			m_pResponseTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnResponseTimerComplete);
 		}
+
+		// Check the state of the connection
+		public function IsConnected():Boolean
+		{
+			return m_bConnected;
+		}
+		public function IsAvailable():Boolean
+		{
+			return (m_pOutstandingRequest == null);
+		}
 		
-		// Set and get the user's credentials
-		public function SetCredentials1(sUsername:String, sPassword:String):void
+		// Send the request to the server
+		public function SendRequest(pHTTPRequest:HTTPRequest):void
 		{
-			// Encode the username and password using basic authentication
-			var pEncoder:Base64Encoder = new Base64Encoder();
-			pEncoder.insertNewLines = false;
-			pEncoder.encode(sUsername + ":" + sPassword);
-			m_sCredentials = pEncoder.toString();
-		}
-		public function SetCredentials2(sCredentials:String):void
-		{
-			// Remember the credentials
-			m_sCredentials = sCredentials;
-		}
-		public function GetCredentials():String
-		{
-			// Return the credentials that we have
-			return m_sCredentials;
-		}
-
-		// Connects to the given server and port
-		public function Connect(sServer:String, nPort:uint):void
-		{
-			// Remember server and port
-			m_sServer = sServer;
-			m_nPort = nPort;
-	
-			// Create a new socket and add event listener
-			m_pSocket = new Socket();
-			m_pSocket.addEventListener(Event.CONNECT, OnSocketConnectEvent);
-			m_pSocket.addEventListener(ProgressEvent.SOCKET_DATA, OnSocketProgressEvent);
-			m_pSocket.addEventListener(IOErrorEvent.IO_ERROR, OnSocketIOErrorEvent);
-			m_pSocket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, OnSocketSecurityErrorEvent);
-					
-			// Connect to the remote server
-			m_pSocket.connect(m_sServer, m_nPort);
-		}
-
-		public function SendRequest(sMethod:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null):void
-		{
-			// Wrap the parameters in an HTTPRequest object
-			var pHTTPRequest:HTTPRequest = new HTTPRequest();
-			pHTTPRequest.m_sMethod = sMethod;
-			pHTTPRequest.m_sResource = sResource;
-			pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
-			pHTTPRequest.m_pHeaders = pHeaders;
-			pHTTPRequest.m_pBody = pBody;
-			
 			// Make sure there is no outstanding request
-			if (m_pOutstandingRequest != null)
+			if (!IsAvailable())
 			{
-				// Store the request in our array so we can send it later
-				m_pHTTPRequestQueue.addItem(pHTTPRequest);
-				return;
+				throw new Error("HTTP connection already in use");
 			}
-
-			// Reset our retry counter
-			m_nRetryCount = 0;
 			
-			// Send the request
+			// Reset our retry counter and send the request
+			m_nRetryCount = 0;
 			SendRequestInternal(pHTTPRequest);			
 		}
 
@@ -107,13 +70,28 @@ package Elixys.HTTP
 			{
 				// Remember the outstanding request
 				m_pOutstandingRequest = pHTTPRequest;
+
+				// Make sure we're connected
+				if (!IsConnected())
+				{
+					// Connnect to the server
+					m_pSocket = new Socket();
+					m_pSocket.addEventListener(Event.CONNECT, OnSocketConnectEvent);
+					m_pSocket.addEventListener(ProgressEvent.SOCKET_DATA, OnSocketProgressEvent);
+					m_pSocket.addEventListener(IOErrorEvent.IO_ERROR, OnSocketIOErrorEvent);
+					m_pSocket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, OnSocketSecurityErrorEvent);
+					m_pSocket.connect(m_pHTTPConnectionPool.GetServer(), m_pHTTPConnectionPool.GetPort());
+					
+					// Return and we'll send the request once we connect
+					return;
+				}
 				
 				// Create our initial request headers
 				var pHeaderArray:Array = new Array();
-				pHeaderArray.push("Host: " + m_sServer);
+				pHeaderArray.push("Host: " + m_pHTTPConnectionPool.GetServer());
 				pHeaderArray.push("User-Agent: AdobeAIR");
 				pHeaderArray.push("Accept: " + pHTTPRequest.m_sAcceptMIME);
-				pHeaderArray.push("Authorization: Basic " + m_sCredentials);
+				pHeaderArray.push("Authorization: Basic " + m_pHTTPConnectionPool.GetCredentials());
 				pHeaderArray.push("Connection: Keep-Alive");
 				
 				// Add post headers
@@ -128,7 +106,7 @@ package Elixys.HTTP
 					{
 						pHeaderArray.push("Content-Length: 0");
 					}
-					pHeaderArray.push("Content-Type: " + MIME_JSON);
+					pHeaderArray.push("Content-Type: " + HTTPConnectionPool.MIME_JSON);
 				}
 				
 				// Add the specified request headers
@@ -165,16 +143,16 @@ package Elixys.HTTP
 				// Check for invalid sockets
 				if (err.errorID == 2002)
 				{
-					// This socket has gone bad.  Drop the connection and create a new one
+					// This socket has gone bad.  Drop the connection and send the outstanding request again to prompt the creation of a new one
 					m_pSocket = null;
 					m_bConnected = false;
-					Connect(m_sServer, m_nPort);
+					SendRequestInternal(m_pOutstandingRequest);
 				}
 				else
 				{
 					// Pass an exception event up to our parent
 					var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Sending HTTP request failed: " + err.message);
-					dispatchEvent(pExceptionEvent);
+					m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 				}
 			}
 		}
@@ -189,6 +167,9 @@ package Elixys.HTTP
 			// Check our connected flag to make sure we only acknowledge this event once
 			if (!m_bConnected)
 			{
+				// Set our flag
+				m_bConnected = true;
+
 				// Are we sitting on an outstanding request?
 				if (m_pOutstandingRequest != null)
 				{
@@ -198,12 +179,8 @@ package Elixys.HTTP
 				else
 				{
 					// No, so dispatch the connection event to anyone listening
-					dispatchEvent(event);
-				}
-				
-				// Set the flag
-				m_bConnected = true;
-				
+					m_pHTTPConnectionPool.dispatchEvent(event);
+				}				
 			}
 		}
 		
@@ -262,7 +239,7 @@ package Elixys.HTTP
 	
 					// Inform anyone listening of the status code
 					var pHTTPStatusEvent:HTTPStatusEvent = new HTTPStatusEvent(HTTPStatusEvent.HTTP_STATUS, false, false, m_nStatusCode);
-					dispatchEvent(pHTTPStatusEvent);
+					m_pHTTPConnectionPool.dispatchEvent(pHTTPStatusEvent);
 				}
 			
 				// Continue adding the new bytes to the body until we have it all
@@ -278,7 +255,7 @@ package Elixys.HTTP
 				// Inform anyone listening of our progress
 				var pProgressEvent:ProgressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, m_pHTTPResponseBody.bytesAvailable,
 					m_nContentLength);
-				dispatchEvent(pProgressEvent);
+				m_pHTTPConnectionPool.dispatchEvent(pProgressEvent);
 				
 				// Is this request is complete?
 				if (m_pHTTPResponseBody.length == m_nContentLength)
@@ -291,7 +268,7 @@ package Elixys.HTTP
 					pHTTPResponse.m_nStatusCode = m_nStatusCode;
 					pHTTPResponse.m_pHeaders = m_pHTTPResponseHeaders;
 					pHTTPResponse.m_pBody = m_pHTTPResponseBody;
-					dispatchEvent(new HTTPResponseEvent(pHTTPResponse));
+					m_pHTTPConnectionPool.dispatchEvent(new HTTPResponseEvent(pHTTPResponse));
 
 					// Reset our state
 					m_pHTTPResponseHeader.clear();
@@ -301,15 +278,9 @@ package Elixys.HTTP
 					m_nContentLength = 0;
 					m_pHTTPResponseBody.clear();
 					m_pOutstandingRequest = null;
-										
-					// Submit the next request if one is in our queue
-					if (m_pHTTPRequestQueue.length)
-					{
-						var pHTTPRequest:HTTPRequest = m_pHTTPRequestQueue.getItemAt(0) as HTTPRequest;
-						m_pHTTPRequestQueue.removeItemAt(0);
-						SendRequest(pHTTPRequest.m_sMethod, pHTTPRequest.m_sResource, pHTTPRequest.m_sAcceptMIME, pHTTPRequest.m_pHeaders,
-							pHTTPRequest.m_pBody);
-					}
+					
+					// Inform the connection pool that we are available
+					m_pHTTPConnectionPool.OnConnectionAvailable(this);
 				}
 			}
 			catch (err:Error)
@@ -399,13 +370,9 @@ package Elixys.HTTP
 		 * Data members
 		 **/
 		
-		// Server and port
-		private var m_sServer:String = "";
-		private var m_nPort:uint = 0;
-		
-		// User credentials
-		private var m_sCredentials:String = "";
-		
+		// Connection pool
+		private var m_pHTTPConnectionPool:HTTPConnectionPool;
+						
 		// Socket classes
 		private var m_pSocket:Socket = null;
 		private var m_bConnected:Boolean = false;
@@ -422,14 +389,6 @@ package Elixys.HTTP
 		private var m_pResponseTimer:Timer = new Timer(1000, 1);
 		private var m_pOutstandingRequest:HTTPRequest;
 		private var m_nRetryCount:uint;
-		
-		// HTTP request queue
-		private var m_pHTTPRequestQueue:ArrayList = new ArrayList();
-		
-		// Static MIME strings
-		public static var MIME_FLASH:String = "application/x-shockwave-flash";
-		public static var MIME_JSON:String = "application/json";
-		public static var MIME_HTML:String = "text/html";
 			
 		// Static HTTP strings
 		private static var HTTP_STATUS:String = "HTTP/1.1 ";

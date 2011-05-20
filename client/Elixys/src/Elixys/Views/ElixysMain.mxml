@@ -26,35 +26,26 @@
 			// Step 1: This function is called by the container to set the server
 			public function Init1_SetServer(sServer:String, sCredentials:String):void
 			{
-				// Create the HTTP connection and wait until it opens a socket connection to the server
-				m_pHTTPConnection = new HTTPConnection();
-				m_pHTTPConnection.addEventListener(Event.CONNECT, Init2_OnHTTPConnect);
-				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
-				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
-				m_pHTTPConnection.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
-				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
-				m_pHTTPConnection.SetCredentials2(sCredentials);
-				m_pHTTPConnection.Connect(sServer, 80);
-			}
+				// Create the HTTP connection pool
+				m_pHTTPConnectionPool = new HTTPConnectionPool(sServer, 80, 5);
+				m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnectionPool.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
+				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnectionPool.SetCredentials(sCredentials);
 
-			// Step 2: Called when the connection to the server has been made
-			public function Init2_OnHTTPConnect(sServer:String):void
-			{
 				// Load the system configuration
-				if (m_pServerConfiguration == null)
-				{
-					m_pHTTPConnection.SendRequest("GET", "/Elixys/configuration", HTTPConnection.MIME_JSON);
-				}
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
 			}
 
-			// Step 3: Called when the system configuration has been received
-			public function Init3_OnConfiguration(pConfiguration:Configuration):void
+			// Step 2: Called when the system configuration has been received
+			public function Init2_OnConfiguration(pConfiguration:Configuration):void
 			{
 				// Remember the system configuration
 				m_pServerConfiguration = pConfiguration;
 				
 				// Load the current state
-				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 				
 				// Start the state timer
 				var pTimer:Timer = new Timer(1000);
@@ -98,9 +89,7 @@
 			private function OnHTTPRequestEvent(event:HTTPRequestEvent):void
 			{
 				// Send the request to the server
-				var pHTTPRequest:HTTPRequest = event.m_pHTTPRequest;
-				m_pHTTPConnection.SendRequest(pHTTPRequest.m_sMethod, pHTTPRequest.m_sResource, pHTTPRequest.m_sAcceptMIME, pHTTPRequest.m_pHeaders,
-					pHTTPRequest.m_pBody);
+				m_pHTTPConnectionPool.SendRequestB(event.m_pHTTPRequest);
 			}
 
 			// Called when the status of the HTTP request is know
@@ -130,7 +119,7 @@
 					case (Configuration.TYPE):
 						// Continue initialization process
 						var pConfiguration:Configuration = new Configuration(sJSON);
-						Init3_OnConfiguration(pConfiguration);
+						Init2_OnConfiguration(pConfiguration);
 						break;
 						
 					case (State.TYPE):
@@ -179,11 +168,11 @@
 			private function OnStateTimer(event:TimerEvent):void
 			{
 				// Load the current state
-				m_pHTTPConnection.SendRequest("GET", "/Elixys/state", HTTPConnection.MIME_JSON);
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 			}
 
-			// HTTP connection to the server
-			private var m_pHTTPConnection:HTTPConnection;
+			// HTTP connection pool to the server
+			private var m_pHTTPConnectionPool:HTTPConnectionPool;
 			
 			// Server configuration
 			private var m_pServerConfiguration:Configuration;

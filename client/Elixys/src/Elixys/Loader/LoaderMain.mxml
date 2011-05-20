@@ -7,7 +7,7 @@
 		<![CDATA[
 			import Elixys.Events.ExceptionEvent;
 			import Elixys.Events.HTTPResponseEvent;
-			import Elixys.HTTP.HTTPConnection;
+			import Elixys.HTTP.HTTPConnectionPool;
 			import Elixys.Views.ElixysMain;
 			
 			import flash.events.HTTPStatusEvent;
@@ -49,31 +49,26 @@
 					return;
 				}
 				
-				// Create the HTTP connection and wait until it opens a socket connection to the server
-				m_pHTTPConnection = new HTTPConnection();
-				m_pHTTPConnection.addEventListener(Event.CONNECT, OnHTTPConnectEvent);
-				m_pHTTPConnection.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
-				m_pHTTPConnection.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
-				m_pHTTPConnection.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
-				m_pHTTPConnection.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
-				m_pHTTPConnection.SetCredentials1(_username.text, _password.text);
-				m_pHTTPConnection.Connect(_server.text, 80);
+				// Create the HTTP connection pool
+				m_pHTTPConnectionPool = new HTTPConnectionPool(_server.text, 80, 1);
+				m_pHTTPConnectionPool.addEventListener(Event.CONNECT, OnHTTPConnectEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
+				m_pHTTPConnectionPool.addEventListener(ProgressEvent.PROGRESS, OnHTTPProgressEvent);
+				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
+				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
+				m_pHTTPConnectionPool.SetCredentialsRaw(_username.text, _password.text);
 				
 				// Set the progress text and show the progress pop up
 				m_pLoaderPopUp = new LoaderPopUp();
 				PopUpManager.addPopUp(m_pLoaderPopUp, this, true);
 				PopUpManager.centerPopUp(m_pLoaderPopUp); 
 				m_pLoaderPopUp.SetProgress(0);
-			}
-			
-			// Called when the socket connects to the server
-			private function OnHTTPConnectEvent(event:Event):void
-			{
+
 				// Send a request to the server depending on our mode (dynamic or static)
 				if (m_bDynamicSWF)
 				{
 					// We are dynamically loading the SWF
-					m_pHTTPConnection.SendRequest("GET", "/Elixys.swf", HTTPConnection.MIME_FLASH);
+					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys.swf", HTTPConnectionPool.MIME_FLASH);
 				}
 				else
 				{
@@ -81,7 +76,7 @@
 					if (!m_bDebug)
 					{
 						// No, so we still want to validate the user's credentials
-						m_pHTTPConnection.SendRequest("GET", "/index.html", HTTPConnection.MIME_HTML);
+						m_pHTTPConnectionPool.SendRequestA("GET", "/index.html", HTTPConnectionPool.MIME_HTML);
 					}
 					else
 					{
@@ -90,9 +85,6 @@
 						return;
 					}
 				}
-				
-				// Set the progress text
-				m_pLoaderPopUp.SetProgress(15);
 			}
 			
 			private function DisplayElixys(pSWFBody:ByteArray):void
@@ -110,7 +102,7 @@
 					pSWFLoader.loaderContext.parameters =
 						{
 							"server": _server.text,
-							"credentials": m_pHTTPConnection.GetCredentials()
+							"credentials": m_pHTTPConnectionPool.GetCredentials()
 						};
 					pSWFLoader.load(pSWFBody);
 					pSWF = pSWFLoader;
@@ -119,7 +111,7 @@
 				{
 					// Create an instance of the static SWF
 					var pElixysSWF:ElixysMain = new ElixysMain();
-					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnection.GetCredentials());
+					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnectionPool.GetCredentials());
 					pElixysSWF.percentWidth = 100;
 					pElixysSWF.percentHeight = 100;
 					pSWF = pElixysSWF;
@@ -130,6 +122,12 @@
 				m_pLoaderPopUp = null;
 				_viewApplication.addChild(pSWF);
 				this.selectedChild = _viewApplication;
+			}
+
+			private function OnHTTPConnectEvent(event:Event):void
+			{
+				// Set the progress text
+				m_pLoaderPopUp.SetProgress(15);
 			}
 
 			// Called when the status of the HTTP request is know
@@ -185,11 +183,11 @@
 			// Debug flag
 			public var m_bDebug:Boolean = false;
 						
-			// HTTP connection to the server
-			private var m_pHTTPConnection:HTTPConnection = null;
+			// HTTP connection pool to the server
+			private var m_pHTTPConnectionPool:HTTPConnectionPool;
 			
 			// Loader pop up window
-			private var m_pLoaderPopUp:LoaderPopUp = null;
+			private var m_pLoaderPopUp:LoaderPopUp;
 		]]>
 	</fx:Script>
 		
