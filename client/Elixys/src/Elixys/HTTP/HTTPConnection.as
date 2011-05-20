@@ -1,4 +1,4 @@
-package Elixys
+package Elixys.HTTP
 {
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -12,6 +12,8 @@ package Elixys
 	
 	import mx.collections.ArrayList;
 	import mx.utils.Base64Encoder;
+	import Elixys.Events.ExceptionEvent;
+	import Elixys.Events.HTTPResponseEvent;
 
 	// This class performs normal HTTP operations over a socket.  Yes, it's lame that we need to implement this.  It should
 	// be part of Adobe's library, but their version is severly limited in terms of functionality.
@@ -66,70 +68,78 @@ package Elixys
 
 		public function SendRequest(sMethod:String, sResource:String, sAcceptMIME:String, pHeaders:Array = null, pBody:ByteArray = null):void
 		{
-			// Make sure there is no outstanding request
-			if (m_bOutstandingRequest)
+			try
 			{
-				// Store the request in our array so we can send it later
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = sMethod;
-				pHTTPRequest.m_sResource = sResource;
-				pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
-				pHTTPRequest.m_pHeaders = pHeaders;
-				pHTTPRequest.m_pBody = pBody;
-				m_pHTTPRequestQueue.addItem(pHTTPRequest);
-			}
-			
-			// Set our outstanding request flag
-			m_bOutstandingRequest = true;
-			
-			// Create our initial request headers
-			var pHeaderArray:Array = new Array();
-			pHeaderArray.push("Host: " + m_sServer);
-			pHeaderArray.push("User-Agent: AdobeAIR");
-			pHeaderArray.push("Accept: " + sAcceptMIME);
-			pHeaderArray.push("Authorization: Basic " + m_sCredentials);
-			pHeaderArray.push("Connection: Keep-Alive");
-			
-			// Add post headers
-			sMethod = sMethod.toUpperCase();
-			if (sMethod == "POST")
-			{
+				// Make sure there is no outstanding request
+				if (m_bOutstandingRequest)
+				{
+					// Store the request in our array so we can send it later
+					var pHTTPRequest:HTTPRequest = new HTTPRequest();
+					pHTTPRequest.m_sMethod = sMethod;
+					pHTTPRequest.m_sResource = sResource;
+					pHTTPRequest.m_sAcceptMIME = sAcceptMIME;
+					pHTTPRequest.m_pHeaders = pHeaders;
+					pHTTPRequest.m_pBody = pBody;
+					m_pHTTPRequestQueue.addItem(pHTTPRequest);
+					return;
+				}
+				
+				// Set our outstanding request flag
+				m_bOutstandingRequest = true;
+				
+				// Create our initial request headers
+				var pHeaderArray:Array = new Array();
+				pHeaderArray.push("Host: " + m_sServer);
+				pHeaderArray.push("User-Agent: AdobeAIR");
+				pHeaderArray.push("Accept: " + sAcceptMIME);
+				pHeaderArray.push("Authorization: Basic " + m_sCredentials);
+				pHeaderArray.push("Connection: Keep-Alive");
+				
+				// Add post headers
+				sMethod = sMethod.toUpperCase();
+				if (sMethod == "POST")
+				{
+					if (pBody != null)
+					{
+						pHeaderArray.push("Content-Length: " + pBody.bytesAvailable);
+					}
+					else
+					{
+						pHeaderArray.push("Content-Length: 0");
+					}
+					pHeaderArray.push("Content-Type: " + MIME_JSON);
+				}
+	
+				// Add the specified request headers
+				if (pHeaders != null)
+				{
+					pHeaderArray = pHeaders.concat(pHeaderArray);
+				}
+				
+				// Format the request string
+				var sRequest:String = sMethod + " " + sResource + " HTTP/1.1\r\n";
+				sRequest += pHeaderArray.join("\r\n");
+				sRequest += "\r\n\r\n";
+	
+				// Send the request
+				for (var i:uint = 0; i < sRequest.length; ++i)
+				{
+					m_pSocket.writeByte(sRequest.charCodeAt(i));
+				}
+				
+				// Send the body
 				if (pBody != null)
 				{
-					pHeaderArray.push("Content-Length: " + pBody.bytesAvailable);
+					m_pSocket.writeBytes(pBody);
 				}
-				else
-				{
-					pHeaderArray.push("Content-Length: 0");
-				}
-				pHeaderArray.push("Content-Type: " + MIME_JSON);
+				
+				// Flush the socket
+				m_pSocket.flush();
 			}
-
-			// Add the specified request headers
-			if (pHeaders != null)
+			catch (err:Error)
 			{
-				pHeaderArray = pHeaders.concat(pHeaderArray);
+				trace("Caught error: " + err.message);
 			}
-			
-			// Format the request string
-			var sRequest:String = sMethod + " " + sResource + " HTTP/1.1\r\n";
-			sRequest += pHeaderArray.join("\r\n");
-			sRequest += "\r\n\r\n";
-
-			// Send the request
-			for (var i:uint = 0; i < sRequest.length; ++i)
-			{
-				m_pSocket.writeByte(sRequest.charCodeAt(i));
-			}
-			
-			// Send the body
-			if (pBody != null)
-			{
-				m_pSocket.writeBytes(pBody);
-			}
-			
-			// Flush the socket
-			m_pSocket.flush();
 		}
 
 		/***

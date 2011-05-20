@@ -1,4 +1,4 @@
-package Elixys
+package Elixys.HTTP
 {
 	import flash.utils.ByteArray;
 

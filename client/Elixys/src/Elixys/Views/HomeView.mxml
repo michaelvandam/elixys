@@ -3,19 +3,21 @@
 		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
-			import Elixys.HTTPRequest;
-			import Elixys.HTTPRequestEvent;
+			import Elixys.Events.HTTPRequestEvent;
+			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Button;
 			import Elixys.Objects.PostHome;
 			import Elixys.Objects.State;
+			import Elixys.Objects.StateHome;
 			
 			import spark.components.Button;
 
 			// Update function
-			public override function Update(pState:State):void
+			public override function UpdateState(pState:State):void
 			{
 				// Update our button array with the server data
-				UpdateButtons(_buttonGroup, pState.ClientDetailsHome().Buttons(), CreateNewButton);
+				var pStateHome:StateHome = pState as StateHome;
+				UpdateButtons(_buttonGroup, pStateHome.Buttons(), CreateNewButton);
 				function CreateNewButton():spark.components.Button
 				{
 					// Callback to create our new button

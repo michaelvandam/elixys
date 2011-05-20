@@ -1,4 +1,4 @@
-package Elixys
+package Elixys.Events
 {
 	import flash.events.Event;
 

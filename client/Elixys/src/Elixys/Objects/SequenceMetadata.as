@@ -1,7 +1,5 @@
 package Elixys.Objects
 {
-	import Elixys.JSONObject;
-	
 	import flash.utils.flash_proxy;
 	
 	public class SequenceMetadata extends JSONObject
@@ -17,7 +15,7 @@ package Elixys.Objects
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((Type() != null) && (Type() != TYPE))
+			if ((Type != null) && (Type != TYPE))
 			{
 				throw new Error("Object type mismatch");
 			}
@@ -26,47 +24,86 @@ package Elixys.Objects
 		/// Copy
 		public function Copy(pSourceSequence:SequenceMetadata):void
 		{
-			super.flash_proxy::setProperty("name", pSourceSequence.Name());
-			super.flash_proxy::setProperty("time", pSourceSequence.Time());
-			super.flash_proxy::setProperty("date", pSourceSequence.Date());
-			super.flash_proxy::setProperty("comment", pSourceSequence.Comment());
-			super.flash_proxy::setProperty("id", pSourceSequence.ID());
-			super.flash_proxy::setProperty("creator", pSourceSequence.Creator());
-			super.flash_proxy::setProperty("operations", pSourceSequence.Operations().toString());
+			Name = pSourceSequence.Name;
+			Time = pSourceSequence.Time;
+			Date = pSourceSequence.Date;
+			Comment = pSourceSequence.Comment;
+			ID = pSourceSequence.ID;
+			Creator = pSourceSequence.Creator;
+			Operations = pSourceSequence.Operations;
 		}
 		
 		// Data wrappers
-		public function Type():String
+		public function get Type():String
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Name():String
+		public function set Type(value:String):void
+		{
+			super.flash_proxy::setProperty("type", value);
+		}
+		
+		public function get Name():String
 		{
 			return super.flash_proxy::getProperty("name");
 		}
-		public function Time():String
+		public function set Name(value:String):void
+		{
+			super.flash_proxy::setProperty("name", value);
+		}
+
+		public function get Time():String
 		{
 			return super.flash_proxy::getProperty("time");
 		}
-		public function Date():String
+		public function set Time(value:String):void
+		{
+			super.flash_proxy::setProperty("time", value);
+		}
+		
+		public function get Date():String
 		{
 			return super.flash_proxy::getProperty("date");
 		}
-		public function Comment():String
+		public function set Date(value:String):void
+		{
+			super.flash_proxy::setProperty("date", value);
+		}
+
+		public function get Comment():String
 		{
 			return super.flash_proxy::getProperty("comment");
 		}
-		public function ID():String
+		public function set Comment(value:String):void
+		{
+			super.flash_proxy::setProperty("comment", value);
+		}
+
+		public function get ID():String
 		{
 			return super.flash_proxy::getProperty("id");
 		}
-		public function Creator():String
+		public function set ID(value:String):void
+		{
+			super.flash_proxy::setProperty("id", value);
+		}
+
+		public function get Creator():String
 		{
 			return super.flash_proxy::getProperty("creator");
 		}
-		public function Operations():uint
+		public function set Creator(value:String):void
 		{
-			return parseInt(super.flash_proxy::getProperty("creator"));
+			super.flash_proxy::setProperty("creator", value);
+		}
+
+		public function get Operations():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("operations"));
+		}
+		public function set Operations(value:uint):void
+		{
+			super.flash_proxy::setProperty("operations", value);
 		}
 
 		// Type

@@ -1,7 +1,8 @@
-package Elixys
+package Elixys.Events
 {
 	import flash.events.Event;
 	import flash.utils.ByteArray;
+	import Elixys.HTTP.HTTPRequest;
 	
 	// This custom event is used to pass an HTTP request to the holder of the HTTP connection
 	public class HTTPRequestEvent extends Event

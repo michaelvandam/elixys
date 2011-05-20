@@ -1,6 +1,5 @@
 package Elixys.Objects
 {
-	import Elixys.JSONObject;
 	
 	import flash.utils.flash_proxy;
 

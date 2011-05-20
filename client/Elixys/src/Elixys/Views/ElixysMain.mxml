@@ -4,13 +4,8 @@
 	<fx:Style source="Elixys.css" />
 	<fx:Script>
 		<![CDATA[
-			import Elixys.ExceptionEvent;
-			import Elixys.HTTPConnection;
-			import Elixys.HTTPRequest;
-			import Elixys.HTTPRequestEvent;
-			import Elixys.HTTPResponse;
-			import Elixys.HTTPResponseEvent;
-			import Elixys.JSONObject;
+			import Elixys.Events.*;
+			import Elixys.HTTP.*;
 			import Elixys.Objects.*;
 			
 			import mx.controls.Alert;
@@ -25,6 +20,7 @@
 				// Add event listeners
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 			}
 
 			// Step 1: This function is called by the container to set the server
@@ -72,15 +68,22 @@
 				// Show and update the appropriate state
 				switch (pState.ClientState())
 				{
-					case ClientDetailsHome.TYPE:
+					case StateHome.TYPE:
+						var pStateHome:StateHome = new StateHome(null, pState);
 						_viewStack.selectedChild = _viewHome;
-						_viewHome.Update(pState);
+						_viewHome.UpdateState(pStateHome);
 						break;
 					
-					case ClientDetailsSelect.TYPE:
+					case StateSelect.TYPE:
+						var pStateSelect:StateSelect = new StateSelect(null, pState);
 						_viewStack.selectedChild = _viewSelect;
-						_viewSelect.Update(pState);
+						_viewSelect.UpdateState(pStateSelect);
 						break;
+					
+					case StateView.TYPE:
+						var pStateView:StateView = new StateView(null, pState);
+						_viewStack.selectedChild = _viewView;
+						_viewView.UpdateState(pStateView);
 				}
 			}
 			
@@ -132,6 +135,24 @@
 						var pState:State = new State(sJSON);
 						UpdateState(pState);
 						break;
+					
+					case (Sequence.TYPE):
+						// Update the active view
+						var pSequence:Sequence = new Sequence(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateSequence(pSequence);
+						break;
+					
+					case (Component.TYPE):
+						// Update the active view
+						var pComponent:Component = new Component(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateComponent(pComponent);
+						break;
+					
+					case (Reagent.TYPE):
+						// Update the active view
+						var pReagent:Reagent = new Reagent(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateStateReagent(pReagent);
+						break;
 						
 					case (ServerError.TYPE):
 						// Notify user of server error
@@ -141,7 +162,7 @@
 
 					default:
 						// Unhandled server message
-						throw new Error("Message type " + pJSON.type + " not handled");							
+						throw new Error("Message type \"" + pJSON.type + "\" not handled");							
 				}
 			}
 			
@@ -169,5 +190,6 @@
 	<mx:ViewStack id="_viewStack" width="100%" height="100%">
 		<Views:HomeView id="_viewHome" width="100%" height="100%" />
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
+		<Views:ViewView id="_viewView" width="100%" height="100%" />
 	</mx:ViewStack>
 </mx:Canvas>

@@ -1,29 +1,23 @@
 package Elixys.Objects
 {
-	import Elixys.JSONObject;
-	
 	import flash.utils.flash_proxy;
 	
-	public class ClientDetailsSelect extends JSONObject
+	public class StateSelect extends State
 	{
 		// Constructor
-		public function ClientDetailsSelect(data:String, existingcontent:Object = null)
+		public function StateSelect(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((Type() != null) && (Type() != TYPE))
+			if ((ClientState() != null) && (ClientState() != TYPE))
 			{
-				throw new Error("Object type mismatch");
+				throw new Error("State object mismatch");
 			}
 		}
 		
 		// Data wrappers
-		public function Type():String
-		{
-			return super.flash_proxy::getProperty("type");
-		}
 		public function Tabs():Array
 		{
 			// Parse the tabs

@@ -1,7 +1,5 @@
 package Elixys.Objects
 {
-	import Elixys.JSONObject;
-	
 	import flash.utils.flash_proxy;
 	
 	public class State extends JSONObject
@@ -46,24 +44,6 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("clientstate");
 		}
-		public function ClientDetailsHome():Elixys.Objects.ClientDetailsHome
-		{
-			// Parse the client details for the home page
-			if (m_pClientDetailsHome == null)
-			{
-				m_pClientDetailsHome = new Elixys.Objects.ClientDetailsHome(null, super.flash_proxy::getProperty("clientdetails"));
-			}
-			return m_pClientDetailsHome;
-		}
-		public function ClientDetailsSelect():Elixys.Objects.ClientDetailsSelect
-		{
-			// Parse the client details for the home page
-			if (m_pClientDetailsSelect == null)
-			{
-				m_pClientDetailsSelect = new Elixys.Objects.ClientDetailsSelect(null, super.flash_proxy::getProperty("clientdetails"));
-			}
-			return m_pClientDetailsSelect;
-		}
 		
 		// Type
 		static public var TYPE:String = "state";
@@ -71,7 +51,8 @@ package Elixys.Objects
 		// State components
 		private var m_pUser:Elixys.Objects.User;
 		private var m_pServerState:Elixys.Objects.ServerState;
-		private var m_pClientDetailsHome:Elixys.Objects.ClientDetailsHome;
-		private var m_pClientDetailsSelect:Elixys.Objects.ClientDetailsSelect;
+		private var m_pClientDetailsHome:Elixys.Objects.StateHome;
+		private var m_pClientDetailsSelect:Elixys.Objects.StateSelect;
+		private var m_pClientDetailsView:Elixys.Objects.StateView;
 	}
 }

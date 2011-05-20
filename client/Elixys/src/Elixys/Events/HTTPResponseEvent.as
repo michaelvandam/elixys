@@ -1,7 +1,8 @@
-package Elixys
+package Elixys.Events
 {
 	import flash.events.Event;
 	import flash.utils.ByteArray;
+	import Elixys.HTTP.HTTPResponse;
 	
 	// This custom event is used to return an HTTP response to the holder of the HTTP connection
 	public class HTTPResponseEvent extends Event

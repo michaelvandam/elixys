@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600">
+		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600" xmlns:Views="Elixys.Views.*">
 	<fx:Script>
 		<![CDATA[
 			import mx.utils.URLUtil;
@@ -37,6 +37,12 @@
 					}
 				}
 				
+				// Hack: hardcode the authentication parameter until we get the server redirect working
+				if ((sServer != "") && (sCredentials == ""))
+				{
+					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
+				}
+				
 				// Do we have both of the variables we need?
 				if ((sServer != "") && (sCredentials != ""))
 				{
@@ -51,5 +57,5 @@
 			}
 		]]>
 	</fx:Script>
-	<local:ElixysMain id="_elixys" width="100%" height="100%" />
+	<Views:ElixysMain id="_elixys" width="100%" height="100%" />
 </s:Application>

@@ -5,9 +5,10 @@
 
 	<fx:Script>
 		<![CDATA[
-			import Elixys.ExceptionEvent;
-			import Elixys.HTTPConnection;
-			import Elixys.HTTPResponseEvent;
+			import Elixys.Views.ElixysMain;
+			import Elixys.Events.ExceptionEvent;
+			import Elixys.HTTP.HTTPConnection;
+			import Elixys.Events.HTTPResponseEvent;
 			
 			import flash.events.HTTPStatusEvent;
 			
@@ -186,7 +187,7 @@
 					<s:Label text="Password" verticalAlign="middle" styleName="label" height="40" />
 				</s:VGroup>
 				<s:VGroup gap="15" width="100%">
-					<s:TextArea id="_server" text="ec2-50-16-49-219.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_server" text="ec2-50-17-68-101.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 				</s:VGroup>

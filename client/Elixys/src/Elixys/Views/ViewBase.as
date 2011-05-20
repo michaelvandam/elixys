@@ -1,17 +1,18 @@
 package Elixys.Views
 {
-	import Elixys.Objects.Button;
-	import Elixys.Objects.SequenceMetadata;
-	import Elixys.Objects.State;
+	import Elixys.Objects.*;
 	
 	import mx.collections.ArrayList;
+	import mx.collections.IList;
 	import mx.containers.Canvas;
 	import mx.containers.TabNavigator;
 	import mx.controls.Button;
 	
+	import spark.components.DataGrid;
 	import spark.components.Group;
 	import spark.components.List;
 	import spark.components.VGroup;
+	import spark.components.gridClasses.GridColumn;
 	
 	public class ViewBase extends Canvas
 	{
@@ -21,8 +22,17 @@ package Elixys.Views
 			super();
 		}
 		
-		// Update function
-		public function Update(pState:State):void
+		// Update functions
+		public function UpdateState(pState:State):void
+		{
+		}
+		public function UpdateStateSequence(pSequence:Sequence):void
+		{
+		}
+		public function UpdateStateComponent(pComponent:Component):void
+		{
+		}
+		public function UpdateStateReagent(pReagent:Reagent):void
 		{
 		}
 		
@@ -83,7 +93,10 @@ package Elixys.Views
 				pTabServer = pServerTabs[nTab];
 				pTabClient.label = pTabServer.Text();
 				pTabClient.id = pTabServer.ID();
-			
+
+				// Update the tab columns
+				UpdateColumns(pTabClient._sequenceGrid.columns, pTabServer.Columns());
+				
 				// Select the current tab
 				if (pTabClient.id == sCurrentTabID)
 				{
@@ -98,10 +111,101 @@ package Elixys.Views
 			}
 		}
 		
-		// Update the client sequence list with the server list
-		public function UpdateList(pList:List, pServerSequences:Array, fCreateNewSequence:Function):void
+		// Update the client data grid columns with the server data
+		public function UpdateColumns(pColumnsClient:IList, pColumnsServer:Array):void
 		{
-			// Get a pointer to the sequence list
+			// Loop through the server and client data grid columns
+			var nColumn:uint, pColumnClient:GridColumn, pHeadersServer:Array;
+			for (nColumn = 0; nColumn < pColumnsServer.length; ++nColumn)
+			{
+				// Either get a pointer to the existing column or create a new one
+				if (nColumn < pColumnsClient.length)
+				{
+					// Use the existing button
+					pColumnClient = pColumnsClient.getItemAt(nColumn) as GridColumn;
+				}
+				else
+				{
+					// Create a new tab
+					pColumnClient = new GridColumn();
+					pColumnsClient.addItem(pColumnClient);
+				}
+				
+				// Update the data field and header
+				pHeadersServer = pColumnsServer[nColumn].split(":");
+				pColumnClient.dataField = pHeadersServer[0];
+				pColumnClient.headerText = pHeadersServer[1];
+			}
+			
+			// Remove any extra tabs
+			while (nColumn < pColumnsClient.length)
+			{
+				pColumnsClient.removeItemAt(pColumnsClient.length - 1);
+			}
+		}
+
+		// Update the client sequence grid with the server data
+		public function UpdateDataGrid(pDataGrid:DataGrid, pServerSequences:Array, fCreateNewSequence:Function):void
+		{
+			// Get a pointer to the sequence grid
+			var pGridData:ArrayList;
+			if (pDataGrid.dataProvider != null)
+			{
+				pGridData = pDataGrid.dataProvider as ArrayList;
+			}
+			if (pGridData == null)
+			{
+				pGridData = new ArrayList();
+			}
+		
+			// Get the ID of the currently selected sequence
+			var pSelectedID:String = "";
+			if (pDataGrid.selectedItem)
+			{
+				pSelectedID = (pDataGrid.selectedItem as SequenceMetadata).ID;
+			}
+
+			// Loop through the server and client sequence arrays
+			var nSequence:uint, pClientSequence:SequenceMetadata, pServerSequence:SequenceMetadata;
+			for (nSequence = 0; nSequence < pServerSequences.length; ++nSequence)
+			{
+				// Either get a pointer to the existing sequence or create a new one
+				if (nSequence < pGridData.length)
+				{
+					// Use the existing sequence
+					pClientSequence = pGridData.getItemAt(nSequence) as SequenceMetadata;
+				}
+				else
+				{
+					// Create a new sequence
+					pClientSequence = fCreateNewSequence();
+					pGridData.addItem(pClientSequence);
+				}
+				
+				// Update the sequence metadata
+				pClientSequence.Copy(pServerSequences[nSequence]);
+				
+				// Make sure the currently selected sequence is reselected
+				if (pClientSequence.ID == pSelectedID)
+				{
+					pDataGrid.selectedItem = pClientSequence;
+				}
+			}
+		
+			// Remove any extra sequences
+			while (nSequence < pGridData.length)
+			{
+				pGridData.removeItemAt(pGridData.length - 1);
+			}
+			
+			// Update the data provider
+			pDataGrid.dataProvider = pGridData;
+		}
+		
+		// Update the client list array with the server array
+		public function UpdateList(pList:List, pServerItems:Array, fCreateNewItem:Function, sCurrentItemID:String):void
+		{
+			// Get a pointer to the sequence data provider
 			var pListData:ArrayList;
 			if (pList.dataProvider != null)
 			{
@@ -111,48 +215,49 @@ package Elixys.Views
 			{
 				pListData = new ArrayList();
 			}
-		
-			// Get the ID of the currently selected sequence
-			var pSelectedID:String = "";
-			if (pList.selectedItem != undefined)
-			{
-				pSelectedID = (pList.selectedItem as SequenceMetadata).ID();
-			}
 
-			// Loop through the server and client sequence arrays
-			var nSequence:uint, pClientSequence:SequenceMetadata, pServerSequence:SequenceMetadata;
-			for (nSequence = 0; nSequence < pServerSequences.length; ++nSequence)
+			// Loop through the server and client component arrays
+			var nComponent:uint, pComponentClient:SequenceComponent, pComponentServer:SequenceComponent, nNonCassetteCount:uint = 1;
+			for (nComponent = 0; nComponent < pServerItems.length; ++nComponent)
 			{
-				// Either get a pointer to the existing sequence or create a new one
-				if (nSequence < pListData.length)
+				// Either get a pointer to the existing component or create a new one
+				if (nComponent < pListData.length)
 				{
-					// Use the existing sequence
-					pClientSequence = pListData.getItemAt(nSequence) as SequenceMetadata;
+					// Use the existing component
+					pComponentClient = pListData.getItemAt(nComponent) as SequenceComponent;
 				}
 				else
 				{
-					// Create a new sequence
-					pClientSequence = fCreateNewSequence();
-					pListData.addItem(pClientSequence);
+					// Create a new component
+					pComponentClient = fCreateNewItem();
+					pListData.addItem(pComponentClient);
 				}
 				
-				// Update the sequence metadata
-				pClientSequence.Copy(pServerSequences[nSequence]);
+				// Update the sequence component
+				pComponentClient.Copy(pServerItems[nComponent]);
+				if (pComponentClient.ComponentType == ComponentCassette.TYPE)
+				{
+					pComponentClient.DisplayIndex = 0;
+				}
+				else
+				{
+					pComponentClient.DisplayIndex = nNonCassetteCount++;
+				}
 				
 				// Make sure the currently selected sequence is reselected
-				if (pClientSequence.ID() == pSelectedID)
+				if (pComponentClient.ID == sCurrentItemID)
 				{
-					pList.selectedItem = pClientSequence;
+					pList.selectedItem = pComponentClient;
 				}
 			}
-		
+			
 			// Remove any extra sequences
-			while (nSequence < pListData.length)
+			while (nComponent < pListData.length)
 			{
 				pListData.removeItemAt(pListData.length - 1);
 			}
 			
-			// Update the sequence list
+			// Update the data provider
 			pList.dataProvider = pListData;
 		}
 	}
