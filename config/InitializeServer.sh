@@ -51,5 +51,10 @@ rm -rf /var/www/*
 mkdir /var/www/http
 mkdir /var/www/wsgi
 
+# Allow Apache to save the server state to files in the WSGI directory.  This is temporary and will go away once we get the
+# WSGI interface integrated with MySQL
+chmod 777 /var/www/wsgi
+chown apache:apache /var/www/wsgi
+
 # Remove the git repository
 rm -rf /root/elixys

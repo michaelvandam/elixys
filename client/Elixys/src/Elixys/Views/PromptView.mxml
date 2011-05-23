@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" styleName="popup">
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.HTTPRequestEvent;
+			import Elixys.HTTP.HTTPRequest;
+			import Elixys.Objects.Button;
+			import Elixys.Objects.PostPrompt;
+			import Elixys.Objects.State;
+			import Elixys.Objects.StatePrompt;
+			
+			import spark.components.Button;
+
+			// Update function
+			public override function UpdateState(pState:State):void
+			{
+				// Update the text and edit controls
+				var pStatePrompt:StatePrompt = new StatePrompt(null, pState);
+				if (pStatePrompt.Text1() != "")
+				{
+					_text1.text = pStatePrompt.Text1();
+					_text1Group.visible = true;
+					_text1Group.includeInLayout = true;
+				}
+				else
+				{
+					_text1Group.visible = false;
+					_text1Group.includeInLayout = false;
+				}
+				_edit1Group.visible = pStatePrompt.Edit1();
+				_edit1Group.includeInLayout = pStatePrompt.Edit1();
+				if (pStatePrompt.Text2() != "")
+				{
+					_text2.text = pStatePrompt.Text2();
+					_text2Group.visible = true;
+					_text2Group.includeInLayout = true;
+				}
+				else
+				{
+					_text2Group.visible = false;
+					_text2Group.includeInLayout = false;
+				}
+				_edit2Group.visible = pStatePrompt.Edit2();
+				_edit2Group.includeInLayout = pStatePrompt.Edit2();
+
+				// Update our button array with the server data
+				UpdateButtons(_buttonGroup, pStatePrompt.Buttons(), CreateNewButton);
+				function CreateNewButton():spark.components.Button
+				{
+					// Callback to create our new button
+					var pButton:spark.components.Button = new spark.components.Button();
+					pButton.width = 150;
+					pButton.height = 40;
+					pButton.styleName = "button";
+					pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
+					return pButton;
+				}
+			}
+			
+			// Button click handler
+			private function OnButtonClick(event:MouseEvent):void
+			{
+				// Create a POST request
+				var pPostPrompt:PostPrompt = new PostPrompt();
+				pPostPrompt.TargetID((event.target as spark.components.Button).id);
+				pPostPrompt.Edit1(_edit1.text);
+				pPostPrompt.Edit2(_edit2.text);
+				
+				// Convert the request to a byte array
+				var pBody:ByteArray = new ByteArray();
+				pBody.writeMultiByte(pPostPrompt.toString(), "utf8");
+				pBody.position = 0;
+				
+				// Pass the request up to be sent to the server
+				var pHTTPRequest:HTTPRequest = new HTTPRequest();
+				pHTTPRequest.m_sMethod = "POST";
+				pHTTPRequest.m_sResource = "/Elixys/PROMPT";
+				pHTTPRequest.m_pBody = pBody;
+				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+			}
+		]]>
+	</fx:Script>
+
+	<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" paddingLeft="20"
+			paddingRight="20" paddingTop="20" paddingBottom="20">
+		<s:VGroup id="_text1Group">
+			<mx:Text id="_text1" styleName="label" maxWidth="460" />
+			<s:Spacer height="20" />
+		</s:VGroup>
+		<s:VGroup id="_edit1Group">
+			<s:TextInput id="_edit1" styleName="label" />
+			<s:Spacer height="20" />
+		</s:VGroup>
+		<s:VGroup id="_text2Group">
+			<mx:Text id="_text2" styleName="label" />
+			<s:Spacer height="20" />
+		</s:VGroup>
+		<s:VGroup id="_edit2Group">
+			<s:TextInput id="_edit2" styleName="label" />
+			<s:Spacer height="20" />
+		</s:VGroup>
+		<s:HGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="25" />
+	</s:VGroup>
+</Views:ViewBase>

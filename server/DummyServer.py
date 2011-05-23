@@ -4,18 +4,20 @@
 from wsgiref.simple_server import make_server
 import json
 from wsgiref.headers import Headers
-from threading import Lock
+import sys
+import os
+import os.path
+import time
+import errno
 
 # States
 STATE_HOME = 0
 STATE_SELECT_SAVEDSEQUENCES = 1
 STATE_SELECT_MANUALRUNS = 2
 STATE_VIEW = 3
-
-# User state
-gState = STATE_HOME
-gStateMutex = Lock()
-gComponentID = "1"
+STATE_PROMPT_CREATESEQUENCE = 4
+STATE_PROMPT_COPYSEQUENCE = 5
+STATE_PROMPT_DELETESEQUENCE = 6
 
 # Sequence that exists only in memory
 gSequenceMetadata = {"type":"sequencemetadata",
@@ -371,11 +373,114 @@ gReagents = [{"type":"reagent",
     "descriptionerror":"",
     "id":"20"}]
 
-def HandleGet(sRemoteUser, sPath):
+def Log(sMessage):
+    print >> sys.stderr, sMessage
+
+def StateString(nState):
+    if nState == STATE_HOME:
+        return "HOME"
+    elif nState == STATE_SELECT_SAVEDSEQUENCES:
+        return "SELECT/SAVEDSEQUENCES"
+    elif nState == STATE_SELECT_MANUALRUNS:
+        return "SELECT/MANUALRUNS"
+    elif nState == STATE_VIEW:
+        return "VIEW"
+    elif nState == STATE_PROMPT_CREATESEQUENCE:
+        return "PROMPT/CREATESEQUENCE"
+    elif nState == STATE_PROMPT_COPYSEQUENCE:
+        return "PROMPT/COPYSEQUENCE"
+    elif nState == STATE_PROMPT_DELETESEQUENCE:
+        return "PROMPT/DELETESEQUENCE"
+    else:
+        return "UNKNOWN"
+
+def LockState():
+    # Loop until we acquire the lock
+    global pLockFile
+    nFailCount = 0
+    while True:
+        try:
+            pLockFile = os.open("/var/www/wsgi/lock.file", os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            break
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            if nFailCount < 10:
+                time.sleep(0.05)
+                nFailCount += 1
+            else:
+                # The most likely cause of us getting here is the system crashed and left the lock file behind.  Go ahead
+                # and capture the lock file anyway since this solution is only temporary until we move to MySQL
+                pLockFile = os.open("/var/www/wsgi/lock.file", os.O_RDWR)
+                break
+
+def UnlockState():
+    # Release the lock
+    global pLockFile
+    os.close(pLockFile)
+    os.unlink("/var/www/wsgi/lock.file")
+
+def LoadState():
+    # Attempt to open the state file
+    try:
+        # Open the state file
+        pStateFile = os.open("/var/www/wsgi/state.txt", os.O_RDWR)
+
+        # Read in the state
+        nState = int(os.read(pStateFile, 99))
+        os.close(pStateFile)
+
+        # Return the state
+        return nState
+    except OSError as e:
+        # Check for errors other than a nonexistant state file
+        if e.errno != errno.ENOENT:
+            raise
+
+        # Default to the home state
+        return STATE_HOME
+
+def LoadComponentID():
+    # Attempt to open the component file
+    try:
+        # Open the component file
+        pComponentFile = os.open("/var/www/wsgi/component.txt", os.O_RDWR)
+
+        # Read in the component ID
+        nComponentID = int(os.read(pComponentFile, 99))
+        os.close(pComponentFile)
+
+        # Return the component ID
+        return nComponentID
+    except OSError as e:
+        # Check for errors other than a nonexistant component file
+        if e.errno != errno.ENOENT:
+            raise
+
+        # Default to the first component ID
+        return 1
+
+def SaveState(nState):
+    # Open the state file
+    pStateFile = os.open("/var/www/wsgi/state.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+
+    # Write the state
+    os.write(pStateFile, str(nState))
+    os.close(pStateFile)
+
+def SaveComponentID(nComponentID):
+    # Open the component file
+    pComponentFile = os.open("/var/www/wsgi/component.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+
+    # Write the component
+    os.write(pComponentFile, str(nComponentID))
+    os.close(pComponentFile)
+
+def HandleGet(nState, sRemoteUser, sPath):
     if sPath == "/configuration":
         return HandleGetConfiguration(sRemoteUser)
     if sPath == "/state":
-        return HandleGetState(sRemoteUser)
+        return HandleGetState(nState, sRemoteUser)
     if sPath.startswith("/sequence/"):
         if sPath.find("/component/") != -1:
             return HandleGetComponent(sRemoteUser, sPath)
@@ -402,19 +507,23 @@ def HandleGetConfiguration(sRemoteUser):
             "Install",
             "Comment",
             "Activity"]};
-
     return pConfig;
 
-def HandleGetState(sRemoteUser):
-    global gState
-    if gState == STATE_HOME:
+def HandleGetState(nState, sRemoteUser):
+    if nState == STATE_HOME:
         return HandleGetStateHome(sRemoteUser)
-    elif gState == STATE_SELECT_SAVEDSEQUENCES:
+    elif nState == STATE_SELECT_SAVEDSEQUENCES:
         return HandleGetStateSelectSavedSequences(sRemoteUser)
-    elif gState == STATE_SELECT_MANUALRUNS:
+    elif nState == STATE_SELECT_MANUALRUNS:
         return HandleGetStateSelectManualRuns(sRemoteUser)
-    elif gState == STATE_VIEW:
+    elif nState == STATE_VIEW:
         return HandleGetStateView(sRemoteUser)
+    elif nState == STATE_PROMPT_CREATESEQUENCE:
+        return HandleGetStatePromptCreateSequence(sRemoteUser)
+    elif nState == STATE_PROMPT_COPYSEQUENCE:
+        return HandleGetStatePromptCopySequence(sRemoteUser)
+    elif nState == STATE_PROMPT_DELETESEQUENCE:
+        return HandleGetStatePromptDeleteSequence(sRemoteUser)
     else:
         raise Exception("Unknown state")
 
@@ -520,7 +629,6 @@ def CreateSequenceArray():
     return pSequences
 
 def HandleGetStateView(sRemoteUser):
-    global gComponentID
     return {"type":"state",
         "user":{"type":"user",
             "username":"devel",
@@ -537,7 +645,67 @@ def HandleGetStateView(sRemoteUser):
             "text":"Back",
             "id":"BACK"}],
         "sequenceid":"25",
-        "componentid":gComponentID}
+        "componentid":str(LoadComponentID())}
+
+def HandleGetStatePromptCreateSequence(sRemoteUser):
+    return {"type":"state",
+        "user":{"type":"user",
+            "username":"devel",
+            "useraccesslevel":"Administrator"},
+        "serverstate":{"type":"serverstate"},
+        "clientstate":"PROMPT",
+        "text1":"Enter the name of the new sequence:",
+        "edit1":"true",
+        "edit1validation":"type=string; required=true",
+        "text2":"",
+        "edit2":"false",
+        "edit2validation":"",
+        "buttons":[{"type":"button",
+            "text":"Cancel",
+            "id":"CANCEL"},
+            {"type":"button",
+            "text":"Create",
+            "id":"CREATE"}]}
+
+def HandleGetStatePromptCopySequence(sRemoteUser):
+    return {"type":"state",
+        "user":{"type":"user",
+            "username":"devel",
+            "useraccesslevel":"Administrator"},
+        "serverstate":{"type":"serverstate"},
+        "clientstate":"PROMPT",
+        "text1":"Enter the name of the new sequence:",
+        "edit1":"true",
+        "edit1validation":"type=string; required=true",
+        "text2":"",
+        "edit2":"false",
+        "edit2validation":"",
+        "buttons":[{"type":"button",
+            "text":"Cancel",
+            "id":"CANCEL"},
+            {"type":"button",
+            "text":"Copy",
+            "id":"COPY"}]}
+
+def HandleGetStatePromptDeleteSequence(sRemoteUser):
+    return {"type":"state",
+        "user":{"type":"user",
+            "username":"devel",
+            "useraccesslevel":"Administrator"},
+        "serverstate":{"type":"serverstate"},
+        "clientstate":"PROMPT",
+        "text1":"Are you sure that you want to permanently delete sequence \"Fake Sequence Name Here\"?",
+        "edit1":"false",
+        "edit1validation":"",
+        "text2":"",
+        "edit2":"false",
+        "edit2validation":"",
+        "buttons":[{"type":"button",
+            "text":"Cancel",
+            "id":"CANCEL"},
+            {"type":"button",
+            "text":"Delete",
+            "id":"DELETE"}]}
 
 def HandleGetSequence(sRemoteUser, sPath):
     global gSequenceMetadata
@@ -565,20 +733,21 @@ def HandleGetReagent(sRemoteUser, sPath):
     nReagent = int(sPath[nIndex:])
     return gReagents[nReagent - 1]
 
-def HandlePost(sRemoteUser, sPath, pBody):
+def HandlePost(nState, sRemoteUser, sPath, pBody):
     if sPath == "/HOME":
-        return HandlePostHome(sRemoteUser, pBody)
+        return HandlePostHome(nState, sRemoteUser, pBody)
     elif sPath == "/SELECT":
-        return HandlePostSelect(sRemoteUser, pBody)
+        return HandlePostSelect(nState, sRemoteUser, pBody)
     elif sPath == "/VIEW":
-        return HandlePostView(sRemoteUser, pBody)
+        return HandlePostView(nState, sRemoteUser, pBody)
+    elif sPath == "/PROMPT":
+        return HandlePostPrompt(nState, sRemoteUser, pBody)
     else:
         raise Exception("Unknown path: " + sPath)
 
-def HandlePostHome(sRemoteUser, pBody):
+def HandlePostHome(nState, sRemoteUser, pBody):
     # Make sure we are on the home page
-    global gState
-    if gState != STATE_HOME:
+    if nState != STATE_HOME:
         raise Exception("State misalignment");
 
     # Parse the JSON string in the body
@@ -590,22 +759,22 @@ def HandlePostHome(sRemoteUser, pBody):
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "CREATE":
             # Update our state and return it to the client
-            gState = STATE_SELECT_SAVEDSEQUENCES
-            return HandleGet(sRemoteUser, "/state")
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUAL":
             # Do nothing but return the state to the client
-            return HandleGet(sRemoteUser, "/state")
+            return HandleGet(nState, sRemoteUser, "/state")
         elif sActionTargetID == "OBSERVE":
             # Do nothing but return the state to the client
-            return HandleGet(sRemoteUser, "/state")
+            return HandleGet(nState, sRemoteUser, "/state")
 
     # Unhandled use case
     raise Exception("State misalignment")
 
-def HandlePostSelect(sRemoteUser, pBody):
+def HandlePostSelect(nState, sRemoteUser, pBody):
     # Make sure we are on the select page
-    global gState
-    if (gState != STATE_SELECT_SAVEDSEQUENCES) and (gState != STATE_SELECT_MANUALRUNS):
+    if (nState != STATE_SELECT_SAVEDSEQUENCES) and (nState != STATE_SELECT_MANUALRUNS):
         raise Exception("State misalignment");
 
     # Parse the JSON string in the body
@@ -618,34 +787,51 @@ def HandlePostSelect(sRemoteUser, pBody):
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "VIEW":
             # Update our state and return it to the client
-            gState = STATE_VIEW
-            return HandleGet(sRemoteUser, "/state")
-        if sActionTargetID == "BACK":
+            nState = STATE_VIEW
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        elif sActionTargetID == "BACK":
             # Update our state and return it to the client
-            gState = STATE_HOME
-            return HandleGet(sRemoteUser, "/state")
+            nState = STATE_HOME
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        elif sActionTargetID == "CREATE":
+            # Update our state and return it to the client
+            nState = STATE_PROMPT_CREATESEQUENCE
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        elif sActionTargetID == "COPY":
+            # Update our state and return it to the client
+            nState = STATE_PROMPT_COPYSEQUENCE
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        elif sActionTargetID == "DELETE":
+            # Update our state and return it to the client
+            nState = STATE_PROMPT_DELETESEQUENCE
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
         else:
             # Do nothing but return the state to the client
-            return HandleGet(sRemoteUser, "/state")
+            return HandleGet(nState, sRemoteUser, "/state")
     elif sActionType == "TABCLICK":
         if sActionTargetID == "SAVEDSEQUENCES":
             # Update our state and return it to the client
-            gState = STATE_SELECT_SAVEDSEQUENCES
-            return HandleGet(sRemoteUser, "/state")
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUALRUNS":
             # Update our state and return it to the client
-            gState = STATE_SELECT_MANUALRUNS
-            return HandleGet(sRemoteUser, "/state")
+            nState = STATE_SELECT_MANUALRUNS
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
 
     # Unhandled use case
     raise Exception("State misalignment")
 
-def HandlePostView(sRemoteUser, pBody):
+def HandlePostView(nState, sRemoteUser, pBody):
     # Make sure we are on the view page
-    global gState
     global gSequence
-    global gComponentID
-    if gState != STATE_VIEW:
+    if nState != STATE_VIEW:
         raise Exception("State misalignment")
 
     # Parse the JSON string in the body
@@ -657,26 +843,107 @@ def HandlePostView(sRemoteUser, pBody):
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "BACK":
             # Update our state and return it to the client
-            gState = STATE_SELECT_SAVEDSEQUENCES
-            return HandleGet(sRemoteUser, "/state")
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        elif sActionTargetID == "PREVIOUS":
+            # Move to the previous component ID
+            sCurrentComponentID = LoadComponentID()
+            sPreviousComponentID = -1
+            for pComponent in gSequence:
+                if pComponent["id"] == str(sCurrentComponentID):
+                    if sPreviousComponentID != -1:
+                        SaveComponentID(sPreviousComponentID)
+                    return HandleGet(nState, sRemoteUser, "/state")
+                else:
+                    sPreviousComponentID = pComponent["id"]
+            raise Exception("Component ID not found in sequence")
+        elif sActionTargetID == "NEXT":
+            # Move to the next component ID
+            sCurrentComponentID = LoadComponentID()
+            bComponentIDFound = False
+            for pComponent in gSequence:
+                if bComponentIDFound:
+                    SaveComponentID(pComponent["id"])
+                    return HandleGet(nState, sRemoteUser, "/state")
+                elif pComponent["id"] == str(sCurrentComponentID):
+                    bComponentIDFound = True
+            if bComponentIDFound:
+                return HandleGet(nState, sRemoteUser, "/state")
+            raise Exception("Component ID not found in sequence")
         else:
             # Check if the target ID corresponds to one of our sequence components
             for pComponent in gSequence:
                 if pComponent["id"] == sActionTargetID:
                     # Update the current component and return the latest state to the client
-                    gComponentID = pComponent["id"]
-                    return HandleGet(sRemoteUser, "/state")
+                    SaveComponentID(pComponent["id"])
+                    return HandleGet(nState, sRemoteUser, "/state")
+
+    # Unhandled use case
+    raise Exception("State misalignment")
+
+def HandlePostPrompt(nState, sRemoteUser, pBody):
+    # Parse the JSON string in the body
+    pJSON = json.loads(pBody)
+
+    # Extract the post parameters
+    sActionType = str(pJSON["action"]["type"])
+    sActionTargetID = str(pJSON["action"]["targetid"])
+    sEdit1 = str(pJSON["edit1"])
+    sEdit2 = str(pJSON["edit2"])
+
+    # The only recognized action from a prompt is a button click
+    if sActionType != "BUTTONCLICK":
+        raise Exception("State misalignment")
+
+    # Interpret the response in context of the client state
+    nState = LoadState()
+    if nState == STATE_PROMPT_CREATESEQUENCE:
+        if sActionTargetID == "CREATE":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        if sActionTargetID == "CANCEL":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+    elif nState == STATE_PROMPT_COPYSEQUENCE:
+        if sActionTargetID == "COPY":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        if sActionTargetID == "CANCEL":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+    elif nState == STATE_PROMPT_DELETESEQUENCE:
+        if sActionTargetID == "DELETE":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
+        if sActionTargetID == "CANCEL":
+            # Update our state and return it to the client
+            nState = STATE_SELECT_SAVEDSEQUENCES
+            SaveState(nState)
+            return HandleGet(nState, sRemoteUser, "/state")
 
     # Unhandled use case
     raise Exception("State misalignment")
 
 # Handle DELETE requests
-def HandleDelete(sRemoteUser, sPath):
+def HandleDelete(nState, sRemoteUser, sPath):
     return "DELETE"
 
 # Main WSGI application entry point
 def application(pEnvironment, fStartResponse):
-    gStateMutex.acquire()
+    # Lock and load the state
+    LockState()
+    nState = LoadState()
 
     # Extract important input variables
     if pEnvironment.has_key("REMOTE_USER"):
@@ -689,17 +956,20 @@ def application(pEnvironment, fStartResponse):
         # Debugging hack: trim off any leading "/Elixys" string
         sPath = sPath[7:]
 
+    # Log the request
+    Log("Received " + sRequestMethod + " request for " + sPath + " (state = " + StateString(nState) + ")");
+
     # Handle the request
     try:
         # Call the appropriate handler
         if sRequestMethod == "GET":
-            sResponse = HandleGet(sRemoteUser, sPath)
+            sResponse = HandleGet(nState, sRemoteUser, sPath)
         elif sRequestMethod == "POST":
             pBodyLength = int(pEnvironment["CONTENT_LENGTH"])
             pBody = pEnvironment["wsgi.input"].read(pBodyLength)
-            sResponse = HandlePost(sRemoteUser, sPath, pBody)
+            sResponse = HandlePost(nState, sRemoteUser, sPath, pBody)
         elif sRequestMethod == "DELETE":
-            sResponse = HandleDelete(sRemoteUser, sPath)
+            sResponse = HandleDelete(nState, sRemoteUser, sPath)
         else:
             raise Exception("Unknown request method")
     except Exception as ex:
@@ -711,7 +981,8 @@ def application(pEnvironment, fStartResponse):
     sResponseJSON = json.dumps(sResponse)
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
 
-    gStateMutex.release()
+    # Unlock the state
+    UnlockState()
 
     # Send the response
     fStartResponse(sStatus, pHeaders)

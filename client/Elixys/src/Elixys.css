@@ -19,3 +19,11 @@
 	font-size: 22px;
 	color: #353535;
 }
+
+.popup
+{
+	background-color: #ffffff;
+	modal-transparency: 0.65;
+	modal-transparency-color: #000000;
+	modal-transparency-blur: 0;
+}

@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		   xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete();" width="100%" height="100%">
+		   xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Style source="Elixys.css" />
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.*;
 			import Elixys.HTTP.*;
 			import Elixys.Objects.*;
-			
+						
 			import mx.controls.Alert;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
 
 			/***
 			 *** Initialization functions
@@ -18,6 +20,7 @@
 			private function OnCreationComplete():void
 			{
 				// Add event listeners
+				addEventListener(ResizeEvent.RESIZE, OnResize);
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
@@ -59,6 +62,29 @@
 			
 			private function UpdateState(pState:State):void
 			{
+				// Handle the pop up window first
+				if (pState.ClientState() == StatePrompt.TYPE)
+				{
+					// Create and display the pop up window
+					if (_viewPrompt == null)
+					{
+						_viewPrompt = new PromptView();
+						_viewPrompt.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						PopUpManager.addPopUp(_viewPrompt, this, true);
+					}
+
+					// Update the pop up state
+					_viewPrompt.UpdateState(pState);
+					PopUpManager.centerPopUp(_viewPrompt);
+					return;
+				}
+				else if (_viewPrompt != null)
+				{
+					// Remove the pop up window
+					PopUpManager.removePopUp(_viewPrompt);
+					_viewPrompt = null;
+				}
+				
 				// Show and update the appropriate state
 				switch (pState.ClientState())
 				{
@@ -78,13 +104,34 @@
 						var pStateView:StateView = new StateView(null, pState);
 						_viewStack.selectedChild = _viewView;
 						_viewView.UpdateState(pStateView);
+						break;
+
+					case StatePrompt.TYPE:
+						var pStatePrompt:StatePrompt = new StatePrompt(null, pState);
+						_viewStack.selectedChild = _viewPrompt;
+						_viewPrompt.UpdateState(pStatePrompt);
+						break;
+						
+					default:
+						Alert.show("Unknown client state received from server: " + pState.ClientState());
+						break;
 				}
 			}
 			
 			/***
 			 *** Callback functions
 			 **/
-			
+
+			// Called when the application resizes
+			private function OnResize(event:ResizeEvent):void
+			{
+				// Center the pop up window if one exists
+				if (_viewPrompt != null)
+				{
+					PopUpManager.centerPopUp(_viewPrompt);
+				}
+			}
+
 			// Called when another object wants to communicate over the HTTP connection
 			private function OnHTTPRequestEvent(event:HTTPRequestEvent):void
 			{
@@ -186,6 +233,9 @@
 			
 			// Server configuration
 			private var m_pServerConfiguration:Configuration;
+
+			// Prompt pop up window
+			private var _viewPrompt:PromptView;
 		]]>
 	</fx:Script>
 	
