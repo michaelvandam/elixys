@@ -48,8 +48,20 @@ echo "/sbin/service mysqld start" >> /etc/rc.local
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
+mkdir /var/www/adobepolicyfile
 mkdir /var/www/http
 mkdir /var/www/wsgi
+
+# Install the Adobe policy module and file
+cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
+
+chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so
+
+
+
+/usr/sbin/semanage port -a -t http_port_t -p tcp 843
+
+cp elixys/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
 
 # Allow Apache to save the server state to files in the WSGI directory.  This is temporary and will go away once we get the
 # WSGI interface integrated with MySQL
