@@ -7,7 +7,7 @@
 			import Elixys.Events.*;
 			import Elixys.HTTP.*;
 			import Elixys.Objects.*;
-						
+			
 			import mx.controls.Alert;
 			import mx.events.ResizeEvent;
 			import mx.managers.PopUpManager;
@@ -24,11 +24,17 @@
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+
+				// Set our connection to the AIR player
+				SetAIRConnection(m_sAIRConnection);
 			}
 
 			// Step 1: This function is called by the container to set the server
-			public function Init1_SetServer(sServer:String, sCredentials:String):void
+			public function Init1_SetServer(sAIRConnection:String, sServer:String, sCredentials:String):void
 			{
+				// Set our connection to the AIR player
+				SetAIRConnection(sAIRConnection);
+				
 				// Create the HTTP connection pool
 				m_pHTTPConnectionPool = new HTTPConnectionPool(sServer, 80, 5);
 				m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
@@ -49,17 +55,34 @@
 				
 				// Load the current state
 				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
-				
+
 				// Start the state timer
-				var pTimer:Timer = new Timer(1000);
-				pTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
-				pTimer.start();
+				m_pStateTimer = new Timer(1000);
+				m_pStateTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
+				m_pStateTimer.start();
 			}
 
 			/***
 			 *** Member functions
 			 **/
 			
+			// Set our connection to the AIR player
+			private function SetAIRConnection(sAIRConnection:String):void
+			{
+				// Remember the connection to the AIR player
+				m_sAIRConnection = sAIRConnection;
+				
+				// Do we have both a connection and a home view?
+				if ((m_sAIRConnection != "") && (_viewHome != null))
+				{
+					// Yes, so create the local connection and tell the home view to display the logout button
+					m_pAIRConnection = new LocalConnection();
+					_viewHome.DisplayLogout(true);
+					_viewHome.addEventListener(LogoutEvent.LOGOUT, OnLogoutEvent);
+				}
+			}
+			
+
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
@@ -89,27 +112,18 @@
 				switch (pState.ClientState())
 				{
 					case StateHome.TYPE:
-						var pStateHome:StateHome = new StateHome(null, pState);
 						_viewStack.selectedChild = _viewHome;
-						_viewHome.UpdateState(pStateHome);
+						_viewHome.UpdateState(pState);
 						break;
 					
 					case StateSelect.TYPE:
-						var pStateSelect:StateSelect = new StateSelect(null, pState);
 						_viewStack.selectedChild = _viewSelect;
-						_viewSelect.UpdateState(pStateSelect);
+						_viewSelect.UpdateState(pState);
 						break;
 					
 					case StateView.TYPE:
-						var pStateView:StateView = new StateView(null, pState);
 						_viewStack.selectedChild = _viewView;
-						_viewView.UpdateState(pStateView);
-						break;
-
-					case StatePrompt.TYPE:
-						var pStatePrompt:StatePrompt = new StatePrompt(null, pState);
-						_viewStack.selectedChild = _viewPrompt;
-						_viewPrompt.UpdateState(pStatePrompt);
+						_viewView.UpdateState(pState);
 						break;
 						
 					default:
@@ -218,7 +232,8 @@
 			// Called when an exception occurs in a child
 			public function OnChildExceptionEvent(event:ExceptionEvent):void
 			{
-				Alert.show("Error: " + event.exception);
+				// Send a log out event to the host
+				OnLogoutEvent(new LogoutEvent(event.exception));
 			}
 
 			// Called at regular intervals to update the state
@@ -227,10 +242,50 @@
 				// Load the current state
 				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 			}
+			
+			// Called when the user logs out
+			private function OnLogoutEvent(event:LogoutEvent):void
+			{
+				// Make sure we are logged in
+				if (m_pHTTPConnectionPool != null)
+				{
+					// Do we have a connection to the AIR player?
+					if ((m_pAIRConnection != null) && (m_sAIRConnection != ""))
+					{
+						// Yes, so send the log out notification and any error message
+						m_pAIRConnection.send(m_sAIRConnection, "OnLogoutEvent", event.error);
+					}
+					else
+					{
+						// No, so display any error message
+						if (event.error != "")
+						{
+							Alert.show(event.error, "Error");
+						}
+					}
+					
+					// Stop the state timer
+					if (m_pStateTimer != null)
+					{
+						m_pStateTimer.stop();
+					}
+					
+					// Clean up the connection pool
+					m_pHTTPConnectionPool.DropAllConnections();
+					m_pHTTPConnectionPool = null;
+				}
+			}
 
+			// Local connection to the AIR player
+			private var m_sAIRConnection:String = "";
+			private var m_pAIRConnection:LocalConnection;
+			
 			// HTTP connection pool to the server
 			private var m_pHTTPConnectionPool:HTTPConnectionPool;
-			
+
+			// State update timer
+			private var m_pStateTimer:Timer;
+
 			// Server configuration
 			private var m_pServerConfiguration:Configuration;
 
@@ -239,7 +294,7 @@
 		]]>
 	</fx:Script>
 	
-	<mx:ViewStack id="_viewStack" width="100%" height="100%">
+	<mx:ViewStack id="_viewStack" creationPolicy="all" width="100%" height="100%">
 		<Views:HomeView id="_viewHome" width="100%" height="100%" />
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
 		<Views:ViewView id="_viewView" width="100%" height="100%" />

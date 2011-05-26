@@ -103,6 +103,19 @@ package Elixys.HTTP
 			// Everyone is busy.  Store the request in our array so we can send it later
 			m_pHTTPRequestQueue.addItem(pHTTPRequest);
 		}
+		
+		// Drops all open connections to the server
+		public function DropAllConnections():void
+		{
+			// Drop each connection
+			var pHTTPConnection:HTTPConnection, i:uint;
+			for (i = 0; i < m_pHTTPConnections.length; ++i)
+			{
+				pHTTPConnection = m_pHTTPConnections.getItemAt(i) as HTTPConnection;
+				pHTTPConnection.DropConnection();
+			}
+			m_pHTTPConnections.removeAll();
+		}
 	
 		// Called by our connections when the complete a request
 		public function OnConnectionAvailable(pHTTPConnection:HTTPConnection):void

@@ -3,18 +3,24 @@
 		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600" xmlns:Views="Elixys.Views.*">
 	<fx:Script>
 		<![CDATA[
+			import mx.controls.Alert;
 			import mx.utils.URLUtil;
 
-			// Called when the application has been loaded and determines startup information
+			// Called when the application has been loaded to parse startup information
 			private function OnApplicationComplete():void
 			{
-				// These are the two variables we want to fill
+				// These variables describe our connection to the AIR player and server
+				var sAIRConnection:String = "";
 				var sServer:String = "";
 				var sCredentials:String = "";
 				
 				// Look in the SWF URL parameters.
 				if (loaderInfo != null)
 				{
+					if (loaderInfo.parameters["airconnection"] != null)
+					{
+						sAIRConnection = loaderInfo.parameters["airconnection"];
+					}
 					if (loaderInfo.parameters["server"] != null)
 					{
 						sServer = loaderInfo.parameters["server"];
@@ -37,22 +43,24 @@
 					}
 				}
 				
+//				sServer = "192.168.1.108";
+				
 				// Hack: hardcode the authentication parameter until we get the server redirect working
 				if ((sServer != "") && (sCredentials == ""))
 				{
 					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
 				}
 				
-				// Do we have both of the variables we need?
+				Alert.show("Server = " + sServer + ", credentials = " + sCredentials);
+				
+				// Pass the parameters to the main window
 				if ((sServer != "") && (sCredentials != ""))
 				{
-					// Yes, so use them
-					_elixys.Init1_SetServer(sServer, sCredentials);
+					_elixys.Init1_SetServer(sAIRConnection, sServer, sCredentials);
 				}
 				else
 				{
-					// No, so use localhost
-					_elixys.Init1_SetServer("127.0.0.1", "");
+					Alert.show("Missing server connection parameters");
 				}
 			}
 		]]>

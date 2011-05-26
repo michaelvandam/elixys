@@ -22,7 +22,7 @@
 			public override function UpdateState(pState:State):void
 			{
 				// Update our tab array with the server data
-				var pStateSelect:StateSelect = pState as StateSelect;
+				var pStateSelect:StateSelect = new StateSelect(null, pState);
 				UpdateTabs(_tabNavigator, pStateSelect.Tabs(), CreateNewTab, pStateSelect.TabID());
 				function CreateNewTab():SelectViewTab
 				{
