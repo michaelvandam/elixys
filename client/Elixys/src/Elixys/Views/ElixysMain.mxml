@@ -86,7 +86,7 @@
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
-				if (pState.ClientState() == StatePrompt.TYPE)
+				if (StatePrompt.CheckState(pState.ClientState()))
 				{
 					// Create and display the pop up window
 					if (_viewPrompt == null)
@@ -109,26 +109,24 @@
 				}
 				
 				// Show and update the appropriate state
-				switch (pState.ClientState())
+				if (StateHome.CheckState(pState.ClientState()))
 				{
-					case StateHome.TYPE:
-						_viewStack.selectedChild = _viewHome;
-						_viewHome.UpdateState(pState);
-						break;
-					
-					case StateSelect.TYPE:
-						_viewStack.selectedChild = _viewSelect;
-						_viewSelect.UpdateState(pState);
-						break;
-					
-					case StateView.TYPE:
-						_viewStack.selectedChild = _viewView;
-						_viewView.UpdateState(pState);
-						break;
-						
-					default:
-						Alert.show("Unknown client state received from server: " + pState.ClientState());
-						break;
+					_viewStack.selectedChild = _viewHome;
+					_viewHome.UpdateState(pState);
+				}
+				else if (StateSelect.CheckState(pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewSelect;
+					_viewSelect.UpdateState(pState);
+				}
+				else if (StateView.CheckState(pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewView;
+					_viewView.UpdateState(pState);
+				}
+				else
+				{
+					Alert.show("Unknown client state received from server: " + pState.ClientState());
 				}
 			}
 			

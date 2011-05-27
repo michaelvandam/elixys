@@ -42,17 +42,13 @@
 						}
 					}
 				}
-				
-//				sServer = "192.168.1.108";
-				
+								
 				// Hack: hardcode the authentication parameter until we get the server redirect working
 				if ((sServer != "") && (sCredentials == ""))
 				{
 					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
 				}
-				
-				Alert.show("Server = " + sServer + ", credentials = " + sCredentials);
-				
+								
 				// Pass the parameters to the main window
 				if ((sServer != "") && (sCredentials != ""))
 				{

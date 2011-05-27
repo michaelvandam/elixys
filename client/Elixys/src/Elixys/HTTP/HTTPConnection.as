@@ -371,12 +371,12 @@ package Elixys.HTTP
 		// Called when a socket IO or security error occurs
 		private function OnSocketIOErrorEvent(event:IOErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed - IO error event - " + event.text);
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}		
 		private function OnSocketSecurityErrorEvent(event:SecurityErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed - security event - " + event.text);
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}
 
