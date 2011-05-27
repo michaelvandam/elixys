@@ -20,7 +20,7 @@ package Elixys.Objects
 		// Checks for a state match
 		static public function CheckState(sState:String):Boolean
 		{
-			return (sState == TYPE);
+			return (sState.substring(0, TYPE.length) == TYPE);
 		}
 
 		// Data wrappers

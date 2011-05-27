@@ -9,18 +9,13 @@
 			// Called when the application has been loaded to parse startup information
 			private function OnApplicationComplete():void
 			{
-				// These variables describe our connection to the AIR player and server
-				var sAIRConnection:String = "";
+				// These variables describe our connection to the server
 				var sServer:String = "";
 				var sCredentials:String = "";
 				
 				// Look in the SWF URL parameters.
 				if (loaderInfo != null)
 				{
-					if (loaderInfo.parameters["airconnection"] != null)
-					{
-						sAIRConnection = loaderInfo.parameters["airconnection"];
-					}
 					if (loaderInfo.parameters["server"] != null)
 					{
 						sServer = loaderInfo.parameters["server"];
@@ -52,7 +47,7 @@
 				// Pass the parameters to the main window
 				if ((sServer != "") && (sCredentials != ""))
 				{
-					_elixys.Init1_SetServer(sAIRConnection, sServer, sCredentials);
+					_elixys.Init1_SetServer(sServer, sCredentials);
 				}
 				else
 				{

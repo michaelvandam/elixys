@@ -125,7 +125,7 @@ def GetDefaultSequenceComponents():
 # Dummy sequence reagents
 def GetDefaultSequenceReagents():
     return [{"available":True,
-        "reagentid":1
+        "reagentid":1,
         "componentid":1,
         "position":"1",
         "name":"F-18",
@@ -167,7 +167,7 @@ def GetDefaultSequenceReagents():
         "name":"HBr",
         "description":"Hydrobromic acid"},
         {"available":False,
-        "reagentid":8
+        "reagentid":8,
         "componentid":1,
         "position":"8",
         "name":"",

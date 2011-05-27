@@ -24,14 +24,14 @@ package Elixys.Objects
 		/// Copy
 		public function Copy(pSourceReagent:Reagent):void
 		{
-			Used = pSourceReagent.Used;
+			Available = pSourceReagent.Available;
 			ComponentID = pSourceReagent.ComponentID;
 			Position = pSourceReagent.Position;
 			Name = pSourceReagent.Name;
 			NameError = pSourceReagent.NameError;
 			Description = pSourceReagent.Description;
 			DescriptionError = pSourceReagent.DescriptionError;
-			ID = pSourceReagent.ID;
+			ReagentID = pSourceReagent.ReagentID;
 		}
 		
 		// Data wrappers
@@ -44,13 +44,13 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("type", value);
 		}
 		
-		public function get Used():Boolean
+		public function get Available():Boolean
 		{
-			return (super.flash_proxy::getProperty("used") == "true");
+			return super.flash_proxy::getProperty("available");
 		}
-		public function set Used(value:Boolean):void
+		public function set Available(value:Boolean):void
 		{
-			super.flash_proxy::setProperty("used", value ? "true" : "false");
+			super.flash_proxy::setProperty("available", value);
 		}
 
 		public function get ComponentID():String
@@ -107,20 +107,20 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("descriptionerror", value);
 		}
 
-		public function get ID():String
+		public function get ReagentID():uint
 		{
-			return super.flash_proxy::getProperty("id");
+			return super.flash_proxy::getProperty("reagentid");
 		}
-		public function set ID(value:String):void
+		public function set ReagentID(value:uint):void
 		{
-			super.flash_proxy::setProperty("id", value);
+			super.flash_proxy::setProperty("reagentid", value);
 		}
 
 		// Type
 		static public var TYPE:String = "reagent";
 		
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"reagent\", \"used\":\"\", \"componentid\":\"\", \"position\":\"\", " +
-			"\"name\":\"\", \"nameerror\":\"\", \"description\":\"\", \"descriptionerror\":\"\", \"id\":\"\" }";
+		private var m_sDefault:String = "{ \"type\":\"reagent\", \"available\":false, \"componentid\":0, \"position\":\"\", " +
+			"\"name\":\"\", \"nameerror\":\"\", \"description\":\"\", \"descriptionerror\":\"\", \"reagentid\":0 }";
 	}
 }

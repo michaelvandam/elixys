@@ -24,28 +24,45 @@
 			 * Member functions
 			 ***/
 			
+			// Called by the SWF when the user logs out
+			public function LogOut(sError:String):void
+			{
+				// Make sure we're logged in
+				if (m_pHTTPConnectionPool != null)
+				{
+					// Clean up the connection pool
+					m_pHTTPConnectionPool.DropAllConnections();
+					m_pHTTPConnectionPool = null;
+					
+					// Remove the SWF
+					_viewApplication.removeAllChildren();
+					if (m_bDynamicSWF)
+					{
+						var pSWFLoader:SWFLoader = m_pSWF as SWFLoader;
+						pSWFLoader.unloadAndStop();
+					}
+					m_pSWF = null;
+					
+					// Show the login screen
+					this.selectedChild = _viewLogin;
+					
+					// Display a message if we received an error string
+					if (sError != "")
+					{
+						Alert.show(sError, "Connection to server lost");
+					}
+				}
+			}
+
+			/***
+			 * Message handlers
+			 **/
+			
 			// Called when the application is created
-			public function OnCreationComplete():void
+			private function OnCreationComplete():void
 			{
 				// Add event listeners
 				addEventListener(ResizeEvent.RESIZE, OnResizeEvent);
-				
-				// Create a random name for the local connection
-				m_sAIRConnection = "";
-				var sAlphabet:String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-				var pAlphabetArray:Array = sAlphabet.split("");
-				for (var i:uint = 0; i < 10; i++)
-				{
-					m_sAIRConnection += pAlphabetArray[Math.floor(Math.random() * sAlphabet.length)];
-				}
-				
-				// Set up a local connection to receive log out messages from the SWF
-				m_pAIRConnection = new LocalConnection();
-				var pClient:Object = new Object(); 
-				pClient.OnLogoutEvent = OnLogoutEvent;
-				m_pAIRConnection.client = pClient;
-				m_pAIRConnection.allowDomain("*");
-				m_pAIRConnection.connect(m_sAIRConnection);
 			}
 
 			// Called when the user clicks "Connect"
@@ -119,7 +136,6 @@
 					pSWFLoader.loaderContext.allowCodeImport = true;
 					pSWFLoader.loaderContext.parameters =
 						{
-							"airconnection": m_sAIRConnection,
 							"server": _server.text,
 							"credentials": m_pHTTPConnectionPool.GetCredentials()
 						};
@@ -130,7 +146,7 @@
 				{
 					// Create an instance of the static SWF
 					var pElixysSWF:ElixysMain = new ElixysMain();
-					pElixysSWF.Init1_SetServer(m_sAIRConnection, _server.text, m_pHTTPConnectionPool.GetCredentials());
+					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnectionPool.GetCredentials());
 					pElixysSWF.percentWidth = 100;
 					pElixysSWF.percentHeight = 100;
 					m_pSWF = pElixysSWF;
@@ -217,36 +233,6 @@
 					PopUpManager.centerPopUp(m_pLoaderPopUp);
 				}
 			}
-			
-			// Called via the local connection when the user logs out
-			private function OnLogoutEvent(sError:String):void
-			{
-				// Make sure we're logged in
-				if (m_pHTTPConnectionPool != null)
-				{
-					// Clean up the connection pool
-					m_pHTTPConnectionPool.DropAllConnections();
-					m_pHTTPConnectionPool = null;
-					
-					// Remove the SWF
-					_viewApplication.removeAllChildren();
-					if (m_bDynamicSWF)
-					{
-						var pSWFLoader:SWFLoader = m_pSWF as SWFLoader;
-						pSWFLoader.unloadAndStop();
-					}
-					m_pSWF = null;
-					
-					// Show the login screen
-					this.selectedChild = _viewLogin;
-	
-					// Display a message if we received an error string
-					if (sError != "")
-					{
-						Alert.show(sError, "Connection to server lost");
-					}
-				}
-			}
 
 			/*** 
 			 *** Data members
@@ -260,10 +246,6 @@
 
 			// Flag to used to skip authentication when communicating with WSGI directly rather than Apache
 			public var m_bDebug:Boolean = false;
-
-			// Local connection between the AIR player and the SWF
-			private var m_sAIRConnection:String;
-			private var m_pAIRConnection:LocalConnection;
 			
 			// HTTP connection pool to the server
 			private var m_pHTTPConnectionPool:HTTPConnectionPool;
@@ -285,7 +267,7 @@
 					<s:Label text="Password" verticalAlign="middle" styleName="label" height="40" />
 				</s:VGroup>
 				<s:VGroup gap="15" width="100%">
-					<s:TextArea id="_server" text="10.47.221.176" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_server" text="ec2-75-101-168-62.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 				</s:VGroup>

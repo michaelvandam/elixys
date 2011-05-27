@@ -32,11 +32,11 @@
 			public override function UpdateStateReagent(pReagent:Reagent):void
 			{
 				// Remember the reagent or target
-				if (pReagent.ID == m_pComponentElute.Reagent)
+				if (pReagent.ReagentID == m_pComponentElute.Reagent)
 				{
 					m_pReagent = pReagent;
 				}
-				else if (pReagent.ID == m_pComponentElute.Target)
+				else if (pReagent.ReagentID == m_pComponentElute.Target)
 				{
 					m_pTarget = pReagent;
 				}

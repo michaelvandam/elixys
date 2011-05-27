@@ -14,7 +14,7 @@
 			{
 				// Configure the view
 				m_pComponentCassette = new ComponentCassette(null, pComponent);
-				if (m_pComponentCassette.Used)
+				if (m_pComponentCassette.Available)
 				{
 					// Set visibility
 					_cassetteDisabled.visible = false;
@@ -49,7 +49,7 @@
 						}
 						
 						// Remember the reagent ID
-						pReagent.ID = m_pComponentCassette.Reagents[nReagent];
+						pReagent.ReagentID = m_pComponentCassette.Reagents[nReagent];
 					}
 					
 					// Remove any extra reagents
@@ -87,7 +87,7 @@
 				for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
 				{
 					var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
-					if (pClientReagent.ID == pReagent.ID)
+					if (pClientReagent.ReagentID == pReagent.ReagentID)
 					{
 						// Found it
 						break;
@@ -101,7 +101,7 @@
 				
 				// Update the corresponding reagent
 				pClientReagent.Copy(pReagent);
-				if (!pReagent.Used)
+				if (!pReagent.Available)
 				{
 					pClientReagent.Name = "Not used";
 					pClientReagent.Description = "Not used";
