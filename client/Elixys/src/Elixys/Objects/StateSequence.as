@@ -2,25 +2,28 @@ package Elixys.Objects
 {
 	import flash.utils.flash_proxy;
 	
-	public class StateView extends State
+	public class StateSequence extends State
 	{
 		// Constructor
-		public function StateView(data:String, existingcontent:Object = null)
+		public function StateSequence(sType:String, data:String, existingcontent:Object = null)
 		{
+			// Rmember our type
+			m_sType = sType;
+			
 			// Call the base constructor
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState() != null) && !CheckState(ClientState()))
+			if ((ClientState() != null) && !CheckState(m_sType, ClientState()))
 			{
 				throw new Error("State object mismatch");
 			}
 		}
 		
 		// Checks for a state match
-		static public function CheckState(sState:String):Boolean
+		static public function CheckState(sType:String, sState:String):Boolean
 		{
-			return (sState.substr(0, TYPE.length) == TYPE);
+			return (sState.substr(0, sType.length) == sType);
 		}
 
 		// Data wrappers
@@ -39,19 +42,22 @@ package Elixys.Objects
 			}
 			return m_pButtons;
 		}
-		public function SequenceID():String
+		public function SequenceID():uint
 		{
-			return super.flash_proxy::getProperty("sequenceid");
+			return parseInt(super.flash_proxy::getProperty("sequenceid"));
 		}
-		public function ComponentID():String
+		public function ComponentID():uint
 		{
-			return super.flash_proxy::getProperty("componentid");
+			return parseInt(super.flash_proxy::getProperty("componentid"));
 		}
 		
-		// Type
-		static public var TYPE:String = "VIEW";
+		// Types
+		static public var VIEWTYPE:String = "VIEW";
+		static public var EDITTYPE:String = "EDIT";
+		static public var RUNTYPE:String = "RUN";
 		
 		// State components
+		private var m_sType:String;
 		private var m_pButtons:Array;
 	}
 }

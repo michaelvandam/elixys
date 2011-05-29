@@ -17,8 +17,14 @@
 			// Update state
 			public override function UpdateState(pState:State):void
 			{
+				// Pass if we haven't finished initialization
+				if (m_pOnButtonClick == null)
+				{
+					return;
+				}
+				
 				// Update the sequence state
-				var pStateSequence:StateSequence = new StateSequence(StateSequence.VIEWTYPE, null, pState);
+				var pStateSequence:StateSequence = new StateSequence(StateSequence.EDITTYPE, null, pState);
 				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
 
 				// Request the sequence from the server
@@ -89,9 +95,9 @@
 				// Create a POST request
 				var pPostSequence:PostSequence = new PostSequence();
 				pPostSequence.TargetID((event.target as spark.components.Button).id);
-			
+				
 				// Pass the request to the server
-				DoPost(pPostSequence, "VIEW");
+				DoPost(pPostSequence, "EDIT");
 			}
 
 		]]>

@@ -6,16 +6,15 @@
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
-			import Elixys.Objects.ComponentReact;
+			import Elixys.Objects.ComponentActivity;
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
-				var pComponentReact:ComponentReact = new ComponentReact(null, pComponent);
-				_outputText.text = "React reactor " + pComponentReact.Reactor + ", position " + pComponentReact.Position+ " at " + 
-					pComponentReact.ReactionTemperature+ " C for " + pComponentReact.Duration + " and cool to " + 
-					pComponentReact.FinalTemperature + " C.  Stir at " + pComponentReact.StirSpeed + " rpm.";
+				// Format the output text
+				var pComponentActivity:ComponentActivity = new ComponentActivity(null, pComponent);
+				_outputText.text = "Read the radiation activity level of the vial in reactor " + pComponentActivity.Reactor + ".";
 			}
 		]]>
 	</fx:Script>

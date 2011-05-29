@@ -10,7 +10,7 @@
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
 				// Format the output text
 				var pComponentInstall:ComponentInstall = new ComponentInstall(null, pComponent);

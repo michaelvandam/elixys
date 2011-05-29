@@ -25,6 +25,7 @@
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewEdit.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 
 				// Tell the Home page to display the log out button if we are in the AIR player
 				if (FindLoaderMain() != null)
@@ -126,10 +127,15 @@
 					_viewStack.selectedChild = _viewSelect;
 					_viewSelect.UpdateState(pState);
 				}
-				else if (StateView.CheckState(pState.ClientState()))
+				else if (StateSequence.CheckState(StateSequence.VIEWTYPE, pState.ClientState()))
 				{
 					_viewStack.selectedChild = _viewView;
 					_viewView.UpdateState(pState);
+				}
+				else if (StateSequence.CheckState(StateSequence.EDITTYPE, pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewEdit;
+					_viewEdit.UpdateState(pState);
 				}
 				else
 				{
@@ -197,19 +203,19 @@
 					case (Sequence.TYPE):
 						// Update the active view
 						var pSequence:Sequence = new Sequence(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateSequence(pSequence);
+						(_viewStack.selectedChild as ViewBase).UpdateSequence(pSequence);
 						break;
 					
 					case (Component.TYPE):
 						// Update the active view
 						var pComponent:Component = new Component(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateComponent(pComponent);
+						(_viewStack.selectedChild as ViewBase).UpdateComponent(pComponent);
 						break;
 					
 					case (Reagent.TYPE):
 						// Update the active view
 						var pReagent:Reagent = new Reagent(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateReagent(pReagent);
+						(_viewStack.selectedChild as ViewBase).UpdateReagent(pReagent);
 						break;
 						
 					case (ServerError.TYPE):
@@ -300,5 +306,6 @@
 		<Views:HomeView id="_viewHome" width="100%" height="100%" />
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
 		<Views:ViewView id="_viewView" width="100%" height="100%" />
+		<Views:EditView id="_viewEdit" width="100%" height="100%" />
 	</mx:ViewStack>
 </mx:Canvas>

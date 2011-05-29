@@ -6,16 +6,16 @@
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
-			import Elixys.Objects.ComponentEvaporate;
+			import Elixys.Objects.ComponentReact;
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
-				var pComponentEvaporate:ComponentEvaporate = new ComponentEvaporate(null, pComponent);
-				_outputText.text = "Evaporate reactor " + pComponentEvaporate.Reactor + " at " + pComponentEvaporate.EvaporationTemperature +
-					" C for " + pComponentEvaporate.Duration + " and cool to " + pComponentEvaporate.FinalTemperature + " C.  Stir at " +
-					pComponentEvaporate.StirSpeed + " rpm.";
+				var pComponentReact:ComponentReact = new ComponentReact(null, pComponent);
+				_outputText.text = "React reactor " + pComponentReact.Reactor + ", position " + pComponentReact.Position+ " at " + 
+					pComponentReact.ReactionTemperature+ " C for " + pComponentReact.Duration + " and cool to " + 
+					pComponentReact.FinalTemperature + " C.  Stir at " + pComponentReact.StirSpeed + " rpm.";
 			}
 		]]>
 	</fx:Script>

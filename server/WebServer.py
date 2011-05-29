@@ -69,6 +69,8 @@ def HandleGetState(sClientState, sRemoteUser):
         pState.update(HandleGetStateSelectPromptDeleteSequence())
     elif sClientState.startswith("VIEW"):
         pState.update(HandleGetStateView(sClientState))
+    elif sClientState.startswith("EDIT"):
+        pState.update(HandleGetStateEdit(sClientState))
     else:
         raise Exception("Unknown state")
 
@@ -105,10 +107,7 @@ def HandleGetStateSelect():
             "id":"RUN"},
             {"type":"button",
             "text":"Copy",
-            "id":"COPY"},
-            {"type":"button",
-            "text":"Delete",
-            "id":"DELETE"}],
+            "id":"COPY"}],
         "navigationbuttons":[{"type":"button",
             "text":"Create",
             "id":"CREATE"},
@@ -121,6 +120,12 @@ def HandleGetStateSelectSavedSequences():
     global gElixys
     pState = HandleGetStateSelect()
     pState.update({"tabid":"SAVEDSEQUENCES"})
+    pState["optionbuttons"].append({"type":"button",
+        "text":"Edit",
+        "id":"EDIT"})
+    pState["optionbuttons"].append({"type":"button",
+        "text":"Delete",
+        "id":"DELETE"})
     pState.update({"sequences":gElixys.GetSequenceList("Saved")})
     return pState
 
@@ -210,6 +215,36 @@ def HandleGetStateView(sClientState):
         "sequenceid":nSequenceID,
         "componentid":nComponentID}
 
+# Handle GET /state for Edit Sequence
+def HandleGetStateEdit(sClientState):
+    # Split the state and extract the sequence ID
+    global gElixys
+    pClientStateComponents = sClientState.split(".")
+    nSequenceID = int(pClientStateComponents[1])
+
+    # Do we have a component ID?
+    if (len(pClientStateComponents) > 2):
+        # Yes, so extract it
+        nComponentID = int(pClientStateComponents[2])
+    else:
+        # No, the component ID is missing.  Get the sequence and the ID of the first component
+        pSequence = gElixys.GetSequence(nSequenceID)
+        nComponentID = pSequence["components"][0]["id"]
+
+        # Update our state
+        sClientState = "EDIT." + str(nSequenceID) + "." + str(nComponentID)
+        gElixys.SaveClientState(sClientState)
+
+    # Create the return object
+    return {"navigationbuttons":[{"type":"button",
+            "text":"Run",
+            "id":"RUN"},
+            {"type":"button",
+            "text":"Back",
+            "id":"BACK"}],
+        "sequenceid":nSequenceID,
+        "componentid":nComponentID}
+
 # Handle GET /sequence/[sequenceid]
 def HandleGetSequence(sPath):
     # Extract sequence ID
@@ -276,6 +311,8 @@ def HandlePost(sClientState, sRemoteUser, sPath, pBody):
         return HandlePostSelect(sClientState, sRemoteUser, pBody)
     elif sPath == "/VIEW":
         return HandlePostView(sClientState, sRemoteUser, pBody)
+    elif sPath == "/EDIT":
+        return HandlePostEdit(sClientState, sRemoteUser, pBody)
     elif sPath == "/PROMPT":
         return HandlePostPrompt(sClientState, sRemoteUser, pBody)
     else:
@@ -310,6 +347,7 @@ def HandlePostHome(sClientState, sRemoteUser, pBody):
     # Unhandled use case
     raise Exception("State misalignment")
 
+# Handle POST /SELECT
 def HandlePostSelect(sClientState, sRemoteUser, pBody):
     # Make sure we are on Select Sequence
     global gElixys
@@ -322,15 +360,17 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody):
     # Check which option the user selected
     sActionType = str(pJSON["action"]["type"])
     sActionTargetID = str(pJSON["action"]["targetid"])
-    sSequenceID = str(pJSON["sequenceid"])
+    nSequenceID = pJSON["sequenceid"]
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "VIEW":
             # Switch states to View Sequence
-            sClientState = "VIEW." + sSequenceID
+            sClientState = "VIEW." + str(nSequenceID)
             gElixys.SaveClientState(sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "EDIT":
-            # Ignore this button for now
+            # Switch states to Edit Sequence
+            sClientState = "EDIT." + str(nSequenceID)
+            gElixys.SaveClientState(sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "RUN":
             # Ignore this button for now
@@ -370,9 +410,9 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody):
     # Unhandled use case
     raise Exception("State misalignment")
 
+# Handle POST /VIEW
 def HandlePostView(sClientState, sRemoteUser, pBody):
     # Make sure we are on View Sequence
-    global gElixys
     if sClientState.startswith("VIEW") == False:
         raise Exception("State misalignment")
 
@@ -381,27 +421,80 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
     nSequenceID = int(pClientStateComponents[1])
     nComponentID = int(pClientStateComponents[2])
 
-    # Parse the JSON string in the body
+    # Parse the JSON string in the body and check extract the action type and target
     pJSON = json.loads(pBody)
-
-    # Check which option the user selected
     sActionType = str(pJSON["action"]["type"])
     sActionTargetID = str(pJSON["action"]["targetid"])
+
+    # Call the sequence POST handler first
+    sNewClientState = HandlePostSequence(sClientState, "VIEW", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    if sNewClientState != "":
+        # POST handled
+        return HandleGet(sNewClientState, sRemoteUser, "/state")
+
+    # Handle View Sequence specific requests
+    if sActionType == "BUTTONCLICK":
+        if sActionTargetID == "EDIT":
+            # Switch states to Edit Sequence
+            sClientState = "EDIT." + str(nSequenceID)
+            gElixys.SaveClientState(sClientState)
+            return HandleGet(sClientState, sRemoteUser, "/state")
+        elif sActionTargetID == "RUN":
+            # Ignore this button for now
+            return HandleGet(sClientState, sRemoteUser, "/state")
+
+    # Unhandled use case
+    raise Exception("State misalignment")
+
+# Handle POST /EDIT
+def HandlePostEdit(sClientState, sRemoteUser, pBody):
+    # Make sure we are on Edit Sequence
+    if sClientState.startswith("EDIT") == False:
+        raise Exception("State misalignment")
+
+    # Determine our sequence and component IDs
+    pClientStateComponents = sClientState.split(".")
+    nSequenceID = int(pClientStateComponents[1])
+    nComponentID = int(pClientStateComponents[2])
+
+    # Parse the JSON string in the body and check extract the action type and target
+    pJSON = json.loads(pBody)
+    sActionType = str(pJSON["action"]["type"])
+    sActionTargetID = str(pJSON["action"]["targetid"])
+
+    # Call the sequence POST handler first
+    sNewClientState = HandlePostSequence(sClientState, "EDIT", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    if sNewClientState != "":
+        # POST handled
+        return HandleGet(sNewClientState, sRemoteUser, "/state")
+
+    # Handle View Sequence specific requests
+    if sActionType == "BUTTONCLICK":
+        if sActionTargetID == "RUN":
+            # Ignore this button for now
+            return HandleGet(sClientState, sRemoteUser, "/state")
+
+    # Unhandled use case
+    raise Exception("State misalignment")
+
+# Handle sequence POST requests
+def HandlePostSequence(sClientState, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
+    # Check which option the user selected
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "BACK":
             # Switch states to Select Sequence
             sClientState = "SELECT_SAVEDSEQUENCES"
             gElixys.SaveClientState(sClientState)
-            return HandleGet(sClientState, sRemoteUser, "/state")
+            return sClientState
         elif sActionTargetID == "PREVIOUS":
             # Move to the previous component ID
             nPreviousComponentID = -1
             for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
                 if pComponent["id"] == nComponentID:
                     if nPreviousComponentID != -1:
-                        sClientState = "VIEW." + str(nSequenceID) + "." + str(nPreviousComponentID)
+                        sClientState = sType + "." + str(nSequenceID) + "." + str(nPreviousComponentID)
                         gElixys.SaveClientState(sClientState)
-                    return HandleGet(sClientState, sRemoteUser, "/state")
+                    return sClientState
                 else:
                     nPreviousComponentID = pComponent["id"]
             raise Exception("Component ID not found in sequence")
@@ -410,26 +503,27 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
             bComponentIDFound = False
             for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
                 if bComponentIDFound:
-                    sClientState = "VIEW." + str(nSequenceID) + "." + str(pComponent["id"])
+                    sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
                     gElixys.SaveClientState(sClientState)
-                    return HandleGet(sClientState, sRemoteUser, "/state")
+                    return sClientState
                 elif pComponent["id"] == nComponentID:
                     bComponentIDFound = True
             if bComponentIDFound:
-                return HandleGet(sClientState, sRemoteUser, "/state")
+                return sClientState
             raise Exception("Component ID not found in sequence" + str(nComponentID))
         else:
             # Check if the target ID corresponds to one of our sequence components
-            for pComponent in gElixys.GetSequence(nSequenceID):
+            for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
                 if str(pComponent["id"]) == sActionTargetID:
                     # Update the current component and return the latest state to the client
-                    sClientState = "VIEW." + str(nSequenceID) + "." + str(pComponent["id"])
+                    sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
                     gElixys.SaveClientState(sClientState)
-                    return HandleGet(sClientState, sRemoteUser, "/state")
+                    return sClientState
 
-    # Unhandled use case
-    raise Exception("State misalignment")
+    # Tell the caller we didn't handle the use case
+    return ""
 
+# Handle POST /PROMPT
 def HandlePostPrompt(sClientState, sRemoteUser, pBody):
     # Make sure we are on Prompt
     global gElixys

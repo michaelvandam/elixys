@@ -10,7 +10,7 @@
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
 				// Remember the component and clear the reagent and target
 				m_pComponentElute = new ComponentElute(null, pComponent);
@@ -29,7 +29,7 @@
 			}
 
 			// Called when reagent details arrive from the server
-			public override function UpdateStateReagent(pReagent:Reagent):void
+			public override function UpdateReagent(pReagent:Reagent):void
 			{
 				// Remember the reagent or target
 				if (pReagent.ReagentID == m_pComponentElute.Reagent)

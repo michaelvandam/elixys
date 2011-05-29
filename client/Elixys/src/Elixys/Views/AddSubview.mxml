@@ -6,31 +6,29 @@
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
-			import Elixys.Objects.ComponentTransfer;
+			import Elixys.Objects.ComponentAdd;
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
-				// Remember the component and clear the reagent and target
-				m_pComponentTransfer = new ComponentTransfer(null, pComponent);
-				
-				// Fetch the target
+				// Remember the component and look up the reagent
+				m_pComponentAdd = new ComponentAdd(null, pComponent);
 				var pHTTPRequest:HTTPRequest = new HTTPRequest();
 				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + (m_pParent as ViewView).GetSequenceID() + "/reagent/" + m_pComponentTransfer.Target;
+				pHTTPRequest.m_sResource = "/Elixys/sequence/" + (m_pParent as ViewView).GetSequenceID() + "/reagent/" + m_pComponentAdd.Reagent;
 				m_pParent.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 			}
 
 			// Called when reagent details arrive from the server
-			public override function UpdateStateReagent(pReagent:Reagent):void
+			public override function UpdateReagent(pReagent:Reagent):void
 			{
 				// Format the output text
-				_outputText.text = "Transfer the contents of reactor " + m_pComponentTransfer.Reactor + " to the " + pReagent.Description + ".";
+				_outputText.text = "Add " + pReagent.Description + " to reactor " + m_pComponentAdd.Reactor + ".";
 			}
 			
 			// Component
-			private var m_pComponentTransfer:ComponentTransfer;
+			private var m_pComponentAdd:ComponentAdd;
 		]]>
 	</fx:Script>
 	

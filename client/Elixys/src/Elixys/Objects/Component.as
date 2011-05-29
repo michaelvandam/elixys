@@ -45,20 +45,20 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("name", value);
 		}
 
-		public function get ID():String
+		public function get ID():uint
 		{
-			return super.flash_proxy::getProperty("id");
+			return parseInt(super.flash_proxy::getProperty("id"));
 		}
-		public function set ID(value:String):void
+		public function set ID(value:uint):void
 		{
 			super.flash_proxy::setProperty("id", value);
 		}
 
-		public function get Reactor():String
+		public function get Reactor():uint
 		{
-			return super.flash_proxy::getProperty("reactor");
+			return parseInt(super.flash_proxy::getProperty("reactor"));
 		}
-		public function set Reactor(value:String):void
+		public function set Reactor(value:uint):void
 		{
 			super.flash_proxy::setProperty("reactor", value);
 		}

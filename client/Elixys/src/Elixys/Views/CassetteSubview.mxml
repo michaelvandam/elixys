@@ -10,7 +10,7 @@
 			import Elixys.Objects.Reagent;
 
 			// Called when component details arrive from the server
-			public override function UpdateStateComponent(pComponent:Component):void
+			public override function UpdateComponent(pComponent:Component):void
 			{
 				// Configure the view
 				m_pComponentCassette = new ComponentCassette(null, pComponent);
@@ -62,12 +62,12 @@
 					_cassetteGrid.dataProvider = pGridData;
 					
 					// Request the reagents from the server
-					var sSequenceID:String = (m_pParent as ViewView).GetSequenceID();
+					var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
 					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
 					{
 						var pHTTPRequest:HTTPRequest = new HTTPRequest();
 						pHTTPRequest.m_sMethod = "GET";
-						pHTTPRequest.m_sResource = "/Elixys/sequence/" + sSequenceID + "/reagent/" + m_pComponentCassette.Reagents[nReagent];
+						pHTTPRequest.m_sResource = "/Elixys/sequence/" + nSequenceID + "/reagent/" + m_pComponentCassette.Reagents[nReagent];
 						m_pParent.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 					}
 				}
@@ -80,7 +80,7 @@
 			}
 
 			// Called when reagent details arrive from the server
-			public override function UpdateStateReagent(pReagent:Reagent):void
+			public override function UpdateReagent(pReagent:Reagent):void
 			{
 				// Locate the corresponding reagent
 				var pGridData:ArrayList = _cassetteGrid.dataProvider as ArrayList, nReagent:uint;

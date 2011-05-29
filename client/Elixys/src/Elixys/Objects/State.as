@@ -51,8 +51,5 @@ package Elixys.Objects
 		// State components
 		private var m_pUser:Elixys.Objects.User;
 		private var m_pServerState:Elixys.Objects.ServerState;
-		private var m_pClientDetailsHome:Elixys.Objects.StateHome;
-		private var m_pClientDetailsSelect:Elixys.Objects.StateSelect;
-		private var m_pClientDetailsView:Elixys.Objects.StateView;
 	}
 }

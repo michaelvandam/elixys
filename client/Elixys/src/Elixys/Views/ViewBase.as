@@ -34,13 +34,13 @@ package Elixys.Views
 		public function UpdateState(pState:State):void
 		{
 		}
-		public function UpdateStateSequence(pSequence:Sequence):void
+		public function UpdateSequence(pSequence:Sequence):void
 		{
 		}
-		public function UpdateStateComponent(pComponent:Component):void
+		public function UpdateComponent(pComponent:Component):void
 		{
 		}
-		public function UpdateStateReagent(pReagent:Reagent):void
+		public function UpdateReagent(pReagent:Reagent):void
 		{
 		}
 		
@@ -81,14 +81,14 @@ package Elixys.Views
 		public function UpdateTabs(pTabNavigator:TabNavigator, pServerTabs:Array, fCreateNewTab:Function, sCurrentTabID:String):void
 		{
 			// Loop through the server and client tab arrays
-			var nTab:uint, pTabClient:SelectViewTab, pTabServer:Elixys.Objects.Tab;
+			var nTab:uint, pTabClient:SelectSubview, pTabServer:Elixys.Objects.Tab;
 			for (nTab = 0; nTab < pServerTabs.length; ++nTab)
 			{
 				// Either get a pointer to the existing tab or create a new one
 				if (nTab < pTabNavigator.numChildren)
 				{
 					// Use the existing button
-					pTabClient = pTabNavigator.getChildAt(nTab) as SelectViewTab;
+					pTabClient = pTabNavigator.getChildAt(nTab) as SelectSubview;
 				}
 				else
 				{
@@ -211,7 +211,7 @@ package Elixys.Views
 		}
 		
 		// Update the client list array with the server array
-		public function UpdateList(pList:List, pServerItems:Array, fCreateNewItem:Function, sCurrentItemID:String):void
+		public function UpdateList(pList:List, pServerItems:Array, fCreateNewItem:Function, nCurrentItemID:uint):void
 		{
 			// Get a pointer to the sequence data provider
 			var pListData:ArrayList;
@@ -253,7 +253,7 @@ package Elixys.Views
 				}
 				
 				// Make sure the currently selected sequence is reselected
-				if (pComponentClient.ID == sCurrentItemID)
+				if (pComponentClient.ID == nCurrentItemID)
 				{
 					pList.selectedItem = pComponentClient;
 				}
