@@ -22,10 +22,7 @@
 				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
 
 				// Request the sequence from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_nSequenceID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+				RequestSequence(m_nSequenceID);
 			}
 			
 			// Update sequence
@@ -35,10 +32,7 @@
 				UpdateSequenceSequence(pSequence);
 
 				// Request the currently selected sequence component from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_nSequenceID + "/component/" + m_nComponentID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+				RequestSequenceComponent(m_nSequenceID, m_nComponentID);
 			}
 			
 			// Update component
@@ -140,16 +134,16 @@
 			<s:HGroup id="_navigationButtons" gap="20" />
 			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
-				<Views:CassetteSubview id="_cassetteSubview" width="100%" height="100%" />
-				<Views:AddSubview id="_addSubview" width="100%" height="100%" />
-				<Views:EvaporateSubview id="_evaporateSubview" width="100%" height="100%" />
-				<Views:TransferSubview id="_transferSubview" width="100%" height="100%" />
-				<Views:EluteSubview id="_eluteSubview" width="100%" height="100%" />
-				<Views:ReactSubview id="_reactSubview" width="100%" height="100%" />
-				<Views:PromptSubview id="_promptSubview" width="100%" height="100%" />
-				<Views:InstallSubview id="_installSubview" width="100%" height="100%" />
-				<Views:CommentSubview id="_commentSubview" width="100%" height="100%" />
-				<Views:ActivitySubview id="_activitySubview" width="100%" height="100%" />
+				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:AddSubview id="_addSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:EvaporateSubview id="_evaporateSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:TransferSubview id="_transferSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:EluteSubview id="_eluteSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:ReactSubview id="_reactSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:PromptSubview id="_promptSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:InstallSubview id="_installSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:CommentSubview id="_commentSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:ActivitySubview id="_activitySubview" m_sViewMode="View" width="100%" height="100%" />
 			</mx:ViewStack>
 			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 		</s:VGroup>

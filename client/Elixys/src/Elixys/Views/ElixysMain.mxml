@@ -20,6 +20,9 @@
 			// Called when the object is created
 			private function OnCreationComplete():void
 			{
+				var pEvaporationTime:Date = new Date();
+				pEvaporationTime.setTime(Date.parse("00:05.35"));
+
 				// Add event listeners
 				addEventListener(ResizeEvent.RESIZE, OnResize);
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
@@ -56,6 +59,12 @@
 				// Remember the system configuration
 				m_pServerConfiguration = pConfiguration;
 				
+				// Pass the system configuration to our child views
+				for each (var pViewBase:ViewBase in _viewStack.getChildren())
+				{
+					pViewBase.UpdateConfiguration(m_pServerConfiguration);
+				}
+
 				// Load the current state
 				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 

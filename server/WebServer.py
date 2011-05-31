@@ -281,9 +281,42 @@ def HandleGetComponent(sPath):
     # Load the sequence and only the desired component
     pSequence = gElixys.GetSequence(nSequenceID, nComponentID)
 
-    # Add component-specific information...
+    # Create and initialize the return component
     pComponent = {"type":"component"}
     pComponent.update(pSequence["components"][0])
+    pComponent.update({"reactordescription":"Reactor where the reagent will be added"})
+    pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+
+    # Add component-specific values to the return component
+    if pComponent["componenttype"] == "ADD":
+        pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
+        pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
+    elif pComponent["componenttype"] == "TRANSFER":
+        pComponent.update({"targetdescription":"Target where the reactor contents will be transferred"})
+	pComponent.update({"targetvalidation":"type=enum-target; values=9; required=true"})
+    elif pComponent["componenttype"] == "ELUTE":
+        pComponent.update({"reagentdescription":"Reagent used to elute the target"})
+        pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
+        pComponent.update({"targetdescription":"Target to be eluted with the reagent"})
+        pComponent.update({"targetvalidation":"type=enum-target; values=10; required=true"})
+    elif (pComponent["componenttype"] == "REACT") or (pComponent["componenttype"] == "EVAPORATE"):
+        if pComponent["componenttype"] == "REACT":
+            pComponent.update({"positiondescription":"Position where the reaction will take place"})
+            pComponent.update({"positionvalidation":"type=enum-literal; values=1,2; required=true"})
+        pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
+        pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
+        pComponent.update({"reactiontemperaturedescription":"Reaction temperature in degrees Celsius"})
+        pComponent.update({"reactiontemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
+        pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
+        pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
+    elif (pComponent["componenttype"] == "PROMPT") or (pComponent["componenttype"] == "INSTALL"):
+        pComponent.update({"messagedescription":"This will be displayed to the user"})
+        pComponent.update({"messagevalidation":"type=string; required=true"})
+    elif pComponent["componenttype"] == "COMMENT":
+        pComponent.update({"commentdescription":"Enter a comment"})
+        pComponent.update({"commentvalidation":"type=string"})
 
     # Return the complete component
     return pComponent
@@ -315,6 +348,13 @@ def HandlePost(sClientState, sRemoteUser, sPath, pBody):
         return HandlePostEdit(sClientState, sRemoteUser, pBody)
     elif sPath == "/PROMPT":
         return HandlePostPrompt(sClientState, sRemoteUser, pBody)
+    if sPath.startswith("/sequence/"):
+        if sPath.find("/component/") != -1:
+            return HandlePostComponent(sClientState, sRemoteUser, pBody, sPath)
+        elif sPath.find("/reagent/") != -1:
+            return HandlePostReagent(sClientState, sRemoteUser, pBody, sPath)
+        else:
+            return HandlePostSequence(sClientState, sRemoteUser, pBody, sPath)
     else:
         raise Exception("Unknown path: " + sPath)
 
@@ -426,8 +466,8 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
     sActionType = str(pJSON["action"]["type"])
     sActionTargetID = str(pJSON["action"]["targetid"])
 
-    # Call the sequence POST handler first
-    sNewClientState = HandlePostSequence(sClientState, "VIEW", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    # Call the base sequence POST handler first
+    sNewClientState = HandlePostBaseSequence(sClientState, "VIEW", nSequenceID, nComponentID, sActionType, sActionTargetID)
     if sNewClientState != "":
         # POST handled
         return HandleGet(sNewClientState, sRemoteUser, "/state")
@@ -462,8 +502,8 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody):
     sActionType = str(pJSON["action"]["type"])
     sActionTargetID = str(pJSON["action"]["targetid"])
 
-    # Call the sequence POST handler first
-    sNewClientState = HandlePostSequence(sClientState, "EDIT", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    # Call the base sequence POST handler first
+    sNewClientState = HandlePostBaseSequence(sClientState, "EDIT", nSequenceID, nComponentID, sActionType, sActionTargetID)
     if sNewClientState != "":
         # POST handled
         return HandleGet(sNewClientState, sRemoteUser, "/state")
@@ -478,7 +518,7 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody):
     raise Exception("State misalignment")
 
 # Handle sequence POST requests
-def HandlePostSequence(sClientState, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
+def HandlePostBaseSequence(sClientState, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
     # Check which option the user selected
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "BACK":
@@ -574,6 +614,21 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody):
 
     # Unhandled use case
     raise Exception("State misalignment")
+
+# Handle POST /sequence/[sequenceid]
+def HandlePostSequence(sClientState, sRemoteUser, pBody, sPath):
+    # Ignore this function for now
+    return HandleGet(sClientState, sRemoteUser, "/state")
+
+# Handle POST /sequence/[sequenceid]/component/[componentid]
+def HandlePostComponent(sClientState, sRemoteUser, pBody, pPath):
+    # Ignore this function for now
+    return HandleGet(sClientState, sRemoteUser, "/state")
+
+# Handle POST /sequence/[sequenceid]/reagent/[reagentid]
+def HandlePostReagent(sClientState, sRemoteUser, pBody, pPath):
+    # Ignore this function for now
+    return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle DELETE requests
 def HandleDelete(sClientState, sRemoteUser, sPath):

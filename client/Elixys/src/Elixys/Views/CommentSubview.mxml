@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+<Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -9,17 +9,101 @@
 			import Elixys.Objects.ComponentComment;
 			import Elixys.Objects.Reagent;
 
+			import spark.components.supportClasses.SkinnableTextBase;
+
+			/***
+			 * Member functions
+			 **/
+			
 			// Called when component details arrive from the server
 			public override function UpdateComponent(pComponent:Component):void
 			{
-				// Format the output text
-				var pComponentComment:ComponentComment = new ComponentComment(null, pComponent);
-				_outputText.text = "Comment: " + pComponentComment.Comment + ".";
+				// Remember the component
+				m_pComponentComment = new ComponentComment(null, pComponent);
+				
+				// Handle according to our view mode
+				if (m_sViewMode == SubviewBase.VIEWMODE)
+				{
+					// Format the output text
+					_outputText.text = "Comment: " + m_pComponentComment.Comment + ".";
+				}
+				else if (m_sViewMode == SubviewBase.EDITMODE)
+				{
+					// Set the comment unless the user is editing it
+					if (m_pKeyboardFocusTarget != _editComment)
+					{
+						_editComment.text = m_pComponentComment.Comment;
+					}
+				}
+				else if (m_sViewMode == SubviewBase.RUNMODE)
+				{
+				}
 			}
+
+			/***
+			 * Message handlers
+			 **/
+			
+			// Called when creation is complete
+			public function OnCreationComplete():void
+			{
+				// Set the base class variables
+				m_pViewGroup = _viewGroup;
+				m_pEditGroup = _editGroup;
+				m_pRunGroup = _runGroup;
+				
+				// Set our view mode
+				SetViewMode(m_sViewMode)
+			}
+			
+			// Called when the user changes the text in one of our input fields
+			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			{
+				// Update our component
+				if (m_pKeyboardFocusTarget == _editComment)
+				{
+					m_pComponentComment.Comment = _editComment.text;
+				}
+				
+				// Save the component to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pComponentComment, "sequence/" + nSequenceID + "/component/" + m_pComponentComment.ID);
+			}
+
+			/***
+			 * Member functions
+			 **/
+			
+			// Component
+			private var m_pComponentComment:ComponentComment;
 		]]>
 	</fx:Script>
 	
-	<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
-		<mx:Text id="_outputText" styleName="label" width="80%" />		
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle"
+				horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+			<mx:Text id="_outputText" styleName="label" width="80%" />		
+		</s:VGroup>
+		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				verticalCenter="0" width="100%" height="100%">
+			<s:VGroup gap="20" width="100%" height="100%">
+				<s:Spacer height="100%" />
+				<s:HGroup verticalAlign="top" gap="15" width="100%">
+					<s:VGroup horizontalAlign="right" width="30%">
+						<s:Spacer height="5" />
+						<s:Label text="Comment" styleName="label" />
+					</s:VGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="70%">
+						<s:TextArea id="_editComment" styleName="label" focusIn="OnTextFocusIn(event)"
+									focusOut="OnTextFocusOut(event)" width="80%" height="200"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:Spacer height="100%" />
+			</s:VGroup>
+		</s:VGroup>
+		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				  verticalCenter="0" width="100%" height="100%">
+			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+		</s:VGroup>
 	</s:VGroup>
-</Views:ViewBase>
+</Views:SubviewBase>

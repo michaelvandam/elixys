@@ -28,10 +28,7 @@
 				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
 
 				// Request the sequence from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_nSequenceID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+				RequestSequence(m_nSequenceID);
 			}
 			
 			// Update sequence
@@ -41,10 +38,7 @@
 				UpdateSequenceSequence(pSequence);
 
 				// Request the currently selected sequence component from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_nSequenceID + "/component/" + m_nComponentID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+				RequestSequenceComponent(m_nSequenceID, m_nComponentID);
 			}
 			
 			// Update component
@@ -70,6 +64,7 @@
 			{
 				// Set the base class variables
 				m_pOnButtonClick = OnButtonClick;
+				m_pUnitOperationsList = _unitOperationList;
 				m_pSequenceName = _sequenceName;
 				m_pSequenceList = _sequenceList;
 				m_pNavigationButtons = _navigationButtons;
@@ -87,6 +82,9 @@
 				
 				// Set the subview parents
 				SetSubviewParents();
+				
+				// Initialize the unit operations list
+				UpdateConfiguration(m_pServerConfiguration);
 			}
 
 			// Button click handler
@@ -106,7 +104,41 @@
 	<s:HGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" paddingLeft="20"
 			paddingRight="20" paddingTop="20" paddingBottom="20" width="100%" height="100%">
 		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" height="100%">
-			<s:Label id="_sequenceName" styleName="label" text="sequence name here" />
+			<s:Label styleName="label" text="Toolbox" />
+			<s:List id="_unitOperationList" requireSelection="true" height="100%">
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<fx:Script>
+								<![CDATA[
+									// Formats the button text
+									override public function set data(value:Object):void
+									{
+										super.data = value;
+										if (value != null)
+										{
+											_button.label = value as String;
+										}
+									}
+								]]>
+							</fx:Script>
+							<s:states>
+								<s:State name="normal" />
+								<s:State name="selected" />
+							</s:states>
+							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
+								<s:Button id="_button" styleName="button" click="outerDocument.OnButtonClick(event)" width="150" height="40" />
+							</s:VGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" height="150">
+				<s:Image source="@Embed(source='trashcan.png')" width="150" height="100" />
+			</s:VGroup>
+		</s:VGroup>
+		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" height="100%">
+			<s:Label id="_sequenceName" styleName="label" text="" />
 			<s:List id="_sequenceList" requireSelection="true" height="100%">
 				<s:itemRenderer>
 					<fx:Component>
@@ -146,16 +178,16 @@
 			<s:HGroup id="_navigationButtons" gap="20" />
 			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
-				<Views:CassetteSubview id="_cassetteSubview" width="100%" height="100%" />
-				<Views:AddSubview id="_addSubview" width="100%" height="100%" />
-				<Views:EvaporateSubview id="_evaporateSubview" width="100%" height="100%" />
-				<Views:TransferSubview id="_transferSubview" width="100%" height="100%" />
-				<Views:EluteSubview id="_eluteSubview" width="100%" height="100%" />
-				<Views:ReactSubview id="_reactSubview" width="100%" height="100%" />
-				<Views:PromptSubview id="_promptSubview" width="100%" height="100%" />
-				<Views:InstallSubview id="_installSubview" width="100%" height="100%" />
-				<Views:CommentSubview id="_commentSubview" width="100%" height="100%" />
-				<Views:ActivitySubview id="_activitySubview" width="100%" height="100%" />
+				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:AddSubview id="_addSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:EvaporateSubview id="_evaporateSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:TransferSubview id="_transferSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:EluteSubview id="_eluteSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:ReactSubview id="_reactSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:PromptSubview id="_promptSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:InstallSubview id="_installSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:CommentSubview id="_commentSubview" m_sViewMode="Edit" width="100%" height="100%" />
+				<Views:ActivitySubview id="_activitySubview" m_sViewMode="Edit" width="100%" height="100%" />
 			</mx:ViewStack>
 			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 		</s:VGroup>

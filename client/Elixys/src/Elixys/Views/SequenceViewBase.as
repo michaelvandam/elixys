@@ -52,20 +52,36 @@ package Elixys.Views
 			return m_nSequenceID;
 		}
 
+		// Update server configuration
+		public override function UpdateConfiguration(pConfiguration:Configuration):void
+		{
+			// Remember the server configuration
+			m_pServerConfiguration = pConfiguration;
+
+			// Fill the unit operations list if the derived view supports it
+			if (m_pUnitOperationsList)
+			{
+				UpdateUnitOperationsList(m_pUnitOperationsList, pConfiguration.SupportedOperations());
+			}
+		}
+		
 		// Update the sequence state
 		protected function UpdateSequenceState(pButtons:Array, nSequenceID:uint, nComponentID:uint):void
 		{
 			// Update our button array with the server data
-			UpdateButtons(m_pNavigationButtons, pButtons, CreateNewButton);
-			function CreateNewButton():spark.components.Button
+			if (m_pNavigationButtons != null)
 			{
-				// Callback to create our new button
-				var pButton:spark.components.Button = new spark.components.Button();
-				pButton.width = 150;
-				pButton.height = 40;
-				pButton.styleName = "button";
-				pButton.addEventListener(MouseEvent.CLICK, m_pOnButtonClick);
-				return pButton;
+				UpdateButtons(m_pNavigationButtons, pButtons, CreateNewButton);
+				function CreateNewButton():spark.components.Button
+				{
+					// Callback to create our new button
+					var pButton:spark.components.Button = new spark.components.Button();
+					pButton.width = 150;
+					pButton.height = 40;
+					pButton.styleName = "button";
+					pButton.addEventListener(MouseEvent.CLICK, m_pOnButtonClick);
+					return pButton;
+				}
 			}
 			
 			// Remember the currently sequence and component
@@ -80,11 +96,7 @@ package Elixys.Views
 			m_pSequenceName.text = pSequence.Metadata().Name;
 			
 			// Fill the operations list
-			UpdateList(m_pSequenceList, pSequence.Components(), CreateNewItem,  m_nComponentID);
-			function CreateNewItem():SequenceComponent
-			{
-				return new SequenceComponent();
-			}
+			UpdateSequenceComponentList(m_pSequenceList, pSequence.Components(), m_nComponentID);
 		}
 		
 		// Update the sequence component
@@ -152,13 +164,13 @@ package Elixys.Views
 		}
 		
 		// Post a request to the server
-		protected function DoPost(pPost:Object, sViewName:String):void
+		public function DoPost(pPost:Object, sViewName:String):void
 		{
 			// Convert the request to a byte array
 			var pBody:ByteArray = new ByteArray();
 			pBody.writeMultiByte(pPost.toString(), "utf8");
 			pBody.position = 0;
-		
+			
 			// Pass the request up to be sent to the server
 			var pHTTPRequest:HTTPRequest = new HTTPRequest();
 			pHTTPRequest.m_sMethod = "POST";
@@ -175,10 +187,14 @@ package Elixys.Views
 		protected var m_nSequenceID:uint = 0;
 		protected var m_nComponentID:uint = 0;
 
+		// Server configuration
+		protected var m_pServerConfiguration:Configuration = null;
+		
 		// Pointer to the button click handler of the derived class
 		protected var m_pOnButtonClick:Function = null;
 
 		// Pointers to the UI component of the derived class
+		protected var m_pUnitOperationsList:List = null;
 		protected var m_pSequenceName:Label = null;
 		protected var m_pSequenceList:List = null;
 		protected var m_pNavigationButtons:HGroup = null;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+<Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -8,19 +8,208 @@
 			import Elixys.Objects.Component;
 			import Elixys.Objects.ComponentReact;
 			import Elixys.Objects.Reagent;
+			import Elixys.Objects.TimeUtils;
+			
+			import spark.components.TextInput;
+			import spark.components.supportClasses.SkinnableTextBase;
+			import spark.events.IndexChangeEvent;
 
+			/***
+			 * Member functions
+			 **/
+			
 			// Called when component details arrive from the server
 			public override function UpdateComponent(pComponent:Component):void
 			{
-				var pComponentReact:ComponentReact = new ComponentReact(null, pComponent);
-				_outputText.text = "React reactor " + pComponentReact.Reactor + ", position " + pComponentReact.Position+ " at " + 
-					pComponentReact.ReactionTemperature+ " C for " + pComponentReact.Duration + " and cool to " + 
-					pComponentReact.FinalTemperature + " C.  Stir at " + pComponentReact.StirSpeed + " rpm.";
+				// Remember the component
+				m_pComponentReact = new ComponentReact(null, pComponent);
+				
+				// Handle according to our view mode
+				if (m_sViewMode == SubviewBase.VIEWMODE)
+				{
+					// Format the output text
+					_outputText.text = "React reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position + " at " + 
+						m_pComponentReact.ReactionTemperature+ " C for " + m_pComponentReact.Duration + " and cool to " + 
+						m_pComponentReact.FinalTemperature + " C.  Stir at " + m_pComponentReact.StirSpeed + " rpm.";
+				}
+				else if (m_sViewMode == SubviewBase.EDITMODE)
+				{
+					// Fill the reactor and position combo boxes
+					UpdateEnumLiteralComboBox(m_pComponentReact.ReactorValidation, _editReactorCombo, m_pComponentReact.Reactor.toString());
+					UpdateEnumLiteralComboBox(m_pComponentReact.PositionValidation, _editPositionCombo, m_pComponentReact.Position);
+					
+					// Set all evaporation variables except the one the user is editing
+					if (m_pKeyboardFocusTarget != _editDurationMinutes)
+					{
+						_editDurationMinutes.text = TimeUtils.GetMinutes(m_pComponentReact.Duration).toString();
+					}
+					if (m_pKeyboardFocusTarget != _editDurationSeconds)
+					{
+						_editDurationSeconds.text = TimeUtils.GetSeconds(m_pComponentReact.Duration).toString();
+					}
+					if (m_pKeyboardFocusTarget != _editReactionTemperature)
+					{
+						_editReactionTemperature.text = m_pComponentReact.ReactionTemperature;
+					}
+					if (m_pKeyboardFocusTarget != _editFinalTemperature)
+					{
+						_editFinalTemperature.text = m_pComponentReact.FinalTemperature;
+					}
+					if (m_pKeyboardFocusTarget != _editStirSpeed)
+					{
+						_editStirSpeed.text = m_pComponentReact.StirSpeed.toString();
+					}
+				}
+				else if (m_sViewMode == SubviewBase.RUNMODE)
+				{
+				}
 			}
+
+			/***
+			 * Message handlers
+			 **/
+			
+			// Called when creation is complete
+			public function OnCreationComplete():void
+			{
+				// Set the base class variables
+				m_pViewGroup = _viewGroup;
+				m_pEditGroup = _editGroup;
+				m_pRunGroup = _runGroup;
+				
+				// Set our view mode
+				SetViewMode(m_sViewMode)
+			}
+			
+			// Called when the user changes the selection of the combo box
+			protected function OnReactorChange(event:IndexChangeEvent):void
+			{
+				// Update our component
+				m_pComponentReact.Reactor = parseInt(_editReactorCombo.selectedItem as String);
+				
+				// Pass the request to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+			}
+			protected function OnPositionChange(event:IndexChangeEvent):void
+			{
+				// Update our component
+				m_pComponentReact.Position = _editPositionCombo.selectedItem as String;
+				
+				// Pass the request to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+			}
+			
+			// Called when the user changes the text in one of our input fields
+			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			{
+				// Update our component
+				if ((m_pKeyboardFocusTarget == _editDurationMinutes) || (m_pKeyboardFocusTarget == _editDurationSeconds))
+				{
+					m_pComponentReact.Duration = TimeUtils.FormatTime(parseInt(_editDurationMinutes.text), parseInt(_editDurationSeconds.text));
+				}
+				if (m_pKeyboardFocusTarget == _editReactionTemperature)
+				{
+					m_pComponentReact.ReactionTemperature = _editReactionTemperature.text;
+				}
+				if (m_pKeyboardFocusTarget == _editFinalTemperature)
+				{
+					m_pComponentReact.FinalTemperature = _editFinalTemperature.text;
+				}
+				if (m_pKeyboardFocusTarget == _editStirSpeed)
+				{
+					m_pComponentReact.StirSpeed = parseInt(_editStirSpeed.text);
+				}
+				
+				// Save the component to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+			}
+
+			/***
+			 * Member variables
+			 **/
+			
+			// Component
+			private var m_pComponentReact:ComponentReact;
 		]]>
 	</fx:Script>
 	
-	<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
-		<mx:Text id="_outputText" styleName="label" width="80%" />		
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle"
+				horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+			<mx:Text id="_outputText" styleName="label" width="80%" />		
+		</s:VGroup>
+		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				verticalCenter="0" width="100%" height="100%">
+			<s:VGroup gap="20" width="100%" height="100%">
+				<s:Spacer height="100%" />
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Reactor" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="label" width="75%" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Position" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="label" width="75%" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Duration" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:TextInput id="_editDurationMinutes" styleName="label" focusIn="OnTextFocusIn(event)"
+									 focusOut="OnTextFocusOut(event)" width="100" />
+						<s:Label text="min" styleName="label" />
+						<s:TextInput id="_editDurationSeconds" styleName="label" focusIn="OnTextFocusIn(event)"
+									 focusOut="OnTextFocusOut(event)" width="100" />
+						<s:Label text="sec" styleName="label" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Reaction Temperature" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:TextInput id="_editReactionTemperature" styleName="label" focusIn="OnTextFocusIn(event)"
+									 focusOut="OnTextFocusOut(event)"/>
+						<s:Label text="C" styleName="label" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Final Temperature" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:TextInput id="_editFinalTemperature" styleName="label" focusIn="OnTextFocusIn(event)"
+									 focusOut="OnTextFocusOut(event)"/>
+						<s:Label text="C" styleName="label" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Stir speed" styleName="label" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<s:TextInput id="_editStirSpeed" styleName="label" focusIn="OnTextFocusIn(event)"
+									 focusOut="OnTextFocusOut(event)"/>
+						<s:Label text="rpm" styleName="label" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:Spacer height="100%" />
+			</s:VGroup>
+		</s:VGroup>
+		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				  verticalCenter="0" width="100%" height="100%">
+			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+		</s:VGroup>
 	</s:VGroup>
-</Views:ViewBase>
+</Views:SubviewBase>
