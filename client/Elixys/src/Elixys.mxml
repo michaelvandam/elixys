@@ -3,12 +3,13 @@
 		xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600" xmlns:Views="Elixys.Views.*">
 	<fx:Script>
 		<![CDATA[
+			import mx.controls.Alert;
 			import mx.utils.URLUtil;
 
-			// Called when the application has been loaded and determines startup information
+			// Called when the application has been loaded to parse startup information
 			private function OnApplicationComplete():void
 			{
-				// These are the two variables we want to fill
+				// These variables describe our connection to the server
 				var sServer:String = "";
 				var sCredentials:String = "";
 				
@@ -36,23 +37,21 @@
 						}
 					}
 				}
-				
+								
 				// Hack: hardcode the authentication parameter until we get the server redirect working
 				if ((sServer != "") && (sCredentials == ""))
 				{
 					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
 				}
-				
-				// Do we have both of the variables we need?
+								
+				// Pass the parameters to the main window
 				if ((sServer != "") && (sCredentials != ""))
 				{
-					// Yes, so use them
 					_elixys.Init1_SetServer(sServer, sCredentials);
 				}
 				else
 				{
-					// No, so use localhost
-					_elixys.Init1_SetServer("127.0.0.1", "");
+					Alert.show("Missing server connection parameters");
 				}
 			}
 		]]>

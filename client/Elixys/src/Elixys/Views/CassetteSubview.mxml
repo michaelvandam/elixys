@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.HTTPRequestEvent;
+			import Elixys.HTTP.HTTPRequest;
+			import Elixys.Objects.Component;
+			import Elixys.Objects.ComponentCassette;
+			import Elixys.Objects.Reagent;
+
+			/***
+			 * Member functions
+			 **/
+			
+			// Called when component details arrive from the server
+			public override function UpdateComponent(pComponent:Component):void
+			{
+				// Configure the view
+				m_pComponentCassette = new ComponentCassette(null, pComponent);
+				if (m_pComponentCassette.Available)
+				{
+					// Set visibility
+					_cassetteDisabled.visible = false;
+					_cassetteDisabled.includeInLayout = false;
+					_cassetteEnabled.visible = true;
+					_cassetteEnabled.includeInLayout = true;
+					
+					// Get a pointer to the sequence grid
+					var pGridData:ArrayList;
+					if (_cassetteGrid.dataProvider != null)
+					{
+						pGridData = _cassetteGrid.dataProvider as ArrayList;
+					}
+					if (pGridData == null)
+					{
+						pGridData = new ArrayList();
+					}
+					
+					// Make sure we have enough reagent positions in our array
+					var nReagent:uint, pReagent:Reagent;
+					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
+					{
+						// Get a pointer to the next reagent
+						if (nReagent < pGridData.length)
+						{
+							// Use existing reagent
+							pReagent = pGridData.getItemAt(nReagent) as Reagent;
+						}
+						else
+						{
+							// Create a new reagent
+							pReagent = new Reagent();
+							pGridData.addItem(pReagent);
+						}
+						
+						// Remember the reagent ID
+						pReagent.ReagentID = m_pComponentCassette.Reagents[nReagent];
+					}
+					
+					// Remove any extra reagents
+					while (nReagent < pGridData.length)
+					{
+						pGridData.removeItemAt(pGridData.length - 1);
+					}
+					
+					// Update the data provider
+					_cassetteGrid.dataProvider = pGridData;
+					
+					// Request the reagents from the server
+					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
+					{
+						RequestSequenceReagent(m_pComponentCassette.Reagents[nReagent]);
+					}
+				}
+				else
+				{
+					// Set visibility
+					_cassetteDisabled.visible = true;
+					_cassetteDisabled.includeInLayout = true;
+					_cassetteEnabled.visible = false;
+					_cassetteEnabled.includeInLayout = false;
+				}
+			}
+
+			// Called when reagent details arrive from the server
+			public override function UpdateReagent(pReagent:Reagent):void
+			{
+				// Locate the corresponding reagent
+				var pGridData:ArrayList = _cassetteGrid.dataProvider as ArrayList, nReagent:uint;
+				for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
+				{
+					var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
+					if (pClientReagent.ReagentID == pReagent.ReagentID)
+					{
+						// Found it
+						break;
+					}
+				}
+				if (nReagent == pGridData.length)
+				{
+					// Failed to find reagent
+					return;
+				}
+				
+				// Update the corresponding reagent
+				pClientReagent.Copy(pReagent);
+				if (!pReagent.Available)
+				{
+					pClientReagent.Name = "Not used";
+					pClientReagent.Description = "Not used";
+				}
+				_cassetteGrid.dataProvider.setItemAt(pClientReagent, nReagent);
+			}
+			
+			/***
+			 * Message handlers
+			 **/
+			
+			// Called when creation is complete
+			public function OnCreationComplete():void
+			{
+				// Set the base class variables
+				m_pViewGroup = _viewGroup;
+				m_pEditGroup = _editGroup;
+				m_pRunGroup = _runGroup;
+				
+				// Set our view mode
+				SetViewMode(m_sViewMode)
+			}
+
+			/***
+			 * Member variables
+			 **/
+			
+			// Component
+			private var m_pComponentCassette:ComponentCassette;
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:VGroup id="_cassetteDisabled" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
+					  visible="true" includeInLayout="true" width="100%" height="100%">
+				<s:Label text="This cassette is not used in this sequence." styleName="label" width="80%" />		
+			</s:VGroup>
+			<s:VGroup id="_cassetteEnabled" horizontalAlign="center" verticalAlign="top" horizontalCenter="0" verticalCenter="0"
+					  visible="false" includeInLayout="false" width="100%" height="100%">
+				<s:DataGrid id="_cassetteGrid" selectionMode="none" width="100%" height="100%">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn dataField="Position" headerText="Position" />
+							<s:GridColumn dataField="Name" headerText="Name" />
+							<s:GridColumn dataField="Description" headerText="Description" />
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+			</s:VGroup>
+		</s:VGroup>
+		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				verticalCenter="0" width="100%" height="100%">
+			<mx:Text text="This is where edit mode will be implemented" styleName="label" width="80%" />		
+		</s:VGroup>
+		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
+				  verticalCenter="0" width="100%" height="100%">
+			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+		</s:VGroup>
+	</s:VGroup>
+</Views:SubviewBase>

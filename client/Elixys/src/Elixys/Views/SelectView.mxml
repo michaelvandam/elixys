@@ -22,14 +22,14 @@
 			public override function UpdateState(pState:State):void
 			{
 				// Update our tab array with the server data
-				var pStateSelect:StateSelect = pState as StateSelect;
+				var pStateSelect:StateSelect = new StateSelect(null, pState);
 				UpdateTabs(_tabNavigator, pStateSelect.Tabs(), CreateNewTab, pStateSelect.TabID());
-				function CreateNewTab():SelectViewTab
+				function CreateNewTab():SelectSubview
 				{
 					// Callback to create our new tab
-					return new SelectViewTab();
+					return new SelectSubview();
 				}
-				var pSelectedTab:SelectViewTab = _tabNavigator.selectedChild as SelectViewTab;
+				var pSelectedTab:SelectSubview = _tabNavigator.selectedChild as SelectSubview;
 				
 				// Add click listeners on the tabs.  This will throw range errors before everything is up and going
 				try
@@ -79,7 +79,7 @@
 				var pTab:DisplayObject = event.target as DisplayObject;
 				var pTabBar:TabBar = event.target.parent as TabBar;
 				var nTabIndex:int = pTabBar.getChildIndex(pTab);
-				var pSelectViewTab:SelectViewTab = _tabNavigator.getChildAt(nTabIndex) as SelectViewTab;
+				var pSelectViewTab:SelectSubview = _tabNavigator.getChildAt(nTabIndex) as SelectSubview;
 				
 				// Create a POST request
 				var pPostSelect:PostSelect = new PostSelect();
@@ -106,7 +106,7 @@
 				var pPostSelect:PostSelect = new PostSelect();
 				pPostSelect.Type("BUTTONCLICK");
 				pPostSelect.TargetID((event.target as spark.components.Button).id);
-				var pSelectViewTab:SelectViewTab = _tabNavigator.selectedChild as SelectViewTab;
+				var pSelectViewTab:SelectSubview = _tabNavigator.selectedChild as SelectSubview;
 				var pSequence:SequenceMetadata = pSelectViewTab._sequenceGrid.selectedItem as SequenceMetadata;
 				pPostSelect.SequenceID(pSequence.ID);
 				

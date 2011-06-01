@@ -18,13 +18,13 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Used():Boolean
+		public function get Available():Boolean
 		{
-			return (super.flash_proxy::getProperty("used") == "true");
+			return super.flash_proxy::getProperty("available");
 		}
-		public function set Used(value:Boolean):void
+		public function set Available(value:Boolean):void
 		{
-			super.flash_proxy::setProperty("used", value ? "true" : "false");
+			super.flash_proxy::setProperty("available", value);
 		}
 		
 		public function get Reagents():Array
@@ -36,7 +36,7 @@ package Elixys.Objects
 				var pReagents:Array = super.flash_proxy::getProperty("reagents");
 				for each (var pReagentObject:Object in pReagents)
 				{
-					m_pReagents.push(pReagentObject as String);
+					m_pReagents.push(pReagentObject);
 				}
 			}
 			return m_pReagents;

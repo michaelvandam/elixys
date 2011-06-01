@@ -2,10 +2,10 @@ package Elixys.Objects
 {
 	import flash.utils.flash_proxy;
 	
-	public class PostView extends JSONObject
+	public class PostSequence extends JSONObject
 	{
 		// Constructor
-		public function PostView()
+		public function PostSequence()
 		{
 			// Call the base constructor
 			super(m_sDefault);

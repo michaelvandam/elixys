@@ -52,7 +52,7 @@ package Elixys.HTTP
 			// Make sure there is no outstanding request
 			if (!IsAvailable())
 			{
-				throw new Error("HTTP connection already in use");
+				throw new Error("Concurrency error");
 			}
 			
 			// Reset our retry counter and send the request
@@ -60,6 +60,26 @@ package Elixys.HTTP
 			SendRequestInternal(pHTTPRequest);			
 		}
 
+		// Drop any existing connection
+		public function DropConnection():void
+		{
+			// Make sure we are connected
+			if (m_bConnected)
+			{
+				// Stop the response timer, close the socket connection and clear our flag
+				m_pResponseTimer.stop();
+				try
+				{
+					m_pSocket.close();
+				}
+				catch (err:Error)
+				{
+				}
+				m_pSocket = null;
+				m_bConnected = false;
+			}
+		}
+		
 		/***
 		 * Internal functions
 		 **/
@@ -151,10 +171,43 @@ package Elixys.HTTP
 				else
 				{
 					// Pass an exception event up to our parent
-					var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Sending HTTP request failed: " + err.message);
-					m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
+					m_pHTTPConnectionPool.dispatchEvent(new ExceptionEvent("Communication failed"));
 				}
 			}
+		}
+		
+		// Extract status code from the HTTP response headers
+		private function ExtractStatusCode():uint
+		{
+			// Scan for the HTTP status code
+			for each (var sHeader:String in m_pHTTPResponseHeaders)
+			{
+				if (sHeader.slice(0, HTTP_STATUS.length) == HTTP_STATUS)
+				{
+					// Found it.  Extract the code
+					return int(sHeader.slice(HTTP_STATUS.length, HTTP_STATUS.length + 3));
+				}
+			}
+			
+			// Failed to find HTTP status code
+			throw new Error("Corrupt connection");
+		}
+		
+		// Extract content length from the HTTP response headers
+		private function ExtractContentLength():uint
+		{
+			// Scan for the HTTP content length
+			for each (var sHeader:String in m_pHTTPResponseHeaders)
+			{
+				if (sHeader.slice(0, HTTP_CONTENTLENGTH.length) == HTTP_CONTENTLENGTH)
+				{
+					// Found it.  Extract the content length
+					return int(sHeader.slice(HTTP_CONTENTLENGTH.length));
+				}
+			}
+			
+			// Failed to find HTTP content length
+			throw new Error("Corrupt connnection");
 		}
 
 		/***
@@ -285,8 +338,7 @@ package Elixys.HTTP
 			}
 			catch (err:Error)
 			{
-				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Error when receiving socket data: " + err.message);
-				dispatchEvent(pExceptionEvent);
+				m_pHTTPConnectionPool.dispatchEvent(new ExceptionEvent("Communication failed"));
 			}
 		}
 
@@ -311,61 +363,23 @@ package Elixys.HTTP
 			else
 			{
 				// Give up and send an exception event
-				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("HTTP request timed out");
-				dispatchEvent(pExceptionEvent);
+				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Server not responding");
+				m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 			}
 		}
 
 		// Called when a socket IO or security error occurs
 		private function OnSocketIOErrorEvent(event:IOErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Socket IO error: " + event.text);
-			dispatchEvent(pExceptionEvent);
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
+			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}		
 		private function OnSocketSecurityErrorEvent(event:SecurityErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Socket security error: " + event.text);
-			dispatchEvent(pExceptionEvent);
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
+			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}
 
-		/***
-		 * Private functions
-		 **/
-
-		// Extract status code from the HTTP response headers
-		private function ExtractStatusCode():uint
-		{
-			// Scan for the HTTP status code
-			for each (var sHeader:String in m_pHTTPResponseHeaders)
-			{
-				if (sHeader.slice(0, HTTP_STATUS.length) == HTTP_STATUS)
-				{
-					// Found it.  Extract the code
-					return int(sHeader.slice(HTTP_STATUS.length, HTTP_STATUS.length + 3));
-				}
-			}
-			
-			// Failed to find HTTP status code
-			throw new Error("Corrupt HTTP response");
-		}
-
-		// Extract content length from the HTTP response headers
-		private function ExtractContentLength():uint
-		{
-			// Scan for the HTTP content length
-			for each (var sHeader:String in m_pHTTPResponseHeaders)
-			{
-				if (sHeader.slice(0, HTTP_CONTENTLENGTH.length) == HTTP_CONTENTLENGTH)
-				{
-					// Found it.  Extract the content length
-					return int(sHeader.slice(HTTP_CONTENTLENGTH.length));
-				}
-			}
-			
-			// Failed to find HTTP content length
-			throw new Error("Corrupt HTTP response");
-		}
-		
 		/***
 		 * Data members
 		 **/

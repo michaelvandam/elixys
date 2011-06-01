@@ -18,11 +18,11 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Target():String
+		public function get Target():uint
 		{
-			return super.flash_proxy::getProperty("target");
+			return parseInt(super.flash_proxy::getProperty("target"));
 		}
-		public function set Target(value:String):void
+		public function set Target(value:uint):void
 		{
 			super.flash_proxy::setProperty("target", value);
 		}

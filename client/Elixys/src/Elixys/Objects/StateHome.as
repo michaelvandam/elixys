@@ -11,10 +11,16 @@ package Elixys.Objects
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState() != null) && (ClientState() != TYPE))
+			if ((ClientState() != null) && !CheckState(ClientState()))
 			{
 				throw new Error("State object mismatch");
 			}
+		}
+		
+		// Checks for a state match
+		static public function CheckState(sState:String):Boolean
+		{
+			return (sState == TYPE);
 		}
 		
 		// Data wrappers

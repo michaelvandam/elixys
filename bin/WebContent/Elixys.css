@@ -1,0 +1,29 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+.label
+{
+	font-size: 22px;
+	color: #353535;
+}
+
+.textarea
+{
+	font-size: 22px;
+	color: #353535;
+}
+
+.button
+{
+	font-size: 22px;
+	color: #353535;
+}
+
+.popup
+{
+	background-color: #ffffff;
+	modal-transparency: 0.65;
+	modal-transparency-color: #000000;
+	modal-transparency-blur: 0;
+}

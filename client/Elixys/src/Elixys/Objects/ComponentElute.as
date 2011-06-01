@@ -18,11 +18,11 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Reagent():String
+		public function get Reagent():uint
 		{
 			return super.flash_proxy::getProperty("reagent");
 		}
-		public function set Reagent(value:String):void
+		public function set Reagent(value:uint):void
 		{
 			super.flash_proxy::setProperty("reagent", value);
 		}
@@ -45,11 +45,11 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reagentvalidation", value);
 		}
 
-		public function get Target():String
+		public function get Target():uint
 		{
 			return super.flash_proxy::getProperty("target");
 		}
-		public function set Target(value:String):void
+		public function set Target(value:uint):void
 		{
 			super.flash_proxy::setProperty("target", value);
 		}

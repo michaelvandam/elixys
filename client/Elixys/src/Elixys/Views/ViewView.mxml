@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+<Views:SequenceViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
 		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
@@ -10,157 +10,84 @@
 			
 			import spark.components.Button;
 
+			/***
+			 * Member functions
+			 **/
+			
+			// Update state
+			public override function UpdateState(pState:State):void
+			{
+				// Update the sequence state
+				var pStateSequence:StateSequence = new StateSequence(StateSequence.VIEWTYPE, null, pState);
+				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
+
+				// Request the sequence from the server
+				RequestSequence(m_nSequenceID);
+			}
+			
+			// Update sequence
+			public override function UpdateSequence(pSequence:Sequence):void
+			{
+				// Update the sequence sequence
+				UpdateSequenceSequence(pSequence);
+
+				// Request the currently selected sequence component from the server
+				RequestSequenceComponent(m_nSequenceID, m_nComponentID);
+			}
+			
+			// Update component
+			public override function UpdateComponent(pComponent:Component):void
+			{
+				// Update the sequence component
+				UpdateSequenceComponent(pComponent);
+			}
+			
+			// Update reagent
+			public override function UpdateReagent(pReagent:Reagent):void
+			{
+				// Update the sequence reagent
+				UpdateSequenceReagent(pReagent);
+			}
+
+			/***
+			 * Message handlers
+			 **/
+			
 			// Called when creation is complete
 			public function OnCreationComplete():void
 			{
-				// Inform the child views of the ViewView object
-				_viewCassette.SetParent(this);
-				_viewAdd.SetParent(this);
-				_viewEvaporate.SetParent(this);
-				_viewTransfer.SetParent(this);
-				_viewElute.SetParent(this);
-				_viewReact.SetParent(this);
-				_viewPrompt.SetParent(this);
-				_viewInstall.SetParent(this);
-				_viewComment.SetParent(this);
-				_viewActivity.SetParent(this);
-			}
-			
-			// Returns the sequence ID to our child views
-			public function GetSequenceID():String
-			{
-				return m_sSequenceID;
-			}
-			
-			// Update functions
-			public override function UpdateState(pState:State):void
-			{
-				// Update our button array with the server data
-				var pStateView:StateView = pState as StateView;
-				UpdateButtons(_navigationButtons, pStateView.Buttons(), CreateNewButton);
-				function CreateNewButton():spark.components.Button
-				{
-					// Callback to create our new button
-					var pButton:spark.components.Button = new spark.components.Button();
-					pButton.width = 150;
-					pButton.height = 40;
-					pButton.styleName = "button";
-					pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
-					return pButton;
-				}
+				// Set the base class variables
+				m_pOnButtonClick = OnButtonClick;
+				m_pSequenceName = _sequenceName;
+				m_pSequenceList = _sequenceList;
+				m_pNavigationButtons = _navigationButtons;
+				m_pViewStack = _viewStack;
+				m_pCassetteSubview = _cassetteSubview;
+				m_pAddSubview = _addSubview;
+				m_pEvaporateSubview = _evaporateSubview;
+				m_pTransferSubview = _transferSubview;
+				m_pEluteSubview = _eluteSubview;
+				m_pReactSubview = _reactSubview;
+				m_pPromptSubview = _promptSubview;
+				m_pInstallSubview = _installSubview;
+				m_pCommentSubview = _commentSubview;
+				m_pActivitySubview = _activitySubview;
 				
-				// Remember the currently sequence and component
-				m_sSequenceID = pStateView.SequenceID();
-				m_sComponentID = pStateView.ComponentID();
+				// Set the subview parents
+				SetSubviewParents();
+			}
 
-				// Request the sequence from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_sSequenceID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
-			}
-			public override function UpdateStateSequence(pSequence:Sequence):void
-			{
-				// Set the sequence name
-				_sequenceName.text = pSequence.Metadata().Name;
-				
-				// Fill the operations list
-				UpdateList(_sequenceList, pSequence.Components(), CreateNewItem,  m_sComponentID);
-				function CreateNewItem():SequenceComponent
-				{
-					return new SequenceComponent();
-				}
-				
-				// Request the currently selected sequence component from the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "GET";
-				pHTTPRequest.m_sResource = "/Elixys/sequence/" + m_sSequenceID + "/component/" + m_sComponentID;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
-			}
-			public override function UpdateStateComponent(pComponent:Component):void
-			{
-				// Locate the active view
-				var pActiveView:ViewBase;
-				switch (pComponent.ComponentType)
-				{
-					case ComponentCassette.TYPE:
-						pActiveView = _viewCassette;
-						break;
-					
-					case ComponentAdd.TYPE:
-						pActiveView = _viewAdd;
-						break;
-					
-					case ComponentEvaporate.TYPE:
-						pActiveView = _viewEvaporate;
-						break;
-					
-					case ComponentTransfer.TYPE:
-						pActiveView = _viewTransfer;
-						break;
-					
-					case ComponentElute.TYPE:
-						pActiveView = _viewElute;
-						break;
-					
-					case ComponentReact.TYPE:
-						pActiveView = _viewReact;
-						break;
-					
-					case ComponentPrompt.TYPE:
-						pActiveView = _viewPrompt;
-						break;
-					
-					case ComponentInstall.TYPE:
-						pActiveView = _viewInstall;
-						break;
-						
-					case ComponentComment.TYPE:
-						pActiveView = _viewComment;
-						break;
-					
-					case ComponentActivity.TYPE:
-						pActiveView = _viewActivity;
-						break;
-							
-					default:
-						return;
-				}		
-
-				// Show and update the appropriate component
-				_viewStack.selectedChild = pActiveView;
-				pActiveView.UpdateStateComponent(pComponent);
-			}
-			public override function UpdateStateReagent(pReagent:Reagent):void
-			{
-				// Update the active view
-				var pViewBase:ViewBase = _viewStack.selectedChild as ViewBase;
-				pViewBase.UpdateStateReagent(pReagent);
-			}
-			
 			// Button click handler
 			public function OnButtonClick(event:MouseEvent):void
 			{
 				// Create a POST request
-				var pPostView:PostView = new PostView();
-				pPostView.TargetID((event.target as spark.components.Button).id);
-				
-				// Convert the request to a byte array
-				var pBody:ByteArray = new ByteArray();
-				pBody.writeMultiByte(pPostView.toString(), "utf8");
-				pBody.position = 0;
-				
-				// Pass the request up to be sent to the server
-				var pHTTPRequest:HTTPRequest = new HTTPRequest();
-				pHTTPRequest.m_sMethod = "POST";
-				pHTTPRequest.m_sResource = "/Elixys/VIEW";
-				pHTTPRequest.m_pBody = pBody;
-				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
-			}
+				var pPostSequence:PostSequence = new PostSequence();
+				pPostSequence.TargetID((event.target as spark.components.Button).id);
 			
-			// Current sequence and component IDs
-			private var m_sSequenceID:String = "";
-			private var m_sComponentID:String = "";
+				// Pass the request to the server
+				DoPost(pPostSequence, "VIEW");
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -207,18 +134,18 @@
 			<s:HGroup id="_navigationButtons" gap="20" />
 			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
-				<Views:ViewViewCassette id="_viewCassette" width="100%" height="100%" />
-				<Views:ViewViewAdd id="_viewAdd" width="100%" height="100%" />
-				<Views:ViewViewEvaporate id="_viewEvaporate" width="100%" height="100%" />
-				<Views:ViewViewTransfer id="_viewTransfer" width="100%" height="100%" />
-				<Views:ViewViewElute id="_viewElute" width="100%" height="100%" />
-				<Views:ViewViewReact id="_viewReact" width="100%" height="100%" />
-				<Views:ViewViewPrompt id="_viewPrompt" width="100%" height="100%" />
-				<Views:ViewViewInstall id="_viewInstall" width="100%" height="100%" />
-				<Views:ViewViewComment id="_viewComment" width="100%" height="100%" />
-				<Views:ViewViewActivity id="_viewActivity" width="100%" height="100%" />
+				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:AddSubview id="_addSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:EvaporateSubview id="_evaporateSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:TransferSubview id="_transferSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:EluteSubview id="_eluteSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:ReactSubview id="_reactSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:PromptSubview id="_promptSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:InstallSubview id="_installSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:CommentSubview id="_commentSubview" m_sViewMode="View" width="100%" height="100%" />
+				<Views:ActivitySubview id="_activitySubview" m_sViewMode="View" width="100%" height="100%" />
 			</mx:ViewStack>
 			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
 		</s:VGroup>
 	</s:HGroup>
-</Views:ViewBase>
+</Views:SequenceViewBase>

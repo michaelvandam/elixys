@@ -26,7 +26,25 @@ package Elixys.Objects
 		{
 			super.flash_proxy::setProperty("position", value);
 		}
-			
+
+		public function get PositionDescription():String
+		{
+			return super.flash_proxy::getProperty("positiondescription");
+		}
+		public function set PositionDescription(value:String):void
+		{
+			super.flash_proxy::setProperty("positiondescription", value);
+		}
+		
+		public function get PositionValidation():String
+		{
+			return super.flash_proxy::getProperty("positionvalidation");
+		}
+		public function set PositionValidation(value:String):void
+		{
+			super.flash_proxy::setProperty("positionvalidation", value);
+		}
+
 		public function get Duration():String
 		{
 			return super.flash_proxy::getProperty("duration");

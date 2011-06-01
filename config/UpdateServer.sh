@@ -20,8 +20,9 @@ rm -rf /var/www/http/*
 mv -f elixys/bin/WebContent/* /var/www/http/
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*
 
-# Update the current dummy server
-mv -f elixys/server/DummyServer.py /var/www/wsgi
+# Update the core python server
+rm -rf /var/www/wsgi/*
+mv -f elixys/server/* /var/www/wsgi
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
 # Restart Apache

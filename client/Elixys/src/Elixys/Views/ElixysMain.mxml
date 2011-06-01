@@ -6,8 +6,9 @@
 		<![CDATA[
 			import Elixys.Events.*;
 			import Elixys.HTTP.*;
+			import Elixys.Loader.LoaderMain;
 			import Elixys.Objects.*;
-						
+			
 			import mx.controls.Alert;
 			import mx.events.ResizeEvent;
 			import mx.managers.PopUpManager;
@@ -19,11 +20,22 @@
 			// Called when the object is created
 			private function OnCreationComplete():void
 			{
+				var pEvaporationTime:Date = new Date();
+				pEvaporationTime.setTime(Date.parse("00:05.35"));
+
 				// Add event listeners
 				addEventListener(ResizeEvent.RESIZE, OnResize);
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewEdit.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+
+				// Tell the Home page to display the log out button if we are in the AIR player
+				if (FindLoaderMain() != null)
+				{
+					_viewHome.DisplayLogout(true);
+					_viewHome.addEventListener(LogoutEvent.LOGOUT, OnLogoutEvent);
+				}
 			}
 
 			// Step 1: This function is called by the container to set the server
@@ -47,23 +59,51 @@
 				// Remember the system configuration
 				m_pServerConfiguration = pConfiguration;
 				
+				// Pass the system configuration to our child views
+				for each (var pViewBase:ViewBase in _viewStack.getChildren())
+				{
+					pViewBase.UpdateConfiguration(m_pServerConfiguration);
+				}
+
 				// Load the current state
 				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
-				
+
 				// Start the state timer
-				var pTimer:Timer = new Timer(1000);
-				pTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
-				pTimer.start();
+				m_pStateTimer = new Timer(1000);
+				m_pStateTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
+				m_pStateTimer.start();
 			}
 
 			/***
 			 *** Member functions
 			 **/
 			
+			// Attempts to locate the LoaderMain class in our ancestory.  This function will return a valid pointer if running
+			// in the AIR player or null if running in the browser
+			private function FindLoaderMain():LoaderMain
+			{
+				// Walk our parent tree until we find LoaderMain
+				var pParent:DisplayObjectContainer = parent;
+				while ((pParent != null) && (pParent as LoaderMain == null))
+				{
+					pParent = pParent.parent;
+				}
+				
+				// Return LoaderMain if found
+				if (pParent != null)
+				{
+					return (pParent as LoaderMain);
+				}
+				else
+				{
+					return null;
+				}
+			}
+
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
-				if (pState.ClientState() == StatePrompt.TYPE)
+				if (StatePrompt.CheckState(pState.ClientState()))
 				{
 					// Create and display the pop up window
 					if (_viewPrompt == null)
@@ -86,35 +126,29 @@
 				}
 				
 				// Show and update the appropriate state
-				switch (pState.ClientState())
+				if (StateHome.CheckState(pState.ClientState()))
 				{
-					case StateHome.TYPE:
-						var pStateHome:StateHome = new StateHome(null, pState);
-						_viewStack.selectedChild = _viewHome;
-						_viewHome.UpdateState(pStateHome);
-						break;
-					
-					case StateSelect.TYPE:
-						var pStateSelect:StateSelect = new StateSelect(null, pState);
-						_viewStack.selectedChild = _viewSelect;
-						_viewSelect.UpdateState(pStateSelect);
-						break;
-					
-					case StateView.TYPE:
-						var pStateView:StateView = new StateView(null, pState);
-						_viewStack.selectedChild = _viewView;
-						_viewView.UpdateState(pStateView);
-						break;
-
-					case StatePrompt.TYPE:
-						var pStatePrompt:StatePrompt = new StatePrompt(null, pState);
-						_viewStack.selectedChild = _viewPrompt;
-						_viewPrompt.UpdateState(pStatePrompt);
-						break;
-						
-					default:
-						Alert.show("Unknown client state received from server: " + pState.ClientState());
-						break;
+					_viewStack.selectedChild = _viewHome;
+					_viewHome.UpdateState(pState);
+				}
+				else if (StateSelect.CheckState(pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewSelect;
+					_viewSelect.UpdateState(pState);
+				}
+				else if (StateSequence.CheckState(StateSequence.VIEWTYPE, pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewView;
+					_viewView.UpdateState(pState);
+				}
+				else if (StateSequence.CheckState(StateSequence.EDITTYPE, pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewEdit;
+					_viewEdit.UpdateState(pState);
+				}
+				else
+				{
+					Alert.show("Unknown client state received from server: " + pState.ClientState());
 				}
 			}
 			
@@ -178,19 +212,19 @@
 					case (Sequence.TYPE):
 						// Update the active view
 						var pSequence:Sequence = new Sequence(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateSequence(pSequence);
+						(_viewStack.selectedChild as ViewBase).UpdateSequence(pSequence);
 						break;
 					
 					case (Component.TYPE):
 						// Update the active view
 						var pComponent:Component = new Component(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateComponent(pComponent);
+						(_viewStack.selectedChild as ViewBase).UpdateComponent(pComponent);
 						break;
 					
 					case (Reagent.TYPE):
 						// Update the active view
 						var pReagent:Reagent = new Reagent(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateStateReagent(pReagent);
+						(_viewStack.selectedChild as ViewBase).UpdateReagent(pReagent);
 						break;
 						
 					case (ServerError.TYPE):
@@ -218,7 +252,8 @@
 			// Called when an exception occurs in a child
 			public function OnChildExceptionEvent(event:ExceptionEvent):void
 			{
-				Alert.show("Error: " + event.exception);
+				// Send a log out event to the host
+				OnLogoutEvent(new LogoutEvent(event.exception));
 			}
 
 			// Called at regular intervals to update the state
@@ -227,10 +262,47 @@
 				// Load the current state
 				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 			}
+			
+			// Called when the user logs out
+			private function OnLogoutEvent(event:LogoutEvent):void
+			{
+				// Make sure we are logged in
+				if (m_pHTTPConnectionPool != null)
+				{
+					// Are we running in the AIR player?
+					var pLoaderMain:LoaderMain = FindLoaderMain();
+					if (pLoaderMain != null)
+					{
+						// Yes, so notify it of the log out and any error message
+						pLoaderMain.LogOut(event.error);
+					}
+					else
+					{
+						// No, so display any error message
+						if (event.error != "")
+						{
+							Alert.show(event.error, "Error");
+						}
+					}
+					
+					// Stop the state timer
+					if (m_pStateTimer != null)
+					{
+						m_pStateTimer.stop();
+					}
+					
+					// Clean up the connection pool
+					m_pHTTPConnectionPool.DropAllConnections();
+					m_pHTTPConnectionPool = null;
+				}
+			}
 
 			// HTTP connection pool to the server
 			private var m_pHTTPConnectionPool:HTTPConnectionPool;
-			
+
+			// State update timer
+			private var m_pStateTimer:Timer;
+
 			// Server configuration
 			private var m_pServerConfiguration:Configuration;
 
@@ -239,9 +311,10 @@
 		]]>
 	</fx:Script>
 	
-	<mx:ViewStack id="_viewStack" width="100%" height="100%">
+	<mx:ViewStack id="_viewStack" creationPolicy="all" width="100%" height="100%">
 		<Views:HomeView id="_viewHome" width="100%" height="100%" />
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
 		<Views:ViewView id="_viewView" width="100%" height="100%" />
+		<Views:EditView id="_viewEdit" width="100%" height="100%" />
 	</mx:ViewStack>
 </mx:Canvas>

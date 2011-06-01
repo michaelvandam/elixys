@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:ViewStack xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-			  borderStyle="solid" creationPolicy="all" creationComplete="OnCreationComplete();" width="100%" height="100%">
+			  borderStyle="solid" creationPolicy="all" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Style source="Elixys.css" />
 
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.ExceptionEvent;
 			import Elixys.Events.HTTPResponseEvent;
+			import Elixys.Events.LogoutEvent;
 			import Elixys.HTTP.HTTPConnectionPool;
 			import Elixys.Views.ElixysMain;
 			
@@ -15,6 +16,7 @@
 			import mx.containers.TitleWindow;
 			import mx.controls.Alert;
 			import mx.controls.SWFLoader;
+			import mx.events.CloseEvent;
 			import mx.events.ResizeEvent;
 			import mx.managers.PopUpManager;
 			
@@ -22,13 +24,47 @@
 			 * Member functions
 			 ***/
 			
+			// Called by the SWF when the user logs out
+			public function LogOut(sError:String):void
+			{
+				// Make sure we're logged in
+				if (m_pHTTPConnectionPool != null)
+				{
+					// Clean up the connection pool
+					m_pHTTPConnectionPool.DropAllConnections();
+					m_pHTTPConnectionPool = null;
+					
+					// Remove the SWF
+					_viewApplication.removeAllChildren();
+					if (m_bDynamicSWF)
+					{
+						var pSWFLoader:SWFLoader = m_pSWF as SWFLoader;
+						pSWFLoader.unloadAndStop();
+					}
+					m_pSWF = null;
+					
+					// Show the login screen
+					this.selectedChild = _viewLogin;
+					
+					// Display a message if we received an error string
+					if (sError != "")
+					{
+						Alert.show(sError, "Connection to server lost");
+					}
+				}
+			}
+
+			/***
+			 * Message handlers
+			 **/
+			
 			// Called when the application is created
-			public function OnCreationComplete():void
+			private function OnCreationComplete():void
 			{
 				// Add event listeners
 				addEventListener(ResizeEvent.RESIZE, OnResizeEvent);
 			}
-			
+
 			// Called when the user clicks "Connect"
 			private function OnConnect():void
 			{
@@ -90,7 +126,6 @@
 			private function DisplayElixys(pSWFBody:ByteArray):void
 			{
 				// Load and show the main Elixys window
-				var pSWF:DisplayObject = null;
 				if (m_bDynamicSWF)
 				{
 					// Interpret the HTTP response body as a SWF
@@ -105,7 +140,7 @@
 							"credentials": m_pHTTPConnectionPool.GetCredentials()
 						};
 					pSWFLoader.load(pSWFBody);
-					pSWF = pSWFLoader;
+					m_pSWF = pSWFLoader;
 				}
 				else
 				{
@@ -114,13 +149,13 @@
 					pElixysSWF.Init1_SetServer(_server.text, m_pHTTPConnectionPool.GetCredentials());
 					pElixysSWF.percentWidth = 100;
 					pElixysSWF.percentHeight = 100;
-					pSWF = pElixysSWF;
+					m_pSWF = pElixysSWF;
 				}
 				
 				// Hide the loader pop up and show the SWF
 				PopUpManager.removePopUp(m_pLoaderPopUp);
 				m_pLoaderPopUp = null;
-				_viewApplication.addChild(pSWF);
+				_viewApplication.addChild(m_pSWF);
 				this.selectedChild = _viewApplication;
 			}
 
@@ -133,14 +168,24 @@
 			// Called when the status of the HTTP request is know
 			private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
 			{
-				// Notify the user of any error
-				if (event.status != 200)
+				// Check for success
+				if (event.status == 200)
 				{
-					Alert.show("HTTP request failed: " + event.status);
+					// Set the progress text
+					m_pLoaderPopUp.SetProgress(30);
 				}
-				
-				// Set the progress text
-				m_pLoaderPopUp.SetProgress(30);
+				else
+				{
+					// Give a specific message for authentication errors
+					if (event.status == 401)
+					{
+						Alert.show("Invalid username or password", "Authentication Error", 4, null, OnAlertClosed);
+					}
+					else
+					{
+						Alert.show("Unexpected response received from server", "Error", 4, null, OnAlertClosed);
+					}
+				}
 			}
 			
 			// Called as the HTTP download progresses
@@ -154,14 +199,30 @@
 			// Called when the HTTP response is complete
 			private function OnHTTPResponseEvent(event:HTTPResponseEvent):void
 			{
-				// Display the main Elixys window
-				DisplayElixys(event.m_pHTTPResponse.m_pBody);
+				// Make sure the request succeeded
+				if (event.m_pHTTPResponse.m_nStatusCode == 200)
+				{
+					// Display the main Elixys window
+					DisplayElixys(event.m_pHTTPResponse.m_pBody);
+				}
 			}
 						
 			// Called when an exception occurs in a child
 			public function OnChildExceptionEvent(event:ExceptionEvent):void
 			{
-				Alert.show("Error: " + event.exception);
+				// Display the alert window
+				Alert.show(event.exception, "Error", 4, null, OnAlertClosed);
+			}
+			
+			// Called when the user closes the alert window
+			private function OnAlertClosed(event:CloseEvent):void
+			{
+				// Remove the loader pop up if it exists
+				if (m_pLoaderPopUp != null)
+				{
+					PopUpManager.removePopUp(m_pLoaderPopUp);
+					m_pLoaderPopUp = null;
+				}
 			}
 			
 			// Called when the application resizes
@@ -172,17 +233,20 @@
 					PopUpManager.centerPopUp(m_pLoaderPopUp);
 				}
 			}
-			
+
 			/*** 
 			 *** Data members
 			 ***/
 			
-			// Flag that specifies if the Elixys.swf is loaded dynamically
+			// Flag that specifies if Elixys.swf is loaded dynamically or statically
 			public var m_bDynamicSWF:Boolean = true;
-			
-			// Debug flag
+
+			// Main SWF window, either loaded dynamically or statically
+			private var m_pSWF:DisplayObject;
+
+			// Flag to used to skip authentication when communicating with WSGI directly rather than Apache
 			public var m_bDebug:Boolean = false;
-						
+			
 			// HTTP connection pool to the server
 			private var m_pHTTPConnectionPool:HTTPConnectionPool;
 			
@@ -191,9 +255,8 @@
 		]]>
 	</fx:Script>
 		
-	<!-- The layout of this AIR application is straightforward: two views in a ViewStack container, one for login and the other for
-	displaying the Elixys SWF. -->
-	<!-- 	<mx:Canvas id="_viewLogin" width="100%" height="100%" backgroundColor="0xdddddd">	-->
+	<!-- The layout of this AIR application is straightforward: two views in a ViewStack container, one for the user's login credentials and
+		the other for displaying the Elixys SWF. -->
 	<mx:Canvas id="_viewLogin" width="100%" height="100%">
 		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="20" width="70%" height="70%">
 			<s:Label text="Enter the server IP address and your credentials:" styleName="label" />
@@ -204,7 +267,7 @@
 					<s:Label text="Password" verticalAlign="middle" styleName="label" height="40" />
 				</s:VGroup>
 				<s:VGroup gap="15" width="100%">
-					<s:TextArea id="_server" text="10.109.27.102" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_server" text="192.168.1.109" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 				</s:VGroup>
@@ -213,17 +276,6 @@
 				<s:Button label="Exit" styleName="button" width="150" height="40" />	<!-- click="nativeApplication.exit(0);" -->
 				<s:Button label="Connect" styleName="button" click="OnConnect();" width="150" height="40" />
 			</s:HGroup>
-		</s:VGroup>
-	</mx:Canvas>
-	<mx:Canvas id="_viewProgress" width="100%" height="100%">
-<!--		<mx:Box horizontalAlign="center" verticalAlign="middle" backgroundColor="0x000000" backgroundAlpha="0.2" width="100%" height="100%">
-			<mx:Box horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" backgroundColor="0xffffff"
-					borderVisible="true" borderColor="0x000000" width="100%" height="100%" maxWidth="400" maxHeight="300">	-->
-		<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
-			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" 
-					width="100%" height="100%" maxWidth="400" maxHeight="300">
-				<mx:Label id="_progress" text="Enter progress text here" width="100%" />
-			</s:VGroup>
 		</s:VGroup>
 	</mx:Canvas>
 	<mx:Canvas id="_viewApplication" width="100%" height="100%">
