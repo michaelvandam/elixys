@@ -13,7 +13,7 @@ __date__ = "$Date: 2011/05/03 18:40:00 $"
 import socket
 import time
 
-HOST = "192.168.250.1"
+HOST = "127.0.0.1"
 PORT = 9600
 
 ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0 =Cmd 1=Resp][00000][0 or 1=Resp Req]                      
@@ -248,7 +248,7 @@ def getError(err):
   return err
 
 def sendPacket():
-  mySocket.bind(('',PORT))
+  #mySocket.bind(('',PORT))
   print "Please enter a packet to send."
   print "Command format:[xxxx][xx][xxxxxx][xxxx]"
   print "ex. 0101800000020001"

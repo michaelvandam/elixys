@@ -11,7 +11,6 @@ __date__ = "$Date: 2011/05/03 18:40:00 $"
 
 
 import socket
-import time
 
 HOST = "192.168.250.1"
 PORT = 9600
@@ -30,7 +29,6 @@ PACKETINFO = [ICF,RSV,GCT,DNET,DNODE,DUNIT,SNET,SNODE,SUNIT,SVCID]
 
 FINSHEADER = ["46","49","4E","53"]
 FINSCLOSING = ["05", "01"]
-
 
 #Dictionary of commands and the associaed codes.
 CMD={"0101":"MEMORY AREA READ",
@@ -78,23 +76,6 @@ CMD={"0101":"MEMORY AREA READ",
 
 
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-def dance():
-  #time.sleep(10)
-  packet = ""
-  for item in PACKETINFO:
-    packet += item
-  packet += "0102800000000001000"
-  send = ""
-  for each in range(16):
-    send = (packet+hex(each)[2:])
-    mySocket.sendto(send.decode("hex"),(HOST,PORT))
-    print send[20:]
-    time.sleep(0.05)
-  for each in range(16,256):
-    send = (packet[:-1]+hex(each)[2:])
-    mySocket.sendto(send.decode("hex"),(HOST,PORT))
-    print send[20:-1]
-    time.sleep(0.05)
 def constructPacket(packet):
   packetList = []
   packetList.extend(PACKETINFO)
@@ -266,8 +247,6 @@ def sendPacket():
       mySocket.sendto(packet,(HOST,PORT))
       print "\n"
       data = mySocket.recv(1024)
-    if packet == "dance":
-      dance()
     if packet == "end":
       break
     if data:
