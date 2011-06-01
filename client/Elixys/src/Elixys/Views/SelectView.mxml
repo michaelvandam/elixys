@@ -126,7 +126,7 @@
 	</fx:Script>
 	
 	<s:VGroup x="0" y="0" width="100%" height="100%">
-		<mx:TabNavigator id="_tabNavigator" tabHeight="80" tabWidth="250" styleName="label" width="100%" height="100%" />
+		<mx:TabNavigator id="_tabNavigator" tabHeight="80" tabWidth="250" styleName="TextMedium" width="100%" height="100%" />
 	</s:VGroup>
 	<s:VGroup x="0" y="0" horizontalAlign="right" verticalAlign="top" width="100%" height="100%">
 		<s:HGroup id="_navigationbuttons" paddingRight="20" paddingTop="20" gap="20" />

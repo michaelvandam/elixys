@@ -99,7 +99,7 @@ package Elixys.Views
 		}
 		
 		// Called when a text control receives focus
-		protected function OnTextFocusIn(event:FocusEvent):void
+		public function OnTextFocusIn(event:FocusEvent):void
 		{
 			// Remember the text input object that has the keyboard focus
 			var pParent:DisplayObjectContainer = event.target as DisplayObjectContainer;
@@ -118,7 +118,7 @@ package Elixys.Views
 		}
 		
 		// Called when a text control loses focus
-		protected function OnTextFocusOut(event:FocusEvent):void
+		public function OnTextFocusOut(event:FocusEvent):void
 		{
 			if (m_pKeyboardFocusTarget != null)
 			{
@@ -132,6 +132,12 @@ package Elixys.Views
 				// Clear our pointer
 				m_pKeyboardFocusTarget = null;
 			}
+		}
+		
+		// Returns the item that currently has the keyboard focus
+		public function KeyboardFocusTarget():SkinnableTextBase
+		{
+			return m_pKeyboardFocusTarget;
 		}
 
 		// Update the client button array with the server array
@@ -373,6 +379,57 @@ package Elixys.Views
 			
 			// Update the data provider
 			pList.dataProvider = pListData;
+		}
+		
+		// Update the client reagent grid with the server data
+		protected function UpdateReagentGrid(pGrid:DataGrid, pServerReagents:Array):void
+		{
+			// Get a pointer to the sequence grid
+			var pGridData:ArrayList;
+			if (pGrid.dataProvider != null)
+			{
+				pGridData = pGrid.dataProvider as ArrayList;
+			}
+			if (pGridData == null)
+			{
+				pGridData = new ArrayList();
+			}
+			
+			// Make sure we have enough reagent positions in our array
+			var nReagent:uint, pReagent:Reagent;
+			for (nReagent = 0; nReagent < pServerReagents.length; ++nReagent)
+			{
+				// Get a pointer to the next reagent
+				if (nReagent < pGridData.length)
+				{
+					// Use existing reagent
+					pReagent = pGridData.getItemAt(nReagent) as Reagent;
+				}
+				else
+				{
+					// Create a new reagent
+					pReagent = new Reagent();
+					pGridData.addItem(pReagent);
+				}
+				
+				// Remember the reagent ID
+				pReagent.ReagentID = pServerReagents[nReagent];
+			}
+			
+			// Remove any extra reagents
+			while (nReagent < pGridData.length)
+			{
+				pGridData.removeItemAt(pGridData.length - 1);
+			}
+			
+			// Update the data provider
+			pGrid.dataProvider = pGridData;
+			
+			// Request the reagents from the server
+			for (nReagent = 0; nReagent < pServerReagents.length; ++nReagent)
+			{
+				RequestSequenceReagent(pServerReagents[nReagent]);
+			}
 		}
 
 		// Update the given combo box with the specified enum-literal validation string
