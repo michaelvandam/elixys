@@ -139,7 +139,7 @@
 	<s:VGroup width="100%" height="100%">
 		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle"
 				horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
-			<mx:Text id="_outputText" styleName="label" width="80%" />		
+			<mx:Text id="_outputText" styleName="TextMedium" width="80%" />		
 		</s:VGroup>
 		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				verticalCenter="0" width="100%" height="100%">
@@ -147,61 +147,61 @@
 				<s:Spacer height="100%" />
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Reactor" styleName="label" />
+						<s:Label text="Reactor" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="label" width="75%" />
+						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="TextMedium" width="75%" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Position" styleName="label" />
+						<s:Label text="Position" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="label" width="75%" />
+						<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="TextMedium" width="75%" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Duration" styleName="label" />
+						<s:Label text="Duration" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editDurationMinutes" styleName="label" focusIn="OnTextFocusIn(event)"
+						<s:TextInput id="_editDurationMinutes" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 									 focusOut="OnTextFocusOut(event)" width="100" />
-						<s:Label text="min" styleName="label" />
-						<s:TextInput id="_editDurationSeconds" styleName="label" focusIn="OnTextFocusIn(event)"
+						<s:Label text="min" styleName="TextMedium" />
+						<s:TextInput id="_editDurationSeconds" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 									 focusOut="OnTextFocusOut(event)" width="100" />
-						<s:Label text="sec" styleName="label" />
+						<s:Label text="sec" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Reaction Temperature" styleName="label" />
+						<s:Label text="Reaction Temperature" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editReactionTemperature" styleName="label" focusIn="OnTextFocusIn(event)"
+						<s:TextInput id="_editReactionTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 									 focusOut="OnTextFocusOut(event)"/>
-						<s:Label text="C" styleName="label" />
+						<s:Label text="C" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Final Temperature" styleName="label" />
+						<s:Label text="Final Temperature" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editFinalTemperature" styleName="label" focusIn="OnTextFocusIn(event)"
+						<s:TextInput id="_editFinalTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 									 focusOut="OnTextFocusOut(event)"/>
-						<s:Label text="C" styleName="label" />
+						<s:Label text="C" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="50%">
-						<s:Label text="Stir speed" styleName="label" />
+						<s:Label text="Stir speed" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editStirSpeed" styleName="label" focusIn="OnTextFocusIn(event)"
+						<s:TextInput id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 									 focusOut="OnTextFocusOut(event)"/>
-						<s:Label text="rpm" styleName="label" />
+						<s:Label text="rpm" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />
@@ -209,7 +209,7 @@
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				  verticalCenter="0" width="100%" height="100%">
-			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+			<mx:Text text="This where run mode will be implemented" styleName="TextMedium" width="80%" />		
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

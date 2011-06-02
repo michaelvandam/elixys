@@ -2,9 +2,21 @@
 @namespace s "library://ns.adobe.com/flex/spark";
 @namespace mx "library://ns.adobe.com/flex/mx";
 
-.label
+.TextSmall
+{
+	font-size: 18px;
+	color: #353535;
+}
+
+.TextMedium
 {
 	font-size: 22px;
+	color: #353535;
+}
+
+.TextLarge
+{
+	font-size: 26px;
 	color: #353535;
 }
 

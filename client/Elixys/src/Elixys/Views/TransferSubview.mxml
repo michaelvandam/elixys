@@ -52,10 +52,7 @@
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Update the target combo box item
-					if (!UpdateEnumReagentComboBoxItem(pReagent, _editTargetCombo))
-					{
-						throw Error("Failed to find reagent");
-					}
+					UpdateEnumReagentComboBoxItem(pReagent, _editTargetCombo);
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
@@ -110,7 +107,7 @@
 	<s:VGroup width="100%" height="100%">
 		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle"
 				horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
-			<mx:Text id="_outputText" styleName="label" width="80%" />		
+			<mx:Text id="_outputText" styleName="TextMedium" width="80%" />		
 		</s:VGroup>
 		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				verticalCenter="0" width="100%" height="100%">
@@ -118,18 +115,18 @@
 				<s:Spacer height="100%" />
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="30%">
-						<s:Label text="Reactor" styleName="label" />
+						<s:Label text="Reactor" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" width="70%">
-						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="label" width="75%" />
+						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="TextMedium" width="75%" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:HGroup verticalAlign="middle" gap="15" width="100%">
 					<s:HGroup horizontalAlign="right" width="30%">
-						<s:Label text="Target" styleName="label" />
+						<s:Label text="Target" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" width="70%">
-						<s:ComboBox id="_editTargetCombo" labelField="Name" change="OnTargetChange(event)" styleName="label" width="75%" />
+						<s:ComboBox id="_editTargetCombo" labelField="Name" change="OnTargetChange(event)" styleName="TextMedium" width="75%" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />
@@ -137,7 +134,7 @@
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				  verticalCenter="0" width="100%" height="100%">
-			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+			<mx:Text text="This where run mode will be implemented" styleName="TextMedium" width="80%" />		
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

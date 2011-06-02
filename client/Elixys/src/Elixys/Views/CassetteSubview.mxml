@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" xmlns:Renderers="Elixys.Views.Renderers.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -8,78 +8,73 @@
 			import Elixys.Objects.Component;
 			import Elixys.Objects.ComponentCassette;
 			import Elixys.Objects.Reagent;
-
+			
+			import spark.components.Button;
+			import spark.components.supportClasses.SkinnableTextBase;
+			
 			/***
 			 * Member functions
 			 **/
+
+			// Returns the currently selected reagent
+			public function SelectedReagentID():uint
+			{
+				if (m_pSelectedReagent != null)
+				{
+					return m_pSelectedReagent.ReagentID;
+				}
+				else
+				{
+					return 0;
+				}
+			}
 			
 			// Called when component details arrive from the server
 			public override function UpdateComponent(pComponent:Component):void
 			{
-				// Configure the view
-				m_pComponentCassette = new ComponentCassette(null, pComponent);
-				if (m_pComponentCassette.Available)
+				// If we are in edit mode then we want to hide any row we are editing if we are switching components
+				if ((m_sViewMode == SubviewBase.EDITMODE) && (m_pComponentCassette != null) && (m_pComponentCassette.ID != pComponent.ID))
 				{
-					// Set visibility
-					_cassetteDisabled.visible = false;
-					_cassetteDisabled.includeInLayout = false;
-					_cassetteEnabled.visible = true;
-					_cassetteEnabled.includeInLayout = true;
-					
-					// Get a pointer to the sequence grid
-					var pGridData:ArrayList;
-					if (_cassetteGrid.dataProvider != null)
+					StopEditing();
+				}
+				
+				// Remember the component
+				m_pComponentCassette = new ComponentCassette(null, pComponent);
+				
+				// Handle according to our view mode
+				if (m_sViewMode == SubviewBase.VIEWMODE)
+				{
+					if (m_pComponentCassette.Available)
 					{
-						pGridData = _cassetteGrid.dataProvider as ArrayList;
-					}
-					if (pGridData == null)
-					{
-						pGridData = new ArrayList();
-					}
-					
-					// Make sure we have enough reagent positions in our array
-					var nReagent:uint, pReagent:Reagent;
-					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
-					{
-						// Get a pointer to the next reagent
-						if (nReagent < pGridData.length)
-						{
-							// Use existing reagent
-							pReagent = pGridData.getItemAt(nReagent) as Reagent;
-						}
-						else
-						{
-							// Create a new reagent
-							pReagent = new Reagent();
-							pGridData.addItem(pReagent);
-						}
+						// Show the reagent table and hide the static text
+						_viewCassetteDisabled.visible = false;
+						_viewCassetteDisabled.includeInLayout = false;
+						_viewCassetteEnabled.visible = true;
+						_viewCassetteEnabled.includeInLayout = true;
 						
-						// Remember the reagent ID
-						pReagent.ReagentID = m_pComponentCassette.Reagents[nReagent];
+						// Update the grid with the server reagent data
+						UpdateReagentGrid(_viewCassetteGrid, m_pComponentCassette.Reagents);
 					}
-					
-					// Remove any extra reagents
-					while (nReagent < pGridData.length)
+					else
 					{
-						pGridData.removeItemAt(pGridData.length - 1);
-					}
-					
-					// Update the data provider
-					_cassetteGrid.dataProvider = pGridData;
-					
-					// Request the reagents from the server
-					for (nReagent = 0; nReagent < m_pComponentCassette.Reagents.length; ++nReagent)
-					{
-						RequestSequenceReagent(m_pComponentCassette.Reagents[nReagent]);
+						// Hide the reagent table and show the static text
+						_viewCassetteDisabled.visible = true;
+						_viewCassetteDisabled.includeInLayout = true;
+						_viewCassetteEnabled.visible = false;
+						_viewCassetteEnabled.includeInLayout = false;
 					}
 				}
-				else
+				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
-					// Set visibility
-					_cassetteDisabled.visible = true;
-					_cassetteDisabled.includeInLayout = true;
-					_cassetteEnabled.visible = false;
-					_cassetteEnabled.includeInLayout = false;
+					// Enable or disable the cassette grid
+					_editCassetteGrid.enabled = m_pComponentCassette.Available;
+					_editCassetteUsedCheckBox.selected = m_pComponentCassette.Available;
+
+					// Update the grid with the server reagent data
+					UpdateReagentGrid(_editCassetteGrid, m_pComponentCassette.Reagents);
+				}
+				else if (m_sViewMode == SubviewBase.RUNMODE)
+				{
 				}
 			}
 
@@ -87,7 +82,7 @@
 			public override function UpdateReagent(pReagent:Reagent):void
 			{
 				// Locate the corresponding reagent
-				var pGridData:ArrayList = _cassetteGrid.dataProvider as ArrayList, nReagent:uint;
+				var pGridData:ArrayList = _editCassetteGrid.dataProvider as ArrayList, nReagent:uint;
 				for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
 				{
 					var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
@@ -105,12 +100,34 @@
 				
 				// Update the corresponding reagent
 				pClientReagent.Copy(pReagent);
-				if (!pReagent.Available)
+				_editCassetteGrid.dataProvider.setItemAt(pClientReagent, nReagent);
+			}
+			
+			// Start editing the reagent
+			protected function StartEditing(pButton:Button, pReagent:Reagent):void
+			{
+				// Open the new row
+				m_pOpenRowButton = pButton;
+				m_pOpenRowButton.label = "-";
+				m_pSelectedReagent = pReagent;
+				
+				// Refresh the grid
+				_editCassetteGrid.invalidateDisplayList();
+			}
+			
+			// Stops editing the reagent
+			protected function StopEditing():void
+			{
+				// Exit from editing mode
+				if (m_pOpenRowButton != null)
 				{
-					pClientReagent.Name = "Not used";
-					pClientReagent.Description = "Not used";
+					m_pOpenRowButton.label = "+";
 				}
-				_cassetteGrid.dataProvider.setItemAt(pClientReagent, nReagent);
+				m_pOpenRowButton = null;
+				m_pSelectedReagent = null;
+
+				// Refresh the grid
+				_editCassetteGrid.invalidateDisplayList();
 			}
 			
 			/***
@@ -128,6 +145,62 @@
 				// Set our view mode
 				SetViewMode(m_sViewMode)
 			}
+			
+			// Called when the user toggles the cassette used check box
+			protected function OnCassetteUsedCheckBox(event:Event):void
+			{
+				// Enable or disable the cassette grid
+				_editCassetteGrid.enabled = _editCassetteUsedCheckBox.selected;
+			}
+			
+			// Called when the user clicks the edit button on a reagent
+			public function OnEditButtonClick(event:MouseEvent, data:Object):void
+			{
+				// Get the button and determine if we are opening a new row
+				var pButton:Button = event.target as Button;
+				var bOpeningNewRow:Boolean = (m_pOpenRowButton != pButton);
+				
+				// Stop edit the current row
+				StopEditing();
+				
+				// Return if we aren't opening a new row
+				if (!bOpeningNewRow)
+				{
+					return;
+				}
+				
+				// Start editing the new row
+				StartEditing(pButton, data as Reagent);
+			}
+
+			// Called when the user toggles the reagent used check box
+			public function OnReagentUsedCheckBox(event:Event):void
+			{
+				// Update our component
+				m_pSelectedReagent.Available = (event.target as CheckBox).selected;
+				
+				// Save the component to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pSelectedReagent, "sequence/" + nSequenceID + "/reagent/" + m_pSelectedReagent.ReagentID);
+			}
+
+			// Called when the user changes the text in one of our input fields
+			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			{
+				// Update our component
+				if (pFocusTarget.id == "_editName")
+				{
+					m_pSelectedReagent.Name = pFocusTarget.text;
+				}
+				if (pFocusTarget.id == "_editDescription")
+				{
+					m_pSelectedReagent.Description = pFocusTarget.text;
+				}
+				
+				// Save the component to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pSelectedReagent, "sequence/" + nSequenceID + "/reagent/" + m_pSelectedReagent.ReagentID);
+			}
 
 			/***
 			 * Member variables
@@ -135,18 +208,22 @@
 			
 			// Component
 			private var m_pComponentCassette:ComponentCassette;
+			
+			// Reagent editing
+			private var m_pOpenRowButton:Button = null;
+			private var m_pSelectedReagent:Reagent = null;
 		]]>
 	</fx:Script>
 	
 	<s:VGroup width="100%" height="100%">
 		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" width="100%" height="100%">
-			<s:VGroup id="_cassetteDisabled" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
+			<s:VGroup id="_viewCassetteDisabled" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
 					  visible="true" includeInLayout="true" width="100%" height="100%">
-				<s:Label text="This cassette is not used in this sequence." styleName="label" width="80%" />		
+				<s:Label text="This cassette is not used in this sequence." styleName="TextMedium" width="80%" />		
 			</s:VGroup>
-			<s:VGroup id="_cassetteEnabled" horizontalAlign="center" verticalAlign="top" horizontalCenter="0" verticalCenter="0"
+			<s:VGroup id="_viewCassetteEnabled" horizontalAlign="center" verticalAlign="top" horizontalCenter="0" verticalCenter="0"
 					  visible="false" includeInLayout="false" width="100%" height="100%">
-				<s:DataGrid id="_cassetteGrid" selectionMode="none" width="100%" height="100%">
+				<s:DataGrid id="_viewCassetteGrid" selectionMode="none" width="100%" height="100%">
 					<s:columns>
 						<s:ArrayList>
 							<s:GridColumn dataField="Position" headerText="Position" />
@@ -158,12 +235,179 @@
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
-				verticalCenter="0" width="100%" height="100%">
-			<mx:Text text="This is where edit mode will be implemented" styleName="label" width="80%" />		
+				verticalCenter="0" gap="20" width="100%" height="100%">
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%">
+				<s:HGroup width="100%" horizontalAlign="left">
+					<s:Spacer width="10" />
+					<s:CheckBox id="_editCassetteUsedCheckBox" label="Use this cassette in this sequence" styleName="TextMedium"
+						change="OnCassetteUsedCheckBox(event)" />
+				</s:HGroup>
+			</s:VGroup>
+			<s:BorderContainer width="100%" height="100%">
+				<s:VGroup horizontalAlign="center" verticalAlign="top" horizontalCenter="0" verticalCenter="0" x="0" y="0" width="100%" height="100%">
+					<s:DataGrid id="_editCassetteGrid" selectionMode="none" variableRowHeight="true" width="100%" height="100%">
+						<s:columns>
+							<s:ArrayList>
+								<s:GridColumn headerText="Edit" width="50">
+									<s:itemRenderer>
+										<fx:Component>
+											<s:GridItemRenderer>
+												<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10"
+														verticalAlign="middle" height="100%">
+													<s:Button label="+" styleName="button" fontSize="16"
+														click="outerDocument.OnEditButtonClick(event, data)" width="30" height="100%" />
+												</s:VGroup>
+											</s:GridItemRenderer>
+										</fx:Component>
+									</s:itemRenderer>
+								</s:GridColumn>
+								<s:GridColumn headerText="Position" width="70">
+									<s:itemRenderer>
+										<fx:Component>
+											<s:GridItemRenderer>
+												<fx:Script>
+													<![CDATA[
+														import Elixys.Objects.Reagent;
+														
+														override public function set data(value:Object):void
+														{
+															// Set our base class' variable
+															super.data = value;
+															
+															if (value != null)
+															{
+																// Formats the centered label
+																_text.text = (value as Reagent).Position;
+															}
+														}
+													]]>
+												</fx:Script>
+												<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+													<s:Label id="_text" styleName="TextMedium" />
+												</s:VGroup>
+											</s:GridItemRenderer>
+										</fx:Component>
+									</s:itemRenderer>
+								</s:GridColumn>
+								<s:GridColumn>
+									<s:headerRenderer>
+										<fx:Component>
+											<Renderers:ReagentGridHeader>
+												<Renderers:ReagentGridHeaderChild id="Name" x="0" y="0" width="150" />
+												<Renderers:ReagentGridHeaderChild id="Description" x="150" y="0" width="100%" />
+											</Renderers:ReagentGridHeader>
+										</fx:Component>
+									</s:headerRenderer>
+									<s:itemRenderer>
+										<fx:Component>
+											<s:GridItemRenderer>
+												<fx:Script>
+													<![CDATA[
+														import Elixys.Objects.Reagent;
+														
+														// Formats the name and description labels
+														override public function set data(value:Object):void
+														{
+															// Set our base class' variable
+															super.data = value;
+															
+															if (value != null)
+															{
+																// Are we currently the selected reagent?
+																var pReagent:Reagent = value as Reagent;
+																if (pReagent.ReagentID == outerDocument.SelectedReagentID())
+																{
+																	// Yes, so hide the static text and show the edit controls
+																	_staticView.visible = false;
+																	_staticView.includeInLayout = false;
+																	_editView.visible = true;
+																	_editView.includeInLayout = true;
+																	
+																	// Set the used check box and the edit box text
+																	_usedCheckBox.selected = pReagent.Available;
+																	if (outerDocument.KeyboardFocusTarget() != _editName)
+																	{
+																		_editName.text = pReagent.Name;
+																	}
+																	if (outerDocument.KeyboardFocusTarget() != _editDescription)
+																	{
+																		_editDescription.text = pReagent.Description;
+																	}
+																	
+																	// Enable or disable the edit boxes
+																	_editName.enabled = pReagent.Available;
+																	_editDescription.enabled = pReagent.Available;
+																}
+																else
+																{
+																	// No, so show the static text and hide the edit controls
+																	_staticView.visible = true;
+																	_staticView.includeInLayout = true;
+																	_editView.visible = false;
+																	_editView.includeInLayout = false;
+																	
+																	// Set the static text
+																	_nameLabel.text = data.Name;
+																	_descriptionLabel.text = data.Description;
+																}
+															}
+														}
+													]]>
+												</fx:Script>
+												<s:VGroup width="100%" height="100%">
+													<s:HGroup id="_staticView" visible="true" includeInLayout="true" width="100%" height="100%">
+														<s:VGroup horizontalAlign="left" verticalAlign="middle" width="150" height="100%">
+															<s:Label id="_nameLabel" paddingLeft="4" paddingRight="4" styleName="TextMedium" />
+														</s:VGroup>
+														<s:VGroup horizontalAlign="left" verticalAlign="middle" width="100%" height="100%">
+															<s:Label id="_descriptionLabel" paddingLeft="4" paddingRight="4" styleName="TextSmall" />
+														</s:VGroup>
+													</s:HGroup>
+													<s:VGroup id="_editView" visible="false" includeInLayout="false" gap="15"
+															width="100%" height="100%">
+														<s:HGroup paddingLeft="20" paddingTop="15" width="100%">
+															<s:CheckBox id="_usedCheckBox" label="Use this reagent in this sequence"
+																styleName="TextMedium" change="outerDocument.OnReagentUsedCheckBox(event)" />
+														</s:HGroup>
+														<s:VGroup width="100%" height="100%">
+															<s:HGroup verticalAlign="bottom" width="100%">
+																<s:HGroup horizontalAlign="right" verticalAlign="middle" paddingTop="5" width="30%"
+																		height="100%">
+																	<s:Label text="Name" styleName="TextMedium" height="100%" />
+																</s:HGroup>
+																<s:HGroup horizontalAlign="left" verticalAlign="middle" width="70%">
+																	<s:TextInput id="_editName" styleName="TextMedium"
+																		focusIn="outerDocument.OnTextFocusIn(event)"
+																		focusOut="outerDocument.OnTextFocusOut(event)" width="80%" />
+																</s:HGroup>
+															</s:HGroup>
+															<s:HGroup verticalAlign="top" width="100%">
+																<s:HGroup horizontalAlign="right" verticalAlign="middle" paddingTop="5" width="30%">
+																	<s:Label text="Description" styleName="TextMedium" height="100%" />
+																</s:HGroup>
+																<s:HGroup horizontalAlign="left" verticalAlign="middle" width="70%">
+																	<s:TextArea id="_editDescription" styleName="TextMedium"
+																		focusIn="outerDocument.OnTextFocusIn(event)"
+																		focusOut="outerDocument.OnTextFocusOut(event)" width="80%"
+																		heightInLines="2"/>
+																</s:HGroup>
+															</s:HGroup>
+														</s:VGroup>
+													</s:VGroup>
+												</s:VGroup>
+											</s:GridItemRenderer>
+										</fx:Component>
+									</s:itemRenderer>    
+								</s:GridColumn>
+							</s:ArrayList>
+						</s:columns>
+					</s:DataGrid>
+				</s:VGroup>
+			</s:BorderContainer>
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				  verticalCenter="0" width="100%" height="100%">
-			<mx:Text text="This where run mode will be implemented" styleName="label" width="80%" />		
+			<mx:Text text="This where run mode will be implemented" styleName="TextMedium" width="80%" />		
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

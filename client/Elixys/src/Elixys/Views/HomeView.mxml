@@ -73,7 +73,7 @@
 			<s:Spacer height="20%" />
 			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
 					gap="25" width="100%" height="100%">
-				<s:Label text="What would you like to do?" styleName="label" />
+				<s:Label text="What would you like to do?" styleName="TextMedium" />
 				<s:VGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0"
 						  gap="25" width="100%" />
 				<s:Button id="_logoutButton" label="Log out" click="OnLogoutClick(event)" styleName="button" visible="false" includeInLayout="false" width="100%" height="50" />

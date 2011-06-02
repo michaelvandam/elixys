@@ -85,19 +85,19 @@
 	<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" paddingLeft="20"
 			paddingRight="20" paddingTop="20" paddingBottom="20">
 		<s:VGroup id="_text1Group">
-			<mx:Text id="_text1" styleName="label" maxWidth="460" />
+			<mx:Text id="_text1" styleName="TextMedium" maxWidth="460" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_edit1Group">
-			<s:TextInput id="_edit1" styleName="label" />
+			<s:TextInput id="_edit1" styleName="TextMedium" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_text2Group">
-			<mx:Text id="_text2" styleName="label" />
+			<mx:Text id="_text2" styleName="TextMedium" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_edit2Group">
-			<s:TextInput id="_edit2" styleName="label" />
+			<s:TextInput id="_edit2" styleName="TextMedium" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:HGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="25" />
