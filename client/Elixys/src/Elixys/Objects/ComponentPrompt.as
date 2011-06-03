@@ -45,6 +45,12 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("messagevalidation", value);
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			return JSONDataString("message", Message, false);
+		}
+
 		// Type
 		static public var TYPE:String = "PROMPT";
 	}

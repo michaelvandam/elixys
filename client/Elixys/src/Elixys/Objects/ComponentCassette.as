@@ -42,6 +42,12 @@ package Elixys.Objects
 			return m_pReagents;
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			return JSONDataBoolean("available", Available, false);
+		}
+
 		// Type
 		static public var TYPE:String = "CASSETTE";
 

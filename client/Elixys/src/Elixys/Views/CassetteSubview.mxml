@@ -81,26 +81,15 @@
 			// Called when reagent details arrive from the server
 			public override function UpdateReagent(pReagent:Reagent):void
 			{
-				// Locate the corresponding reagent
-				var pGridData:ArrayList = _editCassetteGrid.dataProvider as ArrayList, nReagent:uint;
-				for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
+				// Handle according to our view mode
+				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
-					var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
-					if (pClientReagent.ReagentID == pReagent.ReagentID)
-					{
-						// Found it
-						break;
-					}
+					UpdateReagentGridItem(_viewCassetteGrid, pReagent);
 				}
-				if (nReagent == pGridData.length)
+				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
-					// Failed to find reagent
-					return;
+					UpdateReagentGridItem(_editCassetteGrid, pReagent);
 				}
-				
-				// Update the corresponding reagent
-				pClientReagent.Copy(pReagent);
-				_editCassetteGrid.dataProvider.setItemAt(pClientReagent, nReagent);
 			}
 			
 			// Start editing the reagent
@@ -149,8 +138,12 @@
 			// Called when the user toggles the cassette used check box
 			protected function OnCassetteUsedCheckBox(event:Event):void
 			{
-				// Enable or disable the cassette grid
-				_editCassetteGrid.enabled = _editCassetteUsedCheckBox.selected;
+				// Update our component
+				m_pComponentCassette.Available = _editCassetteUsedCheckBox.selected;
+				
+				// Pass the request to the server
+				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
+				(m_pParent as SequenceViewBase).DoPost(m_pComponentCassette, "sequence/" + nSequenceID + "/component/" + m_pComponentCassette.ID);
 			}
 			
 			// Called when the user clicks the edit button on a reagent
@@ -226,9 +219,48 @@
 				<s:DataGrid id="_viewCassetteGrid" selectionMode="none" width="100%" height="100%">
 					<s:columns>
 						<s:ArrayList>
-							<s:GridColumn dataField="Position" headerText="Position" />
-							<s:GridColumn dataField="Name" headerText="Name" />
-							<s:GridColumn dataField="Description" headerText="Description" />
+							<s:GridColumn headerText="Position" width="70">
+								<s:itemRenderer>
+									<fx:Component>
+										<s:GridItemRenderer>
+											<fx:Script>
+												<![CDATA[
+													import Elixys.Objects.Reagent;
+													
+													override public function set data(value:Object):void
+													{
+														// Set our base class' variable
+														super.data = value;
+														
+														if (value != null)
+														{
+															// Formats the centered label
+															_text.text = (value as Reagent).Position;
+														}
+													}
+												]]>
+											</fx:Script>
+											<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+												<s:Label id="_text" styleName="TextMedium" />
+											</s:VGroup>
+										</s:GridItemRenderer>
+									</fx:Component>
+								</s:itemRenderer>
+							</s:GridColumn>
+							<s:GridColumn dataField="Name" headerText="Name" width="150">
+								<s:itemRenderer>
+									<fx:Component>
+										<s:DefaultGridItemRenderer styleName="TextMedium" />
+									</fx:Component>
+								</s:itemRenderer>
+							</s:GridColumn>
+							<s:GridColumn dataField="Description" headerText="Description">
+								<s:itemRenderer>
+									<fx:Component>
+										<s:DefaultGridItemRenderer styleName="TextSmall" />
+									</fx:Component>
+								</s:itemRenderer>
+							</s:GridColumn>
 						</s:ArrayList>
 					</s:columns>
 				</s:DataGrid>

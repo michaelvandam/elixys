@@ -132,7 +132,7 @@
 		</s:VGroup>
 		<s:VGroup horizontalAlign="right" verticalAlign="middle" gap="20" width="100%" height="100%">
 			<s:HGroup id="_navigationButtons" gap="20" />
-			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
+			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="100%" height="40" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
 				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="View" width="100%" height="100%" />
 				<Views:AddSubview id="_addSubview" m_sViewMode="View" width="100%" height="100%" />
@@ -145,7 +145,7 @@
 				<Views:CommentSubview id="_commentSubview" m_sViewMode="View" width="100%" height="100%" />
 				<Views:ActivitySubview id="_activitySubview" m_sViewMode="View" width="100%" height="100%" />
 			</mx:ViewStack>
-			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="150" height="40" />
+			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="100%" height="40" />
 		</s:VGroup>
 	</s:HGroup>
 </Views:SequenceViewBase>

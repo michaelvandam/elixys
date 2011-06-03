@@ -26,11 +26,11 @@ def HandleGet(sClientState, sRemoteUser, sPath):
         return HandleGetState(sClientState, sRemoteUser)
     if sPath.startswith("/sequence/"):
         if sPath.find("/component/") != -1:
-            return HandleGetComponent(sPath)
+            return HandleGetComponent(sRemoteUser, sPath)
         elif sPath.find("/reagent/") != -1:
-            return HandleGetReagent(sPath)
+            return HandleGetReagent(sRemoteUser, sPath)
         else:
-            return HandleGetSequence(sPath)
+            return HandleGetSequence(sRemoteUser, sPath)
     else:
         raise Exception("Unknown path: " + sPath)
 
@@ -39,6 +39,7 @@ def HandleGetConfiguration():
     global gElixys
     pConfig = {"type":"configuration"}
     pConfig.update(gElixys.GetConfiguration())
+    pConfig.update({"supportedoperations":gElixys.GetSupportedOperations()})
     return pConfig
 
 # Handdle GET /state request
@@ -52,15 +53,15 @@ def HandleGetState(sClientState, sRemoteUser):
     pState = {"type":"state",
         "user":pUser,
         "serverstate":pServerState,
-        "clientstate":gElixys.GetClientState()}
+        "clientstate":gElixys.GetClientState(sRemoteUser)}
 
     # Complete the state with the values specific to this page
     if sClientState.startswith("HOME"):
         pState.update(HandleGetStateHome())
     elif sClientState.startswith("SELECT_SAVEDSEQUENCES"):
-        pState.update(HandleGetStateSelectSavedSequences())
+        pState.update(HandleGetStateSelectSavedSequences(sRemoteUser))
     elif sClientState.startswith("SELECT_MANUALRUNS"):
-        pState.update(HandleGetStateSelectManualRuns())
+        pState.update(HandleGetStateSelectManualRuns(sRemoteUser))
     elif sClientState.startswith("PROMPT_CREATESEQUENCE"):
         pState.update(HandleGetStateSelectPromptCreateSequence())
     elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
@@ -68,9 +69,9 @@ def HandleGetState(sClientState, sRemoteUser):
     elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
         pState.update(HandleGetStateSelectPromptDeleteSequence())
     elif sClientState.startswith("VIEW"):
-        pState.update(HandleGetStateView(sClientState))
+        pState.update(HandleGetStateView(sClientState, sRemoteUser))
     elif sClientState.startswith("EDIT"):
-        pState.update(HandleGetStateEdit(sClientState))
+        pState.update(HandleGetStateEdit(sClientState, sRemoteUser))
     else:
         raise Exception("Unknown state")
 
@@ -116,7 +117,7 @@ def HandleGetStateSelect():
             "id":"BACK"}]}
 
 # Handle GET /state for Select Sequence (Saved Sequences tab)
-def HandleGetStateSelectSavedSequences():
+def HandleGetStateSelectSavedSequences(sRemoteUser):
     global gElixys
     pState = HandleGetStateSelect()
     pState.update({"tabid":"SAVEDSEQUENCES"})
@@ -126,15 +127,15 @@ def HandleGetStateSelectSavedSequences():
     pState["optionbuttons"].append({"type":"button",
         "text":"Delete",
         "id":"DELETE"})
-    pState.update({"sequences":gElixys.GetSequenceList("Saved")})
+    pState.update({"sequences":gElixys.GetSequenceList(sRemoteUser, "Saved")})
     return pState
 
 # Handle GET /state for Select Sequence (Manual Runs tab)
-def HandleGetStateSelectManualRuns():
+def HandleGetStateSelectManualRuns(sRemoteUser):
     global gElixys
     pState = HandleGetStateSelect()
     pState.update({"tabid":"MANUALRUNS"})
-    pState.update({"sequences":gElixys.GetSequenceList("Manual")})
+    pState.update({"sequences":gElixys.GetSequenceList(sRemoteUser, "Manual")})
     return pState
 
 # Handle GET /state for Select Sequence (Create Sequence prompt)
@@ -183,7 +184,7 @@ def HandleGetStateSelectPromptDeleteSequence():
             "id":"DELETE"}]}
 
 # Handle GET /state for View Sequence
-def HandleGetStateView(sClientState):
+def HandleGetStateView(sClientState, sRemoteUser):
     # Split the state and extract the sequence ID
     global gElixys
     pClientStateComponents = sClientState.split(".")
@@ -195,12 +196,12 @@ def HandleGetStateView(sClientState):
         nComponentID = int(pClientStateComponents[2])
     else:
         # No, the component ID is missing.  Get the sequence and the ID of the first component
-        pSequence = gElixys.GetSequence(nSequenceID)
+        pSequence = gElixys.GetSequence(sRemoteUser, nSequenceID)
         nComponentID = pSequence["components"][0]["id"]
 
         # Update our state
         sClientState = "VIEW." + str(nSequenceID) + "." + str(nComponentID)
-        gElixys.SaveClientState(sClientState)
+        gElixys.SaveClientState(sRemoteUser, sClientState)
 
     # Create the return object
     return {"navigationbuttons":[{"type":"button",
@@ -216,7 +217,7 @@ def HandleGetStateView(sClientState):
         "componentid":nComponentID}
 
 # Handle GET /state for Edit Sequence
-def HandleGetStateEdit(sClientState):
+def HandleGetStateEdit(sClientState, sRemoteUser):
     # Split the state and extract the sequence ID
     global gElixys
     pClientStateComponents = sClientState.split(".")
@@ -228,12 +229,12 @@ def HandleGetStateEdit(sClientState):
         nComponentID = int(pClientStateComponents[2])
     else:
         # No, the component ID is missing.  Get the sequence and the ID of the first component
-        pSequence = gElixys.GetSequence(nSequenceID)
+        pSequence = gElixys.GetSequence(sRemoteUser, nSequenceID)
         nComponentID = pSequence["components"][0]["id"]
 
         # Update our state
         sClientState = "EDIT." + str(nSequenceID) + "." + str(nComponentID)
-        gElixys.SaveClientState(sClientState)
+        gElixys.SaveClientState(sRemoteUser, sClientState)
 
     # Create the return object
     return {"navigationbuttons":[{"type":"button",
@@ -246,7 +247,7 @@ def HandleGetStateEdit(sClientState):
         "componentid":nComponentID}
 
 # Handle GET /sequence/[sequenceid]
-def HandleGetSequence(sPath):
+def HandleGetSequence(sRemoteUser, sPath):
     # Extract sequence ID
     global gElixys
     pPathComponents = sPath.split("/")
@@ -254,7 +255,7 @@ def HandleGetSequence(sPath):
 
     # Load the entire sequence
     pSequence = {"type":"sequence"}
-    pSequence.update(gElixys.GetSequence(nSequenceID))
+    pSequence.update(gElixys.GetSequence(sRemoteUser, nSequenceID))
 
     # Remove excess sequence data
     pNewComponents = []
@@ -271,7 +272,7 @@ def HandleGetSequence(sPath):
     return pSequence
 
 # Handle GET /sequence/[sequenceid]/component/[componentid]
-def HandleGetComponent(sPath):
+def HandleGetComponent(sRemoteUser, sPath):
     # Extract sequence and component IDs
     global gElixys
     pPathComponents = sPath.split("/")
@@ -279,50 +280,15 @@ def HandleGetComponent(sPath):
     nComponentID = int(pPathComponents[4])
 
     # Load the sequence and only the desired component
-    pSequence = gElixys.GetSequence(nSequenceID, nComponentID)
+    pSequence = gElixys.GetSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
 
-    # Create and initialize the return component
+    # Create and return the component
     pComponent = {"type":"component"}
     pComponent.update(pSequence["components"][0])
-    pComponent.update({"reactordescription":"Reactor where the reagent will be added"})
-    pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-
-    # Add component-specific values to the return component
-    if pComponent["componenttype"] == "ADD":
-        pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
-        pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
-    elif pComponent["componenttype"] == "TRANSFER":
-        pComponent.update({"targetdescription":"Target where the reactor contents will be transferred"})
-	pComponent.update({"targetvalidation":"type=enum-target; values=9; required=true"})
-    elif pComponent["componenttype"] == "ELUTE":
-        pComponent.update({"reagentdescription":"Reagent used to elute the target"})
-        pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
-        pComponent.update({"targetdescription":"Target to be eluted with the reagent"})
-        pComponent.update({"targetvalidation":"type=enum-target; values=10; required=true"})
-    elif (pComponent["componenttype"] == "REACT") or (pComponent["componenttype"] == "EVAPORATE"):
-        if pComponent["componenttype"] == "REACT":
-            pComponent.update({"positiondescription":"Position where the reaction will take place"})
-            pComponent.update({"positionvalidation":"type=enum-literal; values=1,2; required=true"})
-        pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
-        pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
-        pComponent.update({"reactiontemperaturedescription":"Reaction temperature in degrees Celsius"})
-        pComponent.update({"reactiontemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-        pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
-        pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-        pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
-        pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
-    elif (pComponent["componenttype"] == "PROMPT") or (pComponent["componenttype"] == "INSTALL"):
-        pComponent.update({"messagedescription":"This will be displayed to the user"})
-        pComponent.update({"messagevalidation":"type=string; required=true"})
-    elif pComponent["componenttype"] == "COMMENT":
-        pComponent.update({"commentdescription":"Enter a comment"})
-        pComponent.update({"commentvalidation":"type=string"})
-
-    # Return the complete component
     return pComponent
 
 # Handle GET /sequence/[sequenceid]/reagent/[reagentid]
-def HandleGetReagent(sPath):
+def HandleGetReagent(sRemoteUser, sPath):
     # Extract sequence and reagent IDs
     global gElixys
     pPathComponents = sPath.split("/")
@@ -331,7 +297,7 @@ def HandleGetReagent(sPath):
 
     # Return the sequence reagent
     pReagent = {"type":"reagent"}
-    pReagent.update(gElixys.GetReagent(nSequenceID, nReagentID))
+    pReagent.update(gElixys.GetSequenceReagent(sRemoteUser, nSequenceID, nReagentID))
     return pReagent
 
 ### POST handler functions ###
@@ -375,7 +341,7 @@ def HandlePostHome(sClientState, sRemoteUser, pBody):
         if sActionTargetID == "CREATE":
             # Switch states to Select Sequence
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUAL":
             # Ignore this button for now
@@ -405,12 +371,12 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody):
         if sActionTargetID == "VIEW":
             # Switch states to View Sequence
             sClientState = "VIEW." + str(nSequenceID)
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "EDIT":
             # Switch states to Edit Sequence
             sClientState = "EDIT." + str(nSequenceID)
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "RUN":
             # Ignore this button for now
@@ -418,33 +384,33 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody):
         elif sActionTargetID == "BACK":
             # Switch states to Home
             sClientState = "HOME"
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "CREATE":
             # Switch states to Prompt (Create Sequence)
             sClientState = "PROMPT_CREATESEQUENCE." + sClientState
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "COPY":
             # Switch states to Prompt (Copy Sequence)
             sClientState = "PROMPT_COPYSEQUENCE." + sClientState
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "DELETE":
             # Switch states to Prompt (Delete Sequence)
             sClientState = "PROMPT_DELETESEQUENCE." + sClientState
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sActionType == "TABCLICK":
         if sActionTargetID == "SAVEDSEQUENCES":
             # Switch states to the Saved Sequences tab
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUALRUNS":
             # Switch states to the Manual Runs tab
             sClientState = "SELECT_MANUALRUNS"
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -467,7 +433,7 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
     sActionTargetID = str(pJSON["action"]["targetid"])
 
     # Call the base sequence POST handler first
-    sNewClientState = HandlePostBaseSequence(sClientState, "VIEW", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    sNewClientState = HandlePostBaseSequence(sClientState, sRemoteUser, "VIEW", nSequenceID, nComponentID, sActionType, sActionTargetID)
     if sNewClientState != "":
         # POST handled
         return HandleGet(sNewClientState, sRemoteUser, "/state")
@@ -476,8 +442,8 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "EDIT":
             # Switch states to Edit Sequence
-            sClientState = "EDIT." + str(nSequenceID)
-            gElixys.SaveClientState(sClientState)
+            sClientState = "EDIT." + str(nSequenceID) + "." + str(nComponentID)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "RUN":
             # Ignore this button for now
@@ -503,7 +469,7 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody):
     sActionTargetID = str(pJSON["action"]["targetid"])
 
     # Call the base sequence POST handler first
-    sNewClientState = HandlePostBaseSequence(sClientState, "EDIT", nSequenceID, nComponentID, sActionType, sActionTargetID)
+    sNewClientState = HandlePostBaseSequence(sClientState, sRemoteUser, "EDIT", nSequenceID, nComponentID, sActionType, sActionTargetID)
     if sNewClientState != "":
         # POST handled
         return HandleGet(sNewClientState, sRemoteUser, "/state")
@@ -518,22 +484,22 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody):
     raise Exception("State misalignment")
 
 # Handle sequence POST requests
-def HandlePostBaseSequence(sClientState, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
+def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
     # Check which option the user selected
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "BACK":
             # Switch states to Select Sequence
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return sClientState
         elif sActionTargetID == "PREVIOUS":
             # Move to the previous component ID
             nPreviousComponentID = -1
-            for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
+            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
                 if pComponent["id"] == nComponentID:
                     if nPreviousComponentID != -1:
                         sClientState = sType + "." + str(nSequenceID) + "." + str(nPreviousComponentID)
-                        gElixys.SaveClientState(sClientState)
+                        gElixys.SaveClientState(sRemoteUser, sClientState)
                     return sClientState
                 else:
                     nPreviousComponentID = pComponent["id"]
@@ -541,10 +507,10 @@ def HandlePostBaseSequence(sClientState, sType, nSequenceID, nComponentID, sActi
         elif sActionTargetID == "NEXT":
             # Move to the next component ID
             bComponentIDFound = False
-            for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
+            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
                 if bComponentIDFound:
                     sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
-                    gElixys.SaveClientState(sClientState)
+                    gElixys.SaveClientState(sRemoteUser, sClientState)
                     return sClientState
                 elif pComponent["id"] == nComponentID:
                     bComponentIDFound = True
@@ -553,11 +519,11 @@ def HandlePostBaseSequence(sClientState, sType, nSequenceID, nComponentID, sActi
             raise Exception("Component ID not found in sequence" + str(nComponentID))
         else:
             # Check if the target ID corresponds to one of our sequence components
-            for pComponent in gElixys.GetSequence(nSequenceID)["components"]:
+            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
                 if str(pComponent["id"]) == sActionTargetID:
                     # Update the current component and return the latest state to the client
                     sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
-                    gElixys.SaveClientState(sClientState)
+                    gElixys.SaveClientState(sRemoteUser, sClientState)
                     return sClientState
 
     # Tell the caller we didn't handle the use case
@@ -591,7 +557,7 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(".")[1]
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
         if sActionTargetID == "COPY":
@@ -600,7 +566,7 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(".")[1]
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
         if sActionTargetID == "DELETE":
@@ -609,7 +575,7 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(".")[1]
-            gElixys.SaveClientState(sClientState)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -621,13 +587,33 @@ def HandlePostSequence(sClientState, sRemoteUser, pBody, sPath):
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle POST /sequence/[sequenceid]/component/[componentid]
-def HandlePostComponent(sClientState, sRemoteUser, pBody, pPath):
-    # Ignore this function for now
+def HandlePostComponent(sClientState, sRemoteUser, pBody, sPath):
+    # Extract sequence and component IDs
+    global gElixys
+    pPathComponents = sPath.split("/")
+    nSequenceID = int(pPathComponents[2])
+    nComponentID = int(pPathComponents[4])
+
+    # Save the sequence component
+    pComponent = json.loads(pBody)
+    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, pComponent)
+
+    # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle POST /sequence/[sequenceid]/reagent/[reagentid]
-def HandlePostReagent(sClientState, sRemoteUser, pBody, pPath):
-    # Ignore this function for now
+def HandlePostReagent(sClientState, sRemoteUser, pBody, sPath):
+    # Extract sequence and component IDs
+    global gElixys
+    pPathComponents = sPath.split("/")
+    nSequenceID = int(pPathComponents[2])
+    nReagentID = int(pPathComponents[4])
+
+    # Save the sequence component
+    pReagent = json.loads(pBody)
+    gElixys.SaveSequenceReagent(sRemoteUser, nSequenceID, pReagent)
+
+    # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle DELETE requests
@@ -636,11 +622,8 @@ def HandleDelete(sClientState, sRemoteUser, sPath):
 
 # Main WSGI application entry point
 def application(pEnvironment, fStartResponse):
-    # Load the client state
-    global gElixys
-    sClientState = gElixys.GetClientState()
-
     # Extract important input variables
+    global gElixys
     if pEnvironment.has_key("REMOTE_USER"):
         sRemoteUser = pEnvironment["REMOTE_USER"]
     else:
@@ -650,6 +633,9 @@ def application(pEnvironment, fStartResponse):
     if sPath.startswith("/Elixys"):
         # Debugging hack: trim off any leading "/Elixys" string
         sPath = sPath[7:]
+
+    # Load the client state
+    sClientState = gElixys.GetClientState(sRemoteUser)
 
     # Log the request
     Log("Received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ")");

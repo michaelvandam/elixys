@@ -72,7 +72,8 @@
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Update the combo box item
-					UpdateEnumReagentComboBoxItem(pReagent, _editReagentCombo) && !UpdateEnumReagentComboBoxItem(pReagent, _editTargetCombo);
+					UpdateEnumReagentComboBoxItem(pReagent, _editReagentCombo);
+					UpdateEnumReagentComboBoxItem(pReagent, _editTargetCombo);
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{

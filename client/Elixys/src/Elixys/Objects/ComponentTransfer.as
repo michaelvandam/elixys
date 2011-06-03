@@ -45,6 +45,12 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("targetvalidation", value);
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			return JSONDataInteger("target", Target, false);
+		}
+
 		// Type
 		static public var TYPE:String = "TRANSFER";
 	}

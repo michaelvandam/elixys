@@ -108,5 +108,38 @@ package Elixys.Objects
 		{
 			content[name] = value;
 		}
+		
+		/***
+		 * Functions added by UCLA
+		 **/
+		
+		// Formats the key-value pair as JSON data
+		protected function JSONDataString(sKey:String, sValue:String, bAppendComma:Boolean = true):String
+		{
+			var sJSON:String = "\"" + sKey + "\":\"" + sValue + "\"";
+			if (bAppendComma)
+			{
+				sJSON += ",";
+			}
+			return sJSON;
+		}
+		protected function JSONDataInteger(sKey:String, sValue:uint, bAppendComma:Boolean = true):String
+		{
+			var sJSON:String = "\"" + sKey + "\":" + sValue.toString();
+			if (bAppendComma)
+			{
+				sJSON += ",";
+			}
+			return sJSON;
+		}
+		protected function JSONDataBoolean(sKey:String, sValue:Boolean, bAppendComma:Boolean = true):String
+		{
+			var sJSON:String = "\"" + sKey + "\":" + sValue.toString();
+			if (bAppendComma)
+			{
+				sJSON += ",";
+			}
+			return sJSON;
+		}
 	}
 }

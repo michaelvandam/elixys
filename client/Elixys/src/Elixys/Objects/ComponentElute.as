@@ -20,7 +20,7 @@ package Elixys.Objects
 		// Data wrappers
 		public function get Reagent():uint
 		{
-			return super.flash_proxy::getProperty("reagent");
+			return parseInt(super.flash_proxy::getProperty("reagent"));
 		}
 		public function set Reagent(value:uint):void
 		{
@@ -47,7 +47,7 @@ package Elixys.Objects
 
 		public function get Target():uint
 		{
-			return super.flash_proxy::getProperty("target");
+			return parseInt(super.flash_proxy::getProperty("target"));
 		}
 		public function set Target(value:uint):void
 		{
@@ -70,6 +70,14 @@ package Elixys.Objects
 		public function set TargetValidation(value:String):void
 		{
 			super.flash_proxy::setProperty("targetvalidation", value);
+		}
+
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			var sJSON:String = JSONDataInteger("reagent", Reagent);
+			sJSON += JSONDataInteger("target", Target, false);
+			return sJSON;
 		}
 
 		// Type

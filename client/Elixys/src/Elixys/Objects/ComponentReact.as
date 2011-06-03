@@ -153,6 +153,17 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("stirespeedvalidation", value);
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			var sJSON:String = JSONDataString("position", Position);
+			sJSON += JSONDataString("duration", Duration);
+			sJSON += JSONDataString("reactiontemperature", ReactionTemperature);
+			sJSON += JSONDataString("finaltemperature", FinalTemperature);
+			sJSON += JSONDataInteger("stirspeed", StirSpeed, false);
+			return sJSON;
+		}
+
 		// Type
 		static public var TYPE:String = "REACT";
 	}

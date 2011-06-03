@@ -53,11 +53,11 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("available", value);
 		}
 
-		public function get ComponentID():String
+		public function get ComponentID():uint
 		{
-			return super.flash_proxy::getProperty("componentid");
+			return parseInt(super.flash_proxy::getProperty("componentid"));
 		}
-		public function set ComponentID(value:String):void
+		public function set ComponentID(value:uint):void
 		{
 			super.flash_proxy::setProperty("componentid", value);
 		}
@@ -114,6 +114,22 @@ package Elixys.Objects
 		public function set ReagentID(value:uint):void
 		{
 			super.flash_proxy::setProperty("reagentid", value);
+		}
+
+		// Convert to a JSON string
+		public override function toString():String
+		{
+			// Create a JSON response string that will be recognized by the server
+			var sJSON:String = "{";
+			sJSON += JSONDataString("type", Type);
+			sJSON += JSONDataBoolean("available", Available);
+			sJSON += JSONDataInteger("componentid", ComponentID);
+			sJSON += JSONDataString("position", Position);
+			sJSON += JSONDataString("name", Name);
+			sJSON += JSONDataString("description", Description);			
+			sJSON += JSONDataInteger("reagentid", ReagentID, false);
+			sJSON += "}";
+			return sJSON;
 		}
 
 		// Type

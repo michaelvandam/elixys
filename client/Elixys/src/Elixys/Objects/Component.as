@@ -81,6 +81,37 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactorvalidation", value);
 		}
 
+		// Overridden by derived classes to format additional component details
+		protected function FormatComponentDetails():String
+		{
+			return "";
+		}
+
+		// Convert to a JSON string
+		public override function toString():String
+		{
+			// Give our derived class a chance to format additional details
+			var sAdditionalDetails:String = FormatComponentDetails();
+			
+			// Create a JSON response string that will be recognized by the server
+			var sJSON:String = "{";
+			sJSON += JSONDataString("type", Type);
+			sJSON += JSONDataString("componenttype", ComponentType);
+			sJSON += JSONDataString("name", Name);
+			sJSON += JSONDataInteger("id", ID);
+			if (sAdditionalDetails == "")
+			{
+				sJSON += JSONDataInteger("reactor", Reactor, false);
+			}
+			else
+			{
+				sJSON += JSONDataInteger("reactor", Reactor);
+				sJSON += sAdditionalDetails;
+			}
+			sJSON += "}";
+			return sJSON;
+		}
+		
 		// Type
 		static public var TYPE:String = "component";
 	}

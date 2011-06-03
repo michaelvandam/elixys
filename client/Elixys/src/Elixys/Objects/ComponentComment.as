@@ -45,6 +45,12 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("commentvalidation", value);
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			return JSONDataString("comment", Comment, false);
+		}
+
 		// Type
 		static public var TYPE:String = "COMMENT";
 	}

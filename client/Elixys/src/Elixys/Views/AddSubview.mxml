@@ -83,7 +83,7 @@
 			{
 				// Update our component
 				m_pComponentAdd.Reactor = parseInt(_editReactorCombo.selectedItem as String);
-				
+
 				// Pass the request to the server
 				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
 				(m_pParent as SequenceViewBase).DoPost(m_pComponentAdd, "sequence/" + nSequenceID + "/component/" + m_pComponentAdd.ID);

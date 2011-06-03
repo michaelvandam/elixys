@@ -45,6 +45,12 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reagentvalidation", value);
 		}
 
+		// Format additional component details
+		protected override function FormatComponentDetails():String
+		{
+			return JSONDataInteger("reagent", Reagent, false);
+		}
+
 		// Type
 		static public var TYPE:String = "ADD";
 	}
