@@ -19,8 +19,9 @@ class ElixysSystemModel:
 
   def buildSystemModel(self):
     """Create system model from database"""
+    #Line below would be read from DB.
     self.SystemComponents={'Reactors':['Reactor1','Reactor2','Reactor3'],'ReagentDelivery':['Reagents',],'CoolingSystem':['Cooling',],'VacuumSystem':['Vacuum',]}#Read from database
-    self.model = {}
+    self.model = {} #Empty dict to build system model inside.
     for key,value in self.SystemComponents.items():
       if key == 'Reactors':
         for item in value:
@@ -72,6 +73,9 @@ class ElixysComponentModel():
 class MotionModel(ElixysComponentModel):
   def __init__(self,name):
     ElixysComponentModel.__init__(self,name)
+  def setPosition(position):
+    #HardwareComm.sendWriteCommand(reactorID.Motion,position)
+    pass
     
 class StirMotorModel(ElixysComponentModel):
   def __init__(self,name):
