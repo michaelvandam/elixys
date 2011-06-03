@@ -8,6 +8,7 @@
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.*;
 			
+			import spark.components.BorderContainer;
 			import spark.components.Button;
 
 			/***
@@ -54,6 +55,83 @@
 				// Update the sequence reagent
 				UpdateSequenceReagent(pReagent);
 			}
+			
+			// Prepares a unit operation for dragging
+			private function PrepareUnitOperationDrag(pContainer:DisplayObjectContainer, sLabelName:String, nX:uint, nY:uint):BorderContainer
+			{
+				// Get the text of the unit operation
+				var pTargetLabel:Label = FindDecendentByName(pContainer, "_unitOperationLabel") as Label;
+				
+				// Create a new object to drag
+				var pLabel:Label = new Label();
+				pLabel.text = pTargetLabel.text;
+				pLabel.styleName = "TextMedium";
+				var pVGroup:VGroup = new VGroup();
+				pVGroup.horizontalAlign = "center";
+				pVGroup.verticalAlign = "middle";
+				pVGroup.percentHeight = 100;
+				pVGroup.percentWidth = 100;
+				pVGroup.addElement(pLabel);
+				var pBorderContainer:BorderContainer = new BorderContainer();
+				pBorderContainer.width = 150;
+				pBorderContainer.height = 40;
+				pBorderContainer.x = nX - (pBorderContainer.width / 2);
+				pBorderContainer.y = nY - (pBorderContainer.height / 2);
+				pBorderContainer.addElement(pVGroup);
+				return pBorderContainer;
+			}
+			
+			// Find the border container ancestor
+			private function FindBorderContainer(pParent:DisplayObjectContainer):BorderContainer
+			{
+				// Walk the ancestor tree
+				while ((pParent != null) && ((pParent as BorderContainer) == null))
+				{
+					pParent = pParent.parent;
+				}
+				if (pParent == null)
+				{
+					// Failed to find border container
+					return null;
+				}
+				return pParent as BorderContainer;
+			}
+
+			// Walk the decendant tree until we find a child with the given name
+			private function FindDecendentByName(pTarget:DisplayObjectContainer, sName:String):DisplayObject
+			{
+				// Make sure our target is valid
+				if (pTarget == null)
+				{
+					return null;
+				}
+				
+				// Check if our target is the one we are searching for
+				if (pTarget.name == sName)
+				{
+					return pTarget;
+				}
+				
+				// Walk the immediate children
+				for (var nChild:uint = 0; nChild < pTarget.numChildren; ++nChild)
+				{
+					var pChild:DisplayObject = pTarget.getChildAt(nChild);
+					if (pChild.name == sName)
+					{
+						return pChild;
+					}
+					else
+					{
+						// Call this function recursively for all children
+						pChild = FindDecendentByName(pChild as DisplayObjectContainer, sName);
+						if (pChild != null)
+						{
+							return pChild;
+						}
+					}
+				}
+				return null;
+			}
 
 			/***
 			 * Message handlers
@@ -87,6 +165,48 @@
 				UpdateConfiguration(m_pServerConfiguration);
 			}
 
+			// Unit operation message handlers
+			public function OnUnitOperationMouseDown(event:MouseEvent):void
+			{
+				// Prepare to drag
+				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(event.target as DisplayObjectContainer, "_unitOperationLabel",
+					event.stageX, event.stageY);
+				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnUnitOperationMouseUp);
+				addElement(pBorderContainer);
+				
+				// Start dragging
+				pBorderContainer.startDrag();
+			}
+			protected function OnUnitOperationMouseUp(event:MouseEvent):void
+			{
+				// Find the border container
+				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
+				
+				// Stop the dragging and remove the object
+				pBorderContainer.stopDrag();
+				removeChild(pBorderContainer);
+			}
+			public function OnUnitOperationTouchBegin(event:TouchEvent):void
+			{
+				// Prepare to drag
+				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(event.target as DisplayObjectContainer, "_unitOperationLabel",
+					event.stageX, event.stageY);
+				pBorderContainer.addEventListener(TouchEvent.TOUCH_END, OnUnitOperationTouchEnd);
+				addElement(pBorderContainer);
+				
+				// Start dragging
+				pBorderContainer.startTouchDrag(0);
+			}
+			protected function OnUnitOperationTouchEnd(event:TouchEvent):void
+			{
+				// Find the border container
+				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
+				
+				// Stop the dragging and remove the object
+				pBorderContainer.stopTouchDrag(0);
+				removeChild(pBorderContainer);
+			}
+
 			// Button click handler
 			public function OnButtonClick(event:MouseEvent):void
 			{
@@ -111,13 +231,13 @@
 						<s:ItemRenderer>
 							<fx:Script>
 								<![CDATA[
-									// Formats the button text
+									// Formats the label text
 									override public function set data(value:Object):void
 									{
 										super.data = value;
 										if (value != null)
 										{
-											_button.label = value as String;
+											_unitOperationLabel.text = value as String;
 										}
 									}
 								]]>
@@ -127,7 +247,12 @@
 								<s:State name="selected" />
 							</s:states>
 							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
-								<s:Button id="_button" styleName="button" click="outerDocument.OnButtonClick(event)" width="150" height="40" />
+								<s:BorderContainer mouseDown="outerDocument.OnUnitOperationMouseDown(event)"
+										touchBegin="outerDocument.OnUnitOperationTouchBegin(event)" width="150" height="40">
+									<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+										<s:Label id="_unitOperationLabel" name="_unitOperationLabel" styleName="TextMedium" />
+									</s:VGroup>
+								</s:BorderContainer>
 							</s:VGroup>
 						</s:ItemRenderer>
 					</fx:Component>

@@ -429,37 +429,37 @@ class Elixys:
         # Update the parts of the component that we save
         if pTargetComponent["componenttype"] == "CASSETTE":
             pTargetComponent["available"] = pSourceComponent["available"]
-        elif pComponent["componenttype"] == "ADD":
+        elif pTargetComponent["componenttype"] == "ADD":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["reagent"] = pSourceComponent["reagent"]
-        elif pComponent["componenttype"] == "EVAPORATE":
+        elif pTargetComponent["componenttype"] == "EVAPORATE":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["duration"] = pSourceComponent["duration"]
             pTargetComponent["evaporationtemperature"] = pSourceComponent["evaporationtemperature"]
             pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
             pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
-        elif pComponent["componenttype"] == "TRANSFER":
+        elif pTargetComponent["componenttype"] == "TRANSFER":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["target"] = pSourceComponent["target"]
-        elif pComponent["componenttype"] == "ELUTE":
+        elif pTargetComponent["componenttype"] == "ELUTE":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["reagent"] = pSourceComponent["reagent"]
             pTargetComponent["target"] = pSourceComponent["target"]
-        elif pComponent["componenttype"] == "REACT":
+        elif pTargetComponent["componenttype"] == "REACT":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["position"] = pSourceComponent["position"]
             pTargetComponent["duration"] = pSourceComponent["duration"]
             pTargetComponent["reactiontemperature"] = pSourceComponent["reactiontemperature"]
             pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
             pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
-        elif pComponent["componenttype"] == "PROMPT":
+        elif pTargetComponent["componenttype"] == "PROMPT":
             pTargetComponent["message"] = pSourceComponent["message"]
-        elif pComponent["componenttype"] == "INSTALL":
+        elif pTargetComponent["componenttype"] == "INSTALL":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
             pTargetComponent["message"] = pSourceComponent["message"]
-        elif pComponent["componenttype"] == "COMMENT":
+        elif pTargetComponent["componenttype"] == "COMMENT":
             pTargetComponent["comment"] = pSourceComponent["comment"]
-        elif pComponent["componenttype"] == "ACTIVITY":
+        elif pTargetComponent["componenttype"] == "ACTIVITY":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
 
     # Lock file
