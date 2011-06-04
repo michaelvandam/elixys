@@ -8,12 +8,26 @@
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.*;
 			
+			import mx.collections.ArrayList;
+			import mx.events.DragEvent;
+			
 			import spark.components.BorderContainer;
 			import spark.components.Button;
+			import spark.skins.spark.ButtonSkin;
 
 			/***
 			 * Member functions
 			 **/
+			
+			// Returns the sequence insertion source and target
+			public function GetSequenceInsertionSource():int
+			{
+				return m_nSequenceInsertionSource;
+			}
+			public function GetSequenceInsertionTarget():int
+			{
+				return m_nSequenceInsertionTarget;
+			}
 			
 			// Update state
 			public override function UpdateState(pState:State):void
@@ -35,6 +49,12 @@
 			// Update sequence
 			public override function UpdateSequence(pSequence:Sequence):void
 			{
+				// Don't update the sequence if the user is adding, rearranging or deleting a components
+				if ((m_nSequenceInsertionSource != -1) || (m_nSequenceInsertionTarget != -1))
+				{
+					return;
+				}
+
 				// Update the sequence sequence
 				UpdateSequenceSequence(pSequence);
 
@@ -133,6 +153,61 @@
 				return null;
 			}
 
+			// Determines if the given rect intersects with the target object
+			private function OverlapTest(pMouseStageRect:Rectangle, pTarget:DisplayObject):Boolean
+			{
+				// Check if any of the four rectange corners are over the target
+				var pTargetPoint:Point = pTarget.localToGlobal(new Point(0, 0));
+				var pTargetRect:Rectangle = new Rectangle(pTargetPoint.x, pTargetPoint.y, pTarget.width, pTarget.height);
+				return pMouseStageRect.intersects(pTargetRect);
+			}
+
+			// Locates the sequence component ID under the point
+			private function FindSequenceComponentID(pStagePoint:Point):int
+			{
+				// Get a list of objects under the point
+				var pObjectsUnderPoint:Array = getObjectsUnderPoint(pStagePoint);
+				
+				// Search the list for a ButtonSkin object
+				for (var nObject:uint = 0; nObject < pObjectsUnderPoint.length; ++nObject)
+				{
+					var pObject:Object = pObjectsUnderPoint[nObject];
+					if (pObject is ButtonSkin)
+					{
+						// Get the parent button
+						var pButtonSkin:ButtonSkin = pObject as ButtonSkin;
+						var pButton:spark.components.Button = pButtonSkin.parent as spark.components.Button;
+						if (pButton != null)
+						{
+							return parseInt(pButton.id);
+						}
+					}
+				}
+				
+				// Failed to find button
+				return -1;
+			}
+
+			// Updates the specified component in the sequence list
+			private function UpdateSequenceListComponent(nComponentID:uint):void
+			{
+				// Search the sequence list for the component
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (pComponent.ID == nComponentID)
+					{
+						// Found it.  Update and return
+						pArrayList.itemUpdated(pArrayList.getItemAt(i));
+						return;
+					}
+				}
+				
+				// Component not found
+				throw Error("Sequence component not found");
+			}
+
 			/***
 			 * Message handlers
 			 **/
@@ -163,21 +238,63 @@
 				
 				// Initialize the unit operations list
 				UpdateConfiguration(m_pServerConfiguration);
-			}
 
-			// Unit operation message handlers
+				// Create the timers
+				m_pUnitOperationMouseTimer = new Timer(200, 1);
+				m_pUnitOperationMouseTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationMouseDownTimer);
+				m_pUnitOperationTouchTimer = new Timer(200, 1);
+				m_pUnitOperationTouchTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationTouchBeginTimer);
+			}
+						
+			// Unit operation drag message handlers
 			public function OnUnitOperationMouseDown(event:MouseEvent):void
 			{
+				// Remember the mouse down target
+				m_pMouseDownTarget = event.target as DisplayObjectContainer;
+				
+				// Set the timer to allow a certain amount of time to pass before we start dragging
+				if (!m_pUnitOperationMouseTimer.running)
+				{
+					m_pUnitOperationMouseTimer.start();
+				}
+			}
+			public function OnUnitOperationMouseUp(event:MouseEvent):void
+			{
+				// Is our timer still running?
+				if (m_pUnitOperationMouseTimer.running)
+				{
+					// Yes, so stop it
+					m_pUnitOperationMouseTimer.stop();
+					
+					// Determine what unit operation the user clicked on and handle it
+					var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_unitOperationLabel") as Label;
+					OnUnitOperationClick(pLabel.text);
+				}
+
+				// Clear our variables
+				m_pMouseDownTarget = null;
+			}
+			protected function OnUnitOperationMouseDownTimer(event:TimerEvent):void
+			{
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(event.target as DisplayObjectContainer, "_unitOperationLabel",
-					event.stageX, event.stageY);
-				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnUnitOperationMouseUp);
+				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(m_pMouseDownTarget, "_unitOperationLabel",
+					mouseX, mouseY);
+				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnNewUnitOperationMouseUp);
+				pBorderContainer.addEventListener(MouseEvent.MOUSE_MOVE, OnNewUnitOperationMouseMove);
 				addElement(pBorderContainer);
 				
 				// Start dragging
 				pBorderContainer.startDrag();
+				
+				// Clear our target
+				m_pMouseDownTarget = null;
 			}
-			protected function OnUnitOperationMouseUp(event:MouseEvent):void
+			protected function OnNewUnitOperationMouseMove(event:MouseEvent):void
+			{
+				// Handle the unit operation move event
+				OnNewUnitOperationMove(event);
+			}
+			public function OnNewUnitOperationMouseUp(event:MouseEvent):void
 			{
 				// Find the border container
 				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
@@ -185,19 +302,62 @@
 				// Stop the dragging and remove the object
 				pBorderContainer.stopDrag();
 				removeChild(pBorderContainer);
+				
+				// Perform any require action
+				if (m_nSequenceInsertionTarget != -1)
+				{
+					// Insert the sequence component
+					OnSequenceComponentInsert();
+				}
 			}
 			public function OnUnitOperationTouchBegin(event:TouchEvent):void
 			{
+				// Remember the mouse down target
+				m_pMouseDownTarget = event.target as DisplayObjectContainer;
+				
+				// Set the timer to allow a certain amount of time to pass before we start dragging
+				if (!m_pUnitOperationTouchTimer.running)
+				{
+					m_pUnitOperationTouchTimer.start();
+				}
+			}
+			public function OnUnitOperationTouchEnd(event:TouchEvent):void
+			{
+				// Is our timer still running?
+				if (m_pUnitOperationTouchTimer.running)
+				{
+					// Yes, so stop it
+					m_pUnitOperationTouchTimer.stop();
+					
+					// Determine what unit operation the user clicked on and handle it
+					var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_unitOperationLabel") as Label;
+					OnUnitOperationClick(pLabel.text);
+				}
+				
+				// Clear our target
+				m_pMouseDownTarget = null;
+			}
+			protected function OnUnitOperationTouchBeginTimer(event:TimerEvent):void
+			{
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(event.target as DisplayObjectContainer, "_unitOperationLabel",
-					event.stageX, event.stageY);
-				pBorderContainer.addEventListener(TouchEvent.TOUCH_END, OnUnitOperationTouchEnd);
+				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(m_pMouseDownTarget, "_unitOperationLabel",
+					mouseX, mouseY);
+				pBorderContainer.addEventListener(TouchEvent.TOUCH_END, OnNewUnitOperationTouchEnd);
+				pBorderContainer.addEventListener(TouchEvent.TOUCH_MOVE, OnNewUnitOperationTouchMove);
 				addElement(pBorderContainer);
 				
 				// Start dragging
 				pBorderContainer.startTouchDrag(0);
+				
+				// Clear our target
+				m_pMouseDownTarget = null;
 			}
-			protected function OnUnitOperationTouchEnd(event:TouchEvent):void
+			protected function OnNewUnitOperationTouchMove(event:MouseEvent):void
+			{
+				// Handle the unit operation move event
+				OnNewUnitOperationMove(event);
+			}
+			public function OnNewUnitOperationTouchEnd(event:TouchEvent):void
 			{
 				// Find the border container
 				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
@@ -205,6 +365,73 @@
 				// Stop the dragging and remove the object
 				pBorderContainer.stopTouchDrag(0);
 				removeChild(pBorderContainer);
+				
+				// Perform any require action
+				if (m_nSequenceInsertionTarget != -1)
+				{
+					// Insert the sequence component
+					OnSequenceComponentInsert();
+				}
+			}
+			protected function OnNewUnitOperationMove(event:MouseEvent):void
+			{
+				// Check if we are over the sequence list
+				var pDragRectangle:Rectangle = new Rectangle(event.stageX - 75, event.stageY - 20, 150, 40);
+				var nOldInsertionTarget:int;
+				if (OverlapTest(pDragRectangle,_sequenceList))
+				{
+					// Determine the ID of the upper sequence component
+					var pSequenceListPoint:Point = _sequenceList.localToGlobal(new Point(_sequenceList.width / 2, 0));
+					var nUpperComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY - 20));
+					if (nUpperComponentID == -1)
+					{
+						var nLowerComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY + 20));
+						if (nLowerComponentID > 0)
+						{
+							nUpperComponentID = nLowerComponentID - 1;
+						}
+					}
+					if (nUpperComponentID != m_nSequenceInsertionTarget)
+					{
+						// The component has changed.  Update the sequence list
+						if (m_nSequenceInsertionTarget != -1)
+						{
+							nOldInsertionTarget = m_nSequenceInsertionTarget;
+							m_nSequenceInsertionTarget = -1;
+							UpdateSequenceListComponent(nOldInsertionTarget);
+						}
+						if (nUpperComponentID != -1)
+						{
+							m_nSequenceInsertionTarget = nUpperComponentID;
+							UpdateSequenceListComponent(m_nSequenceInsertionTarget);
+						}
+					}
+				}
+				else
+				{
+					// We are not over the sequence list, so remove any insertion gap
+					if (m_nSequenceInsertionTarget != -1)
+					{
+						nOldInsertionTarget = m_nSequenceInsertionTarget;
+						m_nSequenceInsertionTarget = -1;
+						UpdateSequenceListComponent(nOldInsertionTarget);
+					}
+				}
+			}
+
+			// Called when the user clicks a unit operation
+			protected function OnUnitOperationClick(sUnitOperation:String):void
+			{
+				trace("Handle unit operation click: " + sUnitOperation);
+			}
+
+			// Called when the user inserts a sequence component
+			protected function OnSequenceComponentInsert():void
+			{
+				trace("Insert sequence component here");
+				var nOldComponentID:int = m_nSequenceInsertionTarget;
+				m_nSequenceInsertionTarget = -1;
+				UpdateSequenceListComponent(nOldComponentID);
 			}
 
 			// Button click handler
@@ -217,7 +444,21 @@
 				// Pass the request to the server
 				DoPost(pPostSequence, "EDIT");
 			}
+			
+			/***
+			 * Member variables
+			 **/
+			
+			// Sequence insertion source and target
+			private var m_nSequenceInsertionSource:int = -1;
+			private var m_nSequenceInsertionTarget:int = -1;
 
+			// Mouse down target
+			private var m_pMouseDownTarget:DisplayObjectContainer = null;
+
+			// Timers
+			private var m_pUnitOperationMouseTimer:Timer;
+			private var m_pUnitOperationTouchTimer:Timer;
 		]]>
 	</fx:Script>
 	
@@ -228,7 +469,7 @@
 			<s:List id="_unitOperationList" requireSelection="true" height="100%">
 				<s:itemRenderer>
 					<fx:Component>
-						<s:ItemRenderer>
+						<s:ItemRenderer autoDrawBackground="false">
 							<fx:Script>
 								<![CDATA[
 									// Formats the label text
@@ -244,11 +485,15 @@
 							</fx:Script>
 							<s:states>
 								<s:State name="normal" />
+								<s:State name="hovered" />
 								<s:State name="selected" />
 							</s:states>
 							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
 								<s:BorderContainer mouseDown="outerDocument.OnUnitOperationMouseDown(event)"
-										touchBegin="outerDocument.OnUnitOperationTouchBegin(event)" width="150" height="40">
+										mouseUp="outerDocument.OnUnitOperationMouseUp(event)"
+										touchBegin="outerDocument.OnUnitOperationTouchBegin(event)"
+										touchEnd="outerDocument.OnUnitOperationTouchEnd(event)"
+										width="150" height="40">
 									<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
 										<s:Label id="_unitOperationLabel" name="_unitOperationLabel" styleName="TextMedium" />
 									</s:VGroup>
@@ -267,15 +512,18 @@
 			<s:List id="_sequenceList" requireSelection="true" height="100%">
 				<s:itemRenderer>
 					<fx:Component>
-						<s:ItemRenderer>
+						<s:ItemRenderer autoDrawBackground="false">
 							<fx:Script>
 								<![CDATA[
 									// Formats the button text
 									override public function set data(value:Object):void
 									{
+										// Set the base class data
 										super.data = value;
+										
 										if (value != null)
 										{
+											// Format the button text
 											_button.label = ""
 											if (data.DisplayIndex != 0)
 											{
@@ -283,6 +531,11 @@
 											}
 											_button.label += data.Name;
 											_button.id = data.ID;
+										
+											// Show or hide the insertion point
+											var bInsertionPoint:Boolean = (outerDocument.GetSequenceInsertionTarget() == data.ID);
+											_insertionSpacer.visible = bInsertionPoint;
+											_insertionSpacer.includeInLayout = bInsertionPoint;
 										}
 									}
 								]]>
@@ -293,6 +546,7 @@
 							</s:states>
 							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
 								<s:Button id="_button" styleName="button" click="outerDocument.OnButtonClick(event)" width="150" height="40" />
+								<s:Spacer id="_insertionSpacer" visible="false" includeInLayout="false" width="100%" height="15" />
 							</s:VGroup>
 						</s:ItemRenderer>
 					</fx:Component>
