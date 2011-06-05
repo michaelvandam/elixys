@@ -8,6 +8,10 @@ package Elixys.Objects
 		public function ComponentAdd(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
+			if ((data == null) && (existingcontent == null))
+			{
+				data = m_sDefault;
+			}
 			super(data, existingcontent);
 			
 			// Validate the object type
@@ -53,5 +57,10 @@ package Elixys.Objects
 
 		// Type
 		static public var TYPE:String = "ADD";
+		
+		// Default format
+		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"ADD\", \"name\":\"\", \"componentid\":\"\", " +
+			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"reagent\":\"\", " +
+			"\"reagentdescription\":\"\", \"reagentvalidation\":\"\" }";
 	}
 }

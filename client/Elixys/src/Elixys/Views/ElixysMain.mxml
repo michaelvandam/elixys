@@ -245,7 +245,7 @@
 
 					default:
 						// Unhandled server message
-						throw new Error("Message type \"" + pJSON.type + "\" not handled");							
+						throw new Error("Message type \"" + pJSON.type + "\" not handled");
 				}
 			}
 			

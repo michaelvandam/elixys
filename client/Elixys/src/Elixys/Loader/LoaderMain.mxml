@@ -267,7 +267,7 @@
 					<s:Label text="Password" verticalAlign="middle" styleName="TextMedium" height="40" />
 				</s:VGroup>
 				<s:VGroup gap="15" width="100%">
-					<s:TextArea id="_server" text="ec2-50-19-138-179.compute-1.amazonaws.com" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
+					<s:TextArea id="_server" text="192.168.180.183" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_username" text="devel" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 					<s:TextArea id="_password" text="devel" displayAsPassword="true" styleName="textarea" verticalAlign="middle" width="100%" height="40" />
 				</s:VGroup>

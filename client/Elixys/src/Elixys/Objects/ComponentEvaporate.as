@@ -8,6 +8,10 @@ package Elixys.Objects
 		public function ComponentEvaporate(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
+			if ((data == null) && (existingcontent == null))
+			{
+				data = m_sDefault;
+			}
 			super(data, existingcontent);
 			
 			// Validate the object type
@@ -138,5 +142,13 @@ package Elixys.Objects
 
 		// Type
 		static public var TYPE:String = "EVAPORATE";
+
+		// Default format
+		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"EVAPORATE\", \"name\":\"\", \"componentid\":\"\", " +
+			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"duration\":\"\", " +
+			"\"durationdescription\":\"\", \"durationvalidation\":\"\", \"evaporationtemperature\":\"\", " +
+			"\"evaporationtemperaturedescription\":\"\", \"evaporationtemperaturevalidation\":\"\", \"finaltemperature\":\"\", " +
+			"\"finaltemperaturedescription\":\"\", \"finaltemperaturevalidation\":\"\", \"stirspeed\":\"\", " +
+			"\"stirspeeddescription\":\"\", \"stirespeedvalidation\":\"\" }";
 	}
 }

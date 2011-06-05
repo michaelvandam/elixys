@@ -337,6 +337,9 @@ package Elixys.Views
 					pListData.addItem(pComponentClient);
 				}
 				
+				// Reset the selected index
+				pList.selectedIndex = -1;
+
 				// Update the sequence component
 				pComponentClient.Copy(pServerComponents[nComponent]);
 				if (pComponentClient.ComponentType == ComponentCassette.TYPE)
@@ -476,6 +479,9 @@ package Elixys.Views
 				pData = new ArrayList();
 			}
 			
+			// Reset the selected index
+			pComboBox.selectedIndex = -1;
+			
 			// Loop through the server and client arrays
 			var nValue:uint;
 			for (nValue = 0; nValue < pLiteralValues.length; ++nValue)
@@ -545,6 +551,9 @@ package Elixys.Views
 				pData = new ArrayList();
 			}
 			
+			// Reset the selected index
+			pComboBox.selectedIndex = -1;
+
 			// Loop through the server and client arrays
 			var nReagent:uint, pReagentClient:Reagent;
 			for (nReagent = 0; nReagent < pIDs.length; ++nReagent)

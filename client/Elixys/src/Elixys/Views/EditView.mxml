@@ -55,7 +55,7 @@
 					return;
 				}
 
-				// Update the sequence sequence
+				// Update the sequence
 				UpdateSequenceSequence(pSequence);
 
 				// Request the currently selected sequence component from the server
@@ -93,6 +93,7 @@
 				pVGroup.percentWidth = 100;
 				pVGroup.addElement(pLabel);
 				var pBorderContainer:BorderContainer = new BorderContainer();
+				pBorderContainer.id = pTargetLabel.text;
 				pBorderContainer.width = 150;
 				pBorderContainer.height = 40;
 				pBorderContainer.x = nX - (pBorderContainer.width / 2);
@@ -307,7 +308,7 @@
 				if (m_nSequenceInsertionTarget != -1)
 				{
 					// Insert the sequence component
-					OnSequenceComponentInsert();
+					OnSequenceComponentInsert(pBorderContainer.id);
 				}
 			}
 			public function OnUnitOperationTouchBegin(event:TouchEvent):void
@@ -370,7 +371,7 @@
 				if (m_nSequenceInsertionTarget != -1)
 				{
 					// Insert the sequence component
-					OnSequenceComponentInsert();
+					OnSequenceComponentInsert(pBorderContainer.id);
 				}
 			}
 			protected function OnNewUnitOperationMove(event:MouseEvent):void
@@ -426,9 +427,53 @@
 			}
 
 			// Called when the user inserts a sequence component
-			protected function OnSequenceComponentInsert():void
+			protected function OnSequenceComponentInsert(sUnitOperation:String):void
 			{
-				trace("Insert sequence component here");
+				// Create a blank instance of the appropriate unit operation
+				var pComponent:Component;
+				switch (sUnitOperation.toUpperCase())
+				{
+					case ComponentActivity.TYPE:
+						pComponent = new ComponentActivity();
+						break;
+
+					case ComponentAdd.TYPE:
+						pComponent = new ComponentAdd();
+						break;
+
+					case ComponentComment.TYPE:
+						pComponent = new ComponentComment();
+						break;
+					
+					case ComponentElute.TYPE:
+						pComponent = new ComponentElute();
+						break;
+					
+					case ComponentEvaporate.TYPE:
+						pComponent = new ComponentEvaporate();
+						break;
+					
+					case ComponentInstall.TYPE:
+						pComponent = new ComponentInstall();
+						break;
+					
+					case ComponentPrompt.TYPE:
+						pComponent = new ComponentPrompt();
+						break;
+					
+					case ComponentReact.TYPE:
+						pComponent = new ComponentReact();
+						break;
+					
+					case ComponentTransfer.TYPE:
+						pComponent = new ComponentTransfer();
+						break;
+				}
+				
+				// Post the new component to the server
+				DoPost(pComponent, "sequence/" + m_nSequenceID + "/component/0/" + m_nSequenceInsertionTarget);
+
+				// Close the gap
 				var nOldComponentID:int = m_nSequenceInsertionTarget;
 				m_nSequenceInsertionTarget = -1;
 				UpdateSequenceListComponent(nOldComponentID);

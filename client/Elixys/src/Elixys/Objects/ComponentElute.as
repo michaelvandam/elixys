@@ -8,6 +8,10 @@ package Elixys.Objects
 		public function ComponentElute(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
+			if ((data == null) && (existingcontent == null))
+			{
+				data = m_sDefault;
+			}
 			super(data, existingcontent);
 			
 			// Validate the object type
@@ -82,5 +86,11 @@ package Elixys.Objects
 
 		// Type
 		static public var TYPE:String = "ELUTE";
+
+		// Default format
+		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"ELUTE\", \"name\":\"\", \"componentid\":\"\", " +
+			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"reagent\":\"\", " +
+			"\"reagentdescription\":\"\", \"reagentvalidation\":\"\", \"target\":\"\", \"targetdescription\":\"\", " +
+			"\"targetvalidation\":\"\" }";
 	}
 }
