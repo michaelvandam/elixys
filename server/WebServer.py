@@ -303,29 +303,31 @@ def HandleGetReagent(sRemoteUser, sPath):
 ### POST handler functions ###
 
 # Handle all POST requests
-def HandlePost(sClientState, sRemoteUser, sPath, pBody):
+def HandlePost(sClientState, sRemoteUser, sPath, pBody, nBodyLength):
+    # Handle based on the path
     if sPath == "/HOME":
-        return HandlePostHome(sClientState, sRemoteUser, pBody)
+        return HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength)
     elif sPath == "/SELECT":
-        return HandlePostSelect(sClientState, sRemoteUser, pBody)
+        return HandlePostSelect(sClientState, sRemoteUser, pBody, nBodyLength)
     elif sPath == "/VIEW":
-        return HandlePostView(sClientState, sRemoteUser, pBody)
+        return HandlePostView(sClientState, sRemoteUser, pBody, nBodyLength)
     elif sPath == "/EDIT":
-        return HandlePostEdit(sClientState, sRemoteUser, pBody)
+        return HandlePostEdit(sClientState, sRemoteUser, pBody, nBodyLength)
     elif sPath == "/PROMPT":
-        return HandlePostPrompt(sClientState, sRemoteUser, pBody)
-    if sPath.startswith("/sequence/"):
+        return HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength)
+    elif sPath.startswith("/sequence/"):
         if sPath.find("/component/") != -1:
-            return HandlePostComponent(sClientState, sRemoteUser, pBody, sPath)
+            return HandlePostComponent(sClientState, sRemoteUser, pBody, nBodyLength, sPath)
         elif sPath.find("/reagent/") != -1:
-            return HandlePostReagent(sClientState, sRemoteUser, pBody, sPath)
+            return HandlePostReagent(sClientState, sRemoteUser, pBody, nBodyLength, sPath)
         else:
-            return HandlePostSequence(sClientState, sRemoteUser, pBody, sPath)
-    else:
-        raise Exception("Unknown path: " + sPath)
+            return HandlePostSequence(sClientState, sRemoteUser, pBody, nBodyLength, sPath)
+
+    # Unhandled use case
+    raise Exception("Unknown path: " + sPath)
 
 # Handle POST /HOME
-def HandlePostHome(sClientState, sRemoteUser, pBody):
+def HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on the home page
     global gElixys
     if sClientState.startswith("HOME") == False:
@@ -354,7 +356,7 @@ def HandlePostHome(sClientState, sRemoteUser, pBody):
     raise Exception("State misalignment")
 
 # Handle POST /SELECT
-def HandlePostSelect(sClientState, sRemoteUser, pBody):
+def HandlePostSelect(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Select Sequence
     global gElixys
     if sClientState.startswith("SELECT") == False:
@@ -417,7 +419,7 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody):
     raise Exception("State misalignment")
 
 # Handle POST /VIEW
-def HandlePostView(sClientState, sRemoteUser, pBody):
+def HandlePostView(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on View Sequence
     if sClientState.startswith("VIEW") == False:
         raise Exception("State misalignment")
@@ -453,7 +455,7 @@ def HandlePostView(sClientState, sRemoteUser, pBody):
     raise Exception("State misalignment")
 
 # Handle POST /EDIT
-def HandlePostEdit(sClientState, sRemoteUser, pBody):
+def HandlePostEdit(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Edit Sequence
     if sClientState.startswith("EDIT") == False:
         raise Exception("State misalignment")
@@ -530,7 +532,7 @@ def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nCompo
     return ""
 
 # Handle POST /PROMPT
-def HandlePostPrompt(sClientState, sRemoteUser, pBody):
+def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Prompt
     global gElixys
     if sClientState.startswith("PROMPT") == False:
@@ -587,7 +589,7 @@ def HandlePostSequence(sClientState, sRemoteUser, pBody, sPath):
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle POST /sequence/[sequenceid]/component/[componentid]
-def HandlePostComponent(sClientState, sRemoteUser, pBody, sPath):
+def HandlePostComponent(sClientState, sRemoteUser, pBody, nBodyLength, sPath):
     # Extract sequence and component IDs
     global gElixys
     pPathComponents = sPath.split("/")
@@ -598,14 +600,17 @@ def HandlePostComponent(sClientState, sRemoteUser, pBody, sPath):
         nInsertionID = int(pPathComponents[5])
 
     # Save the sequence component
-    pComponent = json.loads(pBody)
-    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, pComponent, nInsertionID)
+    if nBodyLength != 0:
+        pComponent = json.loads(pBody)
+    else:
+        pComponent = None
+    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent)
 
     # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle POST /sequence/[sequenceid]/reagent/[reagentid]
-def HandlePostReagent(sClientState, sRemoteUser, pBody, sPath):
+def HandlePostReagent(sClientState, sRemoteUser, pBody, nBodyLength, sPath):
     # Extract sequence and component IDs
     global gElixys
     pPathComponents = sPath.split("/")
@@ -621,7 +626,26 @@ def HandlePostReagent(sClientState, sRemoteUser, pBody, sPath):
 
 # Handle DELETE requests
 def HandleDelete(sClientState, sRemoteUser, sPath):
-    raise Exception("Implement DELETE")
+    if sPath.startswith("/sequence/"):
+        if sPath.find("/component/") != -1:
+            return HandleDeleteComponent(sClientState, sRemoteUser, sPath)
+
+    # Unhandled use case
+    raise Exception("Unknown path: " + sPath)
+
+# Handle DELETE /sequence/[sequenceid]/component/[componentid]
+def HandleDeleteComponent(sClientState, sRemoteUser, sPath):
+    # Extract sequence and component IDs
+    global gElixys
+    pPathComponents = sPath.split("/")
+    nSequenceID = int(pPathComponents[2])
+    nComponentID = int(pPathComponents[4])
+
+    # Delete the sequence component
+    gElixys.DeleteSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
+
+    # Return the new state
+    return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Main WSGI application entry point
 def application(pEnvironment, fStartResponse):
@@ -649,9 +673,9 @@ def application(pEnvironment, fStartResponse):
         if sRequestMethod == "GET":
             sResponse = HandleGet(sClientState, sRemoteUser, sPath)
         elif sRequestMethod == "POST":
-            pBodyLength = int(pEnvironment["CONTENT_LENGTH"])
-            pBody = pEnvironment["wsgi.input"].read(pBodyLength)
-            sResponse = HandlePost(sClientState, sRemoteUser, sPath, pBody)
+            nBodyLength = int(pEnvironment["CONTENT_LENGTH"])
+            pBody = pEnvironment["wsgi.input"].read(nBodyLength)
+            sResponse = HandlePost(sClientState, sRemoteUser, sPath, pBody, nBodyLength)
         elif sRequestMethod == "DELETE":
             sResponse = HandleDelete(sClientState, sRemoteUser, sPath)
         else:

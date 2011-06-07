@@ -61,6 +61,6 @@ package Elixys.Objects
 		// Default format
 		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"INSTALL\", \"name\":\"\", \"componentid\":\"\", " +
 			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"message\":\"\", " +
-			"\"messagedescription\":\"\", \"messagevalidation\":\"\"";
+			"\"messagedescription\":\"\", \"messagevalidation\":\"\" }";
 	}
 }

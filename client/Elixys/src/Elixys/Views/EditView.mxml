@@ -13,6 +13,7 @@
 			
 			import spark.components.BorderContainer;
 			import spark.components.Button;
+			import spark.skins.spark.BorderContainerSkin;
 			import spark.skins.spark.ButtonSkin;
 
 			/***
@@ -77,15 +78,16 @@
 			}
 			
 			// Prepares a unit operation for dragging
-			private function PrepareUnitOperationDrag(pContainer:DisplayObjectContainer, sLabelName:String, nX:uint, nY:uint):BorderContainer
+			private function PrepareDragObject(pContainer:DisplayObjectContainer, sLabelName:String, nX:uint, nY:uint):BorderContainer
 			{
 				// Get the text of the unit operation
-				var pTargetLabel:Label = FindDecendentByName(pContainer, "_unitOperationLabel") as Label;
+				var pTargetLabel:Label = FindDecendentByName(pContainer, sLabelName) as Label;
 				
 				// Create a new object to drag
 				var pLabel:Label = new Label();
 				pLabel.text = pTargetLabel.text;
 				pLabel.styleName = "TextMedium";
+				pLabel.id = pTargetLabel.id;
 				var pVGroup:VGroup = new VGroup();
 				pVGroup.horizontalAlign = "center";
 				pVGroup.verticalAlign = "middle";
@@ -169,24 +171,137 @@
 				// Get a list of objects under the point
 				var pObjectsUnderPoint:Array = getObjectsUnderPoint(pStagePoint);
 				
-				// Search the list for a ButtonSkin object
+				// Search the list for a BorderContainerSkin object
 				for (var nObject:uint = 0; nObject < pObjectsUnderPoint.length; ++nObject)
 				{
 					var pObject:Object = pObjectsUnderPoint[nObject];
-					if (pObject is ButtonSkin)
+					if (pObject is BorderContainerSkin)
 					{
-						// Get the parent button
-						var pButtonSkin:ButtonSkin = pObject as ButtonSkin;
-						var pButton:spark.components.Button = pButtonSkin.parent as spark.components.Button;
-						if (pButton != null)
+						// Get the parent border container
+						var pBorderContainerSkin:BorderContainerSkin = pObject as BorderContainerSkin;
+						var pBorderContainer:BorderContainer = pBorderContainerSkin.parent as BorderContainer;
+						if (pBorderContainer != null)
 						{
-							return parseInt(pButton.id);
+							// Locate the child label and return the ID
+							var pLabel:Label = FindDecendentByName(pBorderContainer, "_componentLabel") as Label;
+							if (pLabel != null)
+							{
+								return parseInt(pLabel.id);
+							}
 						}
 					}
 				}
 				
 				// Failed to find button
 				return -1;
+			}
+
+			// Locate the previous sequence component
+			private function FindPreviousSequenceComponentID(nComponentID:int):int
+			{
+				// Iterate through our sequence list
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				var nPreviousComponentID:int = -1;
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (pComponent.ID == nComponentID)
+					{
+						// Found it.  Return the previous component ID
+						return nPreviousComponentID;
+					}
+					else
+					{
+						// Remember this component ID
+						nPreviousComponentID = pComponent.ID;
+					}
+				}
+				
+				// Failed to find previous component
+				return -1;
+			}
+
+			// Locate the next sequence component
+			private function FindNextSequenceComponentID(nComponentID:int):int
+			{
+				// Iterate through our sequence list
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				var bComponentFound:Boolean = false;
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (bComponentFound)
+					{
+						// This is the next component
+						return pComponent.ID;
+					}
+					else if (pComponent.ID == nComponentID)
+					{
+						// Found it.  Set our flag
+						bComponentFound = true;
+					}
+				}
+				
+				// Failed to find previous component
+				return -1;
+			}
+
+			// Returns the last sequence component ID
+			private function FindLastSequenceComponentID():int
+			{
+				// Get the last entry in the sequence list
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				var pComponent:SequenceComponent = pArrayList.getItemAt(pArrayList.length - 1) as SequenceComponent;
+				return pComponent.ID;
+			}
+
+			// Locates the sequence component by ID
+			private function FindSequenceComponentByID(nComponentID:uint):SequenceComponent
+			{
+				// Iterate over the sequence list
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (pComponent.ID == nComponentID)
+					{
+						// Found it
+						return pComponent;
+					}
+				}
+				
+				// Failed to find component
+				throw Error("Failed to find sequence component");
+			}
+
+			// Inserts the specified component in the sequence list
+			private function InsertSequenceListComponent(pNewComponent:Component, nInsertAtComponentID:int):void
+			{
+				// An insertion index of -1 adds to the end of the list
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				if (nInsertAtComponentID == -1)
+				{
+					// Found it.  Append, update and return
+					pArrayList.addItem(pNewComponent);
+					pArrayList.itemUpdated(pNewComponent);
+					return;
+				}
+				
+				// Search the sequence list for the component
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (pComponent.ID == nInsertAtComponentID)
+					{
+						// Found it.  Insert, update and return
+						pArrayList.addItemAt(pNewComponent, i);
+						pArrayList.itemUpdated(pNewComponent);
+						return;
+					}
+				}
+				
+				// Component not found
+				throw Error("Sequence component not found");
 			}
 
 			// Updates the specified component in the sequence list
@@ -209,6 +324,61 @@
 				throw Error("Sequence component not found");
 			}
 
+			// Removes the specified component in the sequence list
+			private function RemoveSequenceListComponent(nComponentID:uint):void
+			{
+				// Search the sequence list for the component
+				var pArrayList:ArrayList = _sequenceList.dataProvider as ArrayList;
+				for (var i:uint = 0; i < pArrayList.length; ++i)
+				{
+					var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+					if (pComponent.ID == nComponentID)
+					{
+						// Found it.  Remove and return
+						pArrayList.removeItem(pComponent);
+						return;
+					}
+				}
+				
+				// Component not found
+				throw Error("Sequence component not found");
+			}
+
+			// Update the insertion target in the sequence list
+			protected function UpdateSequenceInsertionTarget(nNewInsertionTargetID:int):void
+			{
+				// Close any existing gap
+				if (m_nSequenceInsertionTarget != -1)
+				{
+					var nOldInsertionTarget:int = m_nSequenceInsertionTarget;
+					m_nSequenceInsertionTarget = -1;
+					UpdateSequenceListComponent(nOldInsertionTarget);
+				}
+				
+				// Create a new gap
+				if (nNewInsertionTargetID != -1)
+				{
+					m_nSequenceInsertionTarget = nNewInsertionTargetID;
+					UpdateSequenceListComponent(m_nSequenceInsertionTarget);
+				}
+			}
+
+			// Clear the drag variables
+			protected function CleanUpDrag():void
+			{
+				m_pMouseDownTarget = null;
+				m_nSequenceInsertionSource = -1;
+				m_nSequenceInsertionTarget = -1;
+				m_bTrashCanTarget = false;
+				SetTrashCan();
+			}
+			
+			// Sets the state of the trash can
+			protected function SetTrashCan():void
+			{
+				_trashCanBorder.setStyle("backgroundColor", m_bTrashCanTarget ? "0x000000" : "0xffffff");
+			}
+			
 			/***
 			 * Message handlers
 			 **/
@@ -243,17 +413,17 @@
 				// Create the timers
 				m_pUnitOperationMouseTimer = new Timer(200, 1);
 				m_pUnitOperationMouseTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationMouseDownTimer);
-				m_pUnitOperationTouchTimer = new Timer(200, 1);
-				m_pUnitOperationTouchTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationTouchBeginTimer);
+				m_pComponentMouseTimer = new Timer(200, 1);
+				m_pComponentMouseTimer.addEventListener(TimerEvent.TIMER, OnComponentMouseDownTimer);
 			}
-						
-			// Unit operation drag message handlers
+
+			// Unit operation message handlers
 			public function OnUnitOperationMouseDown(event:MouseEvent):void
 			{
 				// Remember the mouse down target
 				m_pMouseDownTarget = event.target as DisplayObjectContainer;
 				
-				// Set the timer to allow a certain amount of time to pass before we start dragging
+				// Set the timer so we can determine if this is a click or drag
 				if (!m_pUnitOperationMouseTimer.running)
 				{
 					m_pUnitOperationMouseTimer.start();
@@ -269,16 +439,16 @@
 					
 					// Determine what unit operation the user clicked on and handle it
 					var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_unitOperationLabel") as Label;
-					OnUnitOperationClick(pLabel.text);
+					trace("Handle component click: " + pLabel.text);
 				}
 
-				// Clear our variables
-				m_pMouseDownTarget = null;
+				// Clear the drag variables
+				CleanUpDrag();
 			}
 			protected function OnUnitOperationMouseDownTimer(event:TimerEvent):void
 			{
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(m_pMouseDownTarget, "_unitOperationLabel",
+				var pBorderContainer:BorderContainer = PrepareDragObject(m_pMouseDownTarget, "_unitOperationLabel",
 					mouseX, mouseY);
 				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnNewUnitOperationMouseUp);
 				pBorderContainer.addEventListener(MouseEvent.MOUSE_MOVE, OnNewUnitOperationMouseMove);
@@ -292,8 +462,8 @@
 			}
 			protected function OnNewUnitOperationMouseMove(event:MouseEvent):void
 			{
-				// Handle the unit operation move event
-				OnNewUnitOperationMove(event);
+				// Handle rearranging the sequence list as the user drags the new unit operation
+				OnUnitOperationMove(event.stageX, event.stageY);
 			}
 			public function OnNewUnitOperationMouseUp(event:MouseEvent):void
 			{
@@ -307,127 +477,191 @@
 				// Perform any require action
 				if (m_nSequenceInsertionTarget != -1)
 				{
-					// Insert the sequence component
-					OnSequenceComponentInsert(pBorderContainer.id);
+					// Insert the unit operation
+					OnUnitOperationInsert(pBorderContainer.id);
 				}
+				
+				// Clear the drag variables
+				CleanUpDrag();
 			}
-			public function OnUnitOperationTouchBegin(event:TouchEvent):void
+
+			// Component message handlers
+			public function OnComponentMouseDown(event:MouseEvent):void
 			{
 				// Remember the mouse down target
 				m_pMouseDownTarget = event.target as DisplayObjectContainer;
 				
-				// Set the timer to allow a certain amount of time to pass before we start dragging
-				if (!m_pUnitOperationTouchTimer.running)
+				// Set the timer so we can determine if this is a click or drag
+				if (!m_pComponentMouseTimer.running)
 				{
-					m_pUnitOperationTouchTimer.start();
+					m_pComponentMouseTimer.start();
 				}
 			}
-			public function OnUnitOperationTouchEnd(event:TouchEvent):void
+			public function OnComponentMouseUp(event:MouseEvent):void
 			{
 				// Is our timer still running?
-				if (m_pUnitOperationTouchTimer.running)
+				if (m_pComponentMouseTimer.running)
 				{
 					// Yes, so stop it
-					m_pUnitOperationTouchTimer.stop();
+					m_pComponentMouseTimer.stop();
 					
-					// Determine what unit operation the user clicked on and handle it
-					var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_unitOperationLabel") as Label;
-					OnUnitOperationClick(pLabel.text);
+					// Determine what unit operation the user clicked on
+					var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_componentLabel") as Label;
+					
+					// Create a POST request
+					var pPostSequence:PostSequence = new PostSequence();
+					pPostSequence.TargetID(pLabel.id);
+					
+					// Pass the request to the server
+					DoPost(pPostSequence, "EDIT");
 				}
 				
-				// Clear our target
-				m_pMouseDownTarget = null;
+				// Clear the drag variables
+				CleanUpDrag();
 			}
-			protected function OnUnitOperationTouchBeginTimer(event:TimerEvent):void
+			protected function OnComponentMouseDownTimer(event:TimerEvent):void
 			{
+				// Determine what type of sequence component the user is attempting to drag
+				var pLabel:Label = FindDecendentByName(m_pMouseDownTarget, "_componentLabel") as Label;
+				var pComponent:SequenceComponent = FindSequenceComponentByID(parseInt(pLabel.id));
+				if (pComponent.ComponentType == ComponentCassette.TYPE)
+				{
+					// Do not allow the user to move a cassette
+					CleanUpDrag();
+					return;
+				}
+
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareUnitOperationDrag(m_pMouseDownTarget, "_unitOperationLabel",
-					mouseX, mouseY);
-				pBorderContainer.addEventListener(TouchEvent.TOUCH_END, OnNewUnitOperationTouchEnd);
-				pBorderContainer.addEventListener(TouchEvent.TOUCH_MOVE, OnNewUnitOperationTouchMove);
+				var pBorderContainer:BorderContainer = PrepareDragObject(m_pMouseDownTarget, "_componentLabel", mouseX, mouseY);
+				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnInsertComponentMouseUp);
+				pBorderContainer.addEventListener(MouseEvent.MOUSE_MOVE, OnInsertComponentMouseMove);
 				addElement(pBorderContainer);
 				
 				// Start dragging
-				pBorderContainer.startTouchDrag(0);
+				pBorderContainer.startDrag();
+				m_nSequenceInsertionSource = pComponent.ID;
 				
-				// Clear our target
+				// Locate the previous component ID and create an initial gap for the newly dislocated component
+				var nPreviousComponentID:int = FindPreviousSequenceComponentID(m_nSequenceInsertionSource);
+				UpdateSequenceInsertionTarget(nPreviousComponentID);
+
+				// Remove the old element and clear our target
+				RemoveSequenceListComponent(m_nSequenceInsertionSource);
 				m_pMouseDownTarget = null;
 			}
-			protected function OnNewUnitOperationTouchMove(event:MouseEvent):void
+			protected function OnInsertComponentMouseMove(event:MouseEvent):void
 			{
-				// Handle the unit operation move event
-				OnNewUnitOperationMove(event);
+				// Handle rearranging the sequence list as the user drags the sequence component
+				OnUnitOperationMove(event.stageX, event.stageY);
 			}
-			public function OnNewUnitOperationTouchEnd(event:TouchEvent):void
+			public function OnInsertComponentMouseUp(event:MouseEvent):void
 			{
 				// Find the border container
 				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
 				
 				// Stop the dragging and remove the object
-				pBorderContainer.stopTouchDrag(0);
+				pBorderContainer.stopDrag();
 				removeChild(pBorderContainer);
 				
 				// Perform any require action
-				if (m_nSequenceInsertionTarget != -1)
+				if (m_nSequenceInsertionSource != -1)
 				{
-					// Insert the sequence component
-					OnSequenceComponentInsert(pBorderContainer.id);
+					if (m_bTrashCanTarget)
+					{
+						// Delate the component
+						OnSequenceComponentDelete();
+					}
+					else if (m_nSequenceInsertionTarget != -1)
+					{
+						// Move the component
+						OnSequenceComponentMove();
+					}
+					else
+					{
+						// Update the state to restore the component
+						RequestSequence(m_nSequenceID);
+					}
 				}
+				
+				// Clear the drag variables
+				CleanUpDrag();
 			}
-			protected function OnNewUnitOperationMove(event:MouseEvent):void
+
+			// Handle rearranging the sequence list as the user drags the unit operation
+			protected function OnUnitOperationMove(stageX:Number, stageY:Number):void
 			{
 				// Check if we are over the sequence list
-				var pDragRectangle:Rectangle = new Rectangle(event.stageX - 75, event.stageY - 20, 150, 40);
+				var pDragRectangle:Rectangle = new Rectangle(stageX - 75, stageY - 20, 150, 40);
 				var nOldInsertionTarget:int;
 				if (OverlapTest(pDragRectangle,_sequenceList))
 				{
-					// Determine the ID of the upper sequence component
+					// Determine the ID of the upper and lower sequence components by hit test
 					var pSequenceListPoint:Point = _sequenceList.localToGlobal(new Point(_sequenceList.width / 2, 0));
-					var nUpperComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY - 20));
+					var nUpperComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, stageY - 20));
+					var nLowerComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, stageY + 20));
+					
+					// Try and find the upper component ID if we didn't get one by hit test
 					if (nUpperComponentID == -1)
 					{
-						var nLowerComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY + 20));
-						if (nLowerComponentID > 0)
+						// Do we have a lower component ID?
+						if (nLowerComponentID != -1)
 						{
-							nUpperComponentID = nLowerComponentID - 1;
+							// Yes, so find the ID the the upper component
+							nUpperComponentID = FindPreviousSequenceComponentID(nLowerComponentID);
+						}
+						else
+						{
+							// No, but since we know we are over the sequence list we can safely assume that we are at the end of the list
+							nUpperComponentID = FindLastSequenceComponentID();
 						}
 					}
-					if (nUpperComponentID != m_nSequenceInsertionTarget)
+
+					// Try and find the lower component ID if we didn't get one by hit test
+					if (nLowerComponentID == -1)
 					{
-						// The component has changed.  Update the sequence list
-						if (m_nSequenceInsertionTarget != -1)
-						{
-							nOldInsertionTarget = m_nSequenceInsertionTarget;
-							m_nSequenceInsertionTarget = -1;
-							UpdateSequenceListComponent(nOldInsertionTarget);
-						}
+						// Do we have an upper component ID?
 						if (nUpperComponentID != -1)
 						{
-							m_nSequenceInsertionTarget = nUpperComponentID;
-							UpdateSequenceListComponent(m_nSequenceInsertionTarget);
+							// Yes, so find the ID the the lower component
+							nLowerComponentID = FindNextSequenceComponentID(nUpperComponentID);
 						}
+					}
+					
+					// Determine the lower component type
+					if (nLowerComponentID != -1)
+					{
+						var pComponent:SequenceComponent = FindSequenceComponentByID(nLowerComponentID);
+						if (pComponent.ComponentType == ComponentCassette.TYPE)
+						{
+							// Do not allow the user to insert before a cassette
+							nUpperComponentID = -1;
+						}
+					}
+					
+					// Has the insertion target changed?
+					if (nUpperComponentID != m_nSequenceInsertionTarget)
+					{
+						// Yes, so update the sequence list
+						UpdateSequenceInsertionTarget(nUpperComponentID);
 					}
 				}
 				else
 				{
 					// We are not over the sequence list, so remove any insertion gap
-					if (m_nSequenceInsertionTarget != -1)
-					{
-						nOldInsertionTarget = m_nSequenceInsertionTarget;
-						m_nSequenceInsertionTarget = -1;
-						UpdateSequenceListComponent(nOldInsertionTarget);
-					}
+					UpdateSequenceInsertionTarget(-1);
+				}
+				
+				// Are we dragging an existing unit operation?
+				if (m_nSequenceInsertionSource != -1)
+				{
+					// Yes, so set the trash can background color based on our position
+					m_bTrashCanTarget = OverlapTest(pDragRectangle,_trashCan);
+					SetTrashCan();
 				}
 			}
-
-			// Called when the user clicks a unit operation
-			protected function OnUnitOperationClick(sUnitOperation:String):void
-			{
-				trace("Handle unit operation click: " + sUnitOperation);
-			}
-
-			// Called when the user inserts a sequence component
-			protected function OnSequenceComponentInsert(sUnitOperation:String):void
+			
+			// Called when the user inserts a unit operation
+			protected function OnUnitOperationInsert(sUnitOperation:String):void
 			{
 				// Create a blank instance of the appropriate unit operation
 				var pComponent:Component;
@@ -473,10 +707,28 @@
 				// Post the new component to the server
 				DoPost(pComponent, "sequence/" + m_nSequenceID + "/component/0/" + m_nSequenceInsertionTarget);
 
-				// Close the gap
-				var nOldComponentID:int = m_nSequenceInsertionTarget;
-				m_nSequenceInsertionTarget = -1;
-				UpdateSequenceListComponent(nOldComponentID);
+				// Close the insertion gap
+				UpdateSequenceInsertionTarget(-1);
+			}
+
+			// Called when the user moves an existing sequence component
+			protected function OnSequenceComponentMove():void
+			{
+				// Post the component to the server
+				DoPost(null, "sequence/" + m_nSequenceID + "/component/" + m_nSequenceInsertionSource + "/" + m_nSequenceInsertionTarget);
+				
+				// Close the insertion gap
+				UpdateSequenceInsertionTarget(-1);
+			}
+
+			// Called when the user deletes an existing sequence component
+			protected function OnSequenceComponentDelete():void
+			{
+				// Delete the component from the server
+				DoDelete("sequence/" + m_nSequenceID + "/component/" + m_nSequenceInsertionSource);
+				
+				// Close the insertion gap
+				UpdateSequenceInsertionTarget(-1);
 			}
 
 			// Button click handler
@@ -497,13 +749,14 @@
 			// Sequence insertion source and target
 			private var m_nSequenceInsertionSource:int = -1;
 			private var m_nSequenceInsertionTarget:int = -1;
+			private var m_bTrashCanTarget:Boolean = false;
 
 			// Mouse down target
 			private var m_pMouseDownTarget:DisplayObjectContainer = null;
 
 			// Timers
 			private var m_pUnitOperationMouseTimer:Timer;
-			private var m_pUnitOperationTouchTimer:Timer;
+			private var m_pComponentMouseTimer:Timer;
 		]]>
 	</fx:Script>
 	
@@ -536,8 +789,6 @@
 							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
 								<s:BorderContainer mouseDown="outerDocument.OnUnitOperationMouseDown(event)"
 										mouseUp="outerDocument.OnUnitOperationMouseUp(event)"
-										touchBegin="outerDocument.OnUnitOperationTouchBegin(event)"
-										touchEnd="outerDocument.OnUnitOperationTouchEnd(event)"
 										width="150" height="40">
 									<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
 										<s:Label id="_unitOperationLabel" name="_unitOperationLabel" styleName="TextMedium" />
@@ -549,7 +800,9 @@
 				</s:itemRenderer>
 			</s:List>
 			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" height="150">
-				<s:Image source="@Embed(source='trashcan.png')" width="150" height="100" />
+				<s:BorderContainer id="_trashCanBorder">
+					<s:Image id="_trashCan" source="@Embed(source='trashcan.png')" x="2" y="2" width="150" height="100" />
+				</s:BorderContainer>
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" height="100%">
@@ -568,14 +821,24 @@
 										
 										if (value != null)
 										{
+											// Set the background color
+											if (outerDocument.GetComponentID() == data.ID)
+											{
+												_componentContainer.setStyle("backgroundColor", "0xbbbbbb");
+											}
+											else
+											{
+												_componentContainer.setStyle("backgroundColor", "0xffffff");
+											}
+											
 											// Format the button text
-											_button.label = ""
+											_componentLabel.text = ""
 											if (data.DisplayIndex != 0)
 											{
-												_button.label = data.DisplayIndex + ". ";
+												_componentLabel.text = data.DisplayIndex + ". ";
 											}
-											_button.label += data.Name;
-											_button.id = data.ID;
+											_componentLabel.text += data.Name;
+											_componentLabel.id = data.ID;
 										
 											// Show or hide the insertion point
 											var bInsertionPoint:Boolean = (outerDocument.GetSequenceInsertionTarget() == data.ID);
@@ -590,7 +853,12 @@
 								<s:State name="selected" />
 							</s:states>
 							<s:VGroup paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7">
-								<s:Button id="_button" styleName="button" click="outerDocument.OnButtonClick(event)" width="150" height="40" />
+								<s:BorderContainer id="_componentContainer" mouseDown="outerDocument.OnComponentMouseDown(event)" 
+										mouseUp="outerDocument.OnComponentMouseUp(event)" width="150" height="40">
+									<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+										<s:Label id="_componentLabel" name="_componentLabel" styleName="TextMedium" />
+									</s:VGroup>
+								</s:BorderContainer>
 								<s:Spacer id="_insertionSpacer" visible="false" includeInLayout="false" width="100%" height="15" />
 							</s:VGroup>
 						</s:ItemRenderer>

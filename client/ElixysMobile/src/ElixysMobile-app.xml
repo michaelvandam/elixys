@@ -11,8 +11,8 @@
 		<content>ElixysMobile.swf</content>
 		<aspectRatio>landscape</aspectRatio>
 		<autoOrients>false</autoOrients>
-		<fullScreen>true</fullScreen>
-		<renderMode>gpu</renderMode>
+		<fullScreen>false</fullScreen>
+		<renderMode>cpu</renderMode>
 		<softKeyboardBehavior>pan</softKeyboardBehavior>
 	</initialWindow>
 
