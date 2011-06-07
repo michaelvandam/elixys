@@ -1,49 +1,61 @@
 import time
-from threading import Thread
+import threading
 
-class MyThread(Thread):
-  def __init__(self,name):
-    Thread.__init__(self)
-    self.name = name
-  
+class baseClass(threading.Thread):
+  def __init__(self):
+    threading.Thread.__init__(self)
+    self.name = "test"
+class fakeClass(baseClass):
+  def __init__(self):
+    baseClass.__init__(self)
+
   def run(self):
-    start =  time.time()
-    end = 0;
-    while (end-start<1):
-      print ("Thread test %s." % self.name)
-      end = time.time()
-  
-        
-def test():
-  thr1=MyThread("one")
-  thr1.start()
-  thr2=MyThread("two")
-  thr2.start()
-  thr1.join()
-  thr2.join()
+    x = 0
+    while x < 5:
+      time.sleep(2)
+      print "This is the run thread."
+      x += 1
+    time.sleep(2)
+    print "Run thread completed."
+
+class fakeUnitOp():
+  def __init__(self):
+    pass #not a thread
+  def run(self):
+    x = 0
+    print threading.enumerate()
+    while x < 5:
+      time.sleep(2)
+      print "This is the run thread."
+      x += 1
+
+
+def run_threaded_class():
+  thread1 = fakeClass()
+  thread1.start()
+  x = 0
+  while x <10:
+    time.sleep(1)
+    print "This is the main thread."
+    x+=1
+  print "Main Thread Completed."
+  thread1.join()
+  print "Threads joined."
+    
+def run_threaded_function():
+  unitoper = fakeUnitOp()
+  mythread = thread.start_new_thread(unitoper.run,())
+  x = 0
+  print threading.enumerate()
+  while x <10:
+    time.sleep(1)
+    print "This is the main thread."
+    x+=1
     
 if __name__=="__main__":
-    test()
-    
+  print "Threaded class:"
+  run_threaded_class()
+  print "Threaded function:"
+  #run_threaded_function()
     
  
-"""
-def myfunction(string,sleeptime,lock,*args):
-    while 1:
-	#entering critical section
-        lock.acquire() 
-        print string," Now Sleeping after Lock acquired for ",sleeptime
-        time.sleep(sleeptime) 
-        print string," Now releasing lock and then sleeping again"
-        lock.release()
-	#exiting critical section
-        time.sleep(sleeptime) # why?
-
-if __name__=="__main__":
-
-    lock=thread.allocate_lock()
-    thread.start_new_thread(myfunction,("Thread No:1",2,lock))
-    thread.start_new_thread(myfunction,("Thread No:2",2,lock))
-
-    while 1:pass
-"""

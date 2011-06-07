@@ -2,7 +2,8 @@
 
 Elixys Unit Operations
 """
-class UnitOperation():
+import Thread from threading
+class UnitOperation(Thread):
   def __init__(self,systemModel):
     self.params = {"param":"value"}
     self.systemModel = systemModel
@@ -11,7 +12,8 @@ class UnitOperation():
     self.stepCounter = 1
     self.isRunning = True
     self.pause = False
-
+  def setParams(params):
+    
   def logError():
     """Get current error from hardware comm."""
     #error.log("error")
@@ -73,11 +75,12 @@ class React(UnitOperation):
     self.doNext()
     self.setTemp()
     self.doNext()
-    self.startTimer()
+    self.timeDelay()
     self.doNext()
-    self.setCool()
+    self.setCool(ON)  #In Progress
+    self.setCool(OFF) #In Progress
     self.doNext()
-  
+    
   def setReactorPosition(self):
     self.systemModel[self.ReactorID]['motion'].setPosition(self.positionName)
     self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getPosition(),self.positionName)
@@ -92,11 +95,12 @@ class React(UnitOperation):
   def getTemp(self):
     self.systemModel[self.ReactorID]['temperature_controller'].getCurrentTemperature()
     
-  def startTimer(self):
-    self.startTimer(self.Time)
+  def timeDelay(self):
+    self.timeDelay(self.Time)
   
-  def setCool(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setCool(self.coolTemp)       
+  def setCool(self,pumpState):#In Progress
+    self.systemModel[self.ReactorID]['temperature_controller'].setTemperature(self.Temp)
+    self.systemModel[self.ReactorID]['cooling_system'].setCooling(pumpState)#In Progress
     self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getTemperature(),self.coolTemp)
 
 class AddReagent(UnitOperation):
@@ -104,7 +108,8 @@ class AddReagent(UnitOperation):
     UnitOperation.__init__(self,systemModel)
     self.params = params #Should have parameters listed below
     #self.ReactorID
-    #self.ReagentID(or Position)
+    #self.ReagentID
+    #self.loadPosition
 
   def run(self):
     self.steps=["Starting add reagent operation","Moving to addition position","Adding reagent","Removing empty vial"]
@@ -112,7 +117,7 @@ class AddReagent(UnitOperation):
     self.setReactorPosition()
     self.doNext()
     self.setGripperPlace()
-    self.startTimer()
+    self.timeDelay()
     self.doNext()
     self.setGripperRemove()
     self.doNext()
@@ -122,7 +127,7 @@ class AddReagent(UnitOperation):
     self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getPosition(),REAGENT)
 
   def setGripperPlace():
-    self.systemModel[self.Gripper].setPosition(self.ReagentID)
+    self.systemModel[self.Gripper].setPosition(self.ReagentID,self.loadPosition)
     self.waitForCondition( self.systemModel[self.Gripper].getPosition(),self.ReagentID)
     
   def setGripperPlace():
@@ -144,7 +149,7 @@ class Evaporate(UnitOperation):
     self.doNext()
     self.setTemp()
     self.doNext()
-    self.startTimer()
+    self.timeDelay()
     self.doNext()
     self.setCool()
     self.doNext()
@@ -163,8 +168,8 @@ class Evaporate(UnitOperation):
   def getTemp(self):
     self.systemModel[self.ReactorID]['temperature_controller'].getCurrentTemperature()
     
-  def startTimer(self):
-    self.startTimer(self.Time)
+  def timeDelay(self):
+    self.timeDelay(self.Time)
   
   def setCool(self):
     self.systemModel[self.ReactorID]['temperature_controller'].setCool(self.coolTemp)       

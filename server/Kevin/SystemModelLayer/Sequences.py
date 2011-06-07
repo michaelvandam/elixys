@@ -4,22 +4,25 @@ Elixys Sequences
 """
 
 import DBComm
-
+import UnitOperations
 class Sequence:
-  def __init__(self):
+  def __init__(self,SequenceID):
     self.database = DBComm.DBComm()
-    
+    self.unitOperations = {}
+    self.SequenceID = SequenceID
   def logError():
     pass
-  def loadSequence():
+  def run():
     pass
-  def createSequence():
+  def resume():
     pass
-  def getCurrentSequence():
+  def pause():
     pass    
-  def getAvailableOperations():
+  def abort():
     pass    
-  def getAvailableOperationIds():
+  def getOperations():
+    unitOperations = self.database.getUnitOperations(self.SequenceID)
+  def getCurrentOperation():
     pass    
  
 

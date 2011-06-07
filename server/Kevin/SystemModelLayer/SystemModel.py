@@ -45,7 +45,8 @@ class ElixysSystemModel:
           self.model[item][key]= VacuumSystemModel(item)
           
   def initialize():
-    pass
+    for each in "Reactor"+(1,2,3):
+    self.model['Reactors'][
     
   def getComponentState(componentId,Parameter):#(String,String="")
     
