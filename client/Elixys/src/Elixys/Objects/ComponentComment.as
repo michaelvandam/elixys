@@ -8,6 +8,10 @@ package Elixys.Objects
 		public function ComponentComment(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
+			if ((data == null) && (existingcontent == null))
+			{
+				data = m_sDefault;
+			}
 			super(data, existingcontent);
 			
 			// Validate the object type
@@ -53,5 +57,10 @@ package Elixys.Objects
 
 		// Type
 		static public var TYPE:String = "COMMENT";
+
+		// Default format
+		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"COMMENT\", \"name\":\"\", \"componentid\":\"\", " +
+			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"comment\":\"\", " +
+			"\"commentdescription\":\"\", \"commentvalidation\":\"\" }";
 	}
 }

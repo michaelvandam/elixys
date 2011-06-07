@@ -8,6 +8,10 @@ package Elixys.Objects
 		public function ComponentReact(data:String = null, existingcontent:Object = null)
 		{
 			// Call the base constructor
+			if ((data == null) && (existingcontent == null))
+			{
+				data = m_sDefault;
+			}
 			super(data, existingcontent);
 			
 			// Validate the object type
@@ -166,5 +170,13 @@ package Elixys.Objects
 
 		// Type
 		static public var TYPE:String = "REACT";
+
+		// Default format
+		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"REACT\", \"name\":\"\", \"componentid\":\"\", " +
+			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"position\":\"\", " +
+			"\"positiondescription\":\"\", 	\"positionvalidation\":\"\", \"duration\":\"\", \"durationdescription\":\"\", " +
+			"\"durationvalidation\":\"\", \"reactiontemperature\":\"\", \"reactiontemperaturedescription\":\"\", " +
+			"\"reactiontemperaturevalidation\":\"\", \"finaltemperature\":\"\", \"finaltemperaturedescription\":\"\", " +
+			"\"finaltemperaturevalidation\":\"\", \"stirspeed\":\"\", \"stirspeeddescription\":\"\", \"stirespeedvalidation\":\"\" }";
 	}
 }

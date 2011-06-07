@@ -146,7 +146,7 @@ class Elixys:
             self.UnlockSystem(sUsername)
         return True
 
-    def SaveSequenceComponent(self, sUsername, nSequenceID, pComponent):
+    def SaveSequenceComponent(self, sUsername, nSequenceID, pComponent, nInsertionID):
         # Load the sequence
         pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
 
@@ -159,11 +159,38 @@ class Elixys:
             else:
                 nComponentIndex += 1
 
-        # Update the existing component or add a new one
+        # Locate the insertion index
+        if nInsertionID != None:
+            nInsertionIndex = 0
+            for pSequenceComponent in pSequence["components"]:
+                if pSequenceComponent["id"] == nInsertionID:
+                    # Insert at the index after the specified component
+                    nInsertionIndex += 1
+                    break
+                else:
+                    nInsertionIndex += 1
+
+        # Are we working with an existing component or adding a new one?
         if nComponentIndex < len(pSequence["components"]):
+            # We are working with an existing component.  Update the component first
             self.UpdateComponent(pSequence["components"][nComponentIndex], pComponent)
+
+            # Are we also moving the component?
+            if nInsertionID != None:
+                # Use nInsertionIndex
+                raise Exception("Handle moving an existing component")
         else:
-            raise Exception("Handle adding/inserting sequence components")
+            # We are adding a new component.  Use the next number in the sequence for the component ID for now
+            pComponent["id"] = len(pSequence["components"]) + 1
+
+            # Are we inserting somewhere in the middle?
+            if nInsertionIndex < len(pSequence["components"]):
+                # Yes, so insert at the desired position
+                print >> sys.stderr, "Inserting at index " + str(nInsertionIndex)
+                pSequence["components"].insert(nInsertionIndex, self.RemoveComponentDetails(pComponent))
+            else:
+                # No, so append at the end of the sequence
+                pSequence["components"].append(self.RemoveComponentDetails(pComponent))
 
         # Save the sequence
         self.SaveSequence(sUsername, pSequence)
@@ -190,7 +217,13 @@ class Elixys:
                 return pReagent
 
         # Request reagent not found
-        raise Exception("Failed to find reagent")
+        pReagent.update({"available":False,
+            "reagentid":0,
+            "componentid":0,
+            "position":"",
+            "name":"[invalid]",
+            "description":"[invalid]"})
+        return pReagent
 
     def SaveSequenceReagent(self, sUsername, nSequenceID, pReagent):
         # Load all of our reagents
@@ -348,7 +381,10 @@ class Elixys:
             pComponent.update({"validationerror":False})
         elif pComponent["componenttype"] == "ADD":
             pReagent = self.GetSequenceReagent(sUsername, nSequenceID, pComponent["reagent"])
-            pComponent.update({"name":"Add " + pReagent["name"]})
+            if pReagent["name"] != "[invalid]":
+                pComponent.update({"name":"Add " + pReagent["name"]})
+            else:
+                pComponent.update({"name":"Add"})
             pComponent.update({"reactordescription":"Reactor where the reagent will be added"})
             pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
             pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
@@ -461,6 +497,35 @@ class Elixys:
             pTargetComponent["comment"] = pSourceComponent["comment"]
         elif pTargetComponent["componenttype"] == "ACTIVITY":
             pTargetComponent["reactor"] = pSourceComponent["reactor"]
+
+    def RemoveComponentDetails(self, pComponent):
+        # Get a list of component-specific keys we want to save
+        pDesiredKeys = None
+        if pComponent["componenttype"] == "ADD":
+            pDesiredKeys = ["componenttype", "id", "reactor", "reagent"]
+        elif pTargetComponent["componenttype"] == "EVAPORATE":
+            pDesiredKeys = ["componenttype", "id", "reactor", "duration", "evaporationtemperature", "finaltemperature", "stirspeed"]
+        elif pTargetComponent["componenttype"] == "TRANSFER":
+            pDesiredKeys = ["componenttype", "id", "reactor", "target"]
+        elif pTargetComponent["componenttype"] == "ELUTE":
+            pDesiredKeys = ["componenttype", "id", "reactor", "reagent", "target"]
+        elif pTargetComponent["componenttype"] == "REACT":
+            pDesiredKeys = ["componenttype", "id", "reactor", "position", "duration", "reactiontemperature", "finaltemperature", "stirspeed"]
+        elif pTargetComponent["componenttype"] == "PROMPT":
+            pDesiredKeys = ["componenttype", "id", "reactor", "message"]
+        elif pTargetComponent["componenttype"] == "INSTALL":
+            pDesiredKeys = ["componenttype", "id", "reactor", "message"]
+        elif pTargetComponent["componenttype"] == "COMMENT":
+            pDesiredKeys = ["componenttype", "id", "reactor", "comment"]
+        elif pTargetComponent["componenttype"] == "ACTIVITY":
+            pDesiredKeys = ["componenttype", "id", "reactor"]
+
+        # Remove the keys that we do not want to save
+        if pDesiredKeys != None:
+            pUnwantedKeys = set(pComponent) - set(pDesiredKeys)
+            for pUnwantedKey in pUnwantedKeys:
+                del pComponent[pUnwantedKey]
+        return pComponent
 
     # Lock file
     m_pLockFile = 0

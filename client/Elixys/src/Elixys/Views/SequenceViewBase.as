@@ -9,6 +9,7 @@ package Elixys.Views
 	import flash.events.MouseEvent;
 	import flash.utils.ByteArray;
 	
+	import mx.collections.ArrayList;
 	import mx.containers.ViewStack;
 	import mx.events.FlexEvent;
 	
@@ -97,6 +98,14 @@ package Elixys.Views
 			
 			// Fill the operations list
 			UpdateSequenceComponentList(m_pSequenceList, pSequence.Components(), m_nComponentID);
+			
+			// Update all of the items in the sequence list
+			var pArrayList:ArrayList = m_pSequenceList.dataProvider as ArrayList;
+			for (var i:uint = 0; i < pArrayList.length; ++i)
+			{
+				var pComponent:SequenceComponent = pArrayList.getItemAt(i) as SequenceComponent;
+				pArrayList.itemUpdated(pArrayList.getItemAt(i));
+			}
 		}
 		
 		// Update the sequence component

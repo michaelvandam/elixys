@@ -593,10 +593,13 @@ def HandlePostComponent(sClientState, sRemoteUser, pBody, sPath):
     pPathComponents = sPath.split("/")
     nSequenceID = int(pPathComponents[2])
     nComponentID = int(pPathComponents[4])
+    nInsertionID = None
+    if len(pPathComponents) == 6:
+        nInsertionID = int(pPathComponents[5])
 
     # Save the sequence component
     pComponent = json.loads(pBody)
-    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, pComponent)
+    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, pComponent, nInsertionID)
 
     # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
