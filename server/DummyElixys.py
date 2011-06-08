@@ -7,6 +7,7 @@ import os.path
 import time
 import errno
 import json
+import random
 sys.path.append('/var/www/wsgi')
 import DummyData
 
@@ -146,14 +147,14 @@ class Elixys:
             self.UnlockSystem(sUsername)
         return True
 
-    def SaveSequenceComponent(self, sUsername, nSequenceID, pComponent, nInsertionID):
+    def SaveSequenceComponent(self, sUsername, nSequenceID, nComponentID, nInsertionID, pComponent):
         # Load the sequence
         pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
 
         # Locate the component
         nComponentIndex = 0
         for pSequenceComponent in pSequence["components"]:
-            if pSequenceComponent["id"] == pComponent["id"]:
+            if pSequenceComponent["id"] == nComponentID:
                 # The index points to this component
                 break
             else:
@@ -173,15 +174,24 @@ class Elixys:
         # Are we working with an existing component or adding a new one?
         if nComponentIndex < len(pSequence["components"]):
             # We are working with an existing component.  Update the component first
-            self.UpdateComponent(pSequence["components"][nComponentIndex], pComponent)
+            if pComponent != None:
+                self.UpdateComponent(pSequence["components"][nComponentIndex], pComponent)
 
             # Are we also moving the component?
             if nInsertionID != None:
-                # Use nInsertionIndex
-                raise Exception("Handle moving an existing component")
+                # Load the component if we don't have one
+                if pComponent == None:
+                    pComponent = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)["components"][0]
+
+                # Insert the component and remove the old
+                pSequence["components"].insert(nInsertionIndex, self.RemoveComponentDetails(pComponent))
+                if nInsertionIndex < nComponentIndex:
+                    del pSequence["components"][nComponentIndex + 1]
+                else:
+                    del pSequence["components"][nComponentIndex]
         else:
-            # We are adding a new component.  Use the next number in the sequence for the component ID for now
-            pComponent["id"] = len(pSequence["components"]) + 1
+            # We are adding a new component.  Generate a random number for the component ID
+            pComponent["id"] = int(random.random() * 100000)
 
             # Are we inserting somewhere in the middle?
             if nInsertionIndex < len(pSequence["components"]):
@@ -192,6 +202,12 @@ class Elixys:
                 # No, so append at the end of the sequence
                 pSequence["components"].append(self.RemoveComponentDetails(pComponent))
 
+            # Select the component
+            sClientState = self.GetClientState(sUsername)
+            pClientStateComponents = sClientState.split(".")
+            sClientState = pClientStateComponents[0] + "." + str(nSequenceID) + "." + str(pComponent["id"])
+            self.SaveClientState(sUsername, sClientState)
+
         # Save the sequence
         self.SaveSequence(sUsername, pSequence)
         return True
@@ -199,8 +215,29 @@ class Elixys:
     def DeleteSequence(self, nSequenceID):
         return False
 
-    def DeleteSequenceComponent(self, nSequenceID, nComponentID):
-        return False
+    def DeleteSequenceComponent(self, sUsername, nSequenceID, nComponentID):
+        # Load the sequence
+        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
+
+        # Locate the component
+        nComponentIndex = 0
+        for pSequenceComponent in pSequence["components"]:
+            if pSequenceComponent["id"] == nComponentID:
+                # The index points to this component
+                break
+            else:
+                nComponentIndex += 1
+
+        # Make sure we found the component
+        if nComponentIndex == len(pSequence["components"]):
+            raise Exception("Failed to locate sequence component")
+
+        # Delete the component
+        del pSequence["components"][nComponentIndex]
+
+        # Save the sequence
+        self.SaveSequence(sUsername, pSequence)
+        return True
 
     def CopySequence(self, nSequenceID, sName, sComment, sCreator):
         return False
@@ -503,21 +540,21 @@ class Elixys:
         pDesiredKeys = None
         if pComponent["componenttype"] == "ADD":
             pDesiredKeys = ["componenttype", "id", "reactor", "reagent"]
-        elif pTargetComponent["componenttype"] == "EVAPORATE":
+        elif pComponent["componenttype"] == "EVAPORATE":
             pDesiredKeys = ["componenttype", "id", "reactor", "duration", "evaporationtemperature", "finaltemperature", "stirspeed"]
-        elif pTargetComponent["componenttype"] == "TRANSFER":
+        elif pComponent["componenttype"] == "TRANSFER":
             pDesiredKeys = ["componenttype", "id", "reactor", "target"]
-        elif pTargetComponent["componenttype"] == "ELUTE":
+        elif pComponent["componenttype"] == "ELUTE":
             pDesiredKeys = ["componenttype", "id", "reactor", "reagent", "target"]
-        elif pTargetComponent["componenttype"] == "REACT":
+        elif pComponent["componenttype"] == "REACT":
             pDesiredKeys = ["componenttype", "id", "reactor", "position", "duration", "reactiontemperature", "finaltemperature", "stirspeed"]
-        elif pTargetComponent["componenttype"] == "PROMPT":
+        elif pComponent["componenttype"] == "PROMPT":
             pDesiredKeys = ["componenttype", "id", "reactor", "message"]
-        elif pTargetComponent["componenttype"] == "INSTALL":
+        elif pComponent["componenttype"] == "INSTALL":
             pDesiredKeys = ["componenttype", "id", "reactor", "message"]
-        elif pTargetComponent["componenttype"] == "COMMENT":
+        elif pComponent["componenttype"] == "COMMENT":
             pDesiredKeys = ["componenttype", "id", "reactor", "comment"]
-        elif pTargetComponent["componenttype"] == "ACTIVITY":
+        elif pComponent["componenttype"] == "ACTIVITY":
             pDesiredKeys = ["componenttype", "id", "reactor"]
 
         # Remove the keys that we do not want to save

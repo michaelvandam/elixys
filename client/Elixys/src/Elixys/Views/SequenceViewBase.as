@@ -47,10 +47,14 @@ package Elixys.Views
 			m_pActivitySubview.SetParent(this);
 		}
 
-		// Returns the sequence ID to our child views
+		// Returns the sequence and component IDs to our child views
 		public function GetSequenceID():uint
 		{
 			return m_nSequenceID;
+		}
+		public function GetComponentID():uint
+		{
+			return m_nComponentID;
 		}
 
 		// Update server configuration
@@ -172,19 +176,38 @@ package Elixys.Views
 			pViewBase.UpdateReagent(pReagent);
 		}
 		
-		// Post a request to the server
+		// Send requests to the server
+		public function DoGet(sURL:String):void
+		{
+			// Pass the request up to be sent to the server
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = "GET";
+			pHTTPRequest.m_sResource = "/Elixys/" + sURL;
+			dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
 		public function DoPost(pPost:Object, sViewName:String):void
 		{
 			// Convert the request to a byte array
 			var pBody:ByteArray = new ByteArray();
-			pBody.writeMultiByte(pPost.toString(), "utf8");
-			pBody.position = 0;
+			if (pPost != null)
+			{
+				pBody.writeMultiByte(pPost.toString(), "utf8");
+				pBody.position = 0;
+			}
 			
 			// Pass the request up to be sent to the server
 			var pHTTPRequest:HTTPRequest = new HTTPRequest();
 			pHTTPRequest.m_sMethod = "POST";
 			pHTTPRequest.m_sResource = "/Elixys/" + sViewName;
 			pHTTPRequest.m_pBody = pBody;
+			dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
+		public function DoDelete(sURL:String):void
+		{
+			// Pass the request up to be sent to the server
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = "DELETE";
+			pHTTPRequest.m_sResource = "/Elixys/" + sURL;
 			dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
 

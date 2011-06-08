@@ -7,22 +7,40 @@ package Elixys.Objects
 		// Returns the total number of minutes in the time string (includes hours, excludes seconds)
 		public static function GetMinutes(sTime:String):uint
 		{
+			// Ignore if empty
+			if (sTime == "")
+			{
+				return 0;
+			}
+			
+			// Break into components
 			var pComponents:Object = new Object();
 			if (!ProcessTime(sTime, pComponents))
 			{
 				throw Error("Invalid time format");
 			}
+			
+			// Calculate and return minutes
 			return ((pComponents.hours * 60) + pComponents.minutes);
 		}
 
 		// Returns the total number of seconds in the time string (excludes hours and minutes)
 		public static function GetSeconds(sTime:String):uint
 		{
+			// Ignore if empty
+			if (sTime == "")
+			{
+				return 0;
+			}
+			
+			// Break into components
 			var pComponents:Object = new Object();
 			if (!ProcessTime(sTime, pComponents))
 			{
 				throw Error("Invalid time format");
 			}
+			
+			// Return seconds
 			return (pComponents.seconds);
 		}
 		
