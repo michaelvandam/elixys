@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -9,8 +9,8 @@
 			import Elixys.Objects.ComponentPrompt;
 			import Elixys.Objects.Reagent;
 			
-			import spark.components.supportClasses.SkinnableTextBase;
-
+			import mx.controls.TextArea;
+			
 			/***
 			 * Member functions
 			 **/
@@ -30,9 +30,10 @@
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Set the message unless the user is editing it
-					if (m_pKeyboardFocusTarget != _editMessage)
+					if (m_pKeyboardFocusTextArea != _editMessage)
 					{
-						_editMessage.text = m_pComponentPrompt.Message;
+						// Unescape the multiline message
+						_editMessage.text = unescape(m_pComponentPrompt.Message);
 					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
@@ -57,12 +58,13 @@
 			}
 			
 			// Called when the user changes the text in one of our input fields
-			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
 			{
 				// Update our component
-				if (m_pKeyboardFocusTarget == _editMessage)
+				if (m_pKeyboardFocusTextArea == _editMessage)
 				{
-					m_pComponentPrompt.Message = _editMessage.text;
+					// Escape the multiline message
+					m_pComponentPrompt.Message = escape(_editMessage.text);
 				}
 				
 				// Save the component to the server
@@ -94,8 +96,8 @@
 						<s:Label text="Message" styleName="TextMedium" />
 					</s:VGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="70%">
-						<s:TextArea id="_editMessage" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-							focusOut="OnTextFocusOut(event)" width="80%" height="200"/>
+						<Renderers:AutoTextArea id="_editMessage" styleName="TextMedium" focusIn="OnTextFocusIn(event)" focusOut="OnTextFocusOut(event)"
+							fixedHeightInLines="5" multiline="true" width="80%" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />

@@ -5,6 +5,7 @@ package Elixys.Views
 	import Elixys.Objects.*;
 	import Elixys.Validation.*;
 	
+	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
 	import flash.events.EventDispatcher;
 	import flash.events.FocusEvent;
@@ -14,6 +15,8 @@ package Elixys.Views
 	import mx.containers.Canvas;
 	import mx.containers.TabNavigator;
 	import mx.controls.Button;
+	import mx.controls.TextArea;
+	import mx.core.UIComponent;
 	
 	import spark.components.ComboBox;
 	import spark.components.DataGrid;
@@ -58,7 +61,7 @@ package Elixys.Views
 		public function UpdateReagent(pReagent:Reagent):void
 		{
 		}
-		protected function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+		protected function OnTextValueChanged(pFocusTarget:TextArea):void
 		{
 		}
 		
@@ -101,43 +104,43 @@ package Elixys.Views
 		// Called when a text control receives focus
 		public function OnTextFocusIn(event:FocusEvent):void
 		{
-			// Remember the text input object that has the keyboard focus
-			var pParent:DisplayObjectContainer = event.target as DisplayObjectContainer;
-			while ((pParent != null) && ((pParent as SkinnableTextBase) == null))
+			// Remember the text area object that has the keyboard focus
+			var pParent:DisplayObject = event.target as DisplayObject;
+			while ((pParent != null) && ((pParent as TextArea) == null))
 			{
 				pParent = pParent.parent;
 			}
 			if (pParent == null)
 			{
-				throw Error("Failed to locate SkinnableTextBase");
+				throw Error("Failed to locate TextArea");
 			}
-			m_pKeyboardFocusTarget = pParent as SkinnableTextBase;
+			m_pKeyboardFocusTextArea = pParent as TextArea;
 			
 			// Remember the initial text
-			m_sKeyboardFocusInitialText = m_pKeyboardFocusTarget.text;
+			m_sKeyboardFocusInitialText = m_pKeyboardFocusTextArea.text;
 		}
 		
 		// Called when a text control loses focus
 		public function OnTextFocusOut(event:FocusEvent):void
 		{
-			if (m_pKeyboardFocusTarget != null)
+			if (m_pKeyboardFocusTextArea != null)
 			{
 				// Has the value of the text input changed?
-				if (m_pKeyboardFocusTarget.text != m_sKeyboardFocusInitialText)
+				if (m_pKeyboardFocusTextArea.text != m_sKeyboardFocusInitialText)
 				{
 					// Yes, so update and save the component
-					OnTextValueChanged(m_pKeyboardFocusTarget);
+					OnTextValueChanged(m_pKeyboardFocusTextArea);
 				}
 				
 				// Clear our pointer
-				m_pKeyboardFocusTarget = null;
+				m_pKeyboardFocusTextArea = null;
 			}
 		}
 		
 		// Returns the item that currently has the keyboard focus
-		public function KeyboardFocusTarget():SkinnableTextBase
+		public function KeyboardFocusTextArea():TextArea
 		{
-			return m_pKeyboardFocusTarget;
+			return m_pKeyboardFocusTextArea;
 		}
 
 		// Update the client button array with the server array
@@ -621,7 +624,7 @@ package Elixys.Views
 		protected var m_pParent:EventDispatcher;
 
 		// Keyboard focus
-		protected var m_pKeyboardFocusTarget:SkinnableTextBase = null;
+		protected var m_pKeyboardFocusTextArea:TextArea = null;
 		private var m_sKeyboardFocusInitialText:String = "";
 	}
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:ViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" styleName="popup">
+		xmlns:Views="Elixys.Views.*" styleName="popup" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -89,7 +89,7 @@
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_edit1Group">
-			<s:TextInput id="_edit1" styleName="TextMedium" />
+			<Renderers:AutoTextArea id="_edit1" styleName="TextMedium" width="75%" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_text2Group">
@@ -97,7 +97,7 @@
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_edit2Group">
-			<s:TextInput id="_edit2" styleName="TextMedium" />
+			<Renderers:AutoTextArea id="_edit2" styleName="TextMedium" width="75%" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:HGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="25" />

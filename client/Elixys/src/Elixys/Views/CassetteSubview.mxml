@@ -9,8 +9,9 @@
 			import Elixys.Objects.ComponentCassette;
 			import Elixys.Objects.Reagent;
 			
+			import mx.controls.TextArea;
+			
 			import spark.components.Button;
-			import spark.components.supportClasses.SkinnableTextBase;
 			
 			/***
 			 * Member functions
@@ -178,7 +179,7 @@
 			}
 
 			// Called when the user changes the text in one of our input fields
-			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
 			{
 				// Update our component
 				if (pFocusTarget.id == "_editName")
@@ -357,11 +358,11 @@
 																	
 																	// Set the used check box and the edit box text
 																	_usedCheckBox.selected = pReagent.Available;
-																	if (outerDocument.KeyboardFocusTarget() != _editName)
+																	if (outerDocument.KeyboardFocusTextArea() != _editName)
 																	{
 																		_editName.text = pReagent.Name;
 																	}
-																	if (outerDocument.KeyboardFocusTarget() != _editDescription)
+																	if (outerDocument.KeyboardFocusTextArea() != _editDescription)
 																	{
 																		_editDescription.text = pReagent.Description;
 																	}
@@ -408,7 +409,7 @@
 																	<s:Label text="Name" styleName="TextMedium" height="100%" />
 																</s:HGroup>
 																<s:HGroup horizontalAlign="left" verticalAlign="middle" width="70%">
-																	<s:TextInput id="_editName" styleName="TextMedium"
+																	<Renderers:AutoTextArea id="_editName" styleName="TextMedium"
 																		focusIn="outerDocument.OnTextFocusIn(event)"
 																		focusOut="outerDocument.OnTextFocusOut(event)" width="80%" />
 																</s:HGroup>
@@ -418,10 +419,10 @@
 																	<s:Label text="Description" styleName="TextMedium" height="100%" />
 																</s:HGroup>
 																<s:HGroup horizontalAlign="left" verticalAlign="middle" width="70%">
-																	<s:TextArea id="_editDescription" styleName="TextMedium"
+																	<Renderers:AutoTextArea id="_editDescription" styleName="TextMedium"
 																		focusIn="outerDocument.OnTextFocusIn(event)"
-																		focusOut="outerDocument.OnTextFocusOut(event)" width="80%"
-																		heightInLines="2"/>
+																		focusOut="outerDocument.OnTextFocusOut(event)" fixedHeightInLines="2"
+																		width="80%" />
 																</s:HGroup>
 															</s:HGroup>
 														</s:VGroup>

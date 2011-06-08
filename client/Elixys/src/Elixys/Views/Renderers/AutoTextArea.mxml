@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TextArea xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+	creationComplete="OnCreationComplete()" needsSoftKeyboard="true" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import mx.core.UITextField;
+
+			/***
+			 * Member functions
+			 **/
+			
+			// Set and get multiline mode
+			public function set multiline(value:Boolean):void
+			{
+				m_bMultiline = value;
+			}
+			public function get multiline():Boolean
+			{
+				return m_bMultiline;
+			}
+			
+			// Set and get the fixed height in lines
+			public function set fixedHeightInLines(value:uint):void
+			{
+				m_nFixedHeightInLines = value;
+			}
+			public function get fixedHeightInLines():uint
+			{
+				return m_nFixedHeightInLines;
+			}
+			
+			// Set text override
+			override public function set text(value:String):void
+			{
+				// Call the base implementation
+				super.text = value;
+				
+				// Resize the text area
+				ResizeTextArea();
+			}
+			
+			// Resizes the text area
+			protected function ResizeTextArea():void
+			{
+				// Start a height composed of the top and bottom borders plus three to prevent scroll bars from appearing
+				var nTotalHeight:uint = borderMetrics.top + borderMetrics.bottom + 1;
+
+				// Get the text field and make sure it exists
+				var pTextField:UITextField = mx_internal::getTextField();
+				if (pTextField == null)
+				{
+					return;
+				}
+
+				// Do we have a fixed height in lines?
+				var pTextLineMetrics:TextLineMetrics;
+				if (m_nFixedHeightInLines)
+				{
+					// Yes, so calculate the total height
+					pTextLineMetrics = pTextField.getLineMetrics(0);
+					nTotalHeight += (pTextLineMetrics.height * m_nFixedHeightInLines) + (pTextLineMetrics.leading * (m_nFixedHeightInLines - 1));
+				}
+				else
+				{
+					// No, so determine the number of text lines in the text area and calculate the total height
+					var nLines:int = pTextField.numLines;
+					for (var i:uint = 0; i < nLines; ++i) 
+					{
+						pTextLineMetrics = pTextField.getLineMetrics(i);
+						nTotalHeight += pTextLineMetrics.height;
+						if ((i + 1) < nLines)
+						{
+							nTotalHeight += pTextLineMetrics.leading;
+						}
+					}
+				}
+				
+				// Set to the new calculated height
+				height = nTotalHeight;
+			}
+
+			/***
+			 * Message handlers
+			 **/
+			
+			// Called when creation is complete
+			protected function OnCreationComplete():void
+			{
+				// Add the event listener
+				addEventListener(Event.CHANGE, OnChange);
+				addEventListener(KeyboardEvent.KEY_DOWN, OnKeyDown);
+				
+				// Resize the text area
+				ResizeTextArea();
+			}
+			
+			// Data change handler
+			protected function OnChange(event:Event):void
+			{
+				// Resize the text area
+				ResizeTextArea();
+			}
+			
+			// Key down handler
+			protected function OnKeyDown(event:KeyboardEvent):void
+			{
+				// Ignore the enter key in single line mode
+				if ((event.keyCode == Keyboard.ENTER) && !m_bMultiline)
+				{
+					event.preventDefault();
+				}
+			}
+			
+			/***
+			 * Member variables
+			 **/
+
+			// Multiline text area flag
+			private var m_bMultiline:Boolean = false;
+
+			// Fixed height of the text area in lines (0 indicates automatic height)
+			private var m_nFixedHeightInLines:uint = 0;
+		]]>
+	</fx:Script>
+</mx:TextArea>

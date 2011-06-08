@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -10,7 +10,8 @@
 			import Elixys.Objects.Reagent;
 			import Elixys.Objects.TimeUtils;
 			
-			import spark.components.supportClasses.SkinnableTextBase;
+			import mx.controls.TextArea;
+			
 			import spark.events.IndexChangeEvent;
 
 			/***
@@ -37,23 +38,23 @@
 					UpdateEnumLiteralComboBox(m_pComponentEvaporate.ReactorValidation, _editReactorCombo, m_pComponentEvaporate.Reactor.toString());
 					
 					// Set all evaporation variables except the one the user is editing
-					if (m_pKeyboardFocusTarget != _editDurationMinutes)
+					if (m_pKeyboardFocusTextArea != _editDurationMinutes)
 					{
 						_editDurationMinutes.text = TimeUtils.GetMinutes(m_pComponentEvaporate.Duration).toString();
 					}
-					if (m_pKeyboardFocusTarget != _editDurationSeconds)
+					if (m_pKeyboardFocusTextArea != _editDurationSeconds)
 					{
 						_editDurationSeconds.text = TimeUtils.GetSeconds(m_pComponentEvaporate.Duration).toString();
 					}
-					if (m_pKeyboardFocusTarget != _editEvaporationTemperature)
+					if (m_pKeyboardFocusTextArea != _editEvaporationTemperature)
 					{
 						_editEvaporationTemperature.text = m_pComponentEvaporate.EvaporationTemperature;
 					}
-					if (m_pKeyboardFocusTarget != _editFinalTemperature)
+					if (m_pKeyboardFocusTextArea != _editFinalTemperature)
 					{
 						_editFinalTemperature.text = m_pComponentEvaporate.FinalTemperature;
 					}
-					if (m_pKeyboardFocusTarget != _editStirSpeed)
+					if (m_pKeyboardFocusTextArea != _editStirSpeed)
 					{
 						_editStirSpeed.text = m_pComponentEvaporate.StirSpeed.toString();
 					}
@@ -91,22 +92,22 @@
 			}
 
 			// Called when the user changes the text in one of our input fields
-			protected override function OnTextValueChanged(pFocusTarget:SkinnableTextBase):void
+			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
 			{
 				// Update our component
-				if ((m_pKeyboardFocusTarget == _editDurationMinutes) || (m_pKeyboardFocusTarget == _editDurationSeconds))
+				if ((m_pKeyboardFocusTextArea == _editDurationMinutes) || (m_pKeyboardFocusTextArea == _editDurationSeconds))
 				{
 					m_pComponentEvaporate.Duration = TimeUtils.FormatTime(parseInt(_editDurationMinutes.text), parseInt(_editDurationSeconds.text));
 				}
-				if (m_pKeyboardFocusTarget == _editEvaporationTemperature)
+				if (m_pKeyboardFocusTextArea == _editEvaporationTemperature)
 				{
 					m_pComponentEvaporate.EvaporationTemperature = _editEvaporationTemperature.text;
 				}
-				if (m_pKeyboardFocusTarget == _editFinalTemperature)
+				if (m_pKeyboardFocusTextArea == _editFinalTemperature)
 				{
 					m_pComponentEvaporate.FinalTemperature = _editFinalTemperature.text;
 				}
-				if (m_pKeyboardFocusTarget == _editStirSpeed)
+				if (m_pKeyboardFocusTextArea == _editStirSpeed)
 				{
 					m_pComponentEvaporate.StirSpeed = parseInt(_editStirSpeed.text);
 				}
@@ -147,10 +148,10 @@
 						<s:Label text="Duration" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editDurationMinutes" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+						<Renderers:AutoTextArea id="_editDurationMinutes" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 							focusOut="OnTextFocusOut(event)" width="100" />
 						<s:Label text="min" styleName="TextMedium" />
-						<s:TextInput id="_editDurationSeconds" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+						<Renderers:AutoTextArea id="_editDurationSeconds" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 							focusOut="OnTextFocusOut(event)" width="100" />
 						<s:Label text="sec" styleName="TextMedium" />
 					</s:HGroup>
@@ -160,8 +161,8 @@
 						<s:Label text="Evaporation Temperature" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editEvaporationTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-							focusOut="OnTextFocusOut(event)"/>
+						<Renderers:AutoTextArea id="_editEvaporationTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
 						<s:Label text="C" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
@@ -170,8 +171,8 @@
 						<s:Label text="Final Temperature" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editFinalTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-							focusOut="OnTextFocusOut(event)"/>
+						<Renderers:AutoTextArea id="_editFinalTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
 						<s:Label text="C" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
@@ -180,8 +181,8 @@
 						<s:Label text="Stir speed" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<s:TextInput id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-							focusOut="OnTextFocusOut(event)"/>
+						<Renderers:AutoTextArea id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
 						<s:Label text="rpm" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
