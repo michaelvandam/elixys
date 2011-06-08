@@ -8,23 +8,45 @@ import Sequences
 class SequenceManager:
   def __init__(self):
     self.database = DBComm.DBComm()
-    self.currentSequence = Sequences.Sequence(SequenceID)
+    self.currentSequence = Sequences.Sequence()
   def logError(self):
     pass
-  def loadSequence(self):
-    sequenceData = self.database.getSequence(SequenceID)
-  def createNewSequence(self,name,shortName):
-    #Check database for sequences to deter collision
-    #lastID = self.database.runQuery('SELECT id FROM sequences ORDER BY id DESC LIMIT 1; #Get last ID')
-    if (shortName = ""):
-      shortName = name[:4]
-    self.database.runQuery('INSERT INTO sequences (seq_name,seq_shortname) VALUES(%s,%s);' % (name,shortName))#Create a new ID, add to DB.
+  def loadSequence(self,name):
+    sequenceParameters={"id":"","name":"","shortName":"","description":""}
+    sequenceData = self.database.getSequence(name)
+    if sequenceData:
+      for key in sequenceParameters.keys():
+        
+      self.CurrentSequence.setParameters(sequenceParameters)
+  def createNewSequence(self,name,shortName,description):
     
+    if not(self.sequenceExists(name)): #Check database for sequence name to deter collision
+      
+
+      if not(shortName):
+        if (len(name)>4):
+          shortName = name[:4]
+        else:
+          shortName = name
+    
+      if not(description):
+        description = "No description entered."
+      self.database.runQuery('INSERT INTO sequences (seq_name,seq_shortname,seq_description) VALUES("%s","%s","%s");' % (name,shortName,description))#Create a new ID, add to DB.
+      self.currentSequence = self.loadSequence(name)
+    else:
+      print "Error: Sequence already exists!"
+    ###
+    ### self.database.runQuery('SELECT id FROM sequences ORDER BY id DESC LIMIT 1;') #Get last ID
+    ### self.database.runQuery('UPDATE sequences SET seq_description="%s" WHERE name="%s";' % (description,name))#Set description in DB
+    ###
     
     self.currentSequence = newSequence
-  def getSequenceNames(self):
+  def sequenceExists(self,name):
     try:
-      self.database.getSequences()
+      if self.database.runQuery('SELECT id FROM sequences WHERE seq_name="%";') % name:
+        return True
+      else:
+        return False
     except:
       print "Failed to get sequences"
       

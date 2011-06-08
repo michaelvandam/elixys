@@ -6,10 +6,14 @@ Elixys Sequences
 import SequenceManager
 import UnitOperations
 class Sequence:
-  def __init__(self,SequenceID):
+  def __init__(self,sequenceName):
     self.sequenceManager = SequenceManager.SeqenceManager()
     self.unitOperations = {}
-    self.SequenceID = SequenceID
+  def setParameters(sequenceParameters):
+    self.sequenceID = sequenceParameters['id']
+    self.sequenceName = sequenceParameters['name']
+    self.sequenceShortName = sequenceParameters['shortName']
+    self.sequenceDescription = sequenceParameters['description']
   def logError():
     pass
   def run():
@@ -21,7 +25,7 @@ class Sequence:
   def abort():
     pass    
   def getOperations():
-    unitOperations = self.Sequence.getUnitOperations(self.SequenceID)
+    unitOperations = self.Sequence.getUnitOperations(self.sequenceName)
   def getCurrentOperation():
     pass    
  

@@ -43,9 +43,9 @@ class DBComm:
      """ 
   def runQuery(self,query):
     try:
-
       cursor = self.database.cursor()
       cursor.execute(query)
+      self.database.commit()
       rows = cursor.fetchall()
       return rows
       for row in rows:
