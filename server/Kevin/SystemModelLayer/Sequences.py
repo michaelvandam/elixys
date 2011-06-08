@@ -3,11 +3,11 @@
 Elixys Sequences
 """
 
-import DBComm
+import SequenceManager
 import UnitOperations
 class Sequence:
   def __init__(self,SequenceID):
-    self.database = DBComm.DBComm()
+    self.sequenceManager = SequenceManager.SeqenceManager()
     self.unitOperations = {}
     self.SequenceID = SequenceID
   def logError():
@@ -21,7 +21,7 @@ class Sequence:
   def abort():
     pass    
   def getOperations():
-    unitOperations = self.database.getUnitOperations(self.SequenceID)
+    unitOperations = self.Sequence.getUnitOperations(self.SequenceID)
   def getCurrentOperation():
     pass    
  

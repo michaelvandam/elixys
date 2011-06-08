@@ -1,6 +1,6 @@
-"""Communication
+"""DBComm
 
-Elixys JSON communication for GUI
+Elixys MySQL Database Comminication
 """
 import MySQLdb as SQL
 
