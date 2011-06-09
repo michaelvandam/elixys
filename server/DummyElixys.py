@@ -17,12 +17,12 @@ class Elixys:
 
     ### Interface functions ###
 
-    def GetConfiguration(self):
+    def GetConfiguration(self, sUsername):
         return {"name":"Mini cell 3",
             "version":"2.0",
             "debug":"false"}
 
-    def GetSupportedOperations(self):
+    def GetSupportedOperations(self, sUsername):
         return ["Add",
             "Evaporate",
             "Transfer",
@@ -33,7 +33,7 @@ class Elixys:
             "Comment",
             "Activity"]
 
-    def GetUserAccessLevels(self):
+    def GetUserAccessLevels(self, sUsername):
         return {}
 
     def GetUser(self, sUsername):
@@ -58,8 +58,8 @@ class Elixys:
         except OSError as e:
             # Check the error type
             if e.errno != errno.ENOENT:
-                # An error other than file does not exist was encountered.  Release the system local and raise again
-                self.UnlockState()
+                # An error other than file does not exist was encountered.  Release the system lock and raise again
+                self.UnlockSystem(sUsername, True)
                 raise
             else:
                 # Client state file does not exist.  Default to the home state and create the file
@@ -85,7 +85,7 @@ class Elixys:
             self.UnlockSystem(sUsername)
         return True
 
-    def GetServerState(self):
+    def GetServerState(self, sUsername):
         return {}
 
     def GetSequenceList(self, sUsername, sType):
@@ -105,7 +105,7 @@ class Elixys:
         return pSequenceList
 
     def GetSequence(self, sUsername, nSequenceID):
-        # Get the sequence without the additional component information
+        # Get the basic sequence
         pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
 
         # Add details to each component
@@ -212,7 +212,7 @@ class Elixys:
         self.SaveSequence(sUsername, pSequence)
         return True
 
-    def DeleteSequence(self, nSequenceID):
+    def DeleteSequence(self, sUsername, nSequenceID):
         return False
 
     def DeleteSequenceComponent(self, sUsername, nSequenceID, nComponentID):
@@ -239,7 +239,7 @@ class Elixys:
         self.SaveSequence(sUsername, pSequence)
         return True
 
-    def CopySequence(self, nSequenceID, sName, sComment, sCreator):
+    def CopySequence(self, sUsername, nSequenceID, sName, sComment, sCreator):
         return False
 
     def GetSequenceReagent(self, sUsername, nSequenceID, nReagentID):
@@ -287,42 +287,78 @@ class Elixys:
         self.SaveSequenceReagentsInternal(sUsername, pReagents)
         return True
 
-    def RunSequence(self, nSequenceID):
+    def GetRunState(self, sUsername):
+        # Are we running?
+        sSystemState = self.GetSystemState(sUsername)
+        if sSystemState != "NONE":
+            # Yes, so strip the user name
+            sSystemState = sSystemState[len(sSystemState.split(".")[0]) + 1:]
+
+        # Return the state
+        return sSystemState
+
+    def GetRunUser(self, sUsername):
+        # Are we running?
+        sSystemState = self.GetSystemState(sUsername)
+        sRunUser = ""
+        if sSystemState != "NONE":
+            # Yes, so extract the user name
+            sRunUser = sSystemState.split(".")[0]
+
+        # Return the user
+        return sRunUser
+
+    def RunSequence(self, sUsername, nSequenceID):
+        # Format the initial system state
+        sSystemState = sUsername + ".RUNSEQUENCE." + str(nSequenceID) + "."
+        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
+        sSystemState += str(pSequence["components"][0]["id"])
+
+        # Save the state and return
+        self.SaveSystemState(sUsername, sSystemState)
+        return True
+
+    def AbortRun(self, sUsername):
+        # Save the state and return
+        self.SaveSystemState(sUsername, "NONE")
+        return True
+
+    def ContinueRun(self, sUsername):
         return False
 
-    def AbortRun(self):
+    def StartManualRun(self, sUsername):
         return False
 
-    def ContinueRun(self):
+    def PerformOperation(self, sUsername, nComponentID, nSequenceID):
         return False
 
-    def StartManualRun(self):
+    def AbortOperation(self, sUsername):
         return False
 
-    def PerformOperation(self, nComponentID, nSequenceID):
+    def ContinueOperation(self, sUsername):
         return False
 
-    def AbortOperation(self):
-        return False
-
-    def ContinueOperation(self):
-        return False
-
-    def FinishManualRun(self):
+    def FinishManualRun(self, sUsername):
         return False
 
     ### Internal functions ###
 
-    def LockSystem(self, sUsername):
+    def LockSystem(self, sUsername, bGlobalState = False):
+        # Set the subdirectory
+        if bGlobalState:
+            sSubdirectory = "system"
+        else:
+            sSubdirectory = sUsername
+
         # Create the user's state directory as needed
-        if not os.path.exists("/var/www/wsgi/" + sUsername):
-            os.makedirs("/var/www/wsgi/" + sUsername)
+        if not os.path.exists("/var/www/wsgi/" + sSubdirectory):
+            os.makedirs("/var/www/wsgi/" + sSubdirectory)
 
         # Loop until we acquire the lock
         nFailCount = 0
         while True:
             try:
-                self.m_pLockFile = os.open("/var/www/wsgi/" + sUsername + "/lock.file", os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                self.m_pLockFile = os.open("/var/www/wsgi/" + sSubdirectory + "/lock.file", os.O_CREAT | os.O_EXCL | os.O_RDWR)
                 break
             except OSError as e:
                 if e.errno != errno.EEXIST:
@@ -333,13 +369,19 @@ class Elixys:
                 else:
                     # The most likely cause of us getting here is the system crashed and left the lock file behind.  Go ahead
                     # and capture the lock file anyway since this solution is only temporary until we move to MySQL
-                    m_pLockFile = os.open("/var/www/wsgi/" + sUsername + "/lock.file", os.O_RDWR)
+                    m_pLockFile = os.open("/var/www/wsgi/" + sSubdirectory + "/lock.file", os.O_RDWR)
                     break
 
-    def UnlockSystem(self, sUsername):
+    def UnlockSystem(self, sUsername, bGlobalState = False):
+        # Set the subdirectory
+        if bGlobalState:
+            sSubdirectory = "system"
+        else:
+            sSubdirectory = sUsername
+
          # Release the lock
         os.close(self.m_pLockFile)
-        os.unlink("/var/www/wsgi/" + sUsername + "/lock.file")
+        os.unlink("/var/www/wsgi/" + sSubdirectory + "/lock.file")
 
     def GetSequenceInternal(self, sUsername, nSequenceID):
         # Obtain a lock on the system
@@ -355,7 +397,7 @@ class Elixys:
             # Check the error type
             if e.errno != errno.ENOENT:
                 # An error other than file does not exist was encountered.  Release the system local and raise again
-                self.UnlockState()
+                self.UnlockSystem(sUsername)
                 raise
             else:
                 # Sequence files does not exist.  Default to the dummy sequence and create the file
@@ -381,8 +423,8 @@ class Elixys:
         except OSError as e:
             # Check the error type
             if e.errno != errno.ENOENT:
-                # An error other than file does not exist was encountered.  Release the system local and raise again
-                self.UnlockState()
+                # An error other than file does not exist was encountered.  Release the system lock and raise again
+                self.UnlockSystem(sUsername)
                 raise
             else:
                 # Reagents do not exist.  Default to the dummy reagents and create the file
@@ -408,11 +450,49 @@ class Elixys:
             self.UnlockSystem(sUsername)
         return True
 
+    def GetSystemState(self, sUsername):
+        # Obtain a lock on the system
+        self.LockSystem(sUsername, True)
+
+        # Attempt to get the system state from the file system
+        try:
+            pStateFile = os.open("/var/www/wsgi/system/state.txt", os.O_RDWR)
+            sSystemState = os.read(pStateFile, 99)
+            os.close(pStateFile)
+        except OSError as e:
+            # Check the error type
+            if e.errno != errno.ENOENT:
+                # An error other than file does not exist was encountered.  Release the system lock and raise again
+                self.UnlockSystem(sUsername, True)
+                raise
+            else:
+                # System state file does not exist.  Default to the no run state and create the file
+                sSystemState = "NONE"
+                self.SaveSystemState(sUsername, sSystemState, False)
+
+        # Release the system lock and return
+        self.UnlockSystem(sUsername, True)
+        return sSystemState
+
+    def SaveSystemState(self, sUsername, sSystemState, bLockSystem = True):
+        # Obtain a lock on the system
+        if bLockSystem:
+            self.LockSystem(sUsername, True)
+
+        # Open and write to the system state file
+        pStateFile = os.open("/var/www/wsgi/system/state.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+        os.write(pStateFile, str(sSystemState))
+        os.close(pStateFile)
+
+        # Release the system lock
+        if bLockSystem:
+            self.UnlockSystem(sUsername, True)
+        return True
+
     def AddComponentDetails(self, sUsername, nSequenceID, pComponent):
         # Add component-specific details
         if pComponent["componenttype"] == "CASSETTE":
-            nComponentID = pComponent["id"]
-            pComponent.update({"name":"Cassette " + str(nComponentID)})
+            pComponent.update({"name":"Cassette " + str(pComponent["id"])})
             pComponent.update({"reactordescription":"Reactor associated with this cassette"})
             pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
             pComponent.update({"validationerror":False})

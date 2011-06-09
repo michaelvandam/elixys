@@ -50,6 +50,7 @@
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewEdit.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewRunSequence.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 
 				// Tell the Home page to display the log out button if we are in the AIR player
 				if (FindLoaderMain() != null)
@@ -166,6 +167,11 @@
 				{
 					_viewStack.selectedChild = _viewEdit;
 					_viewEdit.UpdateState(pState);
+				}
+				else if (StateSequence.CheckState(StateSequence.RUNSEQUENCETYPE, pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewRunSequence;
+					_viewRunSequence.UpdateState(pState);
 				}
 				else
 				{
@@ -337,5 +343,6 @@
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
 		<Views:ViewView id="_viewView" width="100%" height="100%" />
 		<Views:EditView id="_viewEdit" width="100%" height="100%" />
+		<Views:RunSequenceView id="_viewRunSequence" width="100%" height="100%" />
 	</mx:ViewStack>
 </mx:Canvas>
