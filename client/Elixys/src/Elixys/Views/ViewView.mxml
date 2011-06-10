@@ -17,14 +17,10 @@
 			// Update state
 			public override function UpdateState(pState:State):void
 			{
-				// Update the sequence state
-				var pStateSequence:StateSequence = new StateSequence(StateSequence.VIEWTYPE, null, pState);
-				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
-
-				// Request the sequence from the server
-				RequestSequence(m_nSequenceID);
+				// Call the base function with our type
+				UpdateSequenceState(pState, StateSequence.VIEWTYPE);
 			}
-			
+
 			// Update sequence
 			public override function UpdateSequence(pSequence:Sequence):void
 			{

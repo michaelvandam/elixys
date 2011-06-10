@@ -47,7 +47,11 @@ package Elixys.Views
 			m_pActivitySubview.SetParent(this);
 		}
 
-		// Returns the sequence and component IDs to our child views
+		// Return the state, sequence and component IDs
+		public function GetStateSequence():StateSequence
+		{
+			return m_pStateSequence;
+		}
 		public function GetSequenceID():uint
 		{
 			return m_nSequenceID;
@@ -55,6 +59,29 @@ package Elixys.Views
 		public function GetComponentID():uint
 		{
 			return m_nComponentID;
+		}
+		
+		// Returns the active reactor from the server state
+		public function GetReactor():ReactorState
+		{
+			// Locate the reactor
+			if (m_pStateSequence != null)
+			{
+				var pServeState:ServerState = m_pStateSequence.ServerState();
+				var pReactors:Array = pServeState.Reactors();
+				for (var nReactor:uint = 0; nReactor < pReactors.length; ++nReactor)
+				{
+					var pReactor:ReactorState = pReactors[nReactor] as ReactorState;
+					if (pReactor.Number() == pServeState.ActiveReactor())
+					{
+						// Found it
+						return pReactor;
+					}
+				}
+			}
+			
+			// Reactor not found
+			return null;
 		}
 
 		// Update server configuration
@@ -71,12 +98,13 @@ package Elixys.Views
 		}
 		
 		// Update the sequence state
-		protected function UpdateSequenceState(pButtons:Array, nSequenceID:uint, nComponentID:uint):void
+		protected function UpdateSequenceState(pState:State, sStateType:String):void
 		{
 			// Update our button array with the server data
+			var pStateSequence:StateSequence = new StateSequence(sStateType, null, pState);
 			if (m_pNavigationButtons != null)
 			{
-				UpdateButtons(m_pNavigationButtons, pButtons, CreateNewButton);
+				UpdateButtons(m_pNavigationButtons, pStateSequence.Buttons(), CreateNewButton);
 				function CreateNewButton():spark.components.Button
 				{
 					// Callback to create our new button
@@ -89,9 +117,13 @@ package Elixys.Views
 				}
 			}
 			
-			// Remember the currently sequence and component
-			m_nSequenceID = nSequenceID;
-			m_nComponentID = nComponentID;
+			// Remember the state, sequence and component
+			m_pStateSequence = pStateSequence;
+			m_nSequenceID = pStateSequence.SequenceID();
+			m_nComponentID = pStateSequence.ComponentID();
+
+			// Request the sequence from the server
+			RequestSequence(m_nSequenceID);
 		}
 		
 		// Update the sequence sequence
@@ -215,7 +247,8 @@ package Elixys.Views
 		 * Member variables
 		 **/
 		
-		// Current sequence and component IDs
+		// State, sequence and component IDs
+		protected var m_pStateSequence:StateSequence = null;
 		protected var m_nSequenceID:uint = 0;
 		protected var m_nComponentID:uint = 0;
 

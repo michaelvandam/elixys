@@ -86,11 +86,17 @@ class Elixys:
         return True
 
     def GetServerState(self, sUsername):
-        return {}
+        # Are we running the system?
+        if sUsername == self.GetRunUser(sUsername):
+           # Yes, so run the system one step
+           self.AdvanceSystemState(sUsername)
+
+        # Update and return the default system state
+        return self.UpdateServerState(DummyData.GetDefaultSystemState())
 
     def GetSequenceList(self, sUsername, sType):
         # Load the sequence
-        pSequence = self.GetSequenceInternal(sUsername, 1)
+        pSequence = self.GetSequenceInternal(sUsername, 108)
 
         # Create 25 copies of our sequence
         pSequenceList = []
@@ -132,19 +138,29 @@ class Elixys:
         # Return the sequence
         return pSequence
 
-    def SaveSequence(self, sUsername, pSequence, bLockSystem = True):
+    def SaveSequence(self, sUsername, pSequence, bLockSystem = True, bGlobalSequence = False):
         # Obtain a lock on the system
         if bLockSystem:
-            self.LockSystem(sUsername)
+            self.LockSystem(sUsername, bGlobalSequence)
+
+        # Set the subdirectory
+        if bGlobalSequence:
+            sSubdirectory = "system"
+        else:
+            sSubdirectory = sUsername
+
+        # Remove details to each component
+        for pComponent in pSequence["components"]:
+            self.RemoveComponentDetails(pComponent)
 
         # Open and write to the sequence file
-        pSequenceFile = os.open("/var/www/wsgi/" + sUsername + "/sequence.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+        pSequenceFile = os.open("/var/www/wsgi/" + sSubdirectory + "/sequence.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
         os.write(pSequenceFile, json.dumps(pSequence))
         os.close(pSequenceFile)
 
         # Release the system lock
         if bLockSystem:
-            self.UnlockSystem(sUsername)
+            self.UnlockSystem(sUsername, bGlobalSequence)
         return True
 
     def SaveSequenceComponent(self, sUsername, nSequenceID, nComponentID, nInsertionID, pComponent):
@@ -175,7 +191,7 @@ class Elixys:
         if nComponentIndex < len(pSequence["components"]):
             # We are working with an existing component.  Update the component first
             if pComponent != None:
-                self.UpdateComponent(pSequence["components"][nComponentIndex], pComponent)
+                self.UpdateComponentDetails(pSequence["components"][nComponentIndex], pComponent)
 
             # Are we also moving the component?
             if nInsertionID != None:
@@ -309,12 +325,17 @@ class Elixys:
         return sRunUser
 
     def RunSequence(self, sUsername, nSequenceID):
-        # Format the initial system state
-        sSystemState = sUsername + ".RUNSEQUENCE." + str(nSequenceID) + "."
+        # Load the user's sequence and save it as the system sequence
         pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
-        sSystemState += str(pSequence["components"][0]["id"])
+        pSequence["metadata"]["id"] = 10000
+        self.SaveSequence(sUsername, pSequence, True, True)
 
-        # Save the state and return
+        # Format the initial system state
+        sSystemState = sUsername + ".RUNSEQUENCE.10000."
+        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
+        sSystemState += str(pSequence["components"][3]["id"])
+
+        # Save the state
         self.SaveSystemState(sUsername, sSystemState)
         return True
 
@@ -387,9 +408,15 @@ class Elixys:
         # Obtain a lock on the system
         self.LockSystem(sUsername)
 
+        # Determine the subdirectory
+        if nSequenceID == 10000:
+            sSubdirectory = "system"
+        else:
+            sSubdirectory = sUsername
+
         # Attempt to get the sequence from the file system
         try:
-            pSequenceFile = os.open("/var/www/wsgi/" + sUsername + "/sequence.txt", os.O_RDWR)
+            pSequenceFile = os.open("/var/www/wsgi/" + sSubdirectory + "/sequence.txt", os.O_RDWR)
             sSequence = os.read(pSequenceFile, 100000)
             os.close(pSequenceFile)
             pSequence = json.loads(sSequence)
@@ -578,7 +605,7 @@ class Elixys:
             pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
             pComponent.update({"validationerror":False})
 
-    def UpdateComponent(self, pTargetComponent, pSourceComponent):
+    def UpdateComponentDetails(self, pTargetComponent, pSourceComponent):
         # Update the parts of the component that we save
         if pTargetComponent["componenttype"] == "CASSETTE":
             pTargetComponent["available"] = pSourceComponent["available"]
@@ -643,6 +670,62 @@ class Elixys:
             for pUnwantedKey in pUnwantedKeys:
                 del pComponent[pUnwantedKey]
         return pComponent
+
+    def AdvanceSystemState(self, sUsername):
+        # Load the system state
+        sSystemState = self.GetSystemState(sUsername)
+
+        # Extract the component specific part of the system state
+        pSystemStateComponents = sSystemState.split(".")
+        sUsername = pSystemStateComponents[0]
+        sMode = pSystemStateComponents[1]
+        nSequenceID = int(pSystemStateComponents[2])
+        nComponentID = int(pSystemStateComponents[3])
+
+        # Advance the system state
+        if len(pSystemStateComponents) < 5:
+            # State with an initial value of one
+            nComponentState = 1
+        else:
+            nComponentState = int(pSystemStateComponents[4])
+            if nComponentState < 7:
+                # Increment our value
+                nComponentState += 1
+            else:
+                # Attempt to advance to the next component
+                pSequence = self.GetSequence(sUsername, nSequenceID)
+                nIndex = 0
+                bComponentFound = False
+                nNextComponentID = None
+                while nIndex < len(pSequence["components"]):
+                    pComponent = pSequence["components"][nIndex]
+                    if bComponentFound:
+                        # This is the next component
+                        nNextComponentID = pComponent["id"]
+                        break
+                    if pComponent["id"] == nComponentID:
+                        # Found it
+                        bComponentFound = True
+                    nIndex += 1
+
+                # Do we find the next component?
+                if nNextComponentID == None:
+                    # No, the run is complete so update the system and client states and return
+                    self.SaveSystemState(sUsername, "NONE")
+                    self.SaveClientState(sUsername, "HOME")
+                    return
+
+                # Set the component ID and state
+                nComponentID = nNextComponentID
+                nComponentState = 0
+
+        # Save the system state and return
+        sSystemState = sUsername + "." + sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
+        self.SaveSystemState(sUsername, sSystemState)
+        return
+
+    def UpdateServerState(self, pServerState):
+        return pServerState
 
     # Lock file
     m_pLockFile = 0

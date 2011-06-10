@@ -23,8 +23,84 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
+		public function RunMode():String
+		{
+			return super.flash_proxy::getProperty("runmode");
+		}
+		public function Status():String
+		{
+			return super.flash_proxy::getProperty("status");
+		}
+		public function SequenceID():String
+		{
+			return super.flash_proxy::getProperty("sequenceid");
+		}
+		public function ActiveReactor():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("activereactor"));
+		}
+		public function Username():String
+		{
+			return super.flash_proxy::getProperty("username");
+		}
+		public function Cooling():String
+		{
+			return super.flash_proxy::getProperty("cooling");
+		}
+		public function Vacuum():String
+		{
+			return super.flash_proxy::getProperty("vacuum");
+		}
+		public function Door():String
+		{
+			return super.flash_proxy::getProperty("door");
+		}
+		public function PressureRegulators():Array
+		{
+			// Parse the pressure regulators
+			if (m_pPressureRegulators == null)
+			{
+				m_pPressureRegulators = new Array();
+				var pPressureRegulators:Array = super.flash_proxy::getProperty("pressureregulators");
+				for each (var pPressureRegulatorObject:Object in pPressureRegulators)
+				{
+					var pPressureRegulator:PressureRegulatorState = new PressureRegulatorState(null, pPressureRegulatorObject);
+					m_pPressureRegulators.push(pPressureRegulator);
+				}
+			}
+			return m_pPressureRegulators;
+		}
+		public function ReagentRobot():ReagentRobotState
+		{
+			// Parse the robot state
+			if (m_pReagentRobot == null)
+			{
+				m_pReagentRobot = new ReagentRobotState(null, super.flash_proxy::getProperty("reagentrobot"));
+			}
+			return m_pReagentRobot;
+		}
+		public function Reactors():Array
+		{
+			// Parse the reactors
+			if (m_pReactors == null)
+			{
+				m_pReactors = new Array();
+				var pReactors:Array = super.flash_proxy::getProperty("reactors");
+				for each (var pReactorObject:Object in pReactors)
+				{
+					var pReactor:ReactorState = new ReactorState(null, pReactorObject);
+					m_pReactors.push(pReactor);
+				}
+			}
+			return m_pReactors;
+		}
 		
 		// Type
 		static public var TYPE:String = "serverstate";
+
+		// State components
+		private var m_pPressureRegulators:Array = null;
+		private var m_pReagentRobot:ReagentRobotState = null;
+		private var m_pReactors:Array = null;
 	}
 }

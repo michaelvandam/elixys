@@ -68,6 +68,9 @@ def HandleGetState(sClientState, sRemoteUser):
         "serverstate":pServerState,
         "clientstate":gElixys.GetClientState(sRemoteUser)}
 
+    # Update the client state because GetServerState() may have changed it
+    sClientState = gElixys.GetClientState(sRemoteUser)
+
     # Complete the state with the values specific to this page
     if sClientState.startswith("HOME"):
         pState.update(HandleGetStateHome(sRemoteUser))
@@ -312,11 +315,22 @@ def HandleGetStateRunSequence(sClientState, sRemoteUser):
     nComponentID = int(pRunStateComponents[2])
 
     # Create the return object
-    return {"navigationbuttons":[{"type":"button",
-            "text":"Abort",
-            "id":"ABORT"}],
+    pState = {"navigationbuttons":[],
         "sequenceid":nSequenceID,
         "componentid":nComponentID}
+
+    # Add the button depending on the user running the system
+    if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
+        pState["navigationbuttons"].append({"type":"button",
+            "text":"Abort",
+            "id":"ABORT"})
+    else:
+        pState["navigationbuttons"].append({"type":"button",
+            "text":"Back",
+            "id":"BACK"})
+
+    # Return the state
+    return pState
 
 # Handle GET /state for Run Sequence (Abort prompt)
 def HandleGetStateRunSequencePromptAbort():
@@ -442,7 +456,9 @@ def HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength):
             # Ignore this button for now
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "OBSERVE":
-            # Ignore this button for now
+            # Swtich to Run Sequence
+            sClientState = gElixys.GetRunState(sRemoteUser)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -603,12 +619,18 @@ def HandlePostRunSequence(sClientState, sRemoteUser, pBody, nBodyLength):
     sActionType = str(pJSON["action"]["type"])
     sActionTargetID = str(pJSON["action"]["targetid"])
 
-    # Check for abort
-    if (sActionType == "BUTTONCLICK") and (sActionTargetID == "ABORT"):
-        # Switch states to Prompt (Create Sequence)
-        sClientState = "PROMPT_ABORTSEQUENCE;" + sClientState
-        gElixys.SaveClientState(sRemoteUser, sClientState)
-        return HandleGet(sClientState, sRemoteUser, "/state")
+    # Check which button the user clicked
+    if sActionType == "BUTTONCLICK":
+        if sActionTargetID == "ABORT":
+            # Switch states to Prompt (Create Sequence)
+            sClientState = "PROMPT_ABORTSEQUENCE;" + sClientState
+            gElixys.SaveClientState(sRemoteUser, sClientState)
+            return HandleGet(sClientState, sRemoteUser, "/state")
+        elif sActionTargetID == "BACK":
+            # Switch states to Home
+            sClientState = "HOME"
+            gElixys.SaveClientState(sRemoteUser, sClientState)
+            return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
     raise Exception("State misalignment")
@@ -813,11 +835,13 @@ def application(pEnvironment, fStartResponse):
         # Debugging hack: trim off any leading "/Elixys" string
         sPath = sPath[7:]
 
-    # Load the client state
+    # Load the client and system state
     sClientState = gElixys.GetClientState(sRemoteUser)
+    sSystemState = gElixys.GetSystemState(sRemoteUser)
 
     # Log the request
-    Log("Received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ")");
+    Log("Received " + sRequestMethod + " request for " + sPath + " (client = " + sRemoteUser + ", client state = " + sClientState +
+        ", system state = " + sSystemState + ")");
 
     # Handle the request
     try:
