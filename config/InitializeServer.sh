@@ -57,11 +57,16 @@ cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so
 /usr/sbin/semanage port -a -t http_port_t -p tcp 843
 cp elixys/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
+chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
 # Allow Apache to save the server state to files in the WSGI directory.  This is temporary and will go away once we get the
 # WSGI interface integrated with MySQL
 chmod 777 /var/www/wsgi
 chown apache:apache /var/www/wsgi
+
+# Update the firewall settings
+mv -f elixys/config/iptables /etc/sysconfig/
+chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 
 # Remove the git repository
 rm -rf /root/elixys
