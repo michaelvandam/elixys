@@ -58,49 +58,91 @@ def HandleGetState(sClientState, sRemoteUser):
             sClientState = "RUNMANUAL." + pRunStateComponents[1] + "." + pRunStateComponents[2]
             gElixys.SaveClientState(sRemoteUser, sClientState)
 
-    # Start the state with the common fields
+    # Get the user information and server state
     pUser = {"type":"user"}
     pUser.update(gElixys.GetUser(sRemoteUser))
     pServerState = {"type":"serverstate"}
     pServerState.update(gElixys.GetServerState(sRemoteUser))
+
+    # Update the full client state because GetServerState() may have changed it
+    sClientState = gElixys.GetClientState(sRemoteUser)
+
+    # Get the full client state and break it into prompt and client components
+    pPromptStateComponent = GetPromptStateComponent(sClientState, sRemoteUser)
+    sClientStateComponent = GetClientStateComponent(sClientState)
+
+    # Start the state with the common fields
+    pServerState.update(pServerState)
     pState = {"type":"state",
         "user":pUser,
         "serverstate":pServerState,
-        "clientstate":gElixys.GetClientState(sRemoteUser)}
-
-    # Update the client state because GetServerState() may have changed it
-    sClientState = gElixys.GetClientState(sRemoteUser)
+        "promptstate":pPromptStateComponent,
+        "clientstate":sClientStateComponent}
 
     # Complete the state with the values specific to this page
-    if sClientState.startswith("HOME"):
+    if sClientStateComponent.startswith("HOME"):
         pState.update(HandleGetStateHome(sRemoteUser))
-    elif sClientState.startswith("SELECT_SAVEDSEQUENCES"):
+    elif sClientStateComponent.startswith("SELECT_SAVEDSEQUENCES"):
         pState.update(HandleGetStateSelectSavedSequences(sRemoteUser))
-    elif sClientState.startswith("SELECT_MANUALRUNS"):
+    elif sClientStateComponent.startswith("SELECT_MANUALRUNS"):
         pState.update(HandleGetStateSelectManualRuns(sRemoteUser))
-    elif sClientState.startswith("PROMPT_CREATESEQUENCE"):
-        pState.update(HandleGetStateSelectPromptCreateSequence())
-    elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
-        pState.update(HandleGetStateSelectPromptCopySequence())
-    elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
-        pState.update(HandleGetStateSelectPromptDeleteSequence())
-    elif sClientState.startswith("PROMPT_RUNSEQUENCE"):
-        pState.update(HandleGetStatePromptRunSequence())
-    elif sClientState.startswith("VIEW"):
-        pState.update(HandleGetStateView(sClientState, sRemoteUser))
-    elif sClientState.startswith("EDIT"):
-        pState.update(HandleGetStateEdit(sClientState, sRemoteUser))
-    elif sClientState.startswith("RUNSEQUENCE"):
-        pState.update(HandleGetStateRunSequence(sClientState, sRemoteUser))
-    elif sClientState.startswith("PROMPT_ABORTSEQUENCE"):
-        pState.update(HandleGetStateRunSequencePromptAbort())
-    elif sClientState.startswith("RUNMANUAL"):
-        pState.update(HandleGetStateRunManual(sClientState, sRemoteUser))
+    elif sClientStateComponent.startswith("VIEW"):
+        pState.update(HandleGetStateView(sClientStateComponent, sRemoteUser))
+    elif sClientStateComponent.startswith("EDIT"):
+        pState.update(HandleGetStateEdit(sClientStateComponent, sRemoteUser))
+    elif sClientStateComponent.startswith("RUNSEQUENCE"):
+        pState.update(HandleGetStateRunSequence(sClientStateComponent, sRemoteUser))
+    elif sClientStateComponent.startswith("RUNMANUAL"):
+        pState.update(HandleGetStateRunManual(sClientStateComponent, sRemoteUser))
     else:
-        raise Exception("Unknown state")
+        raise Exception("Unknown state: " + sClientStateComponent)
 
     # Return the state
     return pState
+
+# Returns the prompt state component from the full client state
+def GetPromptStateComponent(sClientState, sRemoteUser):
+    # Initialize the response
+    pPromptState = {"type":"promptstate",
+        "show":False,
+        "text1":"",
+        "edit1":False,
+        "edit1validation":"",
+	"text2":"",
+	"edit2":False,
+	"edit2validation":"",
+	"buttons":[]}
+
+    # Return if we are not in prompt mode
+    if not sClientState.startswith("PROMPT_"):
+        return pPromptState
+
+    # Fill in the prompt state with prompt-specific details
+    if sClientState.startswith("PROMPT_CREATESEQUENCE"):
+        return HandleGetStateSelectPromptCreateSequence(pPromptState)
+    elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
+        return HandleGetStateSelectPromptCopySequence(pPromptState)
+    elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
+        return HandleGetStateSelectPromptDeleteSequence(pPromptState)
+    elif sClientState.startswith("PROMPT_RUNSEQUENCE"):
+        return HandleGetStatePromptRunSequence(pPromptState)
+    elif sClientState.startswith("PROMPT_ABORTSEQUENCE"):
+        return HandleGetStateRunSequencePromptAbort(pPromptState)
+    elif sClientState.startswith("PROMPT_UNITOPERATION"):
+        return HandleGetStateRunSequencePromptUnitOperation(pPromptState, sClientState, sRemoteUser)
+    else:
+        raise Exception("Unknown prompt state")
+
+# Returns the client state component of the full client state
+def GetClientStateComponent(sClientState):
+    # Are we in prompt mode?
+    if sClientState.startswith("PROMPT_"):
+        # Yes, so the client state is the last component delimited by a semicolon
+        pClientStateComponents = sClientState.split(";")
+        return pClientStateComponents[len(pClientStateComponents) - 1]
+    else:
+        # No, so return the client state as it is
+        return sClientState
 
 # Handles GET /state request for Home
 def HandleGetStateHome(sRemoteUser):
@@ -173,66 +215,6 @@ def HandleGetStateSelectManualRuns(sRemoteUser):
     pState.update({"tabid":"MANUALRUNS"})
     pState.update({"sequences":gElixys.GetSequenceList(sRemoteUser, "Manual")})
     return pState
-
-# Handle GET /state for Select Sequence (Create Sequence prompt)
-def HandleGetStateSelectPromptCreateSequence():
-    return {"text1":"Enter the name of the new sequence:",
-        "edit1":"true",
-        "edit1validation":"type=string; required=true",
-        "text2":"",
-        "edit2":"false",
-        "edit2validation":"",
-        "buttons":[{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
-            {"type":"button",
-            "text":"Create",
-            "id":"CREATE"}]}
-
-# Handle GET /state for Select Sequence (Copy Sequence prompt)
-def HandleGetStateSelectPromptCopySequence():
-    return {"text1":"Enter the name of the new sequence:",
-        "edit1":"true",
-        "edit1validation":"type=string; required=true",
-        "text2":"",
-        "edit2":"false",
-        "edit2validation":"",
-        "buttons":[{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
-            {"type":"button",
-            "text":"Copy",
-            "id":"COPY"}]}
-
-# Handle GET /state for Select Sequence (Delete Sequence prompt)
-def HandleGetStateSelectPromptDeleteSequence():
-    return {"text1":"Are you sure that you want to permanently delete sequence \"Fake Sequence Name Here\"?",
-        "edit1":"false",
-        "edit1validation":"",
-        "text2":"",
-        "edit2":"false",
-        "edit2validation":"",
-        "buttons":[{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
-            {"type":"button",
-            "text":"Delete",
-            "id":"DELETE"}]}
-
-# Handle GET /state for Run Sequence prompt
-def HandleGetStatePromptRunSequence():
-    return {"text1":"Prepare the Elixys system to run \"Fake Sequence Name Here\" and click OK to continue.",
-        "edit1":"false",
-        "edit1validation":"",
-        "text2":"",
-        "edit2":"false",
-        "edit2validation":"",
-        "buttons":[{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
-            {"type":"button",
-            "text":"OK",
-            "id":"OK"}]}
 
 # Handle GET /state for View Sequence
 def HandleGetStateView(sClientState, sRemoteUser):
@@ -332,24 +314,107 @@ def HandleGetStateRunSequence(sClientState, sRemoteUser):
     # Return the state
     return pState
 
-# Handle GET /state for Run Sequence (Abort prompt)
-def HandleGetStateRunSequencePromptAbort():
-    return {"text1":"Are you sure you want to abort the sequence run?  This operation cannot be undone.",
-        "edit1":"false",
-        "edit1validation":"",
-        "text2":"",
-        "edit2":"false",
-        "edit2validation":"",
-        "buttons":[{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
-            {"type":"button",
-            "text":"Abort",
-            "id":"ABORT"}]}
-
 # Handle GET /state for Run Manual
 def HandleGetStateRunManual(sClientState, sRemoteUser):
     raise Exception("Implement manual run")
+
+# Handle GET /state for Select Sequence (Create Sequence prompt)
+def HandleGetStateSelectPromptCreateSequence(pPromptState):
+    pPromptState["show"] = True
+    pPromptState["text1"] = "Enter the name of the new sequence:"
+    pPromptState["edit1"] = True
+    pPromptState["edit1validation"] = "type=string; required=true"
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Cancel",
+        "id":"CANCEL"})
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Create",
+        "id":"CREATE"})
+    return pPromptState
+
+# Handle GET /state for Select Sequence (Copy Sequence prompt)
+def HandleGetStateSelectPromptCopySequence(pPromptState):
+    pPromptState["show"] = True
+    pPromptState["text1"] = "Enter the name of the new sequence:"
+    pPromptState["edit1"] = True
+    pPromptState["edit1validation"] = "type=string; required=true"
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Cancel",
+        "id":"CANCEL"})
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Copy",
+        "id":"COPY"})
+    return pPromptState
+
+# Handle GET /state for Select Sequence (Delete Sequence prompt)
+def HandleGetStateSelectPromptDeleteSequence(pPromptState):
+    pPromptState["show"] = True
+    pPromptState["text1"] = "Are you sure that you want to permanently delete sequence \"Fake Sequence Name Here\"?"
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Cancel",
+        "id":"CANCEL"})
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Delete",
+        "id":"DELETE"})
+    return pPromptState
+
+# Handle GET /state for Run Sequence prompt
+def HandleGetStatePromptRunSequence(pPromptState):
+    pPromptState["show"] = True
+    pPromptState["text1"] = "Prepare the Elixys system to run \"Fake Sequence Name Here\" and click OK to continue."
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Cancel",
+        "id":"CANCEL"})
+    pPromptState["buttons"].append({"type":"button",
+        "text":"OK",
+        "id":"OK"})
+    return pPromptState
+
+# Handle GET /state for Run Sequence (Abort prompt)
+def HandleGetStateRunSequencePromptAbort(pPromptState):
+    pPromptState["show"] = True
+    pPromptState["text1"] = "Are you sure you want to abort the sequence run?  This operation cannot be undone."
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Cancel",
+        "id":"CANCEL"})
+    pPromptState["buttons"].append({"type":"button",
+        "text":"Abort",
+        "id":"ABORT"})
+    return pPromptState
+
+# Handle GET /state for Run Sequence (Prompt/install unit operations)
+def HandleGetStateRunSequencePromptUnitOperation(pPromptState, sClientState, sRemoteUser):
+    # Look up the current sequence component
+    global gElixys
+    sRunState = gElixys.GetRunState(sRemoteUser)
+    pRunStateComponents = sRunState.split(".")
+    nSequenceID = int(pRunStateComponents[1])
+    nComponentID = int(pRunStateComponents[2])
+    pSequence = gElixys.GetSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
+
+    # Make sure this component requires a prompt
+    if (pSequence["components"][0]["componenttype"] != "PROMPT") and (pSequence["components"][0]["componenttype"] != "INSTALL"):
+        # No, so update the client state and return
+        sClientState = gElixys.GetRunState(sRemoteUser)
+        gElixys.SaveClientState(sRemoteUser, sClientState)
+        return pPromptState
+
+    # Set the prompt message
+    pPromptState["show"] = True
+    pPromptState["text1"] = pSequence["components"][0]["message"]
+
+    # Set the button text depending on whether we are the user running the system
+    if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
+        pPromptState["buttons"].append({"type":"button",
+            "text":"OK",
+            "id":"OK"})
+    else:
+        pPromptState["buttons"].append({"type":"button",
+            "text":"Back",
+            "id":"BACK"})
+
+    # Return the state
+    return pPromptState
 
 # Handle GET /sequence/[sequenceid]
 def HandleGetSequence(sRemoteUser, sPath):
@@ -751,6 +816,18 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[2]
+            gElixys.SaveClientState(sRemoteUser, sClientState)
+            return HandleGet(sClientState, sRemoteUser, "/state")
+    elif sClientState.startswith("PROMPT_UNITOPERATION"):
+        if sActionTargetID == "OK":
+            # Continue the sequence run
+            gElixys.ContinueRun(sRemoteUser)
+            sClientState = gElixys.GetRunState(sRemoteUser)
+            gElixys.SaveClientState(sRemoteUser, sClientState)
+            return HandleGet(sClientState, sRemoteUser, "/state")
+        if sActionTargetID == "BACK":
+            # Return to the home page
+            sClientState = "HOME"
             gElixys.SaveClientState(sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 

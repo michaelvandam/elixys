@@ -25,7 +25,7 @@
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Format the output text
-					_outputText.text = "Comment: " + m_pComponentComment.Comment + ".";
+					_outputText.text = m_pComponentComment.Comment;
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
@@ -38,6 +38,8 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Format the output text
+					_runOutputText.text = m_pComponentComment.Comment;
 				}
 			}
 
@@ -104,6 +106,8 @@
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
-			verticalCenter="0" width="100%" height="100%" />
+			verticalCenter="0" width="100%" height="100%">
+			<mx:Text id="_runOutputText" styleName="TextMedium" width="80%" />
+		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

@@ -111,7 +111,7 @@
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
-				if (StatePrompt.CheckState(pState.ClientState()))
+				if (pState.PromptState().Show())
 				{
 					// Create and display the pop up window
 					if (_viewPrompt == null)
@@ -124,7 +124,6 @@
 					// Update the pop up state
 					_viewPrompt.UpdateState(pState);
 					PopUpManager.centerPopUp(_viewPrompt);
-					return;
 				}
 				else if (_viewPrompt != null)
 				{

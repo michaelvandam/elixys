@@ -86,10 +86,33 @@ class Elixys:
         return True
 
     def GetServerState(self, sUsername):
-        # Are we running the system?
+        # Are we running the user running the system?
         if sUsername == self.GetRunUser(sUsername):
-           # Yes, so run the system one step
+           # Yes, so advance the system state to simulate a run
            self.AdvanceSystemState(sUsername)
+
+        # Is the user on one of the run screens?
+        sClientState = self.GetClientState(sUsername)
+        if sClientState.startswith("RUNSEQUENCE") or sClientState.startswith("MANUALRUN"):
+            # Yes.  Is the system running?
+            sSystemState = self.GetSystemState(sUsername)
+            if sSystemState != "NONE":
+                # The system is running.  Make sure the client is displaying the prompt window if the sequence run calls for it
+                pSystemStateComponents = sSystemState.split(".")
+                nSequenceID = int(pSystemStateComponents[2])
+                nComponentID = int(pSystemStateComponents[3])
+                pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
+
+                # Are we on a prompt or install unit operation?
+                if (pSequence["components"][0]["componenttype"] == "PROMPT") or (pSequence["components"][0]["componenttype"] == "INSTALL"):
+                    # Make sure the client is showing the unit operation prompt
+                    if not sClientState.startswith("PROMPT_UNITOPERATION"):
+                        sClientState = "PROMPT_UNITOPERATION;" + sClientState;
+                        self.SaveClientState(sUsername, sClientState)
+            else:
+                # The system is no longer running.  Move the client away from the run page
+                sClientState = "HOME"
+                self.SaveClientState(sUsername, sClientState)
 
         # Update and return the default system state
         return self.UpdateServerState(DummyData.GetDefaultSystemState())
@@ -345,7 +368,27 @@ class Elixys:
         return True
 
     def ContinueRun(self, sUsername):
-        return False
+        # Look up the current run component
+        sSystemState = self.GetSystemState(sUsername)
+        pSystemStateComponents = sSystemState.split(".")
+        sMode = pSystemStateComponents[1]
+        nSequenceID = int(pSystemStateComponents[2])
+        nComponentID = int(pSystemStateComponents[3])
+
+        # Attempt to advance to the next component
+        nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID)
+        if nNextComponentID == None:
+            # Run is complete
+            return
+
+        # Set the component ID and state
+        nComponentID = nNextComponentID
+        nComponentState = 0
+
+        # Save the system state and return
+        sSystemState = sUsername + "." + sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
+        self.SaveSystemState(sUsername, sSystemState)
+        return True
 
     def StartManualRun(self, sUsername):
         return False
@@ -675,54 +718,81 @@ class Elixys:
         # Load the system state
         sSystemState = self.GetSystemState(sUsername)
 
-        # Extract the component specific part of the system state
+        # Extract the component-specific part of the system state
         pSystemStateComponents = sSystemState.split(".")
         sUsername = pSystemStateComponents[0]
         sMode = pSystemStateComponents[1]
         nSequenceID = int(pSystemStateComponents[2])
         nComponentID = int(pSystemStateComponents[3])
 
-        # Advance the system state
-        if len(pSystemStateComponents) < 5:
-            # State with an initial value of one
-            nComponentState = 1
+        # Load the component
+        pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
+
+        # Advance the system state depending on the component type
+        if pSequence["components"][0]["componenttype"] == "COMMENT":
+            # Skip comment operations.  Attempt to advance to the next component
+            nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID)
+            if nNextComponentID == None:
+                # Run is complete
+                return
+
+            # Set the component ID and state
+            nComponentID = nNextComponentID
+            nComponentState = 0
+        elif (pSequence["components"][0]["componenttype"] == "PROMPT") or (pSequence["components"][0]["componenttype"] == "INSTALL"):
+            # Do nothing until the user responds
+            return
         else:
-            nComponentState = int(pSystemStateComponents[4])
-            if nComponentState < 7:
-                # Increment our value
-                nComponentState += 1
+            # Default behavior is to show each unit operation for a few seconds
+            if len(pSystemStateComponents) < 5:
+                # State with an initial value of one
+                nComponentState = 1
             else:
-                # Attempt to advance to the next component
-                pSequence = self.GetSequence(sUsername, nSequenceID)
-                nIndex = 0
-                bComponentFound = False
-                nNextComponentID = None
-                while nIndex < len(pSequence["components"]):
-                    pComponent = pSequence["components"][nIndex]
-                    if bComponentFound:
-                        # This is the next component
-                        nNextComponentID = pComponent["id"]
-                        break
-                    if pComponent["id"] == nComponentID:
-                        # Found it
-                        bComponentFound = True
-                    nIndex += 1
+                nComponentState = int(pSystemStateComponents[4])
+                if nComponentState < 7:
+                    # Increment our value
+                    nComponentState += 1
+                else:
+                    # Attempt to advance to the next component
+                    nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID)
+                    if nNextComponentID == None:
+                        # Run is complete
+                        return
 
-                # Do we find the next component?
-                if nNextComponentID == None:
-                    # No, the run is complete so update the system and client states and return
-                    self.SaveSystemState(sUsername, "NONE")
-                    self.SaveClientState(sUsername, "HOME")
-                    return
-
-                # Set the component ID and state
-                nComponentID = nNextComponentID
-                nComponentState = 0
+                    # Set the component ID and state
+                    nComponentID = nNextComponentID
+                    nComponentState = 0
 
         # Save the system state and return
         sSystemState = sUsername + "." + sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
         self.SaveSystemState(sUsername, sSystemState)
         return
+
+    def RunSequenceAdvance(self, sUsername, nSequenceID, nComponentID):
+        # Try and find the next component
+        pSequence = self.GetSequence(sUsername, nSequenceID)
+        nIndex = 0
+        bComponentFound = False
+        nNextComponentID = None
+        while nIndex < len(pSequence["components"]):
+            pComponent = pSequence["components"][nIndex]
+            if bComponentFound:
+                # This is the next component
+                nNextComponentID = pComponent["id"]
+                break
+            elif pComponent["id"] == nComponentID:
+                # Found it
+                bComponentFound = True
+            nIndex += 1
+
+        # Return the next component if we found it
+        if nNextComponentID != None:
+            return nNextComponentID
+        else:
+            # Failed to find the next component so this run is complete.  Update the states and return
+            self.SaveSystemState(sUsername, "NONE")
+            self.SaveClientState(sUsername, "HOME")
+            return None
 
     def UpdateServerState(self, pServerState):
         return pServerState
