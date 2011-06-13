@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		   xmlns:Views="Elixys.Views.*" initialize="OnInitialize()" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		   xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
 	<fx:Style source="Elixys.css" />
 	<fx:Script>
 		<![CDATA[
@@ -16,46 +16,30 @@
 			/***
 			 *** Initialization functions
 			 **/
-			
-			// Called when the application is initialized
-			public function OnInitialize():void
-			{
-				
-				// Set our multitouch input mode
-				/*
-				if (Capabilities.touchscreenType == TouchscreenType.NONE)
-				{
-					Multitouch.inputMode = MultitouchInputMode.NONE;
-				}
-				else if (Capabilities.touchscreenType == TouchscreenType.FINGER)
-				{*/
-//					Multitouch.inputMode = MultitouchInputMode.TOUCH_POINT;
-					/*
-				}
-				else if (Capabilities.touchscreenType == TouchscreenType.STYLUS)
-				{
-					Multitouch.inputMode = MultitouchInputMode.GESTURE;
-				}*/
-			}
-			
+						
 			// Called when the object is created
 			private function OnCreationComplete():void
 			{
-				var pEvaporationTime:Date = new Date();
-				pEvaporationTime.setTime(Date.parse("00:05.35"));
-
 				// Add event listeners
 				addEventListener(ResizeEvent.RESIZE, OnResize);
 				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				_viewEdit.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				_viewRunSequence.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 
 				// Tell the Home page to display the log out button if we are in the AIR player
 				if (FindLoaderMain() != null)
 				{
 					_viewHome.DisplayLogout(true);
 					_viewHome.addEventListener(LogoutEvent.LOGOUT, OnLogoutEvent);
+				}
+
+				// Load the system configuration once we are initialize and the server set
+				m_bInitialized = true;
+				if (m_bInitialized && (m_pHTTPConnectionPool != null))
+				{
+					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
 				}
 			}
 
@@ -70,8 +54,11 @@
 				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnectionPool.SetCredentials(sCredentials);
 
-				// Load the system configuration
-				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
+				// Load the system configuration once we are initialize and the server set
+				if (m_bInitialized && (m_pHTTPConnectionPool != null))
+				{
+					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
+				}
 			}
 
 			// Step 2: Called when the system configuration has been received
@@ -124,7 +111,7 @@
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
-				if (StatePrompt.CheckState(pState.ClientState()))
+				if (pState.PromptState().Show())
 				{
 					// Create and display the pop up window
 					if (_viewPrompt == null)
@@ -137,7 +124,6 @@
 					// Update the pop up state
 					_viewPrompt.UpdateState(pState);
 					PopUpManager.centerPopUp(_viewPrompt);
-					return;
 				}
 				else if (_viewPrompt != null)
 				{
@@ -166,6 +152,11 @@
 				{
 					_viewStack.selectedChild = _viewEdit;
 					_viewEdit.UpdateState(pState);
+				}
+				else if (StateSequence.CheckState(StateSequence.RUNSEQUENCETYPE, pState.ClientState()))
+				{
+					_viewStack.selectedChild = _viewRunSequence;
+					_viewRunSequence.UpdateState(pState);
 				}
 				else
 				{
@@ -318,8 +309,9 @@
 				}
 			}
 
-			// HTTP connection pool to the server
-			private var m_pHTTPConnectionPool:HTTPConnectionPool;
+			// Initializaton flag and HTTP connection pool to the server
+			private var m_bInitialized:Boolean = false;
+			private var m_pHTTPConnectionPool:HTTPConnectionPool = null;
 
 			// State update timer
 			private var m_pStateTimer:Timer;
@@ -337,5 +329,6 @@
 		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
 		<Views:ViewView id="_viewView" width="100%" height="100%" />
 		<Views:EditView id="_viewEdit" width="100%" height="100%" />
+		<Views:RunSequenceView id="_viewRunSequence" width="100%" height="100%" />
 	</mx:ViewStack>
 </mx:Canvas>

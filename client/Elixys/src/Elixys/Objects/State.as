@@ -40,6 +40,15 @@ package Elixys.Objects
 			}
 			return m_pServerState;
 		}
+		public function PromptState():Elixys.Objects.PromptState
+		{
+			// Parse the prompt state
+			if (m_pPromptState == null)
+			{
+				m_pPromptState = new Elixys.Objects.PromptState(null, super.flash_proxy::getProperty("promptstate"));
+			}
+			return m_pPromptState;
+		}
 		public function ClientState():String
 		{
 			return super.flash_proxy::getProperty("clientstate");
@@ -51,5 +60,6 @@ package Elixys.Objects
 		// State components
 		private var m_pUser:Elixys.Objects.User;
 		private var m_pServerState:Elixys.Objects.ServerState;
+		private var m_pPromptState:Elixys.Objects.PromptState;
 	}
 }

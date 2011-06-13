@@ -2,35 +2,41 @@ package Elixys.Objects
 {
 	import flash.utils.flash_proxy;
 	
-	public class StatePrompt extends State
+	public class PromptState extends JSONObject
 	{
 		// Constructor
-		public function StatePrompt(data:String, existingcontent:Object = null)
+		public function PromptState(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState() != null) && !CheckState(ClientState()))
+			if ((Type() != null) && (Type() != TYPE))
 			{
-				throw new Error("State object mismatch");
+				throw new Error("Object type mismatch");
 			}
 		}
 		
-		// Checks for a state match
-		static public function CheckState(sState:String):Boolean
-		{
-			return (sState.substring(0, TYPE.length) == TYPE);
-		}
-
 		// Data wrappers
+		public function Type():String
+		{
+			return super.flash_proxy::getProperty("type");
+		}
+		public function Show():Boolean
+		{
+			return super.flash_proxy::getProperty("show");
+		}
 		public function Text1():String
 		{
 			return super.flash_proxy::getProperty("text1");
 		}
 		public function Edit1():Boolean
 		{
-			return (super.flash_proxy::getProperty("edit1") == "true");
+			return super.flash_proxy::getProperty("edit1");
+		}
+		public function Edit1Validation():String
+		{
+			return super.flash_proxy::getProperty("edit1validation");
 		}
 		public function Text2():String
 		{
@@ -38,7 +44,11 @@ package Elixys.Objects
 		}
 		public function Edit2():Boolean
 		{
-			return (super.flash_proxy::getProperty("edit2") == "true");
+			return super.flash_proxy::getProperty("edit2");
+		}
+		public function Edit2Validation():String
+		{
+			return super.flash_proxy::getProperty("edit2validation");
 		}
 		public function Buttons():Array
 		{
@@ -57,7 +67,7 @@ package Elixys.Objects
 		}
 		
 		// Type
-		static public var TYPE:String = "PROMPT";
+		static public var TYPE:String = "promptstate";
 		
 		// State components
 		private var m_pButtons:Array;

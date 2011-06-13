@@ -3,6 +3,8 @@
 		xmlns:Views="Elixys.Views.*" xmlns:local="*" applicationComplete="OnApplicationComplete()" minWidth="955" minHeight="600">
 	<fx:Script>
 		<![CDATA[
+			import Elixys.HTTP.HTTPConnectionPool;
+			
 			import mx.controls.Alert;
 			import mx.utils.URLUtil;
 
@@ -11,6 +13,7 @@
 			{
 				// These variables describe our connection to the server
 				var sServer:String = "";
+				var sUsername:String = "";
 				var sCredentials:String = "";
 				
 				// Look in the SWF URL parameters.
@@ -19,6 +22,10 @@
 					if (loaderInfo.parameters["server"] != null)
 					{
 						sServer = loaderInfo.parameters["server"];
+					}
+					if (loaderInfo.parameters["username"] != null)
+					{
+						sUsername = loaderInfo.parameters["username"];
 					}
 					if (loaderInfo.parameters["credentials"] != null)
 					{
@@ -37,13 +44,24 @@
 						}
 					}
 				}
-								
+
 				// Hack: hardcode the authentication parameter until we get the server redirect working
-				if ((sServer != "") && (sCredentials == ""))
+				if (sServer == "")
 				{
-					sCredentials = "ZGV2ZWw6ZGV2ZWw=";
+					sServer = "192.168.180.149";
 				}
-								
+				if (sUsername == "")
+				{
+					sUsername = "devel";
+				}
+				if (sCredentials == "")
+				{
+					var pHTTPConnectionPool:HTTPConnectionPool = new HTTPConnectionPool(sServer, 80, 1);
+					pHTTPConnectionPool.SetCredentialsRaw(sUsername, "devel");
+					sCredentials = pHTTPConnectionPool.GetCredentials();
+					pHTTPConnectionPool = null;
+				}
+
 				// Pass the parameters to the main window
 				if ((sServer != "") && (sCredentials != ""))
 				{

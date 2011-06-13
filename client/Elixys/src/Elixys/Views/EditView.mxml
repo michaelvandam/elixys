@@ -33,20 +33,10 @@
 			// Update state
 			public override function UpdateState(pState:State):void
 			{
-				// Pass if we haven't finished initialization
-				if (m_pOnButtonClick == null)
-				{
-					return;
-				}
-				
-				// Update the sequence state
-				var pStateSequence:StateSequence = new StateSequence(StateSequence.EDITTYPE, null, pState);
-				UpdateSequenceState(pStateSequence.Buttons(), pStateSequence.SequenceID(), pStateSequence.ComponentID());
-
-				// Request the sequence from the server
-				RequestSequence(m_nSequenceID);
+				// Call the base function with our type
+				UpdateSequenceState(pState, StateSequence.EDITTYPE);
 			}
-			
+
 			// Update sequence
 			public override function UpdateSequence(pSequence:Sequence):void
 			{
@@ -407,9 +397,6 @@
 				// Set the subview parents
 				SetSubviewParents();
 				
-				// Initialize the unit operations list
-				UpdateConfiguration(m_pServerConfiguration);
-
 				// Create the timers
 				m_pUnitOperationMouseTimer = new Timer(200, 1);
 				m_pUnitOperationMouseTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationMouseDownTimer);

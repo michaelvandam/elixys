@@ -8,7 +8,7 @@
 			import Elixys.Objects.Button;
 			import Elixys.Objects.PostPrompt;
 			import Elixys.Objects.State;
-			import Elixys.Objects.StatePrompt;
+			import Elixys.Objects.PromptState;
 			
 			import spark.components.Button;
 
@@ -16,10 +16,10 @@
 			public override function UpdateState(pState:State):void
 			{
 				// Update the text and edit controls
-				var pStatePrompt:StatePrompt = new StatePrompt(null, pState);
-				if (pStatePrompt.Text1() != "")
+				var pPromptState:PromptState = pState.PromptState();
+				if (pPromptState.Text1() != "")
 				{
-					_text1.text = pStatePrompt.Text1();
+					_text1.text = unescape(pPromptState.Text1());
 					_text1Group.visible = true;
 					_text1Group.includeInLayout = true;
 				}
@@ -28,11 +28,11 @@
 					_text1Group.visible = false;
 					_text1Group.includeInLayout = false;
 				}
-				_edit1Group.visible = pStatePrompt.Edit1();
-				_edit1Group.includeInLayout = pStatePrompt.Edit1();
-				if (pStatePrompt.Text2() != "")
+				_edit1Group.visible = pPromptState.Edit1();
+				_edit1Group.includeInLayout = pPromptState.Edit1();
+				if (pPromptState.Text2() != "")
 				{
-					_text2.text = pStatePrompt.Text2();
+					_text2.text = unescape(pPromptState.Text2());
 					_text2Group.visible = true;
 					_text2Group.includeInLayout = true;
 				}
@@ -41,11 +41,11 @@
 					_text2Group.visible = false;
 					_text2Group.includeInLayout = false;
 				}
-				_edit2Group.visible = pStatePrompt.Edit2();
-				_edit2Group.includeInLayout = pStatePrompt.Edit2();
+				_edit2Group.visible = pPromptState.Edit2();
+				_edit2Group.includeInLayout = pPromptState.Edit2();
 
 				// Update our button array with the server data
-				UpdateButtons(_buttonGroup, pStatePrompt.Buttons(), CreateNewButton);
+				UpdateButtons(_buttonGroup, pPromptState.Buttons(), CreateNewButton);
 				function CreateNewButton():spark.components.Button
 				{
 					// Callback to create our new button
@@ -88,15 +88,15 @@
 			<mx:Text id="_text1" styleName="TextMedium" maxWidth="460" />
 			<s:Spacer height="20" />
 		</s:VGroup>
-		<s:VGroup id="_edit1Group">
+		<s:VGroup id="_edit1Group" horizontalAlign="center" width="100%">
 			<Renderers:AutoTextArea id="_edit1" styleName="TextMedium" width="75%" />
 			<s:Spacer height="20" />
 		</s:VGroup>
 		<s:VGroup id="_text2Group">
-			<mx:Text id="_text2" styleName="TextMedium" />
+			<mx:Text id="_text2" styleName="TextMedium" maxWidth="460" />
 			<s:Spacer height="20" />
 		</s:VGroup>
-		<s:VGroup id="_edit2Group">
+		<s:VGroup id="_edit2Group" horizontalAlign="center" width="100%">
 			<Renderers:AutoTextArea id="_edit2" styleName="TextMedium" width="75%" />
 			<s:Spacer height="20" />
 		</s:VGroup>

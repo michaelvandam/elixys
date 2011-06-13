@@ -7,8 +7,9 @@
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
 			import Elixys.Objects.ComponentTransfer;
+			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
-
+			
 			import spark.events.IndexChangeEvent;
 
 			/***
@@ -37,6 +38,8 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Look up the target
+					RequestSequenceReagent(m_pComponentTransfer.Target);
 				}
 			}
 
@@ -56,6 +59,17 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Format the output text
+					var pReactor:ReactorState = (m_pParent as SequenceViewBase).GetReactor();
+					_runOutputText1.text = "Transferring the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
+						pReagent.Description + ".";
+					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
+					var sActivity:String = pReactor.Activity();
+					if (sActivity != "")
+					{
+						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
+					}
+					_runReactorText2.text = "Reactor " + m_pComponentTransfer.Reactor;
 				}
 			}
 			
@@ -69,7 +83,7 @@
 				// Set the base class variables
 				m_pViewGroup = _viewGroup;
 				m_pEditGroup = _editGroup;
-				m_pRunGroup = null;
+				m_pRunGroup = _runGroup;
 				
 				// Set our view mode
 				SetViewMode(m_sViewMode)
@@ -133,8 +147,17 @@
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
-				  verticalCenter="0" width="100%" height="100%">
-			<mx:Text text="This where run mode will be implemented" styleName="TextMedium" width="80%" />		
+				verticalCenter="0" width="100%" height="100%">
+			<s:HGroup paddingLeft="15" paddingRight="15" gap="15" width="100%" height="100%">
+				<s:VGroup horizontalAlign="left" verticalAlign="middle" gap="15" width="100%" height="100%">
+					<mx:Text id="_runOutputText1" styleName="TextMedium" width="100%" />
+					<mx:Text id="_runOutputText2" styleName="TextMedium" width="100%" />
+				</s:VGroup>
+				<s:VGroup horizontalAlign="center" verticalAlign="middle" height="100%">
+					<s:BorderContainer backgroundColor="0x777777" width="320" height="320" />
+					<mx:Text id="_runReactorText2" styleName="TextMedium" />
+				</s:VGroup>
+			</s:HGroup>
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

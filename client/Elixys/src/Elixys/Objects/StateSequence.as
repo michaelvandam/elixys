@@ -54,7 +54,7 @@ package Elixys.Objects
 		// Types
 		static public var VIEWTYPE:String = "VIEW";
 		static public var EDITTYPE:String = "EDIT";
-		static public var RUNTYPE:String = "RUN";
+		static public var RUNSEQUENCETYPE:String = "RUNSEQUENCE";
 		
 		// State components
 		private var m_sType:String;

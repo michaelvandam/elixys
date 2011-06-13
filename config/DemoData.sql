@@ -1,1 +1,17 @@
 INSERT INTO Users VALUES (0, "devel", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "shane", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "kevin", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "mike", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "melissa", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "mark", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "garauv", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "graciela", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "sam", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "helen", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "tim", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "jimmy", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "john", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "ritva", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "jeff", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "patrick", "6E3kYsJnM9p2Y", 1);
+INSERT INTO Users VALUES (0, "nam", "6E3kYsJnM9p2Y", 1);

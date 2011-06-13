@@ -24,6 +24,7 @@ package Elixys.Objects
 		}
 		public function Metadata():SequenceMetadata
 		{
+			// Parse the metadata
 			if (m_pMetadata == null)
 			{
 				m_pMetadata = new SequenceMetadata(null, super.flash_proxy::getProperty("metadata"));
@@ -39,17 +40,32 @@ package Elixys.Objects
 				var pComponents:Array = super.flash_proxy::getProperty("components");
 				for each (var pComponentObject:Object in pComponents)
 				{
+					// Ignore the cassettes if specified
 					var pComponent:SequenceComponent = new SequenceComponent(null, pComponentObject);
+					if ((pComponent.ComponentType == ComponentCassette.TYPE) && m_bHideCassettes)
+					{
+						continue;
+					}
+					
+					// Add the component
 					m_pComponents.push(pComponent);
 				}
 			}
 			return m_pComponents;
 		}
+
+		// Hides the cassettes in the Components array
+		public function HideCassettes(bHide:Boolean):void
+		{
+			m_bHideCassettes = bHide;
+		}
+
 		// Type
 		static public var TYPE:String = "sequence";
 		
 		// State components
 		private var m_pMetadata:SequenceMetadata;
 		private var m_pComponents:Array;
+		private var m_bHideCassettes:Boolean = false;
 	}
 }
