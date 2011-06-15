@@ -110,42 +110,6 @@
 				return pParent as BorderContainer;
 			}
 
-			// Walk the decendant tree until we find a child with the given name
-			private function FindDecendentByName(pTarget:DisplayObjectContainer, sName:String):DisplayObject
-			{
-				// Make sure our target is valid
-				if (pTarget == null)
-				{
-					return null;
-				}
-				
-				// Check if our target is the one we are searching for
-				if (pTarget.name == sName)
-				{
-					return pTarget;
-				}
-				
-				// Walk the immediate children
-				for (var nChild:uint = 0; nChild < pTarget.numChildren; ++nChild)
-				{
-					var pChild:DisplayObject = pTarget.getChildAt(nChild);
-					if (pChild.name == sName)
-					{
-						return pChild;
-					}
-					else
-					{
-						// Call this function recursively for all children
-						pChild = FindDecendentByName(pChild as DisplayObjectContainer, sName);
-						if (pChild != null)
-						{
-							return pChild;
-						}
-					}
-				}
-				return null;
-			}
-
 			// Determines if the given rect intersects with the target object
 			private function OverlapTest(pMouseStageRect:Rectangle, pTarget:DisplayObject):Boolean
 			{

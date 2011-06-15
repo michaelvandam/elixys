@@ -1,6 +1,6 @@
 #!/usr/bin/python26
 
-# Dummy sequence metadata
+# Dummy sequence
 def GetDefaultSequence():
     return {"metadata":{"name":"FAC synthesis",
         "time":"8:00",
