@@ -5,6 +5,8 @@ package Elixys.Views
 	import Elixys.HTTP.HTTPRequest;
 	import Elixys.Objects.*;
 	
+	import flash.display.DisplayObject;
+	import flash.display.DisplayObjectContainer;
 	import flash.events.EventDispatcher;
 	import flash.events.MouseEvent;
 	import flash.utils.ByteArray;
@@ -241,6 +243,42 @@ package Elixys.Views
 			pHTTPRequest.m_sMethod = "DELETE";
 			pHTTPRequest.m_sResource = "/Elixys/" + sURL;
 			dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
+		
+		// Walk the decendant tree until we find a child with the given name
+		protected function FindDecendentByName(pTarget:DisplayObjectContainer, sName:String):DisplayObject
+		{
+			// Make sure our target is valid
+			if (pTarget == null)
+			{
+				return null;
+			}
+			
+			// Check if our target is the one we are searching for
+			if (pTarget.name == sName)
+			{
+				return pTarget;
+			}
+			
+			// Walk the immediate children
+			for (var nChild:uint = 0; nChild < pTarget.numChildren; ++nChild)
+			{
+				var pChild:DisplayObject = pTarget.getChildAt(nChild);
+				if (pChild.name == sName)
+				{
+					return pChild;
+				}
+				else
+				{
+					// Call this function recursively for all children
+					pChild = FindDecendentByName(pChild as DisplayObjectContainer, sName);
+					if (pChild != null)
+					{
+						return pChild;
+					}
+				}
+			}
+			return null;
 		}
 
 		/***

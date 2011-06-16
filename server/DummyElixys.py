@@ -391,7 +391,20 @@ class Elixys:
         return True
 
     def StartManualRun(self, sUsername):
-        return False
+        # Create a new blank sequence save it as the system sequence
+        pSequence = self.GetBlankSequence(sUsername)
+        pSequence["metadata"]["id"] = 10000
+        self.SaveSequence(sUsername, pSequence, True, True)
+
+        # Format the initial system state
+        sSystemState = sUsername + ".MANUALRUN.10000."
+        pSequence = self.GetSequenceInternal(sUsername, 10000)
+        sSystemState += str(pSequence["components"][0]["id"])
+        sSystemState += ".CASSETTE"
+
+        # Save the state
+        self.SaveSystemState(sUsername, sSystemState)
+        return True
 
     def PerformOperation(self, sUsername, nComponentID, nSequenceID):
         return False
@@ -724,6 +737,23 @@ class Elixys:
         sMode = pSystemStateComponents[1]
         nSequenceID = int(pSystemStateComponents[2])
         nComponentID = int(pSystemStateComponents[3])
+        if sMode == "MANUALRUN":
+            # Get the manual run step and return if we are not on the run step
+            sManualRunStep = pSystemStateComponents[4]
+            if sManualRunStep != "RUN":
+                return
+
+            # Initialize or extract the component state
+            if len(pSystemStateComponents) < 6:
+                nComponentState = 0
+            else:
+                nComponentState = int(pSystemStateComponents[5])
+        else:
+            # Initialize or extract the component state
+            if len(pSystemStateComponents) < 5:
+                nComponentState = 0
+            else:
+                nComponentState = int(pSystemStateComponents[4])
 
         # Load the component
         pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
@@ -744,27 +774,25 @@ class Elixys:
             return
         else:
             # Default behavior is to show each unit operation for a few seconds
-            if len(pSystemStateComponents) < 5:
-                # State with an initial value of one
-                nComponentState = 1
+            if nComponentState < 7:
+                # Increment our value
+                nComponentState += 1
             else:
-                nComponentState = int(pSystemStateComponents[4])
-                if nComponentState < 7:
-                    # Increment our value
-                    nComponentState += 1
-                else:
-                    # Attempt to advance to the next component
-                    nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID)
-                    if nNextComponentID == None:
-                        # Run is complete
-                        return
+                # Attempt to advance to the next component
+                nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID)
+                if nNextComponentID == None:
+                    # Run is complete
+                    return
 
-                    # Set the component ID and state
-                    nComponentID = nNextComponentID
-                    nComponentState = 0
+                # Set the component ID and state
+                nComponentID = nNextComponentID
+                nComponentState = 0
 
         # Save the system state and return
-        sSystemState = sUsername + "." + sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
+        sSystemState = sUsername + "." + sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "."
+        if sMode == "MANUALRUN":
+            sSystemState = sSystemState + sManualRunStep + "."
+        sSystemState = sSystemState + str(nComponentState)
         self.SaveSystemState(sUsername, sSystemState)
         return
 
@@ -796,6 +824,57 @@ class Elixys:
 
     def UpdateServerState(self, pServerState):
         return pServerState
+
+    def GetBlankSequence(self, sUsername):
+        return {"metadata":{"name":"Manual Run",
+            "time":"8:00",
+            "date":"05/01/2012",
+            "comment":"",
+            "id":1,
+            "creator":sUsername,
+            "operations":0},
+            "components":[{"componenttype":"CASSETTE",
+                "id":1,
+                "reactor":1,
+                "available":False,
+                "reagents":[31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    37,
+                    38,
+                    39,
+                    40]},
+            {"componenttype":"CASSETTE",
+                "id":2,
+                "reactor":2,
+                "available":False,
+                "reagents":[41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    49,
+                    50]},
+            {"componenttype":"CASSETTE",
+            "id":3,
+            "reactor":3,
+            "available":False,
+            "reagents":[51,
+                    52,
+                    53,
+                    54,
+                    55,
+                    56,
+                    57,
+                    58,
+                    59,
+                    60]}]}
 
     # Lock file
     m_pLockFile = 0

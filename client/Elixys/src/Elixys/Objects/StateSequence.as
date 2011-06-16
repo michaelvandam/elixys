@@ -7,7 +7,7 @@ package Elixys.Objects
 		// Constructor
 		public function StateSequence(sType:String, data:String, existingcontent:Object = null)
 		{
-			// Rmember our type
+			// Remember our type
 			m_sType = sType;
 			
 			// Call the base constructor
@@ -55,9 +55,10 @@ package Elixys.Objects
 		static public var VIEWTYPE:String = "VIEW";
 		static public var EDITTYPE:String = "EDIT";
 		static public var RUNSEQUENCETYPE:String = "RUNSEQUENCE";
+		static public var MANUALRUNTYPE:String = "MANUALRUN";
 		
 		// State components
-		private var m_sType:String;
-		private var m_pButtons:Array;
+		protected var m_sType:String;
+		protected var m_pButtons:Array;
 	}
 }
