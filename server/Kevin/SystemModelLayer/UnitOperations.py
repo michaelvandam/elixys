@@ -2,7 +2,13 @@
 
 Elixys Unit Operations
 """
-import Thread from threading
+
+## TO DO:
+## MAKE list of all private variables
+## UPDATE list of constants
+##
+
+from threading import Thread
 
 #Z Positions
 UP = "UP"
@@ -47,34 +53,66 @@ class UnitOperation(Thread):
     self.currentStep = "step1"
     self.stepCounter = 1
     self.isRunning = True
+    self.isComplete = False
     self.pause = False
   def setParams(params):
-    
+    pass
   def logError():
     """Get current error from hardware comm."""
     #error.log("error")
     pass
-  def doNext(self):
+    
+  def checkBeforeContinuing(self):
     if self.pause:
       self.paused()
-    elif self.steps:
-      try:
-        self.currentStep = self.steps.pop(0) #Removes step from list, sets next step.
-        self.stepCounter += 1 
-      except:
-        print("Error setting next step in UnitOperations.run()") # This will be an error log
-    elif self.steps == None:
-      print("ERROR: Self.steps does not exist.")# This will be an error log
-    elif len(self.steps)==0:
-      self.isRunning = False
+    elif self.completed:
       print "unit operation complete"
     else:
-      print("ERROR: Occurred in UnitOperation.doNext() call.")# This will be an error log
+      print("ERROR: Occurred in UnitOperation.checkBeforeContinuing() call.")# This will be an error log
+  
+  def setReactorPosition(self,reactorPosition,ReactorID = self.ReactorID):
+    if not(self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentXPosition,self.reactPosition,EQUAL)):
+      self.systemModel[ReactorID]['motion'].setZPosition(DOWN)
+      self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
+      self.systemModel[ReactorID]['motion'].setXPosition(reactorPosition)
+      self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentXPosition,reactorPosition,EQUAL)
+      self.systemModel[ReactorID]['motion'].setZPosition(UP)
+      self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
+    else: #We're in the right position, check if we're sealed.
+      if not(self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
+        self.systemModel[ReactorID]['motion'].setZPosition(UP)
+        self.waitForCondition(self.systemModel[ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
+      else:
+        pass #We're already in the right position and sealed.
       
-      
-  def waitForCondition(function,condition,comparator):
+  def waitForCondition(function,condition,comparator,timeout=3): #Default to 3 second timeout
+    timer = time.time()
     if comparator == EQUAL:
-      if not(function() == condition):
+      while not(function() == condition):
+        time.sleep(0.05)#Default to 50 milliseconds
+        if isTimerExpired(timer,timeout):
+          print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          #ERROR
+    elif comparator == GREATER:
+      if not(function() >= condition):
+        time.sleep(0.05)
+        if isTimerExpired(timer,timeout):
+          print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          #ERROR
+    elif comparator == LESS:
+      if not(function() <= condition):
+        time.sleep(0.05)
+        if isTimerExpired(timer,timeout):
+          print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          #ERROR
+    else:
+      print "Error: Invalid comparator."
+      return False
+    return True
+    
+  def checkForCondition(function,condition,comparator):
+    if comparator == EQUAL:
+      while not(function() == condition):
         return False
     elif comparator == GREATER:
       if not(function() >= condition):
@@ -83,10 +121,14 @@ class UnitOperation(Thread):
       if not(function() <= condition):
         return False
     else:
-      print "Error"
-        return False
+      print "Error: Invalid comparator."
+      return False
     return True
-    
+  def isTimerExpired(timer,timeout):
+    if (time.time()-timer >= timeout):
+      return True
+    return False
+      
   def timeDelay(self):
     time.sleep(self.Timer)
     
@@ -97,6 +139,9 @@ class UnitOperation(Thread):
   def paused(self):
     while self.pause:
       pass
+  def setDescription(newDescription = ""):
+    if newDescription:
+      self.description = self.currentAction+":"+newDescription
   def abort():
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
     self.systemModel[self.ReactorID]['temperature_controller'].setTemperature(0)
@@ -131,37 +176,27 @@ class React(UnitOperation):
     #self.coolTemp
     #self.reactPosition
   def run(self):
-    self.steps=["Starting react operation","Moving to reaction position","Heating reactor","Waiting for reaction","Cooling reactor"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.currentAction= "Starting React Operation"
+    self.checkBeforeContinuing()
+    self.currentAction= "Moving to position"
+    self.setReactorPosition(self.reactPosition)#REACTA OR REACTB
+    self.checkBeforeContinuing()
+    self.currentAction= "Setting reactor temperature"
     self.setTemp()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.currentAction= "Starting stir motor"
     self.setStirring()
+    self.currentAction= "Starting heater"
     self.startHeating()
     self.timeDelay()
-    self.doNext()
+    self.checkBeforeContinuing()
     self.setCool()
-    self.doNext()
+    self.isComplete = True
+    self.checkBeforeContinuing()
 
   def setStirring(self):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
     self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read analog value from PLC... should be equal
-    
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,self.reactPosition,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(self.reactPosition)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,self.reactPosition,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
 
   def getTemperatureController(): #Do we need this if we have the entire system model at our disposal?
     return self.systemModel[self.ReactorID]['temperature_controller']
@@ -189,34 +224,20 @@ class AddReagent(UnitOperation):
 
   def run(self):
     self.steps=["Starting add reagent operation","Moving to addition position","Adding reagent","Removing empty vial"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(self.reagentPosition)
+    self.checkBeforeContinuing()
     self.setGripperPlace()
     self.timeDelay()
-    self.doNext()
+    self.checkBeforeContinuing()
     self.setGripperRemove()
-    self.doNext()
-  
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,self.reagentPosition,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(self.reagentPosition)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,self.reagentPosition,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
+    self.isComplete = True
+    self.checkBeforeContinuing()
 
   def setGripperPlace():
-    if self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL):
-      if self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
-        if (self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,LOAD_A,EQUAL) OR self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,LOAD_B,EQUAL):
+    if self.checkForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL):
+      if self.checkForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
+        if (self.checkForCondition(self.systemModel[self.Gripper].getCoordinate,LOAD_A,EQUAL) or self.checkForCondition(self.systemModel[self.Gripper].getCoordinate,LOAD_B,EQUAL)):
           #We are in the load position, we should not be here. Error.
           print "ERROR: In load position, calling setGripperPlace()"
         else:
@@ -225,7 +246,7 @@ class AddReagent(UnitOperation):
       else:
         #Error, why are we already gripped and not in a down position? 
         print "ERROR: setGripperPlace() called while already gripped in raised position."
-    if not(self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)):
+    if not(self.waitCheckCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)):
       self.systemModel[self.Gripper].setZPosition(UP)
       self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL)
       self.systemModel[self.Gripper].setCoordinate(self.ReagentID)
@@ -248,8 +269,8 @@ class AddReagent(UnitOperation):
     self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL)
     
   def setGripperRemove():
-    if self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.reagentLoadPosition,EQUAL):
-      if self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
+    if self.checkForCondition(self.systemModel[self.Gripper].getCoordinate,self.reagentLoadPosition,EQUAL):
+      if self.checkForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
         self.systemModel[self.Gripper].setGripperState(GRIP)
         self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL)
         self.systemModel[self.Gripper].setZPosition(UP)
@@ -280,52 +301,38 @@ class Evaporate(UnitOperation):
     #self.stirSpeed
     
   def run(self):
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(EVAPORATE)
+    self.checkBeforeContinuing()
     self.setTemp()
-    self.doNext()
+    self.checkBeforeContinuing()
     startVacuum()
     self.startStirring()
     self.startHeating()
     self.timeDelay()
-    self.doNext()
+    self.checkBeforeContinuing()
     self.setCool()
     self.stopStirring()
-    stopVacuum()
-    self.doNext()
+    self.stopVacuum()
+    self.isComplete = True
+    self.checkBeforeContinuing()
     
   def startStirring(self):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read analog value from PLC... should be equal
+    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read value from PLC memory... should be equal
   
   def stopStirring(self):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(OFF)
     self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,OFF,EQUAL)
     
   def startVacuum(self):
-    self.systemModel[self.ReactorID]['vacuum'].setVacuum(ON) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,OFF,EQUAL) #Read analog value from PLC... should be equal
+    self.systemModel[self.ReactorID]['vacuum'].setVacuum(ON)
+    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,OFF,EQUAL) 
   
   def stopSVacuum(self):
     self.systemModel[self.ReactorID]['vacuum'].setVacuum(OFF)
     self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum(OFF),ZERO,EQUAL)
-  
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,EVAPORATE,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(EVAPORATE)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,EVAPORATE,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
-
+ 
   def getTemperatureController(): #Not sure why we need this?
     return self.systemModel[self.ReactorID]['temperature_controller']
     
@@ -360,24 +367,10 @@ class InstallVial(UnitOperation):
     #self.ReactorID
   def run(self):
     self.steps=["Starting install vial operation","Moving to vial installation position"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
-  
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,INSTALL,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(INSTALL)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,INSTALL,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
+    self.checkBeforeContinuing()
+    self.setReactorPosition(INSTALL)
+    self.isComplete = True
+    self.checkBeforeContinuing()
     
 class TransferToHPLC(UnitOperation):
   def __init__(self,systemModel,params):
@@ -387,28 +380,14 @@ class TransferToHPLC(UnitOperation):
     
   def run(self):
     self.steps=["Starting HPLC Transfer operation","Moving to transfer position","Transferring product to HPLC","Switching injection valve"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(TRANSFER)
+    self.checkBeforeContinuing()
     self.setTransfer()
-    self.doNext()
+    self.checkBeforeContinuing()
     self.setHPLC()
-    self.doNext()
-  
-  def setReactorPosition(self):
-    if not( self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(TRANSFER)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
+    self.isComplete = True
+    self.checkBeforeContinuing()
 
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(HPLC)
@@ -427,28 +406,14 @@ class TransferElute(UnitOperation):
     
   def run(self):
     self.steps=["Starting Transfer operation","Moving to transfer position","Setting stopcock position","Beginning transfer"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(TRANSFER)
+    self.checkBeforeContinuing()
     self.setStopcock()
-    self.doNext()
+    self.checkBeforeContinuing()
     self.setTransfer()
-    self.doNext()
-  
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(TRANSFER)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
+    self.isComplete = True
+    self.checkBeforeContinuing()
   
   def setStopcock(self):
     self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
@@ -467,47 +432,18 @@ class Transfer(UnitOperation):
     
   def run(self):
     self.steps=["Starting Transfer operation","Moving to transfer position","Transferring product"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
-    self.setTransferReactorPosition()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(TRANSFER)
+    self.checkBeforeContinuing()
+    self.setReactorPosition(ADDREAGENT,self.transferReactorID)
     self.startTransfer()
-    self.doNext()
-  
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(TRANSFER)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,TRANSFER,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
-    
-  def setTransferReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.transferReactorID]['motion'].getCurrentXPosition,ADDREAGENT,EQUAL)):
-      self.systemModel[self.transferReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.transferReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.transferReactorID]['motion'].setXPosition(ADDREAGENT)
-      self.waitForCondition(self.systemModel[self.transferReactorID]['motion'].getCurrentXPosition,ADDREAGENT,EQUAL)
-      self.systemModel[self.transferReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.transferReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
+    self.isComplete = True
+    self.checkBeforeContinuing()
 
   def startTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
     
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,,EQAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,EQUAL)
  
 class UserInput(UnitOperation):
   def __init__(self,systemModel,params):
@@ -515,16 +451,20 @@ class UserInput(UnitOperation):
     self.params = params #Should have parameters listed below
     #self.userMessage
     #self.isCheckbox
-    
+    #self.description
   def run(self):
-    self.steps=["Starting User Input operation","Waiting for OK"]
-    self.doNext()
+    self.currentAction="Starting User Input operation"
+    self.checkBeforeContinuing()
+    self.currentAction="Message box"
     self.setMessageBox()
-    self.doNext()
+    self.isComplete = True
+    self.checkBeforeContinuing()
     
   def setMessageBox(self):
+    self.setDescription("Waiting for user input")
     self.waitForUser = True
-    self.waitForCondition(self.getUserInput,True,EQUAL)
+    self.waitForCondition(self.getUserInput,True,EQUAL) # Zero timeout = Infinite
+    self.setDescription()
     
   def getUserInput(self):
     return not(self.waitForUser)
@@ -537,26 +477,13 @@ class DetectRadiation(UnitOperation):
     
   def run(self):
     self.steps=["Starting radiation detector operation","Moving to radiation detector position","Detecting radiation"]
-    self.doNext()
-    self.setReactorPosition()
-    self.doNext()
+    self.checkBeforeContinuing()
+    self.setReactorPosition(RADIATION)
+    self.checkBeforeContinuing()
     self.getRadiation()
-    self.doNext()
+    self.isComplete = True
+    self.checkBeforeContinuing()
 
-  def setReactorPosition(self):
-    if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,RADIATION,EQUAL)):
-      self.systemModel[self.ReactorID]['motion'].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,DOWN,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setXPosition(RADIATION)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentXPosition,RADIATION,EQUAL)
-      self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-    else: #We're in the right position, check if we're sealed.
-      if not(self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)):
-        self.systemModel[self.ReactorID]['motion'].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.ReactorID]['motion'].getCurrentZPosition,UP,EQUAL)
-      else:
-        pass #We're already in the right position and sealed.
 
   def getRadiation(self):
     self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading()
