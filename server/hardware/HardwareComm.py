@@ -10,8 +10,8 @@ import threading
 ### Constants
 
 # Port we listen for the PLC on
-PLC_IP = "127.0.0.1"  # "192.168.250.1"
-PLC_PORT = 9601
+PLC_IP = "192.168.250.1" # "127.0.0.1"
+PLC_PORT = 9600
 SERVER_PORT = 9600
 
 # Constants for PLC command formatting
@@ -336,8 +336,8 @@ class HardwareComm():
 
         # Calcuate the absolute address of the target bit
         nRelativeBitOffset = int(pHardware["location"])
-        nAbsoluteBitOffset = nRelativeBitOffset % 8
-        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 8)
+        nAbsoluteBitOffset = nRelativeBitOffset % 0x10
+        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
 
         # Format and send the raw command
         sCommand = "010230"
@@ -365,8 +365,8 @@ class HardwareComm():
 
         # Calcuate the absolute address of the target bit
         nRelativeBitOffset = int(pHardware["location"])
-        nAbsoluteBitOffset = nRelativeBitOffset % 8
-        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 8)
+        nAbsoluteBitOffset = nRelativeBitOffset % 0x10
+        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
 
         # Make sure the address is within range
         if (nAbsoluteByteOffset < self.__nMemoryLower) or (nAbsoluteByteOffset >= self.__nMemoryUpper):
@@ -374,8 +374,8 @@ class HardwareComm():
             return
 
         # Extract the return the value
-        sByte = sState[nAbsoluteByteOffset - self.__nMemoryLower] + sState[nAbsoluteByteOffset - self.__nMemoryLower + 1]
-        nByte = int(sByte, 16)
+        sByte = sState[(nAbsoluteByteOffset - self.__nMemoryLower):(nAbsoluteByteOffset - self.__nMemoryLower + 4)]
+        nByte = int(sByte, 0x10)
         nBit = (nByte >> nAbsoluteBitOffset) & 1
         return nBit != 0
 
@@ -524,5 +524,6 @@ class HardwareComm():
         self.sState += "    TemperatureController3:\n"
         self.sState += "      SetHeaterOn: " + str(self.__GetBinaryValue("Reactor1_TemperatureController3_SetHeaterOn", sState)) + "\n"
         self.sState += "      SetTemperature: TBD\b" #Reactor1_TemperatureController3.SetTemperature = integer.out.6
+		
         print self.sState
-        print "State = " + sState
+        print "\nRaw state:\n" + sState
