@@ -30,6 +30,12 @@ mysql Elixys < elixys/config/CreateDatabase.sql
 
 # Install python and JSON libraries
 yum -y install python-wsgiref python-json
+wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
+tar -xzf configobj-4.7.2.zip
+cd configobj-4.7.2
+python26 setup.py install
+cd ..
+rm -rf configobj-4.7.2
 
 # Build mod_wsgi from source so we can point it to Python 2.6
 yum -y install httpd-devel python26-devel
