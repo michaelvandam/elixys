@@ -254,6 +254,10 @@ class UnitOperation(Thread):
     
   def getParam(self,name): #String
     return self.params[name]
+
+  def setStopcock(self):
+    self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
+    self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL) 
     
     
 
@@ -309,16 +313,18 @@ class AddReagent(UnitOperation):
     #self.reagentLoadPosition
 
   def run(self):
-    self.steps=["Starting add reagent operation","Moving to addition position","Adding reagent","Removing empty vial"]
-    self.beginNextStep()
+    self.beginNextStep("Starting Add Reagent Operation")
+    self.beginNextStep("Moving to position")
     self.setReactorPosition(self.reagentPosition)
-    self.beginNextStep()
+    self.beginNextStep("Moving vial gripper")
     self.setGripperPlace()
-    self.timeDelay()
-    self.beginNextStep()
+    self.stepDescription("Adding reagent")
+    self.timeDelay(self.Time)
+    self.beginNextStep("Moving vial gripper")
     self.setGripperRemove()
-    self.beginNextStep()
-
+    self.beginNextStep("Add Reagent Operation Complete!")
+    
+    
   def setGripperPlace():
     if self.checkForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL):
       if self.checkForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
@@ -386,20 +392,27 @@ class Evaporate(UnitOperation):
     #self.stirSpeed
     
   def run(self):
-    self.beginNextStep()
+    self.beginNextStep("Starting Evaporate Operation")
+    self.beginNextStep("Moving to position")
     self.setReactorPosition(EVAPORATE)
-    self.beginNextStep()
+    self.beginNextStep("Setting evaporation temperature")
     self.setTemp()
-    self.beginNextStep()
+    self.stepDescription("Starting on vacuum")
     startVacuum()
+    self.stepDescription("Starting stir motor")    
     self.startStirring()
+    self.stepDescription("Starting heaters")
     self.startHeating()
-    self.startTimer()
-    self.beginNextStep()
+    self.stepDescription("Starting evaporation timer")
+    self.startTimer(self.Time)
+    self.beginNextStep("Starting cooling")
     self.setCool()
+    self.stepDescription("Stopping stir motor")    
     self.stopStirring()
+    self.stepDescription("Stopping vacuum")    
     self.stopVacuum()
-    self.beginNextStep()
+    self.beginNextStep("Evaporation Operation Complete!")
+    
     
   def startStirring(self):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
@@ -447,10 +460,10 @@ class InstallVial(UnitOperation):
     self.params = params #Should have parameters listed below
     #self.ReactorID
   def run(self):
-    self.steps=["Starting install vial operation","Moving to vial installation position"]
-    self.beginNextStep()
+    self.beginNextStep("Starting Install Vial Operation")
+    self.beginNextStep("Moving to vial install position")
     self.setReactorPosition(INSTALL)
-    self.beginNextStep()
+    self.beginNextStep("Install Vial Operation Complete!")
     
 class TransferToHPLC(UnitOperation):
   def __init__(self,systemModel,params):
@@ -459,14 +472,20 @@ class TransferToHPLC(UnitOperation):
     #self.ReactorID
     
   def run(self):
-    self.steps=["Starting HPLC Transfer operation","Moving to transfer position","Transferring product to HPLC","Switching injection valve"]
-    self.beginNextStep()
+    self.beginNextStep("Starting HPLC Operation")
+    self.beginNextStep("Moving to transfer position")
     self.setReactorPosition(TRANSFER)
-    self.beginNextStep()
+    self.beginNextStep("Moving stopcocks to transfer position")
+    self.setStopcock(TRANSFER)
+    self.beginNextStep("Moving HPLC valve to transfer position")
+    self.setHPLCValve()
+    self.beginNextStep("Starting transfer")
     self.setTransfer()
     self.beginNextStep()
-    self.setHPLCValve()
-    self.beginNextStep()
+    ###
+    #Need more here? Liquid sensors, pressure regulator, etc?
+    ###
+    self.beginNextStep("HPLC Transfer Operation Complete!")
 
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(HPLC)
@@ -484,17 +503,16 @@ class TransferElute(UnitOperation):
     #self.stopcockPosition
     
   def run(self):
-    self.beginNextStep()
+    self.beginNextStep("Starting Transfer Elution Operation")
+    self.beginNextStep("Moving to transfer position")
     self.setReactorPosition(TRANSFER)
-    self.beginNextStep()
+    self.beginNextStep("Moving receiving reactor to position")
+    self.setTransferReactorPosition(ADDREAGENT)
+    self.beginNextStep("Moving stopcocks to position")
     self.setStopcock()
-    self.beginNextStep()
+    self.beginNextStep("Beginning elution")
     self.setTransfer()
-    self.beginNextStep()
-  
-  def setStopcock(self):
-    self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
-    self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL) 
+    self.beginNextStep("Transfer Elution Operation Complete!")
     
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
@@ -508,7 +526,6 @@ class Transfer(UnitOperation):
     #self.transferReactorID
     
   def run(self):
-    self.steps=["Starting Transfer operation","Moving to transfer position","Transferring product"]
     self.beginNextStep()
     self.setReactorPosition(TRANSFER)
     self.beginNextStep()
@@ -551,7 +568,6 @@ class DetectRadiation(UnitOperation):
     #self.ReactorID
     
   def run(self):
-    self.steps=["Starting radiation detector operation","Moving to radiation detector position","Detecting radiation"]
     self.beginNextStep()
     self.setReactorPosition(RADIATION)
     self.beginNextStep()
