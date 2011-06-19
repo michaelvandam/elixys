@@ -48,7 +48,6 @@ LESS = "<"
 ##self.params (List of all parameters for a unit operation)
 ##self.ReactorID (ID of current reactor)
 ##self.delay (Time in milliseconds to delay between polling variables for each step in unit operations -- defaults to 50ms if not changed)
-##self.isComplete (Complete flag, when set Sequence will move on to next unit operation or pause)
 ##self.isRunning  (Running flag, when set Sequence will poll data and send to client)
 ##self.isPaused (Pause flag, when set, unit operation will pause after next set of instructions)
 ##self.stepCount (Keeps track of each step of a unit operation)
@@ -75,14 +74,40 @@ class UnitOperation(Thread):
     Thread.__init__(self)
     self.params = {"param":"value"}
     self.systemModel = systemModel
-    self.steps = ("step1","step2")
-    self.currentStep = "step1"
-    self.stepCounter = 0
+    self.currentStepNumber = 0
     self.isRunning = False
-    self.isComplete = False
     self.isPaused = False
+    
+      #Temporary implementation to be changed.
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
-    pass
+    for paramname in params.keys():
+      if paramname=="Temp":
+        self.Temp = paramname['Temp']
+      if paramname=="Time":
+        self.Time = paramname['Time']
+      if paramname=="coolTemp":
+        self.coolTemp = paramname['coolTemp']
+      if paramname=="ReactorID":
+        self.ReactorID = paramname['ReactorID']
+      if paramname=="ReagentID":
+        self.ReagentID = paramname['ReagentID']
+      if paramname=="stirSpeed":
+        self.stirSpeed = paramname['stirSpeed']
+      if paramname=="isCheckbox":
+        self.isCheckbox = paramname['isCheckbox']
+      if paramname=="userMessage":
+        self.userMessage = paramname['userMessage']
+      if paramname=="description":
+        self.description = paramname['description']
+      if paramname=="stopcockPosition":
+        self.stopcockPosition = paramname['stopcockPosition']
+      if paramname=="transferReactorID":
+      self.transferReactorID = paramname['transferReactorID']
+      if paramname=="reagentLoadPosition":
+        self.reagentLoadPosition = paramname['reagentLoadPosition']
+      if paramname=="reactPosition":
+        self.reactPosition = paramname['reactPosition']
+        
   def logError(self,error):
     """Get current error from hardware comm."""
     print error
@@ -93,6 +118,7 @@ class UnitOperation(Thread):
       self.paused()
     if nextStepText:
       self.stepDescription = nextStepText
+    self.currentStepNumber+=1
     self.setDescription()
   
   def setReactorPosition(self,reactorPosition,ReactorID = self.ReactorID):
@@ -255,15 +281,11 @@ class React(UnitOperation):
     self.startTimer(self.Time)
     self.beginNextStep("Starting cooling")
     self.setCool()
-    self.isComplete = True
-    self.beginNextStep()
+    self.beginNextStep("React Operation Complete!")
 
   def setStirring(self):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
     self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read analog value from PLC... should be equal
-
-  def getTemperatureController(): #Do we need this if we have the entire system model at our disposal?
-    return self.systemModel[self.ReactorID]['temperature_controller']
   
   def setTemp(self):
     self.systemModel[self.ReactorID]['temperature_controller'].setTemperature(self.Temp)
@@ -295,7 +317,6 @@ class AddReagent(UnitOperation):
     self.timeDelay()
     self.beginNextStep()
     self.setGripperRemove()
-    self.isComplete = True
     self.beginNextStep()
 
   def setGripperPlace():
@@ -378,7 +399,6 @@ class Evaporate(UnitOperation):
     self.setCool()
     self.stopStirring()
     self.stopVacuum()
-    self.isComplete = True
     self.beginNextStep()
     
   def startStirring(self):
@@ -430,7 +450,6 @@ class InstallVial(UnitOperation):
     self.steps=["Starting install vial operation","Moving to vial installation position"]
     self.beginNextStep()
     self.setReactorPosition(INSTALL)
-    self.isComplete = True
     self.beginNextStep()
     
 class TransferToHPLC(UnitOperation):
@@ -447,7 +466,6 @@ class TransferToHPLC(UnitOperation):
     self.setTransfer()
     self.beginNextStep()
     self.setHPLCValve()
-    self.isComplete = True
     self.beginNextStep()
 
   def setTransfer(self):
@@ -472,7 +490,6 @@ class TransferElute(UnitOperation):
     self.setStopcock()
     self.beginNextStep()
     self.setTransfer()
-    self.isComplete = True
     self.beginNextStep()
   
   def setStopcock(self):
@@ -497,7 +514,6 @@ class Transfer(UnitOperation):
     self.beginNextStep()
     self.setReactorPosition(ADDREAGENT,self.transferReactorID)
     self.startTransfer()
-    self.isComplete = True
     self.beginNextStep()
 
   def startTransfer(self):
@@ -517,7 +533,6 @@ class UserInput(UnitOperation):
     self.beginNextStep()
     self.currentAction="Message box"
     self.setMessageBox()
-    self.isComplete = True
     self.beginNextStep()
     
   def setMessageBox(self):
@@ -541,7 +556,6 @@ class DetectRadiation(UnitOperation):
     self.setReactorPosition(RADIATION)
     self.beginNextStep()
     self.getRadiation()
-    self.isComplete = True
     self.beginNextStep()
 
 
