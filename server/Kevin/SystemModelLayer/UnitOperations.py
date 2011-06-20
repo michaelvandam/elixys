@@ -25,7 +25,7 @@ ADDREAGENT = "ADDREAGENT"
 VIALREMOVE = "VIALREMOVE"
 ON = 1
 OFF = 0
-
+ALL = "ALL" #This is to move all reactors at once for radiation detection, or possibly a special vial loding/cleaning operation.
 #Robot Coordinate positions:
 LOAD_A = "LOAD_A"
 LOAD_B = "LOAD_B"
@@ -43,48 +43,25 @@ EQUAL = "="
 GREATER = ">"
 LESS = "<"
 
-#Private Variables by function:
-#All Unit Operations
-##self.params (List of all parameters for a unit operation)
-##self.ReactorID (ID of current reactor)
-##self.delay (Time in milliseconds to delay between polling variables for each step in unit operations -- defaults to 50ms if not changed)
-##self.isRunning  (Running flag, when set Sequence will poll data and send to client)
-##self.isPaused (Pause flag, when set, unit operation will pause after next set of instructions)
-##self.stepCount (Keeps track of each step of a unit operation)
-##self.stepDescription (String that describes current step in this format "Moving to position:Moving down"
-##self.currentAction (String that describes what is happening inside the unit operation)
 
-#React Operation
-##
-##
-##
-##
-#Evaporate Operation
-##
-##
-##
-##
-#User Input Operation
-##
-##
-##
-##
 class UnitOperation(Thread):
   def __init__(self,systemModel):
     Thread.__init__(self)
     self.params = {"param":"value"}
+    self.paramsValidated = False
+    self.paramsValid = False
     self.systemModel = systemModel
     self.currentStepNumber = 0
     self.isRunning = False
     self.isPaused = False
     
-      #Temporary implementation to be changed.
+      #reactTemporary implementation to be changed.
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
-      if paramname=="Temp":
-        self.Temp = paramname['Temp']
+      if paramname=="reactTemp":
+        self.reactTemp = paramname['reactTemp']
       if paramname=="Time":
-        self.Time = paramname['Time']
+        self.reactTime = paramname['reactTime']
       if paramname=="coolTemp":
         self.coolTemp = paramname['coolTemp']
       if paramname=="ReactorID":
@@ -183,7 +160,7 @@ class UnitOperation(Thread):
       return False
     return True
     
-  def startTimer(self,timerLength): #In seconds
+  def startTimer(self.reactTimerLength): #In seconds
     timerStartTime = time.time()  #Create a time
     while not(isTimerExpired(timerStartTime,timerLength)):
       setDescription("Time remaining:%s" % formatTime(timerLength-timerStartTime))
@@ -235,7 +212,8 @@ class UnitOperation(Thread):
       
   def abort():
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
-    self.systemModel[self.ReactorID]['temperature_controller'].setTemperature(0)
+    self.systemModel[self.ReactorID]['Temperature_controller'].setTemperature(OFF)
+    self.setHeater(OFF)
     
   def getTotalSteps(self):
     return self.steps #Integer
@@ -244,70 +222,107 @@ class UnitOperation(Thread):
     return self.isRunning
     
   def getCurrentStepNumber(self):
-    return self.stepCounter
+    return self.currentStepNumber
 
-  def getCurrentStepName(self):
-    return self.currentStep
-
-  def setParam(self,name,value): #(String,Any)
-    self.params[name] = value
-    
-  def getParam(self,name): #String
-    return self.params[name]
+  def getCurrentStep(self):
+    return self.currentStepDescription
 
   def setStopcock(self):
     self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
     self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL) 
-    
-    
 
-   
+  def setHeater(self,heaterState=ON):
+    self.systemModel[self.ReactorID]['Temperature_controller'].setHeaterState(heaterState)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,heaterState,EQUAL)
+    if heaterState=ON:
+      self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getCurrentTemperature,self.reactTemp,GREATER)
+
+  def setTemp(self):
+    self.systemModel[self.ReactorID]['Temperature_controller'].setSetPoint(self.reactTemp)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getSetPoint,self.reactTemp,GREATER)
+
+  def setCool(self):
+    self.systemModel[self.ReactorID]['Temperature_controller'].setHeaterState(OFF)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,OFF,EQUAL)
+    self.systemModel[self.ReactorID]['cooling_system'].setCooling(ON)
+    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getTemperature(),self.coolTemp) 
+    self.systemModel[self.ReactorID]['cooling_system'].setCooling(OFF)
+    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL)
+    
+  def setStirSpeed(self,stirSpeed=self.stirSpeed):
+    self.systemModel[self.ReactorID]['stir_motor'].setSpeed(stirSpeed) #Set analog value on PLC
+    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,stirSpeed,EQUAL) #Read value from PLC memory... should be equal
+
+  def setVacuum(self,vacuumSetting=ON):
+    self.systemModel[self.ReactorID]['vacuum'].setVacuum(vacuumSetting)
+    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,vacuumSetting,EQUAL)     
+
+  def setPressureRegulator(self,pressureSetPoint=self.pressureSetPoint,rampTime=0): #Time in seconds
+ 
+    if rampTime:
+      currentPressure = self.systemModel['pressure_regulator'].getCurrentPressure()
+      rampPressure = currentPressure
+      if (int(currentPressure/rampTime)>1):
+        pressureStep = int(currentPressure/rampTime)
+      else:
+        pressureStep=1
+      
+      while (rampPressure<pressureSetPoint):
+        rampPressure += pressureStep
+        self.systemModel['pressure_regulator'].setPressure(rampPressure) #Set analog value on PLC
+        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,rampPressure,GREATER) #Read value from sensor... should be greater or equal   
+      if (rampPressure >= pressureSetPoint):
+        self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
+        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER)
+    else:
+      self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
+      self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER)
+      
 class React(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
-    #self.Temp
-    #self.time
+    #self.reactTemp
+    #self.reactTime
     #self.coolTemp
     #self.reactPosition
+    #self.stirSpeed
   def run(self):
     self.beginNextStep("Starting React Operation")
     self.beginNextStep("Moving to position")
     self.setReactorPosition(self.reactPosition)#REACTA OR REACTB
-    self.beginNextStep("Setting reactor temperature")
-    self.setTemp()
+    self.beginNextStep("Setting reactor Temperature")
+    self.setTemp(self.reactTemp)
     self.beginNextStep("Starting stir motor")
     self.currentAction("Starting heater")
-    self.setStirring()
-    self.startHeating()
+    self.setStirSpeed()
+    self.setHeater()
     self.stepDescription("Starting timer")
-    self.startTimer(self.Time)
+    self.startTimer(self.reactTime)
     self.beginNextStep("Starting cooling")
+    self.setHeater(OFF)
     self.setCool()
+    self.setStirSpeed(OFF)
     self.beginNextStep("React Operation Complete!")
 
-  def setStirring(self):
-    self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read analog value from PLC... should be equal
-  
-  def setTemp(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setTemperature(self.Temp)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getCurrentTemperature,self.Temp,GREATER)
-   
-  def setCool(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setHeaterState(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getHeaterState,OFF,EQUAL)
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getTemperature(),self.coolTemp) 
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL)
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','reactTemp','reactTime','coolTemp','reactPosition','stirSpeed']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
 
+    
+    
+    
 class AddReagent(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
     #self.ReagentID
     #self.reagentLoadPosition
@@ -319,11 +334,19 @@ class AddReagent(UnitOperation):
     self.beginNextStep("Moving vial gripper")
     self.setGripperPlace()
     self.stepDescription("Adding reagent")
-    self.timeDelay(self.Time)
+    self.timeDelay(self.reactTime)
     self.beginNextStep("Moving vial gripper")
     self.setGripperRemove()
     self.beginNextStep("Add Reagent Operation Complete!")
-    
+  
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','ReagentID','reagentLoadPosition']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
     
   def setGripperPlace():
     if self.checkForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL):
@@ -384,10 +407,10 @@ class AddReagent(UnitOperation):
 class Evaporate(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
-    #self.Temp
-    #self.Time
+    #self.evapTemp
+    #self.evapTime
     #self.coolTemp
     #self.stirSpeed
     
@@ -395,82 +418,61 @@ class Evaporate(UnitOperation):
     self.beginNextStep("Starting Evaporate Operation")
     self.beginNextStep("Moving to position")
     self.setReactorPosition(EVAPORATE)
-    self.beginNextStep("Setting evaporation temperature")
-    self.setTemp()
+    self.beginNextStep("Setting evaporation Temperature")
+    self.setTemp(evapTemp)
     self.stepDescription("Starting on vacuum")
-    startVacuum()
+    self.setVacuum()
     self.stepDescription("Starting stir motor")    
-    self.startStirring()
+    self.setStirSpeed()
     self.stepDescription("Starting heaters")
-    self.startHeating()
+    self.setHeater()
     self.stepDescription("Starting evaporation timer")
-    self.startTimer(self.Time)
+    self.startTimer(self.evapTime)
     self.beginNextStep("Starting cooling")
+    self.setHeater(OFF)
     self.setCool()
     self.stepDescription("Stopping stir motor")    
-    self.stopStirring()
+    self.setStirSpeed(OFF)
     self.stepDescription("Stopping vacuum")    
-    self.stopVacuum()
+    self.setVacuum(OFF)
     self.beginNextStep("Evaporation Operation Complete!")
-    
-    
-  def startStirring(self):
-    self.systemModel[self.ReactorID]['stir_motor'].setSpeed(self.stirSpeed) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,self.stirSpeed,EQUAL) #Read value from PLC memory... should be equal
   
-  def stopStirring(self):
-    self.systemModel[self.ReactorID]['stir_motor'].setSpeed(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,OFF,EQUAL)
-    
-  def startVacuum(self):
-    self.systemModel[self.ReactorID]['vacuum'].setVacuum(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,OFF,EQUAL) 
-  
-  def stopSVacuum(self):
-    self.systemModel[self.ReactorID]['vacuum'].setVacuum(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum(OFF),ZERO,EQUAL)
- 
-  def getTemperatureController(): #Not sure why we need this?
-    return self.systemModel[self.ReactorID]['temperature_controller']
-    
-  def setTemp(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setSetPoint(self.Temp)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getSetPoint,self.Temp,GREATER)
-    
-  def startHeating(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setHeaterState(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getHeaterState,ON,EQUAL)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getCurrentTemperature,self.Temp,GREATER)
-  
-  def setCool(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].setHeaterState(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getHeaterState,OFF,EQUAL)
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL)
-    self.waitForCondition(self.systemModel[self.ReactorID]['temperature_controller'].getTemperature(),self.coolTemp) 
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL)
-    
-  def getTemp(self):
-    self.systemModel[self.ReactorID]['temperature_controller'].getCurrentTemperature()
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','evapTime','evapTemp','coolTemp','stirSpeed']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
     
 class InstallVial(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
+    
   def run(self):
     self.beginNextStep("Starting Install Vial Operation")
     self.beginNextStep("Moving to vial install position")
     self.setReactorPosition(INSTALL)
     self.beginNextStep("Install Vial Operation Complete!")
-    
+  
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+      
 class TransferToHPLC(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
-    
+    #self.stopcockPosition
   def run(self):
     self.beginNextStep("Starting HPLC Operation")
     self.beginNextStep("Moving to transfer position")
@@ -486,7 +488,16 @@ class TransferToHPLC(UnitOperation):
     #Need more here? Liquid sensors, pressure regulator, etc?
     ###
     self.beginNextStep("HPLC Transfer Operation Complete!")
-
+    
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','stopcockPosition']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+      
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(HPLC)
     self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),HPLC,EQUAL)
@@ -498,7 +509,7 @@ class TransferToHPLC(UnitOperation):
 class TransferElute(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
     #self.stopcockPosition
     
@@ -513,7 +524,16 @@ class TransferElute(UnitOperation):
     self.beginNextStep("Beginning elution")
     self.setTransfer()
     self.beginNextStep("Transfer Elution Operation Complete!")
-    
+  
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','stopcockPosition']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+  
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
     self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),self.transferPosition,EQUAL)
@@ -521,37 +541,57 @@ class TransferElute(UnitOperation):
 class Transfer(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.ReactorID
+    #self.stopcockPosition
     #self.transferReactorID
     
   def run(self):
-    self.beginNextStep()
+    self.beginNextStep("Starting Transfer Operation")
+    self.beginNextStep("Moving to position")
     self.setReactorPosition(TRANSFER)
-    self.beginNextStep()
+    self.beginNextStep("Moving recieving reactor to position")
     self.setReactorPosition(ADDREAGENT,self.transferReactorID)
+    self.beginNextStep("Starting transfer")
     self.startTransfer()
-    self.beginNextStep()
+    self.beginNextStep("Transfer Operation Complete!")
 
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','transferReactorID','stopcockPosition']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+  
   def startTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
-    
     self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,EQUAL)
  
 class UserInput(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
+    self.setParams(params) #Should have parameters listed below
     #self.userMessage
     #self.isCheckbox
     #self.description
   def run(self):
-    self.currentAction="Starting User Input operation"
-    self.beginNextStep()
-    self.currentAction="Message box"
+    self.beginNextStep("Starting User Input Operation")
+    self.beginNextStep("Waiting for user input")
     self.setMessageBox()
-    self.beginNextStep()
-    
+    self.beginNextStep("User input recieved")
+    self.beginNextStep("User Input Operation Complete!")
+  
+  def setParams(self,currentParams):
+    expectedParams = ['userMessage','isCheckbox','description']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+  
   def setMessageBox(self):
     self.setDescription("Waiting for user input")
     self.waitForUser = True
@@ -564,17 +604,26 @@ class UserInput(UnitOperation):
 class DetectRadiation(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.params = params #Should have parameters listed below
-    #self.ReactorID
+    self.setParams(params) #Should have parameters listed below
+    #self.ReactorID #Not sure we even need this. We should get all three every time.
     
   def run(self):
-    self.beginNextStep()
-    self.setReactorPosition(RADIATION)
-    self.beginNextStep()
+    self.beginNextStep("Starting Detect Radiation Operation")
+    self.beginNextStep("Moving to detection position")
+    self.setReactorPosition(RADIATION,ALL)
+    self.beginNextStep("Starting radiation detection")
     self.getRadiation()
-    self.beginNextStep()
+    self.beginNextStep("Radiation Detection Operation Complete!")
 
-
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+    
   def getRadiation(self):
     self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading()
     self.waitForCondition(self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading,self.calibrationCoefficient,GREATER)
@@ -585,4 +634,4 @@ def test():
 
     
 if __name__=="__main__":
-    test()
+    test()\
