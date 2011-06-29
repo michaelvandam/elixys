@@ -443,6 +443,11 @@ package Elixys.Views
 		{
 			// Locate the corresponding reagent
 			var pGridData:ArrayList = pGrid.dataProvider as ArrayList, nReagent:uint;
+			if (pGridData == null)
+			{
+				// Can't find reagent
+				return;
+			}
 			for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
 			{
 				var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;

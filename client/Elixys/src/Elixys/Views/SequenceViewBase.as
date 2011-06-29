@@ -281,6 +281,59 @@ package Elixys.Views
 			return null;
 		}
 
+		// Inserts the unit operation
+		protected function InsertUnitOperation(sUnitOperation:String, nInsertionTarget:int):void
+		{
+			// Create a blank instance of the appropriate unit operation
+			var pComponent:Component;
+			switch (sUnitOperation.toUpperCase())
+			{
+				case ComponentActivity.TYPE:
+					pComponent = new ComponentActivity();
+					break;
+				
+				case ComponentAdd.TYPE:
+					pComponent = new ComponentAdd();
+					break;
+				
+				case ComponentComment.TYPE:
+					pComponent = new ComponentComment();
+					break;
+				
+				case ComponentElute.TYPE:
+					pComponent = new ComponentElute();
+					break;
+				
+				case ComponentEvaporate.TYPE:
+					pComponent = new ComponentEvaporate();
+					break;
+				
+				case ComponentInstall.TYPE:
+					pComponent = new ComponentInstall();
+					break;
+				
+				case ComponentPrompt.TYPE:
+					pComponent = new ComponentPrompt();
+					break;
+				
+				case ComponentReact.TYPE:
+					pComponent = new ComponentReact();
+					break;
+				
+				case ComponentTransfer.TYPE:
+					pComponent = new ComponentTransfer();
+					break;
+			}
+			
+			// Post the new component to the server
+			var sURL:String = "sequence/" + m_nSequenceID + "/component/0"
+			if (nInsertionTarget != -1)
+			{
+				sURL += "/" + nInsertionTarget;
+			}
+			DoPost(pComponent, sURL);
+		}
+
 		/***
 		 * Member variables
 		 **/

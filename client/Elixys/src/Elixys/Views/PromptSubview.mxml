@@ -22,18 +22,18 @@
 				m_pComponentPrompt = new ComponentPrompt(null, pComponent);
 				
 				// Handle according to our view mode
+				var sPrompt:String = unescape(m_pComponentPrompt.Message);
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Format the output text
-					_outputText.text = "Prompt the user \"" + m_pComponentPrompt.Message + "\"";
+					_outputText.text = "Prompt the user \"" + sPrompt + "\"";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Set the message unless the user is editing it
 					if (m_pKeyboardFocusTextArea != _editMessage)
 					{
-						// Unescape the multiline message
-						_editMessage.text = unescape(m_pComponentPrompt.Message);
+						_editMessage.text = sPrompt;
 					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)

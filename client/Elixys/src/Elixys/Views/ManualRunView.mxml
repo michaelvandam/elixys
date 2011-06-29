@@ -23,12 +23,51 @@
 			// Update state
 			public override function UpdateState(pState:State):void
 			{
-				// Create the Manual Run state and remember what step we are on
+				// Create the Manual Run state and remember the step
 				var pStateManualRun:StateManualRun = new StateManualRun(null, pState);
 				m_sManualRunStep = pStateManualRun.ManualRunStep();
+
+				// Check if we are the user running the system
+				var sRunUsername:String = pStateManualRun.ServerState().Username();
+				var sCurrentUsername:String = pStateManualRun.User().Name();
+				m_bRunningSystem = (sRunUsername == sCurrentUsername);
+				
+				// Check if our active subview needs to change
+				var pActiveSubview:SubviewBase = _viewStack.selectedChild as SubviewBase;
+				if (pActiveSubview != null)
+				{
+					// Is the system on the run step?
+					if (pStateManualRun.ManualRunStep() == "RUN")
+					{
+						// Yes.  Make sure the client is also on run
+						if (pActiveSubview.m_sViewMode != SubviewBase.RUNMODE)
+						{
+							pActiveSubview.SetViewMode(SubviewBase.RUNMODE);
+						}
+					}
+					else
+					{
+						// View each component in either edit or view mode depending on if we are running the system
+						if (m_bRunningSystem)
+						{
+							if (pActiveSubview.m_sViewMode != SubviewBase.EDITMODE)
+							{
+								pActiveSubview.SetViewMode(SubviewBase.EDITMODE);
+							}
+						}
+						else
+						{
+							if (pActiveSubview.m_sViewMode != SubviewBase.VIEWMODE)
+							{
+								pActiveSubview.SetViewMode(SubviewBase.VIEWMODE);
+							}
+						}
+					}
+				}
 				
 				// Call the base function with our type
 				UpdateSequenceState(pState, StateSequence.MANUALRUNTYPE);
+				
 			}
 
 			// Update sequence
@@ -37,8 +76,22 @@
 				// Update the sequence
 				UpdateSequenceSequence(pSequence);
 
-				// Request the currently selected sequence component from the server
-				RequestSequenceComponent(m_nSequenceID, m_nComponentID);
+				// Check our mode
+				if (m_sManualRunStep == "SELECT")
+				{
+					// There is no component in the content pane so display the message view instead
+					_messageSubviewLabel.text = "Select the next unit operation from the toolbox";
+					m_pViewStack.selectedChild = _messageSubview;
+					
+					// Clear any selected sequence component
+					m_nComponentID = 0;
+					_sequenceList.invalidateDisplayList();
+				}
+				else
+				{
+					// Request the currently selected sequence component from the server
+					RequestSequenceComponent(m_nSequenceID, m_nComponentID);
+				}
 			}
 			
 			// Update component
@@ -53,6 +106,12 @@
 			{
 				// Update the sequence reagent
 				UpdateSequenceReagent(pReagent);
+			}
+			
+			// Returns the manual run step
+			public function GetManualRunStep():String
+			{
+				return m_sManualRunStep;
 			}
 			
 			/***
@@ -87,20 +146,20 @@
 			// Button click handlers
 			public function OnToolboxClick(event:MouseEvent):void
 			{
-				// Only handle toolbox clicks when we are in "SELECT" mode
-				if (m_sManualRunStep == "SELECT")
+				// Only handle toolbox clicks when we are the user running the system and in "SELECT" mode
+				if (m_bRunningSystem && (m_sManualRunStep == "SELECT"))
 				{
 					// Determine what unit operation the user clicked on
 					var pLabel:Label = FindDecendentByName(event.target as DisplayObjectContainer, "_unitOperationLabel") as Label;
 
-					// Pass the click on to the server
-					OnClickInternal(pLabel.id);
+					// Append the component to the sequence
+					InsertUnitOperation(pLabel.text, -1);
 				}
 			}
 			public function OnSequenceClick(event:MouseEvent):void
 			{
-				// Only handle sequence clicks when we are in "CASSETTE" mode
-				if (m_sManualRunStep == "CASSETTE")
+				// Only handle sequence clicks when we are the user running the system and in "CASSETTE" mode
+				if (m_bRunningSystem && (m_sManualRunStep == "CASSETTE"))
 				{
 					// Determine what unit operation the user clicked on
 					var pLabel:Label = FindDecendentByName(event.target as DisplayObjectContainer, "_componentLabel") as Label;
@@ -130,6 +189,9 @@
 			
 			// Manual run step
 			private var m_sManualRunStep:String = "";
+
+			// Flag that specifies if we are the user running the system
+			private var m_bRunningSystem:Boolean = false;
 		]]>
 	</fx:Script>
 	
@@ -188,7 +250,7 @@
 										if (value != null)
 										{
 											// Set the background color
-											if (outerDocument.GetComponentID() == data.ID)
+											if ((outerDocument.GetManualRunStep() != "SELECT") && (outerDocument.GetComponentID() == data.ID))
 											{
 												_componentContainer.setStyle("backgroundColor", "0xbbbbbb");
 											}
@@ -229,6 +291,11 @@
 		<s:VGroup horizontalAlign="right" verticalAlign="middle" gap="20" width="100%" height="100%">
 			<s:HGroup id="_navigationButtons" gap="20" />
 			<mx:ViewStack id="_viewStack" width="100%" height="100%">
+				<Views:SubviewBase id="_messageSubview" width="100%" height="100%">
+					<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+						<s:Label id="_messageSubviewLabel" styleName="TextMedium" width="80%" />
+					</s:VGroup>
+				</Views:SubviewBase>
 				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="Edit" width="100%" height="100%" />
 				<Views:AddSubview id="_addSubview" m_sViewMode="Edit" width="100%" height="100%" />
 				<Views:EvaporateSubview id="_evaporateSubview" m_sViewMode="Edit" width="100%" height="100%" />
