@@ -284,7 +284,7 @@
 				</s:VGroup>
 				<s:VGroup width="100%" gap="15">
 					<s:VGroup horizontalAlign="left" verticalAlign="middle" width="100%" height="40">
-						<Renderers:AutoTextArea id="_server" styleName="TextMedium" text="192.168.1.104" width="100%" />
+						<Renderers:AutoTextArea id="_server" styleName="TextMedium" text="ec2-75-101-195-162.compute-1.amazonaws.com" width="100%" />
 					</s:VGroup>
 					<s:VGroup horizontalAlign="left" verticalAlign="middle" width="100%" height="40">
 						<Renderers:AutoTextArea id="_username" styleName="TextMedium" text="devel" width="100%" />

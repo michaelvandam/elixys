@@ -10,12 +10,20 @@ import threading
 ### Constants
 
 # Port we listen for the PLC on
-PLC_IP = "192.168.250.1" # "127.0.0.1"
+PLC_IP = "192.168.250.1"
 PLC_PORT = 9600
-SERVER_PORT = 9600
+
+# Number of words used by each type of module
+DIGITALOUT_SIZE = 0x4
+DIGITALIN_SIZE = 0x1
+ANALOGOUT_SIZE = 0xa
+ANALOGIN_SIZE = 0xa
+THERMOCONTROLLER_SIZE = 0x14
+DEVICENET_SIZE = 0x19
 
 # Constants for PLC command formatting
-ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0 =Cmd 1=Resp][00000][0 or 1=Resp Req]                      
+MAX_PLC_READLENGTH = 0x350
+ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0=Cmd 1=Resp][00000][0 or 1=Resp Req]                      
 RSV = "00"    #Reserved - Always Zero
 GCT = "02"    #Gateway Count - Set to 02 (or do not set?!)
 DNET = "00"   #Dest. Network - 00 (Local Network)
@@ -128,21 +136,25 @@ class HardwareComm():
         self.__pHardwareMap = ConfigObj("HardwareMap.ini")
         self.__pRobotPositions = ConfigObj("RobotPositions.ini")
 
-        # Extract the module offsets
+        # Extract the module offsets and units
         self.__nDigitalOutOffset = int(self.__pHardwareMap["DigitalOutOffset"], 16)
         self.__nDigitalInOffset = int(self.__pHardwareMap["DigitalInOffset"], 16)
-        self.__nAnalogOutOffset = int(self.__pHardwareMap["AnalogOutOffset"], 16)
-        self.__nAnalogInOffset = int(self.__pHardwareMap["AnalogInOffset"], 16)
-        self.__nThermocontroller1Offset = int(self.__pHardwareMap["Thermocontroller1Offset"], 16)
-        self.__nThermocontroller2Offset = int(self.__pHardwareMap["Thermocontroller2Offset"], 16)
-        self.__nThermocontroller3Offset = int(self.__pHardwareMap["Thermocontroller3Offset"], 16)
-        self.__nRobotNetOffset = int(self.__pHardwareMap["RobotNetOffset"], 16)
+        self.__nAnalogOutUnit = int(self.__pHardwareMap["AnalogOutUnit"], 16)
+        self.__nAnalogInUnit = int(self.__pHardwareMap["AnalogInUnit"], 16)
+        self.__nThermocontroller1Unit = int(self.__pHardwareMap["Thermocontroller1Unit"], 16)
+        self.__nThermocontroller2Unit = int(self.__pHardwareMap["Thermocontroller2Unit"], 16)
+        self.__nThermocontroller3Unit = int(self.__pHardwareMap["Thermocontroller3Unit"], 16)
+        self.__nDeviceNetOffset = int(self.__pHardwareMap["DeviceNetUnit"], 16)
 
         # Calculate the memory address range
         pMemoryRangeComponents = self.__CalculateMemoryRange().split(",")
+        print "Memory range: " + str(pMemoryRangeComponents)
         self.__nMemoryLower = int(pMemoryRangeComponents[0])
         self.__nMemoryUpper = int(pMemoryRangeComponents[1])
 
+        # Initialize our updating flag
+        self.__bUpdatingState = False
+        
     ### Public functions ###
 
     # Startup/shutdown
@@ -150,7 +162,7 @@ class HardwareComm():
         # Spawn the socket thread
         self.__pSocketThread = SocketThread()
         self.__pSocketThreadTerminateEvent = threading.Event()
-        self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, SERVER_PORT, self, self.__pSocketThreadTerminateEvent)
+        self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
         self.__pSocketThread.start()
     def ShutDown(self):
         # Stop the socket thread
@@ -159,12 +171,16 @@ class HardwareComm():
 
     # Update state
     def UpdateState(self):
-        # Format and send the raw command to read the PLC memory
-        sCommand = "0101B0"
-        sCommand = sCommand + ("%0.4X" % self.__nMemoryLower)
-        sCommand = sCommand + "00"
-        sCommand = sCommand + ("%0.4X" % (self.__nMemoryUpper - self.__nMemoryLower))
-        self.__SendRawCommand(sCommand)
+        # Make sure we're not already in the process of updating the state
+        if self.__bUpdatingState == True:
+            return
+            
+        # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
+        # first chunk of the state
+        self.__bUpdatingState = True
+        self.__nStateOffset = self.__nMemoryLower
+        self.__sState = ""
+        self.__RequestNextStateChunk()
 
     # Valves
     def OpenValve(self, sHardwareName):
@@ -217,12 +233,8 @@ class HardwareComm():
         self.__SetBinaryValue(sHardwareName + "_SetReactorUp", False)
 
     # Temperature controllers
-    def HeaterOn(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName + "_SetHeaterOn", True)
-    def HeaterOff(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName + "_SetHeaterOn", False)
-    def SetHeaterSetPoint(self, sHardwareName, fSetPoint):
-        pass
+    def SetHeaterSetPoint(self, sHardwareName, nSetPoint):
+        self.__SetThermocontrollerValue(sHardwareName + "_SetTemperature", nSetPoint)
 
     # Stir motor
     def SetMotorSpeed(self, sHardwareName, nMotorSpeed):
@@ -236,22 +248,42 @@ class HardwareComm():
 
     # Calculates the memory range used by the PLC modules
     def __CalculateMemoryRange(self):
-        pAddressArray = [self.__nDigitalOutOffset,
-            self.__nDigitalOutOffset + 0x8,
-            self.__nDigitalInOffset,
-            self.__nDigitalInOffset + 0x8,
-            self.__nAnalogOutOffset,
-            self.__nAnalogOutOffset + 0x8,
-            self.__nAnalogInOffset,
-            self.__nAnalogInOffset + 0x8,
-            self.__nThermocontroller1Offset,
-            self.__nThermocontroller1Offset + 0x8,
-            self.__nThermocontroller2Offset,
-            self.__nThermocontroller2Offset + 0x8,
-            self.__nThermocontroller3Offset,
-            self.__nThermocontroller3Offset + 0x8,
-            self.__nRobotNetOffset,
-            self.__nRobotNetOffset+ 0x8]
+        # Create array of minimum and maximum memory offsets for each module
+        pAddressArray = []
+
+        # Digital out
+        pAddressArray += [self.__nDigitalOutOffset]
+        pAddressArray += [self.__nDigitalOutOffset + DIGITALOUT_SIZE]
+
+        # Digital in
+        pAddressArray += [self.__nDigitalInOffset]
+        pAddressArray += [self.__nDigitalInOffset + DIGITALIN_SIZE]
+
+        # Analog out
+        pAddressArray += [2000 + (10 * self.__nAnalogOutUnit)]
+        pAddressArray += [2000 + (10 * self.__nAnalogOutUnit) + ANALOGOUT_SIZE]
+
+        # Analog in
+        pAddressArray += [2000 + (10 * self.__nAnalogInUnit)]
+        pAddressArray += [2000 + (10 * self.__nAnalogInUnit) + ANALOGIN_SIZE]
+
+        # Thermocontroller 1
+        pAddressArray += [2000 + (10 * self.__nThermocontroller1Unit)]
+        pAddressArray += [2000 + (10 * self.__nThermocontroller1Unit) + THERMOCONTROLLER_SIZE]
+
+        # Thermocontroller 2
+        pAddressArray += [2000 + (10 * self.__nThermocontroller2Unit)]
+        pAddressArray += [2000 + (10 * self.__nThermocontroller2Unit) + THERMOCONTROLLER_SIZE]
+
+        # Thermocontroller 3
+        pAddressArray += [2000 + (10 * self.__nThermocontroller3Unit)]
+        pAddressArray += [2000 + (10 * self.__nThermocontroller3Unit) + THERMOCONTROLLER_SIZE]
+
+        # Device net
+        pAddressArray += [1500 + (10 * self.__nDeviceNetOffset)]
+        pAddressArray += [1500 + (10 * self.__nDeviceNetOffset) + DEVICENET_SIZE]
+
+        # Format and return the minimum and maximum values
         return str(min(pAddressArray)) + "," + str(max(pAddressArray))
 
     # Look up hardware name details
@@ -270,12 +302,15 @@ class HardwareComm():
 
             # Convert the descriptor string to a dictionary object
             pDescriptorComponents = sHardwareDescriptor.split(".")
-            if len(pDescriptorComponents) != 3:
-                raise Exception()
-            return {"name":sHardwareName,
+            if len(pDescriptorComponents) < 3:
+                raise Exception("Invalid hardware entry")
+            pHardware = {"name":sHardwareName,
                 "type":str(pDescriptorComponents[0]),
                 "access":str(pDescriptorComponents[1]),
-                "location":str(pDescriptorComponents[2])}
+                "location1":str(pDescriptorComponents[2])}
+            if len(pDescriptorComponents) == 4:
+                pHardware["location2"] = str(pDescriptorComponents[3])
+            return pHardware
         except Exception as ex:
             # Raise an appropriate error
             raise Exception("Failed to look up hardware name: " + str(sHardwareName))
@@ -308,26 +343,44 @@ class HardwareComm():
             raise Exception("Failed to look up robot position: " + str(sPositionName))
 
     # Determines the hardware module offset
-    def __DetermineHardwareModuleOffset(self, pHardware):
-        nModuleOffset = 0
+    def __DetermineHardwareOffset(self, pHardware):
+        nOffset = 0
         if pHardware["type"] == "binary":
             if pHardware["access"] == "in":
-                nModuleOffset = self.__nDigitalInOffset
+                nOffset = self.__nDigitalInOffset
             elif pHardware["access"] == "out":
-                nModuleOffset = self.__nDigitalOutOffset
-        elif pHardware["type"] == "integer":
-            # Thermocontrollers?  RobotNet?
-            #self.__nThermocontroller1Offset
-            #self.__nThermocontroller2Offset
-            #self.__nThermocontroller3Offset
-            #self.__nRobotNetOffset
-            pass
+                nOffset = self.__nDigitalOutOffset
         elif pHardware["type"] == "analog":
             if pHardware["access"] == "in":
-                nModuleOffset = self.__nAnalogInOffset
+                nOffset = self.__nAnalogInOffset
             elif pHardware["access"] == "out":
-                nModuleOffset = self.__nAnalogOutOffset
-        return nModuleOffset
+                nOffset = self.__nAnalogOutOffset
+        elif pHardware["type"] == "thermocontroller":
+            if pHardware["location1"] == "1":
+                nOffset = 2000 + (10 * self.__nThermocontroller1Unit)
+            elif pHardware["location1"] == "2":
+                nOffset = 2000 + (10 * self.__nThermocontroller2Unit)
+            elif pHardware["location1"] == "3":
+                nOffset = 2000 + (10 * self.__nThermocontroller3Unit)
+            if pHardware["access"] == "in":
+                if pHardware["location2"] == "1":
+                    nOffset += 0x3
+                elif pHardware["location2"] == "2":
+                    nOffset += 0x4
+                elif pHardware["location2"] == "3":
+                    nOffset += 0xd
+                elif pHardware["location2"] == "4":
+                    nOffset += 0xe
+            elif pHardware["access"] == "out":
+                if pHardware["location2"] == "1":
+                    nOffset += 0x0
+                elif pHardware["location2"] == "2":
+                    nOffset += 0x1
+                elif pHardware["location2"] == "3":
+                    nOffset += 0xa
+                elif pHardware["location2"] == "4":
+                    nOffset += 0xb
+        return nOffset
 
     # Set binary value
     def __SetBinaryValue(self, sHardwareName, bValue):
@@ -335,28 +388,41 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calcuate the absolute address of the target bit
-        nRelativeBitOffset = int(pHardware["location"])
+        nRelativeBitOffset = int(pHardware["location1"])
         nAbsoluteBitOffset = nRelativeBitOffset % 0x10
-        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
 
         # Format and send the raw command
-        sCommand = "010230"
-        sCommand = sCommand + ("%0.4X" % nAbsoluteByteOffset)
-        sCommand = sCommand + ("%0.2X" % nAbsoluteBitOffset)
-        sCommand = sCommand + "0001"
+        sCommand = "010230"					                    # Write bit to CIO memory
+        sCommand = sCommand + ("%0.4X" % nAbsoluteWordOffset)	# Memory offset (words)
+        sCommand = sCommand + ("%0.2X" % nAbsoluteBitOffset)    # Memory offset (bits)
+        sCommand = sCommand + "0001"				            # Number of bits to write
         if bValue:
-            sCommand = sCommand + "01" 
+            sCommand = sCommand + "01"				            # Set bit
         else:
-            sCommand = sCommand + "00"
+            sCommand = sCommand + "00"				            # Clear bit
         self.__SendRawCommand(sCommand)
-
-    # Set integer value
-    def __SetIntegerValue(self, sHardwareName, nValue):
-        print "Implement SetIntegerValue (" + sHardwareName + ")"
 
     # Set analog value
     def __SetAnalogValue(self, sHardwareName, fValue):
         print "Implement SetAnalogValue (" + sHardwareName + ")"
+
+    # Set thermocontroller value
+    def __SetThermocontrollerValue(self, sHardwareName, nValue):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware)
+        
+        # Format and send the raw command
+        sCommand = "0102B0"					                    # Write word to CIO memory
+        sCommand = sCommand + ("%0.4X" % nAbsoluteWordOffset)	# Memory offset (words)
+        sCommand = sCommand + "00"                              # Memory offset (bits)
+        sCommand = sCommand + "0001"				            # Number of words to write
+        sCommand = sCommand + ("%0.4X" % int(nValue))	        # Temperature
+        print "Sending command: " + sCommand
+        self.__SendRawCommand(sCommand)
 
     # Get binary value
     def __GetBinaryValue(self, sHardwareName, sState):
@@ -364,32 +430,59 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calcuate the absolute address of the target bit
-        nRelativeBitOffset = int(pHardware["location"])
+        nRelativeBitOffset = int(pHardware["location1"])
         nAbsoluteBitOffset = nRelativeBitOffset % 0x10
-        nAbsoluteByteOffset = self.__DetermineHardwareModuleOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
 
         # Make sure the address is within range
-        if (nAbsoluteByteOffset < self.__nMemoryLower) or (nAbsoluteByteOffset >= self.__nMemoryUpper):
+        if (nAbsoluteWordOffset < self.__nMemoryLower) or (nAbsoluteWordOffset >= self.__nMemoryUpper):
             print "Offset out of range"
             return
 
         # Extract the return the value
-        sByte = sState[(nAbsoluteByteOffset - self.__nMemoryLower):(nAbsoluteByteOffset - self.__nMemoryLower + 4)]
-        nByte = int(sByte, 0x10)
-        nBit = (nByte >> nAbsoluteBitOffset) & 1
+        sWord = sState[((nAbsoluteWordOffset - self.__nMemoryLower) * 4):((nAbsoluteWordOffset - self.__nMemoryLower + 1) * 4)]
+        nWord = int(sWord, 0x10)
+        nBit = (nWord >> nAbsoluteBitOffset) & 1
         return nBit != 0
-
-    # Get integer value
-    def __GetIntegerValue(self, sHardwareName, sState):
-        print "Implement SetIntegerValue (" + sHardwareName + ")"
 
     # Get analog value
     def __GetAnalogValue(self, sHardwareName, sState):
         print "Implement SetAnalogValue (" + sHardwareName + ")"
 
-    # Move robot to absolute position
+    # Get thermocontroller value
+    def __GetThermocontrollerValue(self, sHardwareName, sState):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware)
+        
+        # Extract the return the value
+        sWord = sState[((nAbsoluteWordOffset - self.__nMemoryLower) * 4):((nAbsoluteWordOffset - self.__nMemoryLower + 1) * 4)]
+        return int(sWord, 0x10)
+
+        # Move robot to absolute position
     def __MoveToAbsolutePosition(self, sHardwareName, nAbsolutePosition):
         print "Implement MoveToAbsolutePosition (" + sHardwareName + " = " + str(nAbsolutePosition) + ")"
+
+    # Requests the next chunk of the state
+    def __RequestNextStateChunk(self):
+        # Make sure we're updating our state
+        if self.__bUpdatingState == False:
+            return
+
+        # Determine the length of the next chunk
+        if (self.__nStateOffset + MAX_PLC_READLENGTH) < self.__nMemoryUpper:
+            nLength = MAX_PLC_READLENGTH
+        else:
+            nLength = self.__nMemoryUpper - self.__nStateOffset
+        
+        # Fetch the next chunk of the state
+        sCommand = "0101B0"                           # Read words from CIO memory
+        sCommand += ("%0.4X" % self.__nStateOffset)   # Memory offset (words)
+        sCommand += "00"                              # Memory offset (bits)
+        sCommand += ("%0.4X" % nLength)               # Number of words to read
+        self.__SendRawCommand(sCommand)
 
     # Sends a raw command to the PLC
     def __SendRawCommand(self, sCommand):
@@ -429,11 +522,11 @@ class HardwareComm():
         else:
             # Error encountered
             if sError in PLCERRORS:
-                raise Exception("PLC error: " + PLC_ERRORS(sError))
+                raise Exception("PLC error: " + PLCERRORS[sError])
             else:
                 raise Exception("PLC error: " + sError)
 
-        # Discard responses that are too short
+        # Ignore responses that are too short
         if len(sResponse) <= 8:
             return
 
@@ -462,68 +555,84 @@ class HardwareComm():
             print "Unknown response: " + sResponse
 
     def __ProcessRawState(self, sState):
-        # Format the state into a string for the moment
-        self.sState = "\nCurrent state:\n"
-        self.sState += "  Door1Open: " + str(self.__GetBinaryValue("Door1Open", sState)) + "\n"
-        self.sState += "  Door2Open: " + str(self.__GetBinaryValue("Door2Open", sState)) + "\n"
-        self.sState += "  PressureRegulator1:\n"
-        self.sState += "    ActualPressure: TBD\n" #PressureRegulator1_ActualPressure = analog.in.0
-        self.sState += "  PressureRegulator2:\n"
-        self.sState += "    ActualPressure: TBD\n" #PressureRegulator2_ActualPressure = analog.in.1
-        self.sState += "  ReagentRobot:\n"
-        self.sState += "    ActualX: TBD\n" #ReagentRobot_ActualX = integer.in.0
-        self.sState += "    ActualZ: TBD\n" #ReagentRobot_ActualZ = integer.in.1
-        self.sState += "    GripperUp: " + str(self.__GetBinaryValue("ReagentRobot_GripperUp", sState)) + "\n"
-        self.sState += "    GripperDown: " + str(self.__GetBinaryValue("ReagentRobot_GripperDown", sState)) + "\n"
-        self.sState += "    GripperOpen: " + str(self.__GetBinaryValue("ReagentRobot_GripperOpen", sState)) + "\n"
-        self.sState += "    GripperClose: " + str(self.__GetBinaryValue("ReagentRobot_GripperClose", sState)) + "\n"
-        self.sState += "  Reactor1:\n"
-        self.sState += "    ReactorUp: " + str(self.__GetBinaryValue("Reactor1_ReactorUp", sState)) + "\n"
-        self.sState += "    ReactorDown: " + str(self.__GetBinaryValue("Reactor1_ReactorDown", sState)) + "\n"
-        self.sState += "    RadiationDetector: TBD\n" #Reactor1_RadiationDetector = analog.in.2
-        self.sState += "    TemperatureController1:\n"
-        self.sState += "      ActualTemperature: TBD\n" #Reactor1_TemperatureController1.ActualTemperature = integer.in.3
-        self.sState += "    TemperatureController2:\n"
-        self.sState += "      ActualTemperature: TBD\n" #Reactor1_TemperatureController2.ActualTemperature = integer.in.4
-        self.sState += "    TemperatureController3:\n"
-        self.sState += "      ActualTemperature: TBD\n" #Reactor1_TemperatureController3.ActualTemperature = integer.in.5
+        # Append this chunk to our state
+        self.__sState += sState
+        self.__nStateOffset += len(sState) / 4
+        
+        # Do we have the entire state?
+        if self.__nStateOffset < self.__nMemoryUpper:
+            # No, so request the next chunk and return
+            self.__RequestNextStateChunk()
+            return
+        else:
+            # Yes, so clear our updating flag
+            self.__bUpdatingState = False
 
-        self.sState += "\nSet values:\n"
-        self.sState += "  VacuumSystemOn: " + str(self.__GetBinaryValue("VacuumSystemOn", sState)) + "\n"
-        self.sState += "  CoolingSystemOn: " + str(self.__GetBinaryValue("CoolingSystemOn", sState)) + "\n"
-        self.sState += "  PressureRegulator1:\n"
-        self.sState += "    On: " + str(self.__GetBinaryValue("PressureRegulator1_On", sState)) + "\n"
-        self.sState += "    SetPressure: TBD\n" #PressureRegulator1_SetPressure = analog.in.0
-        self.sState += "  PressureRegulator2:\n"
-        self.sState += "    On: " + str(self.__GetBinaryValue("PressureRegulator2_On", sState)) + "\n"
-        self.sState += "    SetPressure: TBD:\n" #PressureRegulator2_SetPressure = analog.out.1
-        self.sState += "  ReagentRobot:\n"
-        self.sState += "    SetX: TBD\n" #ReagentRobot_SetX = integer.out.0
-        self.sState += "    SetZ: TBD\n" #ReagentRobot_SetZ = integer.out.1
-        self.sState += "    SetGripperUp: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp", sState)) + "\n"
-        self.sState += "    SetGripperOpen: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperOpen", sState)) + "\n"
-        self.sState += "  Reactor1:\n"
-        self.sState += "    SetZ: TBD\n" #Reactor1_SetZ = integer.out.2
-        self.sState += "    SetReactorUp: " + str(self.__GetBinaryValue("Reactor1_SetReactorUp", sState)) + "\n"
-        self.sState += "    EvaporationValve: " + str(self.__GetBinaryValue("Reactor1_EvaporationValve", sState)) + "\n"
-        self.sState += "    VacuumValve: " + str(self.__GetBinaryValue("Reactor1_VacuumValve", sState)) + "\n"
-        self.sState += "    TransferValve: " + str(self.__GetBinaryValue("Reactor1_TransferValve", sState)) + "\n"
-        self.sState += "    Reagent1TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent1TransferValve", sState)) + "\n"
-        self.sState += "    Reagent2TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent2TransferValve", sState)) + "\n"
-        self.sState += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock1Valve", sState)) + "\n"
-        self.sState += "    Stopcock2Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock2Valve", sState)) + "\n"
-        self.sState += "    Stopcock3Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock3Valve", sState)) + "\n"
-        self.sState += "    StirMotor: TBD\n" #Reactor1_StirMotor = integer.out.3
-        self.sState += "    RadiationDetector: TBD\n" #Reactor1_RadiationDetector = analog.in.2
-        self.sState += "    TemperatureController1:\n"
-        self.sState += "      SetHeaterOn: " + str(self.__GetBinaryValue("Reactor1_TemperatureController1_SetHeaterOn", sState)) + "\n"
-        self.sState += "      SetTemperature: TBD\n" #Reactor1_TemperatureController1.SetTemperature = integer.out.4
-        self.sState += "    TemperatureController2:\n"
-        self.sState += "      SetHeaterOn: " + str(self.__GetBinaryValue("Reactor1_TemperatureController2_SetHeaterOn", sState)) + "\n"
-        self.sState += "      SetTemperature: TBD\n" #Reactor1_TemperatureController2.SetTemperature = integer.out.5
-        self.sState += "    TemperatureController3:\n"
-        self.sState += "      SetHeaterOn: " + str(self.__GetBinaryValue("Reactor1_TemperatureController3_SetHeaterOn", sState)) + "\n"
-        self.sState += "      SetTemperature: TBD\b" #Reactor1_TemperatureController3.SetTemperature = integer.out.6
+        # Format the state into a string for the moment
+        sStateText = "\nCurrent state:\n"
+        sStateText += "  Door1Open: " + str(self.__GetBinaryValue("Door1Open", self.__sState)) + "\n"
+        sStateText += "  Door2Open: " + str(self.__GetBinaryValue("Door2Open", self.__sState)) + "\n"
+        sStateText += "  PressureRegulator1:\n"
+        sStateText += "    ActualPressure: TBD\n" #PressureRegulator1_ActualPressure = analog.in.0
+        sStateText += "  PressureRegulator2:\n"
+        sStateText += "    ActualPressure: TBD\n" #PressureRegulator2_ActualPressure = analog.in.1
+        sStateText += "  ReagentRobot:\n"
+        sStateText += "    ActualX: TBD\n" #ReagentRobot_ActualX = integer.in.0
+        sStateText += "    ActualZ: TBD\n" #ReagentRobot_ActualZ = integer.in.1
+        sStateText += "    GripperUp: " + str(self.__GetBinaryValue("ReagentRobot_GripperUp", self.__sState)) + "\n"
+        sStateText += "    GripperDown: " + str(self.__GetBinaryValue("ReagentRobot_GripperDown", self.__sState)) + "\n"
+        sStateText += "    GripperOpen: " + str(self.__GetBinaryValue("ReagentRobot_GripperOpen", self.__sState)) + "\n"
+        sStateText += "    GripperClose: " + str(self.__GetBinaryValue("ReagentRobot_GripperClose", self.__sState)) + "\n"
+        sStateText += "  Reactor1:\n"
+        sStateText += "    ReactorUp: " + str(self.__GetBinaryValue("Reactor1_ReactorUp", self.__sState)) + "\n"
+        sStateText += "    ReactorDown: " + str(self.__GetBinaryValue("Reactor1_ReactorDown", self.__sState)) + "\n"
+        sStateText += "    RadiationDetector: TBD\n" #Reactor1_RadiationDetector = analog.in.2
+        sStateText += "    TemperatureController1:\n"
+        sStateText += "      ActualTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController1_ActualTemperature",
+            self.__sState)) + "\n"
+        sStateText += "    TemperatureController2:\n"
+        sStateText += "      ActualTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController2_ActualTemperature",
+            self.__sState)) + "\n"
+        sStateText += "    TemperatureController3:\n"
+        sStateText += "      ActualTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController3_ActualTemperature",
+            self.__sState)) + "\n"
+
+        sStateText += "\nSet values:\n"
+        sStateText += "  VacuumSystemOn: " + str(self.__GetBinaryValue("VacuumSystemOn", self.__sState)) + "\n"
+        sStateText += "  CoolingSystemOn: " + str(self.__GetBinaryValue("CoolingSystemOn", self.__sState)) + "\n"
+        sStateText += "  PressureRegulator1:\n"
+        sStateText += "    On: " + str(self.__GetBinaryValue("PressureRegulator1_On", self.__sState)) + "\n"
+        sStateText += "    SetPressure: TBD\n" #PressureRegulator1_SetPressure = analog.in.0
+        sStateText += "  PressureRegulator2:\n"
+        sStateText += "    On: " + str(self.__GetBinaryValue("PressureRegulator2_On", self.__sState)) + "\n"
+        sStateText += "    SetPressure: TBD:\n" #PressureRegulator2_SetPressure = analog.out.1
+        sStateText += "  ReagentRobot:\n"
+        sStateText += "    SetX: TBD\n" #ReagentRobot_SetX = integer.out.0
+        sStateText += "    SetZ: TBD\n" #ReagentRobot_SetZ = integer.out.1
+        sStateText += "    SetGripperUp: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp", self.__sState)) + "\n"
+        sStateText += "    SetGripperOpen: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperOpen", self.__sState)) + "\n"
+        sStateText += "  Reactor1:\n"
+        sStateText += "    SetZ: TBD\n" #Reactor1_SetZ = integer.out.2
+        sStateText += "    SetReactorUp: " + str(self.__GetBinaryValue("Reactor1_SetReactorUp", self.__sState)) + "\n"
+        sStateText += "    EvaporationValve: " + str(self.__GetBinaryValue("Reactor1_EvaporationValve", self.__sState)) + "\n"
+        sStateText += "    VacuumValve: " + str(self.__GetBinaryValue("Reactor1_VacuumValve", self.__sState)) + "\n"
+        sStateText += "    TransferValve: " + str(self.__GetBinaryValue("Reactor1_TransferValve", self.__sState)) + "\n"
+        sStateText += "    Reagent1TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent1TransferValve", self.__sState)) + "\n"
+        sStateText += "    Reagent2TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent2TransferValve", self.__sState)) + "\n"
+        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock1Valve", self.__sState)) + "\n"
+        sStateText += "    Stopcock2Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock2Valve", self.__sState)) + "\n"
+        sStateText += "    Stopcock3Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock3Valve", self.__sState)) + "\n"
+        sStateText += "    StirMotor: TBD\n" #Reactor1_StirMotor = integer.out.3
+        sStateText += "    RadiationDetector: TBD\n" #Reactor1_RadiationDetector = analog.in.2
+        sStateText += "    TemperatureController1:\n"
+        sStateText += "      SetTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController1_SetTemperature",
+            self.__sState)) + "\n"
+        sStateText += "    TemperatureController2:\n"
+        sStateText += "      SetTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController2_SetTemperature",
+            self.__sState)) + "\n"
+        sStateText += "    TemperatureController3:\n"
+        sStateText += "      SetTemperature: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController3_SetTemperature",
+            self.__sState)) + "\n"
 		
-        print self.sState
-        print "\nRaw state:\n" + sState
+        print sStateText
+        #print "\nRaw state:\n" + self.__sState

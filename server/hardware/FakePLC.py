@@ -4,6 +4,7 @@ Behaves like a PLC for testing and demo purposes """
 
 ### Imports
 import socket
+import select
 import configobj
 from HardwareComm import HardwareComm
 
@@ -13,7 +14,6 @@ def HandleRead(sPacket):
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
     # Make sure the message is long enough
     if len(sPacket) != 36:
@@ -43,7 +43,7 @@ def HandleRead(sPacket):
 
     # Send the response
     pBinaryResponse = sResponse.decode("hex")
-    pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9600))
+    #pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9600))
     print "Sent read response packet"
 
 # Handle the write command
@@ -52,7 +52,6 @@ def HandleWrite(sPacket):
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
     # Make sure the message is long enough
     if len(sPacket) < 36:
@@ -97,7 +96,7 @@ def HandleWrite(sPacket):
     # Send a success packet
     sResponse = "0000000000000000000001020000"
     pBinaryResponse = sResponse.decode("hex")
-    pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9600))
+    #pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9600))
     print "Wrote data and sent response packet"
 
 # Main CLI function
@@ -106,11 +105,10 @@ if __name__ == "__main__":
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
-    # Determine the memory range we need to emulate
+    # Calculate the memory range we need to emulate
     pHardwareComm = HardwareComm()
-    sMemoryRange = pHardwareComm._HardwareComm__DetermineMemoryRange()
+    sMemoryRange = pHardwareComm._HardwareComm__CalculateMemoryRange()
     pMemoryRangeComponents = sMemoryRange.split(",")
     nMemoryLower = int(pMemoryRangeComponents[0])
     nMemoryUpper = int(pMemoryRangeComponents[1])
@@ -121,41 +119,51 @@ if __name__ == "__main__":
         pMemory.append(0)
 
     # Create the socket
-    pSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    pSocket.bind(("", 9601))
+    pListeningSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pListeningSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+    pListeningSocket.bind(("", 9600))
 
-    # Packet processing loop
-    while True:
-        # Listen for a packet
-        print ""
-        print "Listening for packet..."
-        pBinaryPacket = pSocket.recv(1024)
-        sPacket = pBinaryPacket.encode("hex")
-        print "Received packet: " + sPacket
-
-        # Handle read and write messages
-        if sPacket[20:24] == "0101":
-            HandleRead(sPacket)
-        elif sPacket[20:24] == "0102":
-            HandleWrite(sPacket)
-        else:
-            print "Unknown command, ignoring"
-
-    # Here is where we would close the socket if there was a way to exit
-    pSocket.close()
+    # Listen for an incoming socket connection
     pSocket = None
+    pListeningSocket.listen(1)
 
+    # Processing loop
+    while True:
+        # Create a socket array
+        if pSocket != None:
+            pSocketList = [pListeningSocket, pSocket]
+        else:
+            pSocketList = [pListeningSocket]
+            print "Listening for incoming socket connection..."
 
-#192.168.251.1
-#9600
+        # Wait from one of our socket objects to be available
+        pReadList, pWriteList, pErrorList = select.select(pSocketList, pSocketList, [])
+        for pReadSocket in pReadList:
+            if pReadSocket is pListeningSocket:
+                # A new socket connection is available
+                pSocket, pAddress = pListeningSocket.accept()
+                print "Socket connections received from " + str(pAddress)
+            else:
+                # Our socket connection has data waiting to be read
+                pBinaryPacket = pSocket.recv(1024)
+                if pBinaryPacket == "":
+                    # Socket connection dropped
+                    pSocket.close()
+                    pSocket = None
+                    print "Socket connection closed"
+                    print ""
+                else:
+                    # Encode and log the packet
+                    sPacket = pBinaryPacket.encode("hex")
+                    print "Received packet: " + sPacket
 
-#Byte:
-#Read:  0101 80 0020 00 0001
-#Write: 0102 80 0001 00 0001 FFFF
-#               Addr    qty  data
-#               byte bit
-
-#Bit:
-#Write: 0102 30 000F 03 0001 01 
-
-#0101800020000001
+                    # Handle read and write messages
+                    if sPacket[20:24] == "0101":
+                        HandleRead(sPacket)
+                    elif sPacket[20:24] == "0102":
+                        HandleWrite(sPacket)
+                    else:
+                        print "Unknown command, ignoring"
+        for pWriteSocket in pWriteList:
+            # Our socket connection is available for writing data
+            pass
