@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -13,6 +13,7 @@
 			import Elixys.Objects.TimeUtils;
 			
 			import mx.controls.TextArea;
+			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
 
@@ -64,10 +65,12 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Removing the following line causes a compile error for reasons I don't understand
+					var pElixysMain:ElixysMain;
+
 					// Format the output text
-					var pParent:SequenceViewBase = m_pParent as SequenceViewBase;
-					var pStateSequence:StateSequence = pParent.GetStateSequence();
-					var pReactor:ReactorState = pParent.GetReactor();
+					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Reacting reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position +
 						" at " + m_pComponentReact.ReactionTemperature + " C for " + TimeUtils.GetMinutes(m_pComponentReact.Duration) +
 						" minutes and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
@@ -88,8 +91,11 @@
 			 **/
 			
 			// Called when creation is complete
-			public function OnCreationComplete():void
+			protected override function OnCreationComplete(event:FlexEvent):void
 			{
+				// Call the base implementation
+				super.OnCreationComplete(event);
+
 				// Set the base class variables
 				m_pViewGroup = _viewGroup;
 				m_pEditGroup = _editGroup;
@@ -106,8 +112,8 @@
 				m_pComponentReact.Reactor = parseInt(_editReactorCombo.selectedItem as String);
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
 			}
 			protected function OnPositionChange(event:IndexChangeEvent):void
 			{
@@ -115,8 +121,8 @@
 				m_pComponentReact.Position = _editPositionCombo.selectedItem as String;
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
 			}
 			
 			// Called when the user changes the text in one of our input fields
@@ -141,8 +147,8 @@
 				}
 				
 				// Save the component to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
 			}
 
 			/***

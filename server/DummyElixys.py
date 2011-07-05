@@ -380,6 +380,10 @@ class Elixys:
         pSequence["metadata"]["id"] = 10000
         self.SaveSequence(sUsername, pSequence, True, True)
 
+        # Load the user's sequence reagents and save them as the system sequence reagents
+        pReagents = self.GetSequenceReagentsInternal(sUsername, 10000)
+        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
+
         # Format the initial system state
         sSystemState = sUsername + ".RUNSEQUENCE.10000."
         pSequence = self.GetSequenceInternal(sUsername, nSequenceID)

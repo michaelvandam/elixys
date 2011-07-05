@@ -12,6 +12,8 @@
 			import mx.controls.Alert;
 			import mx.events.ResizeEvent;
 			import mx.managers.PopUpManager;
+			
+			import spark.components.VGroup;
 
 			/***
 			 *** Initialization functions
@@ -53,11 +55,12 @@
 			private function Init3_OnCreateChildrenTimer(event:TimerEvent):void
 			{
 				// Initialize the child creation variables
-				m_nTotalChildren = 6;
+				m_nTotalChildren = 17;
 				m_nChildrenLoaded = 0;
 				
 				// Create the first child view
 				m_pHomeView = new HomeView();
+				m_pHomeView.SetElixysMain(this);
 				_viewStack.addChild(m_pHomeView);
 				m_pHomeView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 				m_pHomeView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
@@ -155,40 +158,147 @@
 				}
 				
 				// Show and update the appropriate state
+				var pView:ViewBase = null;
 				if (StateHome.CheckState(pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pHomeView;
-					m_pHomeView.UpdateState(pState);
+					pView = m_pHomeView;
 				}
 				else if (StateSelect.CheckState(pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pSelectView;
-					m_pSelectView.UpdateState(pState);
+					pView = m_pSelectView;
 				}
 				else if (StateSequence.CheckState(StateSequence.VIEWTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pViewView;
-					m_pViewView.UpdateState(pState);
+					pView = m_pViewView;
 				}
 				else if (StateSequence.CheckState(StateSequence.EDITTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pEditView;
-					m_pEditView.UpdateState(pState);
+					pView = m_pEditView;
 				}
 				else if (StateSequence.CheckState(StateSequence.RUNSEQUENCETYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pRunSequenceView;
-					m_pRunSequenceView.UpdateState(pState);
+					pView = m_pRunSequenceView;
 				}
 				else if (StateSequence.CheckState(StateSequence.MANUALRUNTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = m_pManualRunView;
-					m_pManualRunView.UpdateState(pState);
+					pView = m_pManualRunView;
 				}
 				else
 				{
 					Alert.show("Unknown client state received from server: " + pState.ClientState());
 				}
+
+				// Did the view change?
+				if (pView != _viewStack.selectedChild)
+				{
+					// Yes, so hide the active subview and change the selected child
+					HideActiveSubview();
+					_viewStack.selectedChild = pView;
+				}
+				
+				// Update the view state
+				pView.UpdateState(pState);
+
+			}
+			
+			// Shows the specified sequence component
+			public function ShowSubview(sComponentType:String, sViewMode:String, pComponentGroup:VGroup):void
+			{
+				// Locate the desired subview
+				var pSubview:SubviewBase;
+				switch (sComponentType)
+				{
+					case ComponentCassette.TYPE:
+						pSubview = m_pCassetteSubview;
+						break;
+					
+					case ComponentAdd.TYPE:
+						pSubview = m_pAddSubview;
+						break;
+					
+					case ComponentEvaporate.TYPE:
+						pSubview = m_pEvaporateSubview;
+						break;
+					
+					case ComponentTransfer.TYPE:
+						pSubview = m_pTransferSubview;
+						break;
+					
+					case ComponentElute.TYPE:
+						pSubview = m_pEluteSubview;
+						break;
+					
+					case ComponentReact.TYPE:
+						pSubview = m_pReactSubview;
+						break;
+					
+					case ComponentPrompt.TYPE:
+						pSubview = m_pPromptSubview;
+						break;
+					
+					case ComponentInstall.TYPE:
+						pSubview = m_pInstallSubview;
+						break;
+					
+					case ComponentComment.TYPE:
+						pSubview = m_pCommentSubview;
+						break;
+					
+					case ComponentActivity.TYPE:
+						pSubview = m_pActivitySubview;
+						break;
+					
+					case MessageSubview.TYPE:
+						pSubview = m_pMessageSubview;
+						break;
+					
+					default:
+						throw Error("Unrecognized component");
+				}
+				
+				// Make sure the subview is position properly and visible
+				var pUpperLeft:Point = pComponentGroup.localToGlobal(new Point(0, 0));
+				pSubview.x = pUpperLeft.x;
+				pSubview.y = pUpperLeft.y;
+				pSubview.width = pComponentGroup.width;
+				pSubview.height = pComponentGroup.height;
+				pSubview.SetViewMode(sViewMode);
+				pSubview.visible = true;
+				setChildIndex(pSubview, numChildren - 1);
+
+				// Move any current subview to the background
+				if ((m_pActiveSubview != null) && (m_pActiveSubview != pSubview))
+				{
+					m_pActiveSubview.visible = false;
+					setChildIndex(m_pActiveSubview, 0);
+				}
+				
+				// Remember the active subview
+				m_pActiveSubview = pSubview;
+			}
+			
+			// Returns the active sequence component
+			public function GetActiveSubview():SubviewBase
+			{
+				// Return the active subview
+				return m_pActiveSubview;
+			}
+			
+			// Hides the active sequence component
+			public function HideActiveSubview():void
+			{
+				if (m_pActiveSubview != null)
+				{
+					m_pActiveSubview.visible = false;
+					setChildIndex(m_pActiveSubview, 0);
+					m_pActiveSubview = null;
+				}
+			}
+			
+			// Returns the active sequence view base
+			public function GetActiveSequenceView():SequenceViewBase
+			{
+				return (_viewStack.selectedChild as SequenceViewBase); 
 			}
 			
 			/***
@@ -198,61 +308,144 @@
 			// Called when a child view is created
 			private function OnChildCreationCompleteEvent(event:ChildCreationCompleteEvent):void
 			{
-				// What type of child was created?
+				// Check if the child was the splash screen
 				if (event.splashScreen)
 				{
-					// The splash screen was created.  Set a timer to give the view a change to render itself
+					// The splash screen has been created.  Set a timer to give the application a change to render itself before
+					// we put it to work creating other children
 					var pTimer:Timer = new Timer(500, 1);
 					pTimer.addEventListener(TimerEvent.TIMER_COMPLETE, Init3_OnCreateChildrenTimer);
 					pTimer.start();
+					return;
+				}
+
+				// Update the splash screen progress bar
+				++m_nChildrenLoaded;
+				m_pSplashScreen.SetProgress(m_nChildrenLoaded, m_nTotalChildren);
+
+				// Create the next child view
+				if (m_pSelectView == null)
+				{
+					m_pSelectView = new SelectView();
+					m_pSelectView.SetElixysMain(this);
+					_viewStack.addChild(m_pSelectView);
+					m_pSelectView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pSelectView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pViewView == null)
+				{
+					m_pViewView = new ViewView();
+					m_pViewView.SetElixysMain(this);
+					_viewStack.addChild(m_pViewView);
+					m_pViewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pViewView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pEditView == null)
+				{
+					m_pEditView = new EditView();
+					m_pEditView.SetElixysMain(this);
+					_viewStack.addChild(m_pEditView);
+					m_pEditView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pEditView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pRunSequenceView == null)
+				{
+					m_pRunSequenceView = new RunSequenceView();
+					m_pRunSequenceView.SetElixysMain(this);
+					_viewStack.addChild(m_pRunSequenceView);
+					m_pRunSequenceView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pRunSequenceView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pManualRunView == null)
+				{
+					m_pManualRunView = new ManualRunView();
+					m_pManualRunView.SetElixysMain(this);
+					_viewStack.addChild(m_pManualRunView);
+					m_pManualRunView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pManualRunView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pCassetteSubview == null)
+				{
+					m_pCassetteSubview = new CassetteSubview();
+					m_pCassetteSubview.SetElixysMain(this);
+					m_pCassetteSubview.visible = false;
+					addChildAt(m_pCassetteSubview, 0);
+					m_pCassetteSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pAddSubview == null)
+				{
+					m_pAddSubview = new AddSubview();
+					m_pAddSubview.SetElixysMain(this);
+					addChild(m_pAddSubview);
+					m_pAddSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pEvaporateSubview == null)
+				{
+					m_pEvaporateSubview = new EvaporateSubview();
+					m_pEvaporateSubview.SetElixysMain(this);
+					addChild(m_pEvaporateSubview);
+					m_pEvaporateSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pTransferSubview == null)
+				{
+					m_pTransferSubview = new TransferSubview();
+					m_pTransferSubview.SetElixysMain(this);
+					addChild(m_pTransferSubview);
+					m_pTransferSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pEluteSubview == null)
+				{
+					m_pEluteSubview = new EluteSubview();
+					m_pEluteSubview.SetElixysMain(this);
+					addChild(m_pEluteSubview);
+					m_pEluteSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pReactSubview == null)
+				{
+					m_pReactSubview = new ReactSubview();
+					m_pReactSubview.SetElixysMain(this);
+					addChild(m_pReactSubview);
+					m_pReactSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pPromptSubview == null)
+				{
+					m_pPromptSubview = new PromptSubview();
+					m_pPromptSubview.SetElixysMain(this);
+					addChild(m_pPromptSubview);
+					m_pPromptSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pInstallSubview == null)
+				{
+					m_pInstallSubview = new InstallSubview();
+					m_pInstallSubview.SetElixysMain(this);
+					addChild(m_pInstallSubview);
+					m_pInstallSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pCommentSubview == null)
+				{
+					m_pCommentSubview = new CommentSubview();
+					m_pCommentSubview.SetElixysMain(this);
+					addChild(m_pCommentSubview);
+					m_pCommentSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pActivitySubview == null)
+				{
+					m_pActivitySubview = new ActivitySubview();
+					m_pActivitySubview.SetElixysMain(this);
+					addChild(m_pActivitySubview);
+					m_pActivitySubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pMessageSubview == null)
+				{
+					m_pMessageSubview = new MessageSubview();
+					m_pMessageSubview.SetElixysMain(this);
+					addChild(m_pMessageSubview);
+					m_pMessageSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
 				else
 				{
-					// It was one of our child views.  Update the splash screen progress bar
-					++m_nChildrenLoaded;
-					m_pSplashScreen.SetProgress(m_nChildrenLoaded, m_nTotalChildren);
-
-					// Create the next child view
-					if (m_nChildrenLoaded == 1)
-					{
-						m_pSelectView = new SelectView();
-						_viewStack.addChild(m_pSelectView);
-						m_pSelectView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-						m_pSelectView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-					}
-					else if (m_nChildrenLoaded == 2)
-					{
-						m_pViewView = new ViewView();
-						_viewStack.addChild(m_pViewView);
-						m_pViewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-						m_pViewView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-					}
-					else if (m_nChildrenLoaded == 3)
-					{
-						m_pEditView = new EditView();
-						_viewStack.addChild(m_pEditView);
-						m_pEditView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-						m_pEditView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-					}
-					else if (m_nChildrenLoaded == 4)
-					{
-						m_pRunSequenceView = new RunSequenceView();
-						_viewStack.addChild(m_pRunSequenceView);
-						m_pRunSequenceView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-						m_pRunSequenceView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-					}
-					else if (m_nChildrenLoaded == 5)
-					{
-						m_pManualRunView = new ManualRunView();
-						_viewStack.addChild(m_pManualRunView);
-						m_pManualRunView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-						m_pManualRunView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-					}
-					else
-					{
-						// All child views have been created
-						Init4_ChildViewsCreated();
-					}
+					// All child views have been created
+					Init4_ChildViewsCreated();
 				}
 			}
 
@@ -417,6 +610,20 @@
 			private var m_pRunSequenceView:RunSequenceView = null;
 			private var m_pManualRunView:ManualRunView = null;
 			
+			// Child subviews
+			private var m_pCassetteSubview:CassetteSubview = null;
+			private var m_pAddSubview:AddSubview = null;
+			private var m_pEvaporateSubview:EvaporateSubview = null;
+			private var m_pTransferSubview:TransferSubview = null;
+			private var m_pEluteSubview:EluteSubview = null;
+			private var m_pReactSubview:ReactSubview = null;
+			private var m_pPromptSubview:PromptSubview = null;
+			private var m_pInstallSubview:InstallSubview = null;
+			private var m_pCommentSubview:CommentSubview = null;
+			private var m_pActivitySubview:ActivitySubview = null;
+			private var m_pActiveSubview:SubviewBase = null;
+			private var m_pMessageSubview:SubviewBase = null;
+			
 			// State update timer
 			private var m_pStateTimer:Timer;
 
@@ -428,5 +635,5 @@
 		]]>
 	</fx:Script>
 	
-	<mx:ViewStack id="_viewStack" visible="false" includeInLayout="false" width="100%" height="100%" />
+	<mx:ViewStack id="_viewStack" visible="false" includeInLayout="false" z="1" width="100%" height="100%" />
 </mx:Canvas>

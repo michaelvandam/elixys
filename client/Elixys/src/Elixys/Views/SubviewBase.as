@@ -30,7 +30,7 @@ package Elixys.Views
 			// Call the base constructor
 			super();
 		}
-
+		
 		// Set view mode
 		public function SetViewMode(sViewMode:String):void
 		{

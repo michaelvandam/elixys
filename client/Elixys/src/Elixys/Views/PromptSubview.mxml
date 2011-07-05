@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -10,6 +10,7 @@
 			import Elixys.Objects.Reagent;
 			
 			import mx.controls.TextArea;
+			import mx.events.FlexEvent;
 			
 			/***
 			 * Member functions
@@ -46,8 +47,11 @@
 			 **/
 			
 			// Called when creation is complete
-			public function OnCreationComplete():void
+			protected override function OnCreationComplete(event:FlexEvent):void
 			{
+				// Call the base implementation
+				super.OnCreationComplete(event);
+
 				// Set the base class variables
 				m_pViewGroup = _viewGroup;
 				m_pEditGroup = _editGroup;
@@ -68,8 +72,8 @@
 				}
 				
 				// Save the component to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentPrompt, "sequence/" + nSequenceID + "/component/" + m_pComponentPrompt.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentPrompt, "sequence/" + nSequenceID + "/component/" + m_pComponentPrompt.ID);
 			}
 
 			/***

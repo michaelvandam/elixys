@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -11,6 +11,7 @@
 			import Elixys.Objects.Reagent;
 			
 			import mx.controls.TextArea;
+			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
 
@@ -46,7 +47,7 @@
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
 					// Format the output text
-					var pReactor:ReactorState = (m_pParent as SequenceViewBase).GetReactor();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Moving reactor " + m_pComponentInstall.Reactor + " to the install position.";
 					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
 					var sActivity:String = pReactor.Activity();
@@ -62,8 +63,11 @@
 			 **/
 			
 			// Called when creation is complete
-			public function OnCreationComplete():void
+			protected override function OnCreationComplete(event:FlexEvent):void
 			{
+				// Call the base implementation
+				super.OnCreationComplete(event);
+
 				// Set the base class variables
 				m_pViewGroup = _viewGroup;
 				m_pEditGroup = _editGroup;
@@ -80,8 +84,8 @@
 				m_pComponentInstall.Reactor = parseInt(_editReactorCombo.selectedItem as String);
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
 			}
 
 			// Called when the user changes the text in one of our input fields
@@ -95,8 +99,8 @@
 				}
 				
 				// Save the component to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
 			}
 
 			/***

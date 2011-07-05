@@ -46,18 +46,18 @@ package Elixys.Views
 		}
 		
 		// Called when creation is complete
-		private function OnCreationComplete(event:FlexEvent):void
+		protected function OnCreationComplete(event:FlexEvent):void
 		{
 			// Inform the main window that we are up and running
 			dispatchEvent(new ChildCreationCompleteEvent());
 		}
 
-		// Set our parent
-		public function SetParent(pParent:EventDispatcher):void
+		// Sets the main Elixys window
+		public function SetElixysMain(pElixysMain:ElixysMain):void
 		{
-			m_pParent = pParent;
+			m_pElixysMain = pElixysMain;
 		}
-		
+
 		// Functions that are overridden by derived classes
 		public function UpdateConfiguration(pConfiguration:Configuration):void
 		{
@@ -104,14 +104,14 @@ package Elixys.Views
 			// Look up our sequence ID if one was not provided
 			if (!nSequenceID)
 			{
-				nSequenceID = (m_pParent as SequenceViewBase).GetSequenceID();
+				nSequenceID = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
 			}
 			
 			// Create and send a GET request to the server
 			var pHTTPRequest:HTTPRequest = new HTTPRequest();
 			pHTTPRequest.m_sMethod = "GET";
 			pHTTPRequest.m_sResource = "/Elixys/sequence/" + nSequenceID + "/reagent/" + nReagentID;
-			m_pParent.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+			m_pElixysMain.GetActiveSequenceView().dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
 		
 		// Called when a text control receives focus
@@ -638,8 +638,8 @@ package Elixys.Views
 		 * Member variables
 		 **/
 		
-		// Parent
-		protected var m_pParent:EventDispatcher;
+		// Main Elixys window
+		protected var m_pElixysMain:ElixysMain = null;
 
 		// Keyboard focus
 		protected var m_pKeyboardFocusTextArea:TextArea = null;

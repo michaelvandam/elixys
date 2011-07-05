@@ -19,6 +19,7 @@ package Elixys.Views
 	import spark.components.HGroup;
 	import spark.components.Label;
 	import spark.components.List;
+	import spark.components.VGroup;
 
 	public class SequenceViewBase extends ViewBase
 	{
@@ -31,22 +32,6 @@ package Elixys.Views
 		{
 			// Call the base constructor
 			super();
-		}
-
-		// Set the subview parents
-		public function SetSubviewParents():void
-		{
-			// Inform the child views of the parent
-			m_pCassetteSubview.SetParent(this);
-			m_pAddSubview.SetParent(this);
-			m_pEvaporateSubview.SetParent(this);
-			m_pTransferSubview.SetParent(this);
-			m_pEluteSubview.SetParent(this);
-			m_pReactSubview.SetParent(this);
-			m_pPromptSubview.SetParent(this);
-			m_pInstallSubview.SetParent(this);
-			m_pCommentSubview.SetParent(this);
-			m_pActivitySubview.SetParent(this);
 		}
 
 		// Return the state, sequence and component IDs
@@ -149,65 +134,26 @@ package Elixys.Views
 		// Update the sequence component
 		public function UpdateSequenceComponent(pComponent:Component):void
 		{
-			// Locate the active view
-			var pActiveView:ViewBase;
-			switch (pComponent.ComponentType)
-			{
-				case ComponentCassette.TYPE:
-					pActiveView = m_pCassetteSubview;
-					break;
-				
-				case ComponentAdd.TYPE:
-					pActiveView = m_pAddSubview;
-					break;
-				
-				case ComponentEvaporate.TYPE:
-					pActiveView = m_pEvaporateSubview;
-					break;
-				
-				case ComponentTransfer.TYPE:
-					pActiveView = m_pTransferSubview;
-					break;
-				
-				case ComponentElute.TYPE:
-					pActiveView = m_pEluteSubview;
-					break;
-				
-				case ComponentReact.TYPE:
-					pActiveView = m_pReactSubview;
-					break;
-				
-				case ComponentPrompt.TYPE:
-					pActiveView = m_pPromptSubview;
-					break;
-				
-				case ComponentInstall.TYPE:
-					pActiveView = m_pInstallSubview;
-					break;
-				
-				case ComponentComment.TYPE:
-					pActiveView = m_pCommentSubview;
-					break;
-				
-				case ComponentActivity.TYPE:
-					pActiveView = m_pActivitySubview;
-					break;
-				
-				default:
-					return;
-			}
+			// Make sure the subview is visible
+			m_pElixysMain.ShowSubview(pComponent.ComponentType, m_sViewMode, m_pComponentGroup);
 			
-			// Show and update the appropriate component
-			m_pViewStack.selectedChild = pActiveView;
-			pActiveView.UpdateComponent(pComponent);
+			// Update the subview component
+			var pSubview:SubviewBase = m_pElixysMain.GetActiveSubview();
+			if (pSubview != null)
+			{
+				pSubview.UpdateComponent(pComponent);
+			}
 		}
 		
 		// Update sequence reagent
 		public function UpdateSequenceReagent(pReagent:Reagent):void
 		{
-			// Update the active view
-			var pViewBase:ViewBase = m_pViewStack.selectedChild as ViewBase;
-			pViewBase.UpdateReagent(pReagent);
+			// Update the subview component
+			var pSubview:SubviewBase = m_pElixysMain.GetActiveSubview();
+			if (pSubview != null)
+			{
+				pSubview.UpdateReagent(pReagent);
+			}
 		}
 		
 		// Send requests to the server
@@ -343,6 +289,9 @@ package Elixys.Views
 		protected var m_nSequenceID:uint = 0;
 		protected var m_nComponentID:uint = 0;
 
+		// Current view mode
+		protected var m_sViewMode:String;
+
 		// Server configuration
 		protected var m_pServerConfiguration:Configuration = null;
 		
@@ -354,16 +303,6 @@ package Elixys.Views
 		protected var m_pSequenceName:Label = null;
 		protected var m_pSequenceList:List = null;
 		protected var m_pNavigationButtons:HGroup = null;
-		protected var m_pViewStack:ViewStack = null;
-		protected var m_pCassetteSubview:CassetteSubview = null;
-		protected var m_pAddSubview:AddSubview = null;
-		protected var m_pEvaporateSubview:EvaporateSubview = null;
-		protected var m_pTransferSubview:TransferSubview = null;
-		protected var m_pEluteSubview:EluteSubview = null;
-		protected var m_pReactSubview:ReactSubview = null;
-		protected var m_pPromptSubview:PromptSubview = null;
-		protected var m_pInstallSubview:InstallSubview = null;
-		protected var m_pCommentSubview:CommentSubview = null;
-		protected var m_pActivitySubview:ActivitySubview = null;
+		protected var m_pComponentGroup:VGroup = null;
 	}
 }

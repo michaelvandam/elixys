@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -9,6 +9,8 @@
 			import Elixys.Objects.ComponentElute;
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
+			
+			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
 
@@ -95,10 +97,13 @@
 						m_pTarget = pReagent;
 					}
 					
+					// Removing the following line causes a compile error for reasons I don't understand
+					var pElixysMain:ElixysMain;
+
 					// Format the output text
 					if ((m_pReagent != null) && (m_pTarget != null))
 					{
-						var pReactor:ReactorState = (m_pParent as SequenceViewBase).GetReactor();
+						var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 						_runOutputText1.text = "Eluting the " + m_pTarget.Description + " with " + m_pReagent.Description + 
 							" into reactor " + m_pComponentElute.Reactor + ".";
 						_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
@@ -117,8 +122,11 @@
 			 **/
 			
 			// Called when creation is complete
-			public function OnCreationComplete():void
+			protected override function OnCreationComplete(event:FlexEvent):void
 			{
+				// Call the base implementation
+				super.OnCreationComplete(event);
+				
 				// Set the base class variables
 				m_pViewGroup = _viewGroup;
 				m_pEditGroup = _editGroup;
@@ -135,8 +143,8 @@
 				m_pComponentElute.Reactor = parseInt(_editReactorCombo.selectedItem as String);
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
 			}
 			protected function OnReagentChange(event:IndexChangeEvent):void
 			{
@@ -144,8 +152,8 @@
 				m_pComponentElute.Reagent = (_editReagentCombo.selectedItem as Reagent).ReagentID;
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
 			}
 			protected function OnTargetChange(event:IndexChangeEvent):void
 			{
@@ -153,8 +161,8 @@
 				m_pComponentElute.Target = (_editTargetCombo.selectedItem as Reagent).ReagentID;
 				
 				// Pass the request to the server
-				var nSequenceID:uint = (m_pParent as SequenceViewBase).GetSequenceID();
-				(m_pParent as SequenceViewBase).DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentElute, "sequence/" + nSequenceID + "/component/" + m_pComponentElute.ID);
 			}
 
 			/***

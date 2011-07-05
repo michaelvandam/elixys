@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SequenceViewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPConnection;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.*;
+			
+			import mx.events.FlexEvent;
 			
 			import spark.components.Button;
 
@@ -50,27 +52,20 @@
 			 **/
 			
 			// Called when creation is complete
-			public function OnCreationComplete():void
+			protected override function OnCreationComplete(event:FlexEvent):void
 			{
+				// Call the base implementation
+				super.OnCreationComplete(event);
+				
+				// Set our view mode
+				m_sViewMode = SubviewBase.VIEWMODE;
+				
 				// Set the base class variables
 				m_pOnButtonClick = OnButtonClick;
 				m_pSequenceName = _sequenceName;
 				m_pSequenceList = _sequenceList;
 				m_pNavigationButtons = _navigationButtons;
-				m_pViewStack = _viewStack;
-				m_pCassetteSubview = _cassetteSubview;
-				m_pAddSubview = _addSubview;
-				m_pEvaporateSubview = _evaporateSubview;
-				m_pTransferSubview = _transferSubview;
-				m_pEluteSubview = _eluteSubview;
-				m_pReactSubview = _reactSubview;
-				m_pPromptSubview = _promptSubview;
-				m_pInstallSubview = _installSubview;
-				m_pCommentSubview = _commentSubview;
-				m_pActivitySubview = _activitySubview;
-				
-				// Set the subview parents
-				SetSubviewParents();
+				m_pComponentGroup = _componentGroup;
 			}
 
 			// Button click handler
@@ -129,18 +124,7 @@
 		<s:VGroup horizontalAlign="right" verticalAlign="middle" gap="20" width="100%" height="100%">
 			<s:HGroup id="_navigationButtons" gap="20" />
 			<s:Button id="PREVIOUS" label="Previous" styleName="button" click="OnButtonClick(event)" width="100%" height="40" />
-			<mx:ViewStack id="_viewStack" width="100%" height="100%">
-				<Views:CassetteSubview id="_cassetteSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:AddSubview id="_addSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:EvaporateSubview id="_evaporateSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:TransferSubview id="_transferSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:EluteSubview id="_eluteSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:ReactSubview id="_reactSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:PromptSubview id="_promptSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:InstallSubview id="_installSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:CommentSubview id="_commentSubview" m_sViewMode="View" width="100%" height="100%" />
-				<Views:ActivitySubview id="_activitySubview" m_sViewMode="View" width="100%" height="100%" />
-			</mx:ViewStack>
+			<s:VGroup id="_componentGroup" width="100%" height="100%" />
 			<s:Button id="NEXT" label="Next" styleName="button" click="OnButtonClick(event)" width="100%" height="40" />
 		</s:VGroup>
 	</s:HGroup>
