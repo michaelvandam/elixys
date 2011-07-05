@@ -2,7 +2,7 @@ package Elixys.Events
 {
 	import flash.events.Event;
 
-	// This custom event is used by the Eliixys SWF to inform the container when the user logs out
+	// This custom event is used by the Elixys SWF to inform the container when the user logs out
 	public class LogoutEvent extends Event
 	{
 		// Constructor

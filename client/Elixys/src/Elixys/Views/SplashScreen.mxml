@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+		creationComplete="OnCreationComplete()" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import Elixys.Events.ChildCreationCompleteEvent;
+			
+			// Called when this object is created
+			private function OnCreationComplete():void
+			{
+				// Inform our parent
+				dispatchEvent(new ChildCreationCompleteEvent(true));
+			}
+			
+			// Sets the progress
+			public function SetProgress(nProgress:uint, nProgressMax:uint):void
+			{
+				_progress.setProgress(nProgress, nProgressMax);
+			}
+		]]>
+	</fx:Script>
+
+	<s:VGroup horizontalAlign="left" verticalAlign="middle" paddingLeft="50" paddingRight="50" width="100%" height="100%">
+		<s:Label text="Elixys" styleName="TextExtraLarge" />
+		<s:Label text="Automated Radiochemical Synthesis Platform" styleName="TextMedium" />
+		<s:Label text="Designed and developed by the van Dam Lab" styleName="TextMedium" />
+		<s:Label text="California Nanosystems Institute" styleName="TextMedium" />
+		<s:Label text="University of California Los Angeles" styleName="TextMedium" />
+		<s:Spacer height="100" />
+		<s:HGroup horizontalAlign="center" verticalAlign="middle" width="100%">
+			<s:Label text="Loading..." styleName="TextSmall" />
+			<mx:ProgressBar id="_progress" label="" labelPlacement="center" mode="manual" width="50%" />
+		</s:HGroup>
+	</s:VGroup>
+</s:BorderContainer>

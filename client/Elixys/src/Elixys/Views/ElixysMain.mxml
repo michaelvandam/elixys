@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		   xmlns:Views="Elixys.Views.*" creationComplete="OnCreationComplete()" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" creationComplete="Init2_OnCreationComplete()" width="100%" height="100%">
 	<fx:Style source="Elixys.css" />
 	<fx:Script>
 		<![CDATA[
@@ -16,33 +16,6 @@
 			/***
 			 *** Initialization functions
 			 **/
-						
-			// Called when the object is created
-			private function OnCreationComplete():void
-			{
-				// Add event listeners
-				addEventListener(ResizeEvent.RESIZE, OnResize);
-				_viewHome.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-				_viewSelect.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-				_viewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-				_viewEdit.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-				_viewRunSequence.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-				_viewManualRun.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-
-				// Tell the Home page to display the log out button if we are in the AIR player
-				if (FindLoaderMain() != null)
-				{
-					_viewHome.DisplayLogout(true);
-					_viewHome.addEventListener(LogoutEvent.LOGOUT, OnLogoutEvent);
-				}
-
-				// Load the system configuration once we are initialize and the server set
-				m_bInitialized = true;
-				if (m_bInitialized && (m_pHTTPConnectionPool != null))
-				{
-					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
-				}
-			}
 
 			// Step 1: This function is called by the container to set the server
 			public function Init1_SetServer(sServer:String, sCredentials:String):void
@@ -54,16 +27,58 @@
 				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
 				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnectionPool.SetCredentials(sCredentials);
-
-				// Load the system configuration once we are initialize and the server set
-				if (m_bInitialized && (m_pHTTPConnectionPool != null))
-				{
-					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
-				}
 			}
 
-			// Step 2: Called when the system configuration has been received
-			public function Init2_OnConfiguration(pConfiguration:Configuration):void
+			// Step 2: This function is called when this view has been created
+			private function Init2_OnCreationComplete():void
+			{
+				// Show the splash screen
+				m_pSplashScreen = new SplashScreen();
+				m_pSplashScreen.percentWidth = 100;
+				m_pSplashScreen.percentHeight = 100;
+				addChild(m_pSplashScreen);
+				
+				// Add event listeners
+				addEventListener(ResizeEvent.RESIZE, OnResize);
+				m_pSplashScreen.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+
+				// Remember if we are the AIR player
+				if (FindLoaderMain() != null)
+				{
+					m_bAIRPlayer = true;
+				}
+			}
+			
+			// Step 3: This function is called after the splash screen has had a chance to display itself
+			private function Init3_OnCreateChildrenTimer(event:TimerEvent):void
+			{
+				// Initialize the child creation variables
+				m_nTotalChildren = 6;
+				m_nChildrenLoaded = 0;
+				
+				// Create the first child view
+				m_pHomeView = new HomeView();
+				_viewStack.addChild(m_pHomeView);
+				m_pHomeView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+				m_pHomeView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+			}
+			
+			// Step 4: This function is called once all of our child view have been created
+			public function Init4_ChildViewsCreated():void
+			{
+				// Tell the Home page to display the log out button if we are in the AIR player
+				if (m_bAIRPlayer)
+				{
+					m_pHomeView.DisplayLogout(true);
+					m_pHomeView.addEventListener(LogoutEvent.LOGOUT, OnLogoutEvent);
+				}
+				
+				// Load the system configuration
+				m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
+			}
+
+			// Step 5: Called when the system configuration has been received
+			public function Init5_OnConfiguration(pConfiguration:Configuration):void
 			{
 				// Remember the system configuration
 				m_pServerConfiguration = pConfiguration;
@@ -81,6 +96,12 @@
 				m_pStateTimer = new Timer(1000);
 				m_pStateTimer.addEventListener(TimerEvent.TIMER, OnStateTimer);
 				m_pStateTimer.start();
+				
+				// Hide the splash screen and make the view stack visible
+				removeChild(m_pSplashScreen);
+				m_pSplashScreen = null;
+				_viewStack.visible = true;
+				_viewStack.includeInLayout = true;
 			}
 
 			/***
@@ -108,7 +129,7 @@
 					return null;
 				}
 			}
-
+			
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
@@ -136,33 +157,33 @@
 				// Show and update the appropriate state
 				if (StateHome.CheckState(pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewHome;
-					_viewHome.UpdateState(pState);
+					_viewStack.selectedChild = m_pHomeView;
+					m_pHomeView.UpdateState(pState);
 				}
 				else if (StateSelect.CheckState(pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewSelect;
-					_viewSelect.UpdateState(pState);
+					_viewStack.selectedChild = m_pSelectView;
+					m_pSelectView.UpdateState(pState);
 				}
 				else if (StateSequence.CheckState(StateSequence.VIEWTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewView;
-					_viewView.UpdateState(pState);
+					_viewStack.selectedChild = m_pViewView;
+					m_pViewView.UpdateState(pState);
 				}
 				else if (StateSequence.CheckState(StateSequence.EDITTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewEdit;
-					_viewEdit.UpdateState(pState);
+					_viewStack.selectedChild = m_pEditView;
+					m_pEditView.UpdateState(pState);
 				}
 				else if (StateSequence.CheckState(StateSequence.RUNSEQUENCETYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewRunSequence;
-					_viewRunSequence.UpdateState(pState);
+					_viewStack.selectedChild = m_pRunSequenceView;
+					m_pRunSequenceView.UpdateState(pState);
 				}
 				else if (StateSequence.CheckState(StateSequence.MANUALRUNTYPE, pState.ClientState()))
 				{
-					_viewStack.selectedChild = _viewManualRun;
-					_viewManualRun.UpdateState(pState);
+					_viewStack.selectedChild = m_pManualRunView;
+					m_pManualRunView.UpdateState(pState);
 				}
 				else
 				{
@@ -173,6 +194,67 @@
 			/***
 			 *** Callback functions
 			 **/
+
+			// Called when a child view is created
+			private function OnChildCreationCompleteEvent(event:ChildCreationCompleteEvent):void
+			{
+				// What type of child was created?
+				if (event.splashScreen)
+				{
+					// The splash screen was created.  Set a timer to give the view a change to render itself
+					var pTimer:Timer = new Timer(500, 1);
+					pTimer.addEventListener(TimerEvent.TIMER_COMPLETE, Init3_OnCreateChildrenTimer);
+					pTimer.start();
+				}
+				else
+				{
+					// It was one of our child views.  Update the splash screen progress bar
+					++m_nChildrenLoaded;
+					m_pSplashScreen.SetProgress(m_nChildrenLoaded, m_nTotalChildren);
+
+					// Create the next child view
+					if (m_nChildrenLoaded == 1)
+					{
+						m_pSelectView = new SelectView();
+						_viewStack.addChild(m_pSelectView);
+						m_pSelectView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						m_pSelectView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					}
+					else if (m_nChildrenLoaded == 2)
+					{
+						m_pViewView = new ViewView();
+						_viewStack.addChild(m_pViewView);
+						m_pViewView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						m_pViewView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					}
+					else if (m_nChildrenLoaded == 3)
+					{
+						m_pEditView = new EditView();
+						_viewStack.addChild(m_pEditView);
+						m_pEditView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						m_pEditView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					}
+					else if (m_nChildrenLoaded == 4)
+					{
+						m_pRunSequenceView = new RunSequenceView();
+						_viewStack.addChild(m_pRunSequenceView);
+						m_pRunSequenceView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						m_pRunSequenceView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					}
+					else if (m_nChildrenLoaded == 5)
+					{
+						m_pManualRunView = new ManualRunView();
+						_viewStack.addChild(m_pManualRunView);
+						m_pManualRunView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+						m_pManualRunView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					}
+					else
+					{
+						// All child views have been created
+						Init4_ChildViewsCreated();
+					}
+				}
+			}
 
 			// Called when the application resizes
 			private function OnResize(event:ResizeEvent):void
@@ -218,7 +300,7 @@
 					case (Configuration.TYPE):
 						// Continue initialization process
 						var pConfiguration:Configuration = new Configuration(sJSON);
-						Init2_OnConfiguration(pConfiguration);
+						Init5_OnConfiguration(pConfiguration);
 						break;
 						
 					case (State.TYPE):
@@ -315,10 +397,26 @@
 				}
 			}
 
-			// Initializaton flag and HTTP connection pool to the server
+			// Initializaton and AIR player flags
 			private var m_bInitialized:Boolean = false;
+			private var m_bAIRPlayer:Boolean = false;
+
+			// Splash screen and child creation variables
+			private var m_pSplashScreen:SplashScreen = null;
+			private var m_nTotalChildren:uint = 0;
+			private var m_nChildrenLoaded:uint = 0;
+
+			// HTTP connection pool to the server
 			private var m_pHTTPConnectionPool:HTTPConnectionPool = null;
 
+			// Child views
+			private var m_pHomeView:HomeView = null;
+			private var m_pSelectView:SelectView = null;
+			private var m_pViewView:ViewView = null;
+			private var m_pEditView:EditView = null;
+			private var m_pRunSequenceView:RunSequenceView = null;
+			private var m_pManualRunView:ManualRunView = null;
+			
 			// State update timer
 			private var m_pStateTimer:Timer;
 
@@ -330,12 +428,5 @@
 		]]>
 	</fx:Script>
 	
-	<mx:ViewStack id="_viewStack" creationPolicy="all" width="100%" height="100%">
-		<Views:HomeView id="_viewHome" width="100%" height="100%" />
-		<Views:SelectView id="_viewSelect" width="100%" height="100%" />
-		<Views:ViewView id="_viewView" width="100%" height="100%" />
-		<Views:EditView id="_viewEdit" width="100%" height="100%" />
-		<Views:RunSequenceView id="_viewRunSequence" width="100%" height="100%" />
-		<Views:ManualRunView id="_viewManualRun" width="100%" height="100%" />
-	</mx:ViewStack>
+	<mx:ViewStack id="_viewStack" visible="false" includeInLayout="false" width="100%" height="100%" />
 </mx:Canvas>

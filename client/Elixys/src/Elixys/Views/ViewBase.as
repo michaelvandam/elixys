@@ -1,5 +1,6 @@
 package Elixys.Views
 {
+	import Elixys.Events.ChildCreationCompleteEvent;
 	import Elixys.Events.HTTPRequestEvent;
 	import Elixys.HTTP.HTTPRequest;
 	import Elixys.Objects.*;
@@ -17,6 +18,7 @@ package Elixys.Views
 	import mx.controls.Button;
 	import mx.controls.TextArea;
 	import mx.core.UIComponent;
+	import mx.events.FlexEvent;
 	
 	import spark.components.ComboBox;
 	import spark.components.DataGrid;
@@ -36,10 +38,21 @@ package Elixys.Views
 		// Constructor
 		public function ViewBase()
 		{
+			// Call the base constructor
 			super();
+
+			// Add event listeners
+			addEventListener(FlexEvent.CREATION_COMPLETE, OnCreationComplete);
 		}
 		
-		// Set parent
+		// Called when creation is complete
+		private function OnCreationComplete(event:FlexEvent):void
+		{
+			// Inform the main window that we are up and running
+			dispatchEvent(new ChildCreationCompleteEvent());
+		}
+
+		// Set our parent
 		public function SetParent(pParent:EventDispatcher):void
 		{
 			m_pParent = pParent;
