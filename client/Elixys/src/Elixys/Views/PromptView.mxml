@@ -7,16 +7,25 @@
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Button;
 			import Elixys.Objects.PostPrompt;
-			import Elixys.Objects.State;
 			import Elixys.Objects.PromptState;
+			import Elixys.Objects.State;
+			
+			import mx.core.UITextField;
+			import mx.core.mx_internal;
 			
 			import spark.components.Button;
 
 			// Update function
 			public override function UpdateState(pState:State):void
 			{
-				// Update the text and edit controls
+				// Set the prompt title
 				var pPromptState:PromptState = pState.PromptState();
+				_title.text = pPromptState.Title();
+				var nTitleHeight:uint = _title.measureText(_title.text).height + _titleGroup.paddingTop + _titleGroup.paddingBottom;
+				_titleGroup.height = nTitleHeight;
+				_titleContainer.height = nTitleHeight;
+
+				// Update the first text and edit control
 				if (pPromptState.Text1() != "")
 				{
 					_text1.text = unescape(pPromptState.Text1());
@@ -30,6 +39,8 @@
 				}
 				_edit1Group.visible = pPromptState.Edit1();
 				_edit1Group.includeInLayout = pPromptState.Edit1();
+
+				// Update the first text and edit control
 				if (pPromptState.Text2() != "")
 				{
 					_text2.text = unescape(pPromptState.Text2());
@@ -82,24 +93,32 @@
 		]]>
 	</fx:Script>
 
-	<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" paddingLeft="20"
-			paddingRight="20" paddingTop="20" paddingBottom="20">
-		<s:VGroup id="_text1Group">
-			<mx:Text id="_text1" styleName="TextMedium" maxWidth="460" />
-			<s:Spacer height="20" />
+	<s:VGroup>
+		<s:BorderContainer id="_titleContainer" width="100%" backgroundColor="0xC0C0C0">
+			<s:VGroup id="_titleGroup" horizontalAlign="left" verticalAlign="middle" paddingLeft="5" paddingRight="5"
+					paddingTop="5" paddingBottom="5" width="100%">
+				<s:Label id="_title" styleName="TextMedium" />
+			</s:VGroup>
+		</s:BorderContainer>
+		<s:VGroup horizontalAlign="center" verticalAlign="middle" paddingLeft="20"
+				  paddingRight="20" paddingTop="20" paddingBottom="20">
+			<s:VGroup id="_text1Group">
+				<s:Label id="_text1" styleName="TextMedium" maxWidth="460" />
+				<s:Spacer height="20" />
+			</s:VGroup>
+			<s:VGroup id="_edit1Group" horizontalAlign="center" width="100%">
+				<Renderers:AutoTextArea id="_edit1" styleName="TextMedium" width="75%" />
+				<s:Spacer height="20" />
+			</s:VGroup>
+			<s:VGroup id="_text2Group">
+				<s:Label id="_text2" styleName="TextMedium" maxWidth="460" />
+				<s:Spacer height="20" />
+			</s:VGroup>
+			<s:VGroup id="_edit2Group" horizontalAlign="center" width="100%">
+				<Renderers:AutoTextArea id="_edit2" styleName="TextMedium" width="75%" />
+				<s:Spacer height="20" />
+			</s:VGroup>
+			<s:HGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="25" />
 		</s:VGroup>
-		<s:VGroup id="_edit1Group" horizontalAlign="center" width="100%">
-			<Renderers:AutoTextArea id="_edit1" styleName="TextMedium" width="75%" />
-			<s:Spacer height="20" />
-		</s:VGroup>
-		<s:VGroup id="_text2Group">
-			<mx:Text id="_text2" styleName="TextMedium" maxWidth="460" />
-			<s:Spacer height="20" />
-		</s:VGroup>
-		<s:VGroup id="_edit2Group" horizontalAlign="center" width="100%">
-			<Renderers:AutoTextArea id="_edit2" styleName="TextMedium" width="75%" />
-			<s:Spacer height="20" />
-		</s:VGroup>
-		<s:HGroup id="_buttonGroup" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" gap="25" />
 	</s:VGroup>
 </Views:ViewBase>

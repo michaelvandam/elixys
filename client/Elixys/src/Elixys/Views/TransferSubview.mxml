@@ -61,6 +61,9 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Removing the following line causes a compile error for reasons I don't understand
+					var pElixysMain:ElixysMain = null;
+
 					// Format the output text
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Transferring the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +

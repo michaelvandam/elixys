@@ -381,7 +381,7 @@ class Elixys:
         self.SaveSequence(sUsername, pSequence, True, True)
 
         # Load the user's sequence reagents and save them as the system sequence reagents
-        pReagents = self.GetSequenceReagentsInternal(sUsername, 10000)
+        pReagents = self.GetSequenceReagentsInternal(sUsername, nSequenceID)
         self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
 
         # Format the initial system state

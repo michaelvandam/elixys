@@ -104,6 +104,7 @@ def HandleGetState(sClientState, sRemoteUser):
 def GetPromptStateComponent(sClientState, sRemoteUser):
     # Initialize the response
     pPromptState = {"type":"promptstate",
+        "title":"",
         "show":False,
         "text1":"",
         "edit1":False,
@@ -379,6 +380,7 @@ def HandleGetStateManualRun(sClientState, sRemoteUser):
 # Handle GET /state for Select Sequence (Create Sequence prompt)
 def HandleGetStateSelectPromptCreateSequence(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Create new sequence"
     pPromptState["text1"] = "Enter the name of the new sequence:"
     pPromptState["edit1"] = True
     pPromptState["edit1validation"] = "type=string; required=true"
@@ -393,6 +395,7 @@ def HandleGetStateSelectPromptCreateSequence(pPromptState):
 # Handle GET /state for Select Sequence (Copy Sequence prompt)
 def HandleGetStateSelectPromptCopySequence(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Copy sequence"
     pPromptState["text1"] = "Enter the name of the new sequence:"
     pPromptState["edit1"] = True
     pPromptState["edit1validation"] = "type=string; required=true"
@@ -407,6 +410,7 @@ def HandleGetStateSelectPromptCopySequence(pPromptState):
 # Handle GET /state for Select Sequence (Delete Sequence prompt)
 def HandleGetStateSelectPromptDeleteSequence(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Delete sequence"
     pPromptState["text1"] = "Are you sure that you want to permanently delete sequence \"Fake Sequence Name Here\"?"
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -419,6 +423,7 @@ def HandleGetStateSelectPromptDeleteSequence(pPromptState):
 # Handle GET /state for Run Sequence prompt
 def HandleGetStatePromptRunSequence(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Run sequence"
     pPromptState["text1"] = "Prepare the Elixys system to run \"Fake Sequence Name Here\" and click OK to continue."
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -431,6 +436,7 @@ def HandleGetStatePromptRunSequence(pPromptState):
 # Handle GET /state for Home (Manual Run prompt)
 def HandleGetStatePromptManualRun(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Manual run"
     pPromptState["text1"] = "Prepare the Elixys system for the manual run and click OK to continue."
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -443,6 +449,7 @@ def HandleGetStatePromptManualRun(pPromptState):
 # Handle GET /state for Run Sequence (Abort prompt)
 def HandleGetStateRunSequencePromptAbort(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Abort run"
     pPromptState["text1"] = "Are you sure you want to abort the sequence run?  This operation cannot be undone."
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -471,6 +478,7 @@ def HandleGetStateRunSequencePromptUnitOperation(pPromptState, sClientState, sRe
 
     # Set the prompt message
     pPromptState["show"] = True
+    pPromptState["title"] = "Prompt"
     pPromptState["text1"] = pSequence["components"][0]["message"]
 
     # Set the button text depending on whether we are the user running the system
@@ -489,6 +497,7 @@ def HandleGetStateRunSequencePromptUnitOperation(pPromptState, sClientState, sRe
 # Handle GET /state for Manual Run (Abort run prompt)
 def HandleGetStateManualRunPromptAbortRun(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Abort manual run"
     pPromptState["text1"] = "Are you sure you want to abort the manual run?  This operation cannot be undone."
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -501,6 +510,7 @@ def HandleGetStateManualRunPromptAbortRun(pPromptState):
 # Handle GET /state for Manual Run (Abort operation prompt)
 def HandleGetStateManualRunPromptAbortOperation(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Abort operation"
     pPromptState["text1"] = "Are you sure you want to abort the current operation?  This cannot be undone."
     pPromptState["buttons"].append({"type":"button",
         "text":"Cancel",
@@ -513,6 +523,7 @@ def HandleGetStateManualRunPromptAbortOperation(pPromptState):
 # Handle GET /state for Manual Run (Complete prompt)
 def HandleGetStateManualRunPromptComplete(pPromptState):
     pPromptState["show"] = True
+    pPromptState["title"] = "Complete manual run"
     pPromptState["text1"] = "Enter a brief comment to describes this manual run:"
     pPromptState["edit1"] = True
     pPromptState["edit1validation"] = "type=string; required=true"

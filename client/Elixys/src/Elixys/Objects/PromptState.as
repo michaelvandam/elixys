@@ -26,6 +26,10 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("show");
 		}
+		public function Title():String
+		{
+			return super.flash_proxy::getProperty("title");
+		}
 		public function Text1():String
 		{
 			return super.flash_proxy::getProperty("text1");
