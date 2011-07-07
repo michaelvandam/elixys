@@ -95,22 +95,6 @@
 				return pBorderContainer;
 			}
 			
-			// Find the border container ancestor
-			private function FindBorderContainer(pParent:DisplayObjectContainer):BorderContainer
-			{
-				// Walk the ancestor tree
-				while ((pParent != null) && ((pParent as BorderContainer) == null))
-				{
-					pParent = pParent.parent;
-				}
-				if (pParent == null)
-				{
-					// Failed to find border container
-					return null;
-				}
-				return pParent as BorderContainer;
-			}
-
 			// Determines if the given rect intersects with the target object
 			private function OverlapTest(pMouseStageRect:Rectangle, pTarget:DisplayObject):Boolean
 			{
@@ -322,6 +306,7 @@
 			protected function CleanUpDrag():void
 			{
 				m_pMouseDownTarget = null;
+				m_pDragObject = null;
 				m_nSequenceInsertionSource = -1;
 				m_nSequenceInsertionTarget = -1;
 				m_bTrashCanTarget = false;
@@ -360,6 +345,102 @@
 				m_pUnitOperationMouseTimer.addEventListener(TimerEvent.TIMER, OnUnitOperationMouseDownTimer);
 				m_pComponentMouseTimer = new Timer(200, 1);
 				m_pComponentMouseTimer.addEventListener(TimerEvent.TIMER, OnComponentMouseDownTimer);
+				
+				// Add mouse event listeners to the stage for dragging and dropping
+				stage.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
+				stage.addEventListener(MouseEvent.MOUSE_MOVE, OnMouseMouse);
+			}
+
+			// Mouse button up and movement message handdlers
+			public function OnMouseUp(event:MouseEvent):void
+			{
+				// Call the appropriate handler depending on our dragging state
+				if (m_bDraggingNewUnitOperation)
+				{
+					OnNewUnitOperationMouseUp(event);
+				}
+				else if (m_bDraggingInsertComponent)
+				{
+					OnInsertComponentMouseUp(event);
+				}
+			}
+			public function OnMouseMouse(event:MouseEvent):void
+			{
+				// Are we dragging?
+				if (m_bDraggingNewUnitOperation || m_bDraggingInsertComponent)
+				{
+					// Update the position of the drag object
+					m_pDragObject.move(event.stageX - 75, event.stageY - 20);
+					
+					// Check if we are over the sequence list
+					var pDragRectangle:Rectangle = new Rectangle(event.stageX - 75, event.stageY - 20, 150, 40);
+					var nOldInsertionTarget:int;
+					if (OverlapTest(pDragRectangle,_sequenceList))
+					{
+						// Determine the ID of the upper and lower sequence components by hit test
+						var pSequenceListPoint:Point = _sequenceList.localToGlobal(new Point(_sequenceList.width / 2, 0));
+						var nUpperComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY - 20));
+						var nLowerComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, event.stageY + 20));
+						
+						// Try and find the upper component ID if we didn't get one by hit test
+						if (nUpperComponentID == -1)
+						{
+							// Do we have a lower component ID?
+							if (nLowerComponentID != -1)
+							{
+								// Yes, so find the ID the the upper component
+								nUpperComponentID = FindPreviousSequenceComponentID(nLowerComponentID);
+							}
+							else
+							{
+								// No, but since we know we are over the sequence list we can safely assume that we are at the end of the list
+								nUpperComponentID = FindLastSequenceComponentID();
+							}
+						}
+						
+						// Try and find the lower component ID if we didn't get one by hit test
+						if (nLowerComponentID == -1)
+						{
+							// Do we have an upper component ID?
+							if (nUpperComponentID != -1)
+							{
+								// Yes, so find the ID the the lower component
+								nLowerComponentID = FindNextSequenceComponentID(nUpperComponentID);
+							}
+						}
+						
+						// Determine the lower component type
+						if (nLowerComponentID != -1)
+						{
+							var pComponent:SequenceComponent = FindSequenceComponentByID(nLowerComponentID);
+							if (pComponent.ComponentType == ComponentCassette.TYPE)
+							{
+								// Do not allow the user to insert before a cassette
+								nUpperComponentID = -1;
+							}
+						}
+						
+						// Has the insertion target changed?
+						if (nUpperComponentID != m_nSequenceInsertionTarget)
+						{
+							// Yes, so update the sequence list
+							UpdateSequenceInsertionTarget(nUpperComponentID);
+						}
+					}
+					else
+					{
+						// We are not over the sequence list, so remove any insertion gap
+						UpdateSequenceInsertionTarget(-1);
+					}
+					
+					// Are we dragging an existing unit operation?
+					if (m_nSequenceInsertionSource != -1)
+					{
+						// Yes, so set the trash can background color based on our position
+						m_bTrashCanTarget = OverlapTest(pDragRectangle, _trashCan);
+						SetTrashCan();
+					}
+				}
 			}
 
 			// Unit operation message handlers
@@ -393,37 +474,27 @@
 			protected function OnUnitOperationMouseDownTimer(event:TimerEvent):void
 			{
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareDragObject(m_pMouseDownTarget, "_unitOperationLabel",
-					mouseX, mouseY);
-				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnNewUnitOperationMouseUp);
-				pBorderContainer.addEventListener(MouseEvent.MOUSE_MOVE, OnNewUnitOperationMouseMove);
-				addElement(pBorderContainer);
+				m_pDragObject = PrepareDragObject(m_pMouseDownTarget, "_unitOperationLabel", mouseX, mouseY);
+				addElement(m_pDragObject);
 				
-				// Start dragging
-				pBorderContainer.startDrag();
+				// Start dragging.  The build-in startDrag() and stopDrag() functions stopped working after upgrading to AIR 2.7 so we're
+				// doing this manually for the moment
+				m_bDraggingNewUnitOperation = true;
 				
 				// Clear our target
 				m_pMouseDownTarget = null;
 			}
-			protected function OnNewUnitOperationMouseMove(event:MouseEvent):void
-			{
-				// Handle rearranging the sequence list as the user drags the new unit operation
-				OnUnitOperationMove(event.stageX, event.stageY);
-			}
 			public function OnNewUnitOperationMouseUp(event:MouseEvent):void
 			{
-				// Find the border container
-				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
-				
 				// Stop the dragging and remove the object
-				pBorderContainer.stopDrag();
-				removeChild(pBorderContainer);
+				m_bDraggingNewUnitOperation = false;
+				removeChild(m_pDragObject);
 				
 				// Perform any require action
 				if (m_nSequenceInsertionTarget != -1)
 				{
 					// Insert the unit operation
-					InsertUnitOperation(pBorderContainer.id, m_nSequenceInsertionTarget);
+					InsertUnitOperation(m_pDragObject.id, m_nSequenceInsertionTarget);
 					
 					// Close the insertion gap
 					UpdateSequenceInsertionTarget(-1);
@@ -480,13 +551,11 @@
 				}
 
 				// Prepare to drag
-				var pBorderContainer:BorderContainer = PrepareDragObject(m_pMouseDownTarget, "_componentLabel", mouseX, mouseY);
-				pBorderContainer.addEventListener(MouseEvent.MOUSE_UP, OnInsertComponentMouseUp);
-				pBorderContainer.addEventListener(MouseEvent.MOUSE_MOVE, OnInsertComponentMouseMove);
-				addElement(pBorderContainer);
+				m_pDragObject = PrepareDragObject(m_pMouseDownTarget, "_componentLabel", mouseX, mouseY);
+				addElement(m_pDragObject);
 				
-				// Start dragging
-				pBorderContainer.startDrag();
+				// Start dragging.  See note in OnUnitOperationMouseDownTimer()
+				m_bDraggingInsertComponent = true;
 				m_nSequenceInsertionSource = pComponent.ID;
 				
 				// Locate the previous component ID and create an initial gap for the newly dislocated component
@@ -497,19 +566,11 @@
 				RemoveSequenceListComponent(m_nSequenceInsertionSource);
 				m_pMouseDownTarget = null;
 			}
-			protected function OnInsertComponentMouseMove(event:MouseEvent):void
-			{
-				// Handle rearranging the sequence list as the user drags the sequence component
-				OnUnitOperationMove(event.stageX, event.stageY);
-			}
 			public function OnInsertComponentMouseUp(event:MouseEvent):void
 			{
-				// Find the border container
-				var pBorderContainer:BorderContainer = FindBorderContainer(event.target as DisplayObjectContainer);
-				
 				// Stop the dragging and remove the object
-				pBorderContainer.stopDrag();
-				removeChild(pBorderContainer);
+				m_bDraggingInsertComponent = false;
+				removeChild(m_pDragObject);
 				
 				// Perform any require action
 				if (m_nSequenceInsertionSource != -1)
@@ -533,79 +594,6 @@
 				
 				// Clear the drag variables
 				CleanUpDrag();
-			}
-
-			// Handle rearranging the sequence list as the user drags the unit operation
-			protected function OnUnitOperationMove(stageX:Number, stageY:Number):void
-			{
-				// Check if we are over the sequence list
-				var pDragRectangle:Rectangle = new Rectangle(stageX - 75, stageY - 20, 150, 40);
-				var nOldInsertionTarget:int;
-				if (OverlapTest(pDragRectangle,_sequenceList))
-				{
-					// Determine the ID of the upper and lower sequence components by hit test
-					var pSequenceListPoint:Point = _sequenceList.localToGlobal(new Point(_sequenceList.width / 2, 0));
-					var nUpperComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, stageY - 20));
-					var nLowerComponentID:int = FindSequenceComponentID(new Point(pSequenceListPoint.x, stageY + 20));
-					
-					// Try and find the upper component ID if we didn't get one by hit test
-					if (nUpperComponentID == -1)
-					{
-						// Do we have a lower component ID?
-						if (nLowerComponentID != -1)
-						{
-							// Yes, so find the ID the the upper component
-							nUpperComponentID = FindPreviousSequenceComponentID(nLowerComponentID);
-						}
-						else
-						{
-							// No, but since we know we are over the sequence list we can safely assume that we are at the end of the list
-							nUpperComponentID = FindLastSequenceComponentID();
-						}
-					}
-
-					// Try and find the lower component ID if we didn't get one by hit test
-					if (nLowerComponentID == -1)
-					{
-						// Do we have an upper component ID?
-						if (nUpperComponentID != -1)
-						{
-							// Yes, so find the ID the the lower component
-							nLowerComponentID = FindNextSequenceComponentID(nUpperComponentID);
-						}
-					}
-					
-					// Determine the lower component type
-					if (nLowerComponentID != -1)
-					{
-						var pComponent:SequenceComponent = FindSequenceComponentByID(nLowerComponentID);
-						if (pComponent.ComponentType == ComponentCassette.TYPE)
-						{
-							// Do not allow the user to insert before a cassette
-							nUpperComponentID = -1;
-						}
-					}
-					
-					// Has the insertion target changed?
-					if (nUpperComponentID != m_nSequenceInsertionTarget)
-					{
-						// Yes, so update the sequence list
-						UpdateSequenceInsertionTarget(nUpperComponentID);
-					}
-				}
-				else
-				{
-					// We are not over the sequence list, so remove any insertion gap
-					UpdateSequenceInsertionTarget(-1);
-				}
-				
-				// Are we dragging an existing unit operation?
-				if (m_nSequenceInsertionSource != -1)
-				{
-					// Yes, so set the trash can background color based on our position
-					m_bTrashCanTarget = OverlapTest(pDragRectangle,_trashCan);
-					SetTrashCan();
-				}
 			}
 			
 			// Called when the user moves an existing sequence component
@@ -642,6 +630,11 @@
 			/***
 			 * Member variables
 			 **/
+			
+			// Dragging variables
+			private var m_bDraggingNewUnitOperation:Boolean = false;
+			private var m_bDraggingInsertComponent:Boolean = false;
+			private var m_pDragObject:BorderContainer = null;
 			
 			// Sequence insertion source and target
 			private var m_nSequenceInsertionSource:int = -1;
