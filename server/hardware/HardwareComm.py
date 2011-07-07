@@ -148,7 +148,6 @@ class HardwareComm():
 
         # Calculate the memory address range
         pMemoryRangeComponents = self.__CalculateMemoryRange().split(",")
-        print "Memory range: " + str(pMemoryRangeComponents)
         self.__nMemoryLower = int(pMemoryRangeComponents[0])
         self.__nMemoryUpper = int(pMemoryRangeComponents[1])
 
@@ -182,12 +181,6 @@ class HardwareComm():
         self.__sState = ""
         self.__RequestNextStateChunk()
 
-    # Valves
-    def OpenValve(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName, True)
-    def CloseValve(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName, False)
-
     # Vacuum system
     def VacuumSystemOn(self):
         self.__SetBinaryValue("VacuumSystemOn", True)
@@ -205,32 +198,68 @@ class HardwareComm():
         self.__SetBinaryValue(sHardwareName + "_On", True)
     def PressureRegulatorOff(self, sHardwareName):
         self.__SetBinaryValue(sHardwareName + "_On", False)
-    def SetPressureRegulatorPressure(self, sHardwareName, fPressure):
+    def SetPressureRegulator(self, sHardwareName, fPressure):
         pass
 
-    # Reagent robot motion
-    def MoveReagentRobotToPosition(self, sPositionName):
+    # Reagent robot
+    def MoveReagentRobot(self, sPositionName):
         pPosition = self.__LookUpRobotPosition(sPositionName)
         self.__MoveToAbsolutePosition("ReagentRobot_SetX", pPosition["x"])
         self.__MoveToAbsolutePosition("ReagentRobot_SetZ", pPosition["z"])
     def GripperUp(self):
+        self.__SetBinaryValue("ReagentRobot_SetGripperDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", True)
     def GripperDown(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", False)
+        self.__SetBinaryValue("ReagentRobot_SetGripperDown", True)
     def GripperOpen(self):
+        self.__SetBinaryValue("ReagentRobot_SetGripperClose", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperOpen", True)
     def GripperClose(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperOpen", False)
+        self.__SetBinaryValue("ReagentRobot_SetGripperClose", True)
 
-    # Reactor motion
-    def MoveReactorToPosition(self, sPositionName):
+    # F-18
+    def LoadF18Start(self):
+        self.__SetBinaryValue("F18_Load", True)
+    def LoadF18Stop(self):
+        self.__SetBinaryValue("F18_Load", False)
+    def EluteF18Start(self):
+        self.__SetBinaryValue("F18_Elute", True)
+    def EluteF18Stop(self):
+        self.__SetBinaryValue("F18_Elute", False)
+    
+    # Reactor
+    def MoveReactor(self, sPositionName):
         pPosition = self.__LookUpRobotPosition(sPositionName)
         sReactor = sPositionName.split("_")[0]
         self.__MoveToAbsolutePosition(sReactor + "_SetZ", pPosition["z"])
     def ReactorUp(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "_SetReactorDown", False)
         self.__SetBinaryValue(sHardwareName + "_SetReactorUp", True)
     def ReactorDown(self, sHardwareName):
         self.__SetBinaryValue(sHardwareName + "_SetReactorUp", False)
+        self.__SetBinaryValue(sHardwareName + "_SetReactorDown", True)
+    def ReactorEvaporateStart(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "_EvaporationNitrogenValve", True)
+        # self.__SetBinaryValue(sHardwareName + "_EvaporationVacuumValve", True)
+    def ReactorEvaporateStop(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "_EvaporationNitrogenValve", False)
+        # self.__SetBinaryValue(sHardwareName + "_EvaporationVacuumValve", False)
+    def ReactorTransferStart(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "_TransferValve", True)
+    def ReactorTransferStop(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "_TransferValve", False)
+    def ReactorReagentTransferStart(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "TransferValve", True)
+    def ReactorReagentTransferStop(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "TransferValve", False)
+    def ReactorStopcockOpen(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "ValveClose", False)
+        self.__SetBinaryValue(sHardwareName + "ValveOpen", True)
+    def ReactorStopcockClose(self, sHardwareName):
+        self.__SetBinaryValue(sHardwareName + "ValveOpen", False)
+        self.__SetBinaryValue(sHardwareName + "ValveClose", True)
 
     # Temperature controllers
     def SetHeaterSetPoint(self, sHardwareName, nSetPoint):
@@ -610,18 +639,24 @@ class HardwareComm():
         sStateText += "    SetX: TBD\n" #ReagentRobot_SetX = integer.out.0
         sStateText += "    SetZ: TBD\n" #ReagentRobot_SetZ = integer.out.1
         sStateText += "    SetGripperUp: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp", self.__sState)) + "\n"
+        sStateText += "    SetGripperDown: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperDown", self.__sState)) + "\n"
         sStateText += "    SetGripperOpen: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperOpen", self.__sState)) + "\n"
+        sStateText += "    SetGripperClose: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperClose", self.__sState)) + "\n"
         sStateText += "  Reactor1:\n"
         sStateText += "    SetZ: TBD\n" #Reactor1_SetZ = integer.out.2
         sStateText += "    SetReactorUp: " + str(self.__GetBinaryValue("Reactor1_SetReactorUp", self.__sState)) + "\n"
-        sStateText += "    EvaporationValve: " + str(self.__GetBinaryValue("Reactor1_EvaporationValve", self.__sState)) + "\n"
-        sStateText += "    VacuumValve: " + str(self.__GetBinaryValue("Reactor1_VacuumValve", self.__sState)) + "\n"
+        sStateText += "    SetReactorDown: " + str(self.__GetBinaryValue("Reactor1_SetReactorDown", self.__sState)) + "\n"
+        sStateText += "    EvaporationValve: " + str(self.__GetBinaryValue("Reactor1_EvaporationNitrogenValve", self.__sState)) + "\n"
+        sStateText += "    VacuumValve: " + str(self.__GetBinaryValue("Reactor1_EvaporationVacuumValve", self.__sState)) + "\n"
         sStateText += "    TransferValve: " + str(self.__GetBinaryValue("Reactor1_TransferValve", self.__sState)) + "\n"
         sStateText += "    Reagent1TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent1TransferValve", self.__sState)) + "\n"
         sStateText += "    Reagent2TransferValve: " + str(self.__GetBinaryValue("Reactor1_Reagent2TransferValve", self.__sState)) + "\n"
-        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock1Valve", self.__sState)) + "\n"
-        sStateText += "    Stopcock2Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock2Valve", self.__sState)) + "\n"
-        sStateText += "    Stopcock3Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock3Valve", self.__sState)) + "\n"
+        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock1ValveOpen", self.__sState)) + "\n"
+        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock1ValveClose", self.__sState)) + "\n"
+        sStateText += "    Stopcock2Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock2ValveOpen", self.__sState)) + "\n"
+        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock2ValveClose", self.__sState)) + "\n"
+        sStateText += "    Stopcock3Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock3ValveOpen", self.__sState)) + "\n"
+        sStateText += "    Stopcock1Valve: " + str(self.__GetBinaryValue("Reactor1_Stopcock3ValveClose", self.__sState)) + "\n"
         sStateText += "    StirMotor: TBD\n" #Reactor1_StirMotor = integer.out.3
         sStateText += "    RadiationDetector: TBD\n" #Reactor1_RadiationDetector = analog.in.2
         sStateText += "    TemperatureController1:\n"
