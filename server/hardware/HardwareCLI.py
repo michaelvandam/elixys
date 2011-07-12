@@ -44,10 +44,18 @@ def ExecuteCommand(sCommand, pHardwareComm):
             pParameters[0] = pParameters[0].strip("'")
             if nParameters == 1:
                 pFunction(pHardwareComm, pParameters[0])
-            else:
+            elif nParameters == 2:
                 pParameters[1] = pParameters[1].strip('"')
                 pParameters[1] = pParameters[1].strip("'")
                 pFunction(pHardwareComm, pParameters[0], pParameters[1])
+            elif nParameters == 3:
+                pParameters[1] = pParameters[1].strip('"')
+                pParameters[1] = pParameters[1].strip("'")
+                pParameters[2] = pParameters[2].strip('"')
+                pParameters[2] = pParameters[2].strip("'")
+                pFunction(pHardwareComm, pParameters[0], pParameters[1], pParameters[2])
+            else:
+                raise Exception("Too many arguments");
     except Exception as ex:
         # Display the error
         print "Error: " + str(ex)
@@ -87,17 +95,18 @@ if __name__ == "__main__":
             # don't want to list all of our functions
             print "Recognized functions:"
             print "  Vacuum system functions:"
-            print "    Not implemented: VacuumSystemOn()"
-            print "    Not implemented: VacuumSystemOff()"
+            print "    VacuumSystemOn()"
+            print "    VacuumSystemOff()"
             print "  Cooling system functions:"
-            print "    Not implemented: CoolingSystemOn()"
-            print "    Not implemented: CoolingSystemOff()"
+            print "    CoolingSystemOn()"
+            print "    CoolingSystemOff()"
             print "  Pressure regulator functions:"
             print "    Not implemented: PressureRegulatorOn(sName)"
             print "    Not implemented: PressureRegulatorOff(sName)"
             print "    Not implemented: SetPressureRegulator(sName, fPressure)"
             print "  Reagent robot functions:"
-            print "    Not implemented: MoveReagentRobot(sPositionName)"
+            print "    MoveRobotToReagent(nReactor, nReagent)"
+            print "    MoveRobotToDelivery(nReactor, nPosition)"
             print "    GripperUp()"
             print "    GripperDown()"
             print "    GripperOpen()"
@@ -107,22 +116,25 @@ if __name__ == "__main__":
             print "    LoadF18Stop()"
             print "    EluteF18Start()"
             print "    EluteF18Stop()"
+            print "  HPLC functions:"
+            print "    LoadHPLCStart()"
+            print "    LoadHPLCStop()"
             print "  Reactor functions:"
-            print "    Not implemented: MoveReactor(sPositionName)"
-            print "    ReactorUp(sName)"
-            print "    ReactorDown(sName)"
-            print "    ReactorEvaporateStart(sName)"
-            print "    ReactorEvaporateStop(sName)"
-            print "    ReactorTransferStart(sName)"
-            print "    ReactorTransferStop(sName)"
-            print "    ReactorReagentTransferStart(sName)"
-            print "    ReactorReagentTransferStop(sName)"
-            print "    ReactorStopcockOpen(sName)"
-            print "    ReactorStopcockClose(sName)"
+            print "    MoveReactor(nReactor, sPositionName)"
+            print "    ReactorUp(nReactor)"
+            print "    ReactorDown(nReactor)"
+            print "    ReactorEvaporateStart(nReactor)"
+            print "    ReactorEvaporateStop(nReactor)"
+            print "    ReactorTransferStart(nReactor)"
+            print "    ReactorTransferStop(nReactor)"
+            print "    ReactorReagentTransferStart(nReactor, nPosition)"
+            print "    ReactorReagentTransferStop(nReactor, nPosition)"
+            print "    ReactorStopcockOpen(nReactor, nStopcock)"
+            print "    ReactorStopcockClose(nReactor, nStopcock)"
             print "  Temperature controller functions:"
-            print "    SetHeater(sName, fSetPoint)"
+            print "    SetHeater(nReactor, nHeater, fSetPoint)"
             print "  Stir motor functions:"
-            print "    Not implemented: SetMotorSpeed(sName, nMotorSpeed)"
+            print "    Not implemented: SetMotorSpeed(nReactor, nMotorSpeed)"
             print "  Radiation detector functions:"
             print "    Not implemented: ReadRadiationDetector(sName)"
         elif sCommand == "list names":
