@@ -148,19 +148,22 @@ class HardwareComm():
         self.__pRobotPositions = ConfigObj("RobotPositions.ini")
 
         # Extract the module offsets and units
-        self.__nDigitalOutOffset = int(self.__pHardwareMap["DigitalOutOffset"], 16)
-        self.__nDigitalInOffset = int(self.__pHardwareMap["DigitalInOffset"], 16)
         self.__nAnalogOutUnit = int(self.__pHardwareMap["AnalogOutUnit"], 16)
         self.__nAnalogInUnit = int(self.__pHardwareMap["AnalogInUnit"], 16)
         self.__nThermocontroller1Unit = int(self.__pHardwareMap["Thermocontroller1Unit"], 16)
         self.__nThermocontroller2Unit = int(self.__pHardwareMap["Thermocontroller2Unit"], 16)
         self.__nThermocontroller3Unit = int(self.__pHardwareMap["Thermocontroller3Unit"], 16)
         self.__nDeviceNetOffset = int(self.__pHardwareMap["DeviceNetUnit"], 16)
+        self.__nDigitalOutOffset = int(self.__pHardwareMap["DigitalOutOffset"], 16)
+        self.__nDigitalInOffset = int(self.__pHardwareMap["DigitalInOffset"], 16)
 
-        # Calculate the memory address range
-        pMemoryRangeComponents = self.__CalculateMemoryRange().split(",")
-        self.__nMemoryLower = int(pMemoryRangeComponents[0])
-        self.__nMemoryUpper = int(pMemoryRangeComponents[1])
+        # Load conversion constants
+        self.__nPressureRegulatorSetSlope = float(self.__pHardwareMap["PressureRegulatorSetSlope"])
+        self.__nPressureRegulatorSetIntercept = float(self.__pHardwareMap["PressureRegulatorSetIntercept"])
+        self.__nPressureRegulatorActualSlope = float(self.__pHardwareMap["PressureRegulatorActualSlope"])
+        self.__nPressureRegulatorActualIntercept = float(self.__pHardwareMap["PressureRegulatorActualIntercept"])
+        self.__nVacuumGaugeSlope = float(self.__pHardwareMap["VacuumGaugeSlope"])
+        self.__nVacuumGaugeIntercept = float(self.__pHardwareMap["VacuumGaugeIntercept"])
 
         # Load the motor axes
         self.__nReagentXAxis = int(self.__pRobotPositions["ReagentXAxis"])
@@ -169,13 +172,21 @@ class HardwareComm():
         self.__nReactor2Axis = int(self.__pRobotPositions["Reactor2Axis"])
         self.__nReactor3Axis = int(self.__pRobotPositions["Reactor3Axis"])
 
-        # Load the reagent cassette offsets
+        # Load the reactor offsets
         self.__nReactor1CassetteXOffset = int(self.__pRobotPositions["Reactor1"]["CassetteXOffset"])
         self.__nReactor1CassetteZOffset = int(self.__pRobotPositions["Reactor1"]["CassetteZOffset"])
+        self.__nReactor1ReactorOffset = int(self.__pRobotPositions["Reactor1"]["ReactorOffset"])
         self.__nReactor2CassetteXOffset = int(self.__pRobotPositions["Reactor2"]["CassetteXOffset"])
         self.__nReactor2CassetteZOffset = int(self.__pRobotPositions["Reactor2"]["CassetteZOffset"])
+        self.__nReactor2ReactorOffset = int(self.__pRobotPositions["Reactor2"]["ReactorOffset"])
         self.__nReactor3CassetteXOffset = int(self.__pRobotPositions["Reactor3"]["CassetteXOffset"])
         self.__nReactor3CassetteZOffset = int(self.__pRobotPositions["Reactor3"]["CassetteZOffset"])
+        self.__nReactor3ReactorOffset = int(self.__pRobotPositions["Reactor3"]["ReactorOffset"])
+
+        # Calculate the memory address range
+        pMemoryRangeComponents = self.__CalculateMemoryRange().split(",")
+        self.__nMemoryLower = int(pMemoryRangeComponents[0])
+        self.__nMemoryUpper = int(pMemoryRangeComponents[1])
 
         # Initialize our updating flag
         self.__bUpdatingState = False
@@ -189,34 +200,9 @@ class HardwareComm():
         self.__pSocketThreadTerminateEvent = threading.Event()
         self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
         self.__pSocketThread.start()
-
-        # Enable RoboNet control for all axes
-        print "Enabling RoboNet"
-        self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
-
-        # Home axis
-        print "Homing all axes"
-        for nAxis in range(4, 5):
-            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)                # Turn on servo axis
-        time.sleep(0.1)
-        for nAxis in range(4, 5):
-            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x12)                # Home axis
         
-        # Wait until home
-        #print "Waiting for axes to home..."
-        #bNotHome = True
-        #while bNotHome:
-            # Check each axis
-        #    bNotHome = False
-        #    for nAxis in range(2, 3):
-        #        nPosition = self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + nAxis)        # Read current position
-        #        if nPosition == 0:
-        #            print "Axis " + str(nAxis) + " home"
-        #            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)        # Clear home bit axis
-        #        else:
-        #            bNotHome = True
-        #    thread.sleep(250)
-        #print "All axes are home"
+        # Enable analog out
+        self.__SetIntegerValueRaw(2000, 255);
                 
     def ShutDown(self):
         # Stop the socket thread
@@ -249,12 +235,11 @@ class HardwareComm():
         self.__SetBinaryValue("CoolingSystemOn", False)
 
     # Pressure regulator
-    def PressureRegulatorOn(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName + "_On", True)
-    def PressureRegulatorOff(self, sHardwareName):
-        self.__SetBinaryValue(sHardwareName + "_On", False)
-    def SetPressureRegulator(self, sHardwareName, fPressure):
-        pass
+    def SetPressureRegulator(self, nPressureRegulator, nPressurePSI):
+        nPressurePLC = (float(nPressurePSI) * self.__nPressureRegulatorSetSlope) + self.__nPressureRegulatorSetIntercept
+        if nPressurePLC < 0:
+            nPressurePLC = 0
+        self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
 
     # Reagent robot
     def MoveRobotToReagent(self, sReactor, sReagent):
@@ -296,8 +281,16 @@ class HardwareComm():
 
     # Reactor
     def MoveReactor(self, sReactor, sPositionName):
-        pPosition = self.__LookUpRobotPosition("Reactor" + sReactor + "_" + sPositionName)
-        self.__SetRobotPosition(self.__LookUpReactorAxis(sReactor), int(pPosition["z"]))
+        if (sReactor == "1"):
+            nReactorOffset = self.__nReactor1ReactorOffset
+        elif (sReactor == "2"):
+            nReactorOffset = self.__nReactor2ReactorOffset
+        elif (sReactor == "3"):
+            nReactorOffset = self.__nReactor3ReactorOffset
+        else:
+            raise Exception("Invalid reactor")
+        pPosition = self.__LookUpRobotPosition("Reactors_" + sPositionName)
+        self.__SetRobotPosition(self.__LookUpReactorAxis(sReactor), nReactorOffset + int(pPosition["z"]))
     def ReactorUp(self, sReactor):
         self.__SetBinaryValue("Reactor" + sReactor + "_SetReactorDown", False)
         self.__SetBinaryValue("Reactor" + sReactor + "_SetReactorUp", True)
@@ -312,9 +305,9 @@ class HardwareComm():
         self.__SetBinaryValue("Reactor" + sReactor + "_EvaporationVacuumValve", False)
     def ReactorTransferStart(self, sReactor):
         self.__SetBinaryValue("Reactor" + sReactor + "_TransferValve", True)
-    def ReactorTransferStop(sReactor):
+    def ReactorTransferStop(self, sReactor):
         self.__SetBinaryValue("Reactor" + sReactor + "_TransferValve", False)
-    def ReactorReagentTransferStart(sReactor, sPosition):
+    def ReactorReagentTransferStart(self, sReactor, sPosition):
         self.__SetBinaryValue("Reactor" + sReactor + "_Reagent" + sPosition + "TransferValve", True)
     def ReactorReagentTransferStop(self, sReactor, sPosition):
         self.__SetBinaryValue("Reactor" + sReactor + "_Reagent" + sPosition + "TransferValve", False)
@@ -326,24 +319,68 @@ class HardwareComm():
         self.__SetBinaryValue("Reactor" + sReactor + "_Stopcock" + sStopcock + "ValveClose", True)
 
     # Temperature controllers
+    def HeaterOn(self, sReactor, sHeater):
+        # Clear the stop bit
+        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(sReactor, sHeater)
+        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
+    def HeaterOff(self, sReactor, sHeater):
+        # Set the stop bit
+        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(sReactor, sHeater)
+        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
     def SetHeater(self, sReactor, sHeater, sSetPoint):
-        self.__SetThermocontrollerValue("Reactor" + sReactor + "_TemperatureController" + sHeater + "_SetTemperature", sSetPoint)
+        # Set the heater temperature
+        self.__SetThermocontrollerSetValue("Reactor" + sReactor + "_TemperatureController" + sHeater, int(sSetPoint))
 
     # Stir motor
     def SetMotorSpeed(self, sReactor, sMotorSpeed):
-        pass
+        self.__SetAnalogValue("Reactor" + sReactor + "_StirMotor", int(sMotorSpeed))
 
     # Radiation detector
     def UpdateRadiationDetector(self, sReactor):
         pass
 
     # Utility functions
+    def HomeRobots(self):
+        # Enable RoboNet control for all axes
+        print "Enabling RoboNet"
+        self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
+
+        # Home axis
+        print "Homing all axes"
+        for nAxis in range(0, 5):
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)                # Turn on servo axis
+        time.sleep(0.1)
+        for nAxis in range(0, 5):
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x12)                # Home axis
+        
+        # Wait until home
+        #print "Waiting for axes to home..."
+        #bNotHome = True
+        #while bNotHome:
+            # Check each axis
+        #    bNotHome = False
+        #    for nAxis in range(2, 3):
+        #        nPosition = self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + nAxis)        # Read current position
+        #        if nPosition == 0:
+        #            print "Axis " + str(nAxis) + " home"
+        #            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)        # Clear home bit axis
+        #        else:
+        #            bNotHome = True
+        #    thread.sleep(250)
+        #print "All axes are home"
+
+    def ClearReagentRobotErrors(self, sReactor):
+        pass
+
     def ClearRobotErrors(self):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 0, 0x08)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 4, 0x08)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 8, 0x08)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 12, 0x08)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 16, 0x08)
+        
+    def SetStateCallback(self, fStateCallback):
+        self.__fStateCallback = fStateCallback
 
     ### PLC send functions ###
 
@@ -353,19 +390,24 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calcuate the absolute address of the target bit
-        nRelativeBitOffset = int(pHardware["location1"])
-        nAbsoluteBitOffset = nRelativeBitOffset % 0x10
-        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
+        nRelativeBitOffset = int(pHardware["location"])
+        nBitOffset = nRelativeBitOffset % 0x10
+        nWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nBitOffset) / 0x10)
 
+        # Set the binary value
+        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, bValue)
+        
+    # Set binary value raw
+    def __SetBinaryValueRaw(self, nWordOffset, nBitOffset, bValue):
         # Format and send the raw command
-        sCommand = "010230"					                    # Write bit to CIO memory
-        sCommand = sCommand + ("%0.4X" % nAbsoluteWordOffset)	# Memory offset (words)
-        sCommand = sCommand + ("%0.2X" % nAbsoluteBitOffset)    # Memory offset (bits)
-        sCommand = sCommand + "0001"				            # Number of bits to write
+        sCommand = "010230"					            # Write bit to CIO memory
+        sCommand = sCommand + ("%0.4X" % nWordOffset)	# Memory offset (words)
+        sCommand = sCommand + ("%0.2X" % nBitOffset)    # Memory offset (bits)
+        sCommand = sCommand + "0001"				    # Number of bits to write
         if bValue:
-            sCommand = sCommand + "01"				            # Set bit
+            sCommand = sCommand + "01"				    # Set bit
         else:
-            sCommand = sCommand + "00"				            # Clear bit
+            sCommand = sCommand + "00"				    # Clear bit
         self.__SendRawCommand(sCommand)
 
     # Set integer value by hardware name
@@ -374,12 +416,10 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Call the raw function
-        self.__SetIntegerValueRaw(int(pHardware["location1"]), nValue)
+        self.__SetIntegerValueRaw(int(pHardware["location"]), nValue)
 
     # Set integer value raw
     def __SetIntegerValueRaw(self, nAddress, nValue):
-        print "Set integer value raw: address = " + str(nAddress) + ", value = " + str(nValue)
-        
         # Format and send the raw command
         sCommand = "0102B0"					                    # Write word to CIO memory
         sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
@@ -389,25 +429,21 @@ class HardwareComm():
         self.__SendRawCommand(sCommand)
 
     # Set analog value
-    def __SetAnalogValue(self, sHardwareName, fValue):
-        print "Implement SetAnalogValue (" + sHardwareName + ")"
-
-    # Set thermocontroller value
-    def __SetThermocontrollerValue(self, sHardwareName, nValue):
+    def __SetAnalogValue(self, sHardwareName, nValue):
         # Look up the hardware component by name
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calculate the absolute address of the target word
-        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware)
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) +  int(pHardware["location"])
         
-        # Format and send the raw command
-        sCommand = "0102B0"					                    # Write word to CIO memory
-        sCommand = sCommand + ("%0.4X" % nAbsoluteWordOffset)	# Memory offset (words)
-        sCommand = sCommand + "00"                              # Memory offset (bits)
-        sCommand = sCommand + "0001"				            # Number of words to write
-        sCommand = sCommand + ("%0.4X" % int(nValue))	        # Temperature
-        print "Sending command: " + sCommand
-        self.__SendRawCommand(sCommand)
+        # Set the integer value
+        self.__SetIntegerValueRaw(nAbsoluteWordOffset, int(nValue))
+
+    # Set thermocontroller value
+    def __SetThermocontrollerSetValue(self, sHardwareName, nValue):
+        # Look up the temperature set offset and set the value
+        nOffset = self.__LookUpThermocontrollerSetOffset(sHardwareName)
+        self.__SetIntegerValueRaw(nOffset, nValue)
 
     # Move robot to position
     def __SetRobotPosition(self, nAxis, nPosition):
@@ -437,11 +473,11 @@ class HardwareComm():
             sBinaryPacket = sPacket.decode("hex")
 
             # Send the packet
-            print "Sending packet",
-            if sPacket[20:24] in PLCCOMMANDS:
-                print ("(%s)" % PLCCOMMANDS[sPacket[20:24]])
-            else:
-                print ("(unknown command %s)" % sPacket[20:24])
+            #print "Sending packet",
+            #if sPacket[20:24] in PLCCOMMANDS:
+            #    print ("(%s)" % PLCCOMMANDS[sPacket[20:24]])
+            #else:
+            #    print ("(unknown command %s)" % sPacket[20:24])
             self.__pSocketThread.SendPacket(sBinaryPacket)
         except Exception as ex:
             # Display the error
@@ -454,7 +490,8 @@ class HardwareComm():
         sError = sResponse[4:8]
         if sError == "0000":
             # Operation successful
-            print "Successful response received"
+            pass
+            #print "Successful response received"
         else:
             # Error encountered
             if sError in PLCERRORS:
@@ -513,6 +550,9 @@ class HardwareComm():
 
     # Process the raw state we've received from the PLC
     def __ProcessRawState(self, sState):
+        #print "Raw state: " + sState
+        #return
+        
         # Append this chunk to our state
         self.__sState += sState
         self.__nStateOffset += len(sState) / 4
@@ -526,12 +566,30 @@ class HardwareComm():
             # Yes, so clear our updating flag
             self.__bUpdatingState = False
 
+        # Check if the callback function is defined
+        try:
+            self.__fStateCallback(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1"),
+                self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2"),
+                self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3"),
+                self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1"),
+                self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2"),
+                self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3"),
+                self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1"),
+                self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2"),
+                self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3"))
+            return
+        except AttributeError:
+            pass
+
         # Format the state into a string for the moment
-        sStateText = "Cooling system on: " + str(self.__GetBinaryValue("CoolingSystemOn")) + "\n"
-        sStateText += "Pressure regulator 1 set/actual: TBD/TBD\n"
-        sStateText += "Pressure regulator 2 set/actual: TBD/TBD\n"
+        sStateText = "Vacuum pressure: " + str(self.__GetVacuum()) + "\n"
+        sStateText += "Cooling system on: " + str(self.__GetBinaryValue("CoolingSystemOn")) + "\n"
+        sStateText += "Pressure regulator 1 set/actual: %.1f/%.1f\n"%(self.__GetPressureRegulatorSetPressure(1), self.__GetPressureRegulatorActualPressure(1))
+        sStateText += "Pressure regulator 2 set/actual: %.1f/%.1f\n"%(self.__GetPressureRegulatorSetPressure(2), self.__GetPressureRegulatorActualPressure(2))
         sStateText += "Reagent robot:\n"
-        sStateText += "  Position set/actual: (TBD, TBD)/(TBD, TBD)\n"
+        sStateText += "  Position set/actual/status: (" + str(self.__GetReagentReactorSetX()) + ", " + str(self.__GetReagentReactorSetZ()) + ")/(" + \
+            str(self.__GetReagentReactorActualX()) + ", " + str(self.__GetReagentReactorActualZ()) + ")/(" + \
+            str(self.__GetRobotStatus(self.__nReagentXAxis)) + ", " + str(self.__GetRobotStatus(self.__nReagentZAxis)) + ")\n"
         sStateText += "  Gripper up set/actual: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp")) + "/" + \
             str(self.__GetBinaryValue("ReagentRobot_GripperUp")) + "\n"
         sStateText += "  Gripper down set/actual: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperDown")) + "/" + \
@@ -556,12 +614,15 @@ class HardwareComm():
             str(self.__GetBinaryValue("Reactor1_Stopcock2ValveClose")) + "\n"
         sStateText += "  Stopcock 3 valve open/close: " + str(self.__GetBinaryValue("Reactor1_Stopcock3ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor1_Stopcock3ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 set/actual: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController1_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor1_TemperatureController1_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 2 set/actual: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController2_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor1_TemperatureController2_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 3 set/actual: " + str(self.__GetThermocontrollerValue("Reactor1_TemperatureController3_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor1_TemperatureController3_ActualTemperature")) + "\n"
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("1", "1")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1")) + "\n"
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("1", "2")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2")) + "\n"
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("1", "3")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3")) + "\n"
         sStateText += "  Radiation detector: TBD\n"
         sStateText += "  StirMotor: TBD\n"
         sStateText += "Reactor 2:\n"
@@ -578,12 +639,15 @@ class HardwareComm():
         sStateText += "  Reagent 2 transfer valve: " + str(self.__GetBinaryValue("Reactor2_Reagent2TransferValve")) + "\n"
         sStateText += "  Stopcock 1 valve open/close: " + str(self.__GetBinaryValue("Reactor2_Stopcock1ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor2_Stopcock1ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 set/actual: " + str(self.__GetThermocontrollerValue("Reactor2_TemperatureController1_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor2_TemperatureController1_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 2 set/actual: " + str(self.__GetThermocontrollerValue("Reactor2_TemperatureController2_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor2_TemperatureController2_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 3 set/actual: " + str(self.__GetThermocontrollerValue("Reactor2_TemperatureController3_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor2_TemperatureController3_ActualTemperature")) + "\n"
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("2", "1")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1")) + "\n"
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("2", "2")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2")) + "\n"
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("2", "3")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3")) + "\n"
         sStateText += "  Radiation detector: TBD\n"
         sStateText += "  StirMotor: TBD\n"
         sStateText += "Reactor 3:\n"
@@ -600,12 +664,15 @@ class HardwareComm():
         sStateText += "  Reagent 2 transfer valve: " + str(self.__GetBinaryValue("Reactor3_Reagent2TransferValve")) + "\n"
         sStateText += "  Stopcock 1 valve open/close: " + str(self.__GetBinaryValue("Reactor3_Stopcock1ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor3_Stopcock1ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 set/actual: " + str(self.__GetThermocontrollerValue("Reactor3_TemperatureController1_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor3_TemperatureController1_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 2 set/actual: " + str(self.__GetThermocontrollerValue("Reactor3_TemperatureController2_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor3_TemperatureController2_ActualTemperature")) + "\n"
-        sStateText += "  Temperature controller 3 set/actual: " + str(self.__GetThermocontrollerValue("Reactor3_TemperatureController3_SetTemperature")) + "/" + \
-            str(self.__GetThermocontrollerValue("Reactor3_TemperatureController3_ActualTemperature")) + "\n"
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("3", "1")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1")) + "\n"
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("3", "2")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2")) + "\n"
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("3", "3")) + "/" + \
+            str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3")) + "/" + \
+            str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3")) + "\n"
         sStateText += "  Radiation detector: TBD\n"
         sStateText += "  StirMotor: TBD\n"
         print sStateText
@@ -616,19 +683,24 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calcuate the absolute address of the target bit
-        nRelativeBitOffset = int(pHardware["location1"])
-        nAbsoluteBitOffset = nRelativeBitOffset % 0x10
-        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nAbsoluteBitOffset) / 0x10)
+        nRelativeBitOffset = int(pHardware["location"])
+        nBitOffset = nRelativeBitOffset % 0x10
+        nWordOffset = self.__DetermineHardwareOffset(pHardware) + ((nRelativeBitOffset - nBitOffset) / 0x10)
 
         # Make sure the address is within range
-        if (nAbsoluteWordOffset < self.__nMemoryLower) or (nAbsoluteWordOffset >= self.__nMemoryUpper):
+        if (nWordOffset < self.__nMemoryLower) or (nWordOffset >= self.__nMemoryUpper):
             print "Offset out of range"
             return
 
+        # Return the raw value
+        return self.__GetBinaryValueRaw(nWordOffset, nBitOffset)
+
+    # Get binary value raw
+    def __GetBinaryValueRaw(self, nWordOffset, nBitOffset):
         # Extract the return the value
-        sWord = self.__sState[((nAbsoluteWordOffset - self.__nMemoryLower) * 4):((nAbsoluteWordOffset - self.__nMemoryLower + 1) * 4)]
+        sWord = self.__sState[((nWordOffset - self.__nMemoryLower) * 4):((nWordOffset - self.__nMemoryLower + 1) * 4)]
         nWord = int(sWord, 0x10)
-        nBit = (nWord >> nAbsoluteBitOffset) & 1
+        nBit = (nWord >> nBitOffset) & 1
         return nBit != 0
 
     # Get integer value
@@ -637,7 +709,7 @@ class HardwareComm():
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Call the raw function
-        return self.__GetIntegerValueRaw(int(pHardware["location1"]))
+        return self.__GetIntegerValueRaw(int(pHardware["location"]))
 
     # Get integer value raw
     def __GetIntegerValueRaw(self, nAddress):
@@ -652,29 +724,68 @@ class HardwareComm():
 
     # Get analog value
     def __GetAnalogValue(self, sHardwareName):
-        print "Implement GetAnalogValue (" + sHardwareName + ")"
-
-    # Get thermocontroller value
-    def __GetThermocontrollerValue(self, sHardwareName):
         # Look up the hardware component by name
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
         # Calculate the absolute address of the target word
-        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware)
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) +  int(pHardware["location"])
         
         # Extract the return the value
         sWord = self.__sState[((nAbsoluteWordOffset - self.__nMemoryLower) * 4):((nAbsoluteWordOffset - self.__nMemoryLower + 1) * 4)]
         return int(sWord, 0x10)
 
-    # Get current reactor robot position
-    def __GetReactorRobotActualPosition(self, sReactor):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(sReactor) * 4))
+    # Get thermocontroller value
+    def __GetHeaterOn(self, sReactor, sHeater):
+        # Read the stop bit
+        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(sReactor, sHeater)
+        return (self.__GetBinaryValueRaw(nWordOffset, nBitOffset) == False)
+    def __GetThermocontrollerSetValue(self, sHardwareName):
+        # Look up the temperature set offset and return the value
+        nOffset = self.__LookUpThermocontrollerSetOffset(sHardwareName)
+        sWord = self.__sState[((nOffset - self.__nMemoryLower) * 4):((nOffset - self.__nMemoryLower + 1) * 4)]
+        return int(sWord, 0x10)
+    def __GetThermocontrollerActualValue(self, sHardwareName):
+        # Look up the temperature actual offset and return the value
+        nOffset = self.__LookUpThermocontrollerActualOffset(sHardwareName)
+        sWord = self.__sState[((nOffset - self.__nMemoryLower) * 4):((nOffset - self.__nMemoryLower + 1) * 4)]
+        return int(sWord, 0x10)
 
-    # Get reactor robot target position
+    # Get vacuum
+    def __GetVacuum(self):
+        nVacuumPLC = float(self.__GetAnalogValue("VacuumPressure"))
+        return ((nVacuumPLC * self.__nVacuumGaugeSlope) + self.__nVacuumGaugeIntercept)
+
+    # Get pressure regulator set pressure
+    def __GetPressureRegulatorSetPressure(self, nPressureRegulator):
+        nPressurePLC = float(self.__GetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure"))
+        return ((nPressurePLC - self.__nPressureRegulatorSetIntercept) / self.__nPressureRegulatorSetSlope)
+
+    # Get pressure regulator actual pressure
+    def __GetPressureRegulatorActualPressure(self, nPressureRegulator):
+        nPressurePLC = float(self.__GetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure"))
+        return ((nPressurePLC * self.__nPressureRegulatorActualSlope) + self.__nPressureRegulatorActualIntercept)
+
+    # Get reagent robot set position
+    def __GetReagentReactorSetX(self):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4))
+    def __GetReagentReactorSetZ(self):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentZAxis * 4))
+
+    # Get reagent robot actual position
+    def __GetReagentReactorActualX(self):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4))
+    def __GetReagentReactorActualZ(self):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4))
+
+    # Get reactor robot set position
     def __GetReactorRobotSetPosition(self, sReactor):
         return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(sReactor) * 4))
 
-    # Get the reactor robot status
+    # Get reactor robot actual position
+    def __GetReactorRobotActualPosition(self, sReactor):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(sReactor) * 4))
+
+    # Get the robot status
     def __GetRobotStatus(self, nAxis):
         return self.__GetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4))
 
@@ -697,7 +808,7 @@ class HardwareComm():
             return self.__nReactor1CassetteXOffset
         elif (sReactor == "2"):
             return self.__nReactor2CassetteXOffset
-        elif (nReactor == "3"):
+        elif (sReactor == "3"):
             return self.__nReactor3CassetteXOffset
         else:
             raise Exception("Invalid reactor")
@@ -708,7 +819,7 @@ class HardwareComm():
             return self.__nReactor1CassetteZOffset
         elif (sReactor == "2"):
             return self.__nReactor2CassetteZOffset
-        elif (nReactor == "3"):
+        elif (sReactor == "3"):
             return self.__nReactor3CassetteZOffset
         else:
             raise Exception("Invalid reactor")
@@ -771,12 +882,17 @@ class HardwareComm():
             pDescriptorComponents = sHardwareDescriptor.split(".")
             if len(pDescriptorComponents) < 3:
                 raise Exception("Invalid hardware entry")
+            sType = str(pDescriptorComponents[0])
             pHardware = {"name":sHardwareName,
-                "type":str(pDescriptorComponents[0]),
-                "access":str(pDescriptorComponents[1]),
-                "location1":str(pDescriptorComponents[2])}
-            if len(pDescriptorComponents) == 4:
-                pHardware["location2"] = str(pDescriptorComponents[3])
+                "type":sType}
+            if (sType == "binary") or (sType == "analog"):
+                pHardware["access"] = str(pDescriptorComponents[1])
+                pHardware["location"] = str(pDescriptorComponents[2])
+            elif sType == "thermocontroller":
+                pHardware["thermocontroller"] = str(pDescriptorComponents[1])
+                pHardware["loop"] = str(pDescriptorComponents[2])
+            else:
+                raise Exception("Unknown hardware type")
             return pHardware
         except Exception as ex:
             # Raise an appropriate error
@@ -819,33 +935,68 @@ class HardwareComm():
                 nOffset = self.__nDigitalOutOffset
         elif pHardware["type"] == "analog":
             if pHardware["access"] == "in":
-                nOffset = self.__nAnalogInOffset
+                nOffset = 2000 + (10 * self.__nAnalogInUnit)
             elif pHardware["access"] == "out":
-                nOffset = self.__nAnalogOutOffset
+                nOffset = 2000 + (10 * self.__nAnalogOutUnit)
         elif pHardware["type"] == "thermocontroller":
-            if pHardware["location1"] == "1":
+            if pHardware["thermocontroller"] == "1":
                 nOffset = 2000 + (10 * self.__nThermocontroller1Unit)
-            elif pHardware["location1"] == "2":
+            elif pHardware["thermocontroller"] == "2":
                 nOffset = 2000 + (10 * self.__nThermocontroller2Unit)
-            elif pHardware["location1"] == "3":
+            elif pHardware["thermocontroller"] == "3":
                 nOffset = 2000 + (10 * self.__nThermocontroller3Unit)
-            if pHardware["access"] == "in":
-                if pHardware["location2"] == "1":
-                    nOffset += 0x3
-                elif pHardware["location2"] == "2":
-                    nOffset += 0x4
-                elif pHardware["location2"] == "3":
-                    nOffset += 0xd
-                elif pHardware["location2"] == "4":
-                    nOffset += 0xe
-            elif pHardware["access"] == "out":
-                if pHardware["location2"] == "1":
-                    nOffset += 0x0
-                elif pHardware["location2"] == "2":
-                    nOffset += 0x1
-                elif pHardware["location2"] == "3":
-                    nOffset += 0xa
-                elif pHardware["location2"] == "4":
-                    nOffset += 0xb
         return nOffset
         
+    # Look up the heater stop bit
+    def __LoopUpHeaterStop(self, sReactor, sHeater):
+        # Look up the hardware by name
+        pHardware = self.__LookUpHardwareName("Reactor" + sReactor + "_TemperatureController" + sHeater)
+
+        # Calculate the absolute address of the target word
+        nWordOffset = self.__DetermineHardwareOffset(pHardware)
+        if pHardware["loop"] == "1":
+            return (nWordOffset + 0x2), 0x6
+        elif pHardware["loop"] == "2":
+            return (nWordOffset + 0x2), 0x4
+        elif pHardware["loop"] == "3":
+            return (nWordOffset + 0xc), 0x6
+        elif pHardware["loop"] == "4":
+            return (nWordOffset + 0xc), 0x4
+        else:
+            raise Exception("Invalid thermocontroller loop")
+
+    # Look up the temperature set offset
+    def __LookUpThermocontrollerSetOffset(self, sHardwareName):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word
+        nOffset = self.__DetermineHardwareOffset(pHardware)
+        if pHardware["loop"] == "1":
+            return nOffset
+        elif pHardware["loop"] == "2":
+            return (nOffset + 0x1)
+        elif pHardware["loop"] == "3":
+            return (nOffset + 0xa)
+        elif pHardware["loop"] == "4":
+            return (nOffset + 0xb)
+        else:
+            raise Exception("Invalid thermocontroller loop")
+
+    # Look up the temperature actual offset
+    def __LookUpThermocontrollerActualOffset(self, sHardwareName):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word
+        nOffset = self.__DetermineHardwareOffset(pHardware)
+        if pHardware["loop"] == "1":
+            return (nOffset + 0x3)
+        elif pHardware["loop"] == "2":
+            return (nOffset + 0x4)
+        elif pHardware["loop"] == "3":
+            return (nOffset + 0xd)
+        elif pHardware["loop"] == "4":
+           return (nOffset + 0xe)
+        else:
+            raise Exception("Invalid thermocontroller loop")
