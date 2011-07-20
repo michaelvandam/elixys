@@ -36,29 +36,41 @@ def ExecuteCommand(sCommand, pHardwareComm):
         if (nParameters + 1) != len(pFunctionParameters):
             raise Exception("Incorrect number of arguments for " + sFunctionName)
 
-        # Strip any quotes from the parameters and call the function
+        # Prepare each function parameter
+        for nIndex in range(0, nParameters):
+            # Strip any quotes and whitespace
+            pParameters[nIndex] = pParameters[nIndex].strip('"')
+            pParameters[nIndex] = pParameters[nIndex].strip("'")
+            pParameters[nIndex] = pParameters[nIndex].strip()
+            
+            # Interpret any integers as such
+            try:
+                pParameters[nIndex] = int(pParameters[nIndex])
+                continue;
+            except ValueError:
+                pass
+
+            # Interpret any floats as such
+            try:
+                pParameters[nIndex] = float(pParameters[nIndex])
+                continue;
+            except ValueError:
+                pass
+
+        # Call the function
         if nParameters == 0:
             pFunction(pHardwareComm)
+        elif nParameters == 1:
+            pFunction(pHardwareComm, pParameters[0])
+        elif nParameters == 2:
+            pFunction(pHardwareComm, pParameters[0], pParameters[1])
+        elif nParameters == 3:
+            pFunction(pHardwareComm, pParameters[0], pParameters[1], pParameters[2])
         else:
-            pParameters[0] = pParameters[0].strip('"')
-            pParameters[0] = pParameters[0].strip("'")
-            if nParameters == 1:
-                pFunction(pHardwareComm, pParameters[0])
-            elif nParameters == 2:
-                pParameters[1] = pParameters[1].strip('"')
-                pParameters[1] = pParameters[1].strip("'")
-                pFunction(pHardwareComm, pParameters[0], pParameters[1])
-            elif nParameters == 3:
-                pParameters[1] = pParameters[1].strip('"')
-                pParameters[1] = pParameters[1].strip("'")
-                pParameters[2] = pParameters[2].strip('"')
-                pParameters[2] = pParameters[2].strip("'")
-                pFunction(pHardwareComm, pParameters[0], pParameters[1], pParameters[2])
-            else:
-                raise Exception("Too many arguments");
+            raise Exception("Too many arguments");
     except Exception as ex:
         # Display the error
-        print "Error: " + str(ex)
+        print "Failed to execute command: " + str(ex)
 
 # Parses and sends the raw command
 def SendCommand(sCommand, pHardwareComm):
@@ -134,7 +146,7 @@ if __name__ == "__main__":
             print "  Radiation detector functions:"
             print "    Not implemented: ReadRadiationDetector(nReactor)"
         elif sCommand == "list positions":
-            # I've gone this far, might as well make this one embedded text as well
+            # Recognized reactor positions
             print "Recognized reactor positions:"
             print "  Install"
             print "  Transfer"
@@ -146,7 +158,7 @@ if __name__ == "__main__":
             # Request the state from the hardware
             pHardwareComm.UpdateState()
 
-            # Sleep a bit and display the state
+            # Sleep a bit and wait for the state to be displayed before displaying the input prompt
             time.sleep(0.25)
         elif sCommand == "send help":
             # Display a brief description of the PLC command format
@@ -165,13 +177,13 @@ if __name__ == "__main__":
             # Attempt to send the command
             SendCommand(sCommand, pHardwareComm)
 
-            # Sleep a bit to give the PLC a chance to response before we display the carrot
+            # Sleep a bit to give the PLC a chance to response before we display the input prompt
             time.sleep(0.25)
         else:
             # Attempt to execute the command
             ExecuteCommand(sCommand, pHardwareComm)
 
-            # Sleep a bit to give the PLC a chance to response before we display the carrot
+            # Sleep a bit to give the PLC a chance to response before we display the input prompt
             time.sleep(0.25)
 
     # Clean up the hardware comm layer
