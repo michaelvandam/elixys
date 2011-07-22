@@ -11,7 +11,7 @@ import time
 ### Constants ###
 
 # IP and port of the PLC
-PLC_IP = "192.168.250.1"
+PLC_IP = "192.168.1.200"
 PLC_PORT = 9600
 
 # Number of words used by each type of module
@@ -38,7 +38,7 @@ ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0=Cmd 1=Resp][00000][0 or 1
 RSV = "00"    #Reserved - Always Zero
 GCT = "02"    #Gateway Count - Set to 02 (or do not set?!)
 DNET = "00"   #Dest. Network - 00 (Local Network)
-DNODE = "01"  #Dest. Node - Ethernet IP?
+DNODE = "C8"  #Dest. Node - Ethernet IP?
 DUNIT = "00"  #Dest. Unit - 00=CPU FE=Ethernet
 SNET = "00"   #Src. Net - 00 (Local Network)
 SNODE = "02"  #Src. Node
@@ -212,6 +212,16 @@ class HardwareComm():
 
     # Update state
     def UpdateState(self):
+        # Load the state
+        #pFile = open('C:\\Elixys\\state.txt', 'rb')
+        #sState = pFile.read()
+        #print "Length = " + str(len(sState))
+        #pFile.close()
+        #self.__nStateOffset = self.__nMemoryLower
+        #self.__sState = ""
+        #self.__ProcessRawState(sState)
+        #return
+
         # Make sure we're not already in the process of updating the state
         if self.__bUpdatingState == True:
             return
@@ -294,15 +304,19 @@ class HardwareComm():
         self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["z"]))
     def ReactorUp(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", False)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorUp", True)
     def ReactorDown(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorUp", False)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", True)
     def ReactorEvaporateStart(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationNitrogenValve", True)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationVacuumValve", True)
     def ReactorEvaporateStop(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationNitrogenValve", False)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationVacuumValve", False)
     def ReactorTransferStart(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_TransferValve", True)
@@ -314,9 +328,11 @@ class HardwareComm():
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Reagent" + str(nPosition) + "TransferValve", False)
     def ReactorStopcockOpen(self, nReactor, nStopcock):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveClose", False)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveOpen", True)
     def ReactorStopcockClose(self, nReactor, nStopcock):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveOpen", False)
+        time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveClose", True)
 
     # Temperature controllers
@@ -352,18 +368,34 @@ class HardwareComm():
     # Disable all robots
     def DisableRobots(self):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 0, 0x08)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 4, 0x08)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 8, 0x08)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 12, 0x08)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 16, 0x08)
         
     # Enable all robots
     def EnableRobots(self):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 0, 0x10)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 4, 0x10)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 8, 0x10)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 12, 0x10)
+        time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + 16, 0x10)
+
+    # Disable reactor robot
+    def DisableReactorRobot(self, nReactor):
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x08)
+
+    # Enable reactor robot
+    def EnableReactorRobot(self, nReactor):
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
 
     # Temporary hack: this is how we log the temperature when generating a heating and cooling profile
     def SetStateCallback(self, fStateCallback):
@@ -535,11 +567,17 @@ class HardwareComm():
         # Do we have the entire state?
         if self.__nStateOffset < self.__nMemoryUpper:
             # No, so request the next chunk and return
+            #print "requesting next state chunk, offset = " + str(self.__nStateOffset) + ", memory upper = " + str(self.__nMemoryUpper)
             self.__RequestNextStateChunk()
             return
         else:
             # Yes, so clear our updating flag
             self.__bUpdatingState = False
+
+        # Save the state
+        #pFile = open('C:\\Elixys\\state.txt', 'w')
+        #pFile.write(sState + "\n")
+        #pFile.close()
 
         # Temporary hack: check if the callback function is defined
         try:
@@ -565,15 +603,13 @@ class HardwareComm():
         sStateText += "  Position set/actual/status: (" + str(self.__GetReagentReactorSetX()) + ", " + str(self.__GetReagentReactorSetZ()) + ")/(" + \
             str(self.__GetReagentReactorActualX()) + ", " + str(self.__GetReagentReactorActualZ()) + ")/(" + \
             str(self.__GetRobotStatus(self.__nReagentXAxis)) + ", " + str(self.__GetRobotStatus(self.__nReagentZAxis)) + ")\n"
-        sStateText += "  Gripper up set/actual: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp")) + "/" + \
-            str(self.__GetBinaryValue("ReagentRobot_GripperUp")) + "\n"
-        sStateText += "  Gripper down set/actual: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperDown")) + "/" + \
-            str(self.__GetBinaryValue("ReagentRobot_GripperDown")) + "\n"
+        sStateText += "  Gripper up set: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperUp")) + "\n"
+        sStateText += "  Gripper down set: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperDown")) + "\n"
         sStateText += "  Gripper open set: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperOpen")) + "\n"
         sStateText += "  Gripper close set: " + str(self.__GetBinaryValue("ReagentRobot_SetGripperClose")) + "\n"
         sStateText += "Reactor 1:\n"
-        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition("1")) + "/" + \
-            str(self.__GetReactorRobotActualPosition("1")) + "/" + str(self.__GetRobotStatus(self.__nReactor1Axis)) + "\n"
+        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition(1)) + "/" + \
+            str(self.__GetReactorRobotActualPosition(1)) + "/" + str(self.__GetRobotStatus(self.__nReactor1Axis)) + "\n"
         sStateText += "  Reactor up set/actual: " + str(self.__GetBinaryValue("Reactor1_SetReactorUp")) + "/" + \
             str(self.__GetBinaryValue("Reactor1_ReactorUp")) + "\n"
         sStateText += "  Reactor down set/actual: " + str(self.__GetBinaryValue("Reactor1_SetReactorDown")) + "/" + \
@@ -589,20 +625,20 @@ class HardwareComm():
             str(self.__GetBinaryValue("Reactor1_Stopcock2ValveClose")) + "\n"
         sStateText += "  Stopcock 3 valve open/close: " + str(self.__GetBinaryValue("Reactor1_Stopcock3ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor1_Stopcock3ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("1", "1")) + "/" + \
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn(1, 1)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1")) + "\n"
-        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("1", "2")) + "/" + \
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn(1, 2)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2")) + "\n"
-        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("1", "3")) + "/" + \
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn(1, 3)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3")) + "\n"
         sStateText += "  Stir motor: " + str(self.__GetAnalogValue("Reactor1_StirMotor")) + "\n"
         sStateText += "  Radiation detector: TBD\n"
         sStateText += "Reactor 2:\n"
-        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition("2")) + "/" + \
-            str(self.__GetReactorRobotActualPosition("2")) + "/" + str(self.__GetRobotStatus(self.__nReactor2Axis)) + "\n"
+        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition(2)) + "/" + \
+            str(self.__GetReactorRobotActualPosition(2)) + "/" + str(self.__GetRobotStatus(self.__nReactor2Axis)) + "\n"
         sStateText += "  Reactor up set/actual: " + str(self.__GetBinaryValue("Reactor2_SetReactorUp")) + "/" + \
             str(self.__GetBinaryValue("Reactor2_ReactorUp")) + "\n"
         sStateText += "  Reactor down set/actual: " + str(self.__GetBinaryValue("Reactor2_SetReactorDown")) + "/" + \
@@ -614,20 +650,20 @@ class HardwareComm():
         sStateText += "  Reagent 2 transfer valve: " + str(self.__GetBinaryValue("Reactor2_Reagent2TransferValve")) + "\n"
         sStateText += "  Stopcock 1 valve open/close: " + str(self.__GetBinaryValue("Reactor2_Stopcock1ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor2_Stopcock1ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("2", "1")) + "/" + \
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn(2, 1)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1")) + "\n"
-        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("2", "2")) + "/" + \
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn(2, 2)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2")) + "\n"
-        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("2", "3")) + "/" + \
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn(2, 3)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3")) + "\n"
         sStateText += "  Stir motor: " + str(self.__GetAnalogValue("Reactor2_StirMotor")) + "\n"
         sStateText += "  Radiation detector: TBD\n"
         sStateText += "Reactor 3:\n"
-        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition("3")) + "/" + \
-            str(self.__GetReactorRobotActualPosition("3")) + "/" + str(self.__GetRobotStatus(self.__nReactor3Axis)) + "\n"
+        sStateText += "  Position set/actual/status: " + str(self.__GetReactorRobotSetPosition(3)) + "/" + \
+            str(self.__GetReactorRobotActualPosition(3)) + "/" + str(self.__GetRobotStatus(self.__nReactor3Axis)) + "\n"
         sStateText += "  Reactor up set/actual: " + str(self.__GetBinaryValue("Reactor3_SetReactorUp")) + "/" + \
             str(self.__GetBinaryValue("Reactor3_ReactorUp")) + "\n"
         sStateText += "  Reactor down set/actual: " + str(self.__GetBinaryValue("Reactor3_SetReactorDown")) + "/" + \
@@ -639,13 +675,13 @@ class HardwareComm():
         sStateText += "  Reagent 2 transfer valve: " + str(self.__GetBinaryValue("Reactor3_Reagent2TransferValve")) + "\n"
         sStateText += "  Stopcock 1 valve open/close: " + str(self.__GetBinaryValue("Reactor3_Stopcock1ValveOpen")) + "/" + \
             str(self.__GetBinaryValue("Reactor3_Stopcock1ValveClose")) + "\n"
-        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn("3", "1")) + "/" + \
+        sStateText += "  Temperature controller 1 on/set/actual: " + str(self.__GetHeaterOn(3, 1)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1")) + "\n"
-        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn("3", "2")) + "/" + \
+        sStateText += "  Temperature controller 2 on/set/actual: " + str(self.__GetHeaterOn(3, 2)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2")) + "\n"
-        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn("3", "3")) + "/" + \
+        sStateText += "  Temperature controller 3 on/set/actual: " + str(self.__GetHeaterOn(3, 3)) + "/" + \
             str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3")) + "/" + \
             str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3")) + "\n"
         sStateText += "  Stir motor: " + str(self.__GetAnalogValue("Reactor3_StirMotor")) + "\n"
@@ -749,10 +785,10 @@ class HardwareComm():
         return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4))
 
     # Get reactor robot positions
-    def __GetReactorRobotSetPosition(self, sReactor):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(sReactor) * 4))
-    def __GetReactorRobotActualPosition(self, sReactor):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(sReactor) * 4))
+    def __GetReactorRobotSetPosition(self, nReactor):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4))
+    def __GetReactorRobotActualPosition(self, nReactor):
+        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4))
 
     # Get the robot status
     def __GetRobotStatus(self, nAxis):

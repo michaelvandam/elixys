@@ -145,6 +145,12 @@ if __name__ == "__main__":
             print "    SetMotorSpeed(nReactor, nMotorSpeed)"
             print "  Radiation detector functions:"
             print "    Not implemented: ReadRadiationDetector(nReactor)"
+            print "  Robot utility functions:"
+            print "    HomeRobots()"
+            print "    DisableRobots()"
+            print "    EnableRobots()"
+            print "    DisableReactorRobot(nReactor)"
+            print "    EnableReactorRobot(nReactor)"
         elif sCommand == "list positions":
             # Recognized reactor positions
             print "Recognized reactor positions:"
