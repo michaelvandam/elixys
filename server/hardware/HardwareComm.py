@@ -10,8 +10,9 @@ import time
 
 ### Constants ###
 
-# IP and port of the PLC
-PLC_IP = "192.168.1.200"
+# IP and port of the PLC.  Make sure only one PLC IP is defined
+#PLC_IP = "192.168.1.200"    # Real PLC
+PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
 PLC_PORT = 9600
 
 # Number of words used by each type of module
@@ -144,8 +145,8 @@ class HardwareComm():
     ### Construction ###
     def __init__(self):
         # Load the hardware map and robot positions
-        self.__pHardwareMap = ConfigObj("HardwareMap.ini")
-        self.__pRobotPositions = ConfigObj("RobotPositions.ini")
+        self.__pHardwareMap = ConfigObj("../hardware/HardwareMap.ini")
+        self.__pRobotPositions = ConfigObj("../hardware/RobotPositions.ini")
 
         # Extract the module offsets and units
         self.__nAnalogOutUnit = int(self.__pHardwareMap["AnalogOutUnit"], 16)
@@ -186,12 +187,13 @@ class HardwareComm():
         # Calculate the memory address range.  We will use this information to query for the entire state at once
         self.__nMemoryLower, self.__nMemoryUpper = self.__CalculateMemoryRange()
 
-        # Initialize our state updating flag
+        # Initialize our variables
         self.__bUpdatingState = False
+        self.__pSystemModel = None
         
     ### Public functions ###
 
-    # Startup/shutdown
+    # Startup
     def StartUp(self, bResetSystem = True):
         # Spawn the socket thread
         self.__pSocketThread = SocketThread()
@@ -204,24 +206,19 @@ class HardwareComm():
         
         # Enable RoboNet control for all axes
         self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
-                
+
+    # Shutdown               
     def ShutDown(self):
         # Stop the socket thread
         self.__pSocketThreadTerminateEvent.set()
         self.__pSocketThread.join()
 
+    # Set the system model
+    def SetSystemModel(self, pSystemModel):
+        self.__pSystemModel = pSystemModel
+        
     # Update state
     def UpdateState(self):
-        # Load the state
-        #pFile = open('C:\\Elixys\\state.txt', 'rb')
-        #sState = pFile.read()
-        #print "Length = " + str(len(sState))
-        #pFile.close()
-        #self.__nStateOffset = self.__nMemoryLower
-        #self.__sState = ""
-        #self.__ProcessRawState(sState)
-        #return
-
         # Make sure we're not already in the process of updating the state
         if self.__bUpdatingState == True:
             return
@@ -567,17 +564,11 @@ class HardwareComm():
         # Do we have the entire state?
         if self.__nStateOffset < self.__nMemoryUpper:
             # No, so request the next chunk and return
-            #print "requesting next state chunk, offset = " + str(self.__nStateOffset) + ", memory upper = " + str(self.__nMemoryUpper)
             self.__RequestNextStateChunk()
             return
         else:
             # Yes, so clear our updating flag
             self.__bUpdatingState = False
-
-        # Save the state
-        #pFile = open('C:\\Elixys\\state.txt', 'w')
-        #pFile.write(sState + "\n")
-        #pFile.close()
 
         # Temporary hack: check if the callback function is defined
         try:

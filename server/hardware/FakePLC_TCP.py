@@ -4,6 +4,7 @@ Behaves like a PLC for testing and demo purposes """
 
 ### Imports
 import socket
+import select
 import configobj
 from HardwareComm import HardwareComm
 
@@ -13,7 +14,6 @@ def HandleRead(sPacket):
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
     # Make sure the message is long enough
     if len(sPacket) != 36:
@@ -31,14 +31,15 @@ def HandleRead(sPacket):
 
     # Create the response
     sResponse = "0000000000000000000001010000"
-    for nOffset in range(nMemoryLower, nMemoryUpper + 1):
+    nOffset = nMemoryLower
+    for nOffset in range(nMemoryLower, nMemoryUpper):
         if nOffset >= nReadOffsetByte:
             # Stop when complete
-            if nOffset > (nReadOffsetByte + nReadLength):
+            if nOffset >= (nReadOffsetByte + nReadLength):
                 break
 
             # Append the next byte of data
-            sResponse += ("%0.4X" % pMemory[nOffset - nMemoryLower])
+            sResponse += ("%0.2X" % pMemory[nOffset - nMemoryLower])
 
     # Send the response
     pBinaryResponse = sResponse.decode("hex")
@@ -51,7 +52,6 @@ def HandleWrite(sPacket):
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
     # Make sure the message is long enough
     if len(sPacket) < 36:
@@ -96,56 +96,8 @@ def HandleWrite(sPacket):
     # Send a success packet
     sResponse = "0000000000000000000001020000"
     pBinaryResponse = sResponse.decode("hex")
-    pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9601))
+    pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9600))
     print "Wrote data and sent response packet"
-
-# Fill the buffer from the file containing a dump of the actual PLC memory
-def FillMemoryBuffer():
-    # Global variables
-    global nMemoryLower
-    global nMemoryUpper
-    global pMemory
-    
-    # Open the PLC memory file
-    pMemoryFile = open("PLC_MEM.MEM", "r")
-    pMemoryFileLines = pMemoryFile.readlines()
-    
-    # Search for the CIO memory
-    sCIO = None
-    for sLine in pMemoryFileLines:
-        if sLine.startswith("CIO="):
-            sCIO = sLine
-            break
-    
-    # Handle error
-    if sCIO == None:
-        raise Exception("Failed to find CIO memory")
-    
-    # Trim off the "CIO=" string and split into components
-    sCIO = sCIO[4:]
-    pCIO = sCIO.split(",")
-    
-    # Fill the memory
-    for pComponent in pCIO:
-        # Extract the memory range
-        sRange = pComponent.split(":")[0]
-        pRangeComponents = sRange.split("-")
-        nRangeStart = int(pRangeComponents[0])
-        if len(pRangeComponents) > 1:
-            nRangeEnd = int(pRangeComponents[1])
-        else:
-            nRangeEnd = nRangeStart
-            
-        # Extract the value
-        nValue = int(pComponent.split(":")[1], 16)
-        
-        # Fill in the memory array
-        for nOffset in range(nRangeStart, nRangeEnd + 1):
-            if (nOffset >= nMemoryLower) and (nOffset <= nMemoryUpper):
-                pMemory[nOffset - nMemoryLower] = nValue
-        
-    # Clean up
-    pMemoryFile.close()
 
 # Main CLI function
 if __name__ == "__main__":
@@ -153,38 +105,62 @@ if __name__ == "__main__":
     global nMemoryLower
     global nMemoryUpper
     global pMemory
-    global pSocket
 
-    # Determine the memory range we need to emulate
+    # Calculate the memory range we need to emulate
     pHardwareComm = HardwareComm()
     nMemoryLower, nMemoryUpper = pHardwareComm._HardwareComm__CalculateMemoryRange()
-    
-    # Create and fill the memory buffer
+
+    # Create the memory buffer
     pMemory = []
-    for x in range(nMemoryLower, nMemoryUpper + 1):
+    for x in range(nMemoryLower, nMemoryUpper):
         pMemory.append(0)
-    FillMemoryBuffer()
-    
+
     # Create the socket
-    pSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    pSocket.bind(("", 9600))
+    pListeningSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pListeningSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+    pListeningSocket.bind(("", 9600))
 
-    # Packet processing loop
-    while True:
-        # Listen for a packet
-        print "Listening for packet..."
-        pBinaryPacket = pSocket.recv(1024)
-        sPacket = pBinaryPacket.encode("hex")
-        print "Received packet: " + sPacket
-
-        # Handle read and write messages
-        if sPacket[20:24] == "0101":
-            HandleRead(sPacket)
-        elif sPacket[20:24] == "0102":
-            HandleWrite(sPacket)
-        else:
-            print "Unknown command, ignoring"
-
-    # Here is where we would close the socket if there was a way to exit
-    pSocket.close()
+    # Listen for an incoming socket connection
     pSocket = None
+    pListeningSocket.listen(1)
+
+    # Processing loop
+    while True:
+        # Create a socket array
+        if pSocket != None:
+            pSocketList = [pListeningSocket, pSocket]
+        else:
+            pSocketList = [pListeningSocket]
+            print "Listening for incoming socket connection..."
+
+        # Wait from one of our socket objects to be available
+        pReadList, pWriteList, pErrorList = select.select(pSocketList, pSocketList, [])
+        for pReadSocket in pReadList:
+            if pReadSocket is pListeningSocket:
+                # A new socket connection is available
+                pSocket, pAddress = pListeningSocket.accept()
+                print "Socket connections received from " + str(pAddress)
+            else:
+                # Our socket connection has data waiting to be read
+                pBinaryPacket = pSocket.recv(1024)
+                if pBinaryPacket == "":
+                    # Socket connection dropped
+                    pSocket.close()
+                    pSocket = None
+                    print "Socket connection closed"
+                    print ""
+                else:
+                    # Encode and log the packet
+                    sPacket = pBinaryPacket.encode("hex")
+                    print "Received packet: " + sPacket
+
+                    # Handle read and write messages
+                    if sPacket[20:24] == "0101":
+                        HandleRead(sPacket)
+                    elif sPacket[20:24] == "0102":
+                        HandleWrite(sPacket)
+                    else:
+                        print "Unknown command, ignoring"
+        for pWriteSocket in pWriteList:
+            # Our socket connection is available for writing data
+            pass
