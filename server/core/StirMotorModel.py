@@ -11,9 +11,9 @@ from ComponentModel import ComponentModel
 
 # Reactor stir model
 class StirMotorModel(ComponentModel):
-  def __init__(self, name, reactor, hardwareComm):
+  def __init__(self, name, reactor, hardwareComm, modelLock):
     """Reactor stir motor model construction"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.stirSpeed = 0
 
@@ -25,9 +25,9 @@ class StirMotorModel(ComponentModel):
     """Returns the maximum stir motor speed"""
     return 800
     
-  def getCurrentSpeed(self):
+  def getCurrentSpeed(self, bLockModel = True):
     """Returns the current stir motor speed"""
-    return self.stirSpeed
+    return self.protectedReturn(self.stirSpeed, bLockModel)
   
   def setSpeed(self, nSpeed):
     """Sets the stir motor speed"""

@@ -11,15 +11,15 @@ from ComponentModel import ComponentModel
 
 # Cooling system model
 class CoolingSystemModel(ComponentModel):
-  def __init__(self, name, hardwareComm):
+  def __init__(self, name, hardwareComm, modelLock):
     """Cooling system model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)     
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)     
     self.coolingSystemOn = False
     
-  def getCoolingSystemOn(self):
+  def getCoolingSystemOn(self, bLockModel = True):
     """Returns True if the cooling system is on, False otherwise"""
-    return self.coolingSystemOn
-    
+    return self.protectedReturn(self.coolingSystemOn, bLockModel)
+
   def setCoolingSystemOn(self, bCoolingSystemOn):
     """Turns the cooling system on and off"""
     if bCoolingSystemOn:

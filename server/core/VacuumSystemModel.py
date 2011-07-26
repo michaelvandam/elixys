@@ -11,19 +11,19 @@ from ComponentModel import ComponentModel
 
 # Vacuum system model    
 class VacuumSystemModel(ComponentModel):
-  def __init__(self, name, hardwareComm):
+  def __init__(self, name, hardwareComm, modelLock):
     """Vacuum system model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.vacuumSystemOn = False
     self.vacuumSystemPressure = 0
 
-  def getVacuumSystemOn(self):
+  def getVacuumSystemOn(self, bLockModel = True):
     """Returns True if the vacuum system is on, False otherwise"""
-    return self.vacuumSystemOn
+    return self.protectedReturn(self.vacuumSystemOn, bLockModel)
 
-  def getVacuumSystemPressure(self):
+  def getVacuumSystemPressure(self, bLockModel = True):
     """Returns the vacuum system pressure"""
-    return self.vacuumSystemPressure
+    return self.protectedReturn(self.vacuumSystemPressure, bLockModel)
     
   def setVacuumSystemOn(self, bVacuumSystemOn):
     """Turns the vacuum system on and off"""

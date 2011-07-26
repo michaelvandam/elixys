@@ -11,14 +11,14 @@ from ComponentModel import ComponentModel
 
 # Reactor temperature model
 class TemperatureControlModel(ComponentModel):
-  def __init__(self, name, reactor, hardwareComm):
+  def __init__(self, name, reactor, hardwareComm, modelLock):
     """Reactor temperature control model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.heaterOn = False
     self.setTemperature = 0
     self.currentTemperature = 0
-    
+
   def getMinimumTemperature(self):
     """Returns the minimum reactor temperature"""
     return 25
@@ -27,17 +27,17 @@ class TemperatureControlModel(ComponentModel):
     """Returns the maximum reactor temperature"""
     return 180
   
-  def getHeaterOn(self):
+  def getHeaterOn(self, bLockModel = True):
     """Returns the heater state"""
-    return self.heaterOn
+    return self.protectedReturn(self.heaterOn, bLockModel)
 
-  def getSetTemperature(self):
+  def getSetTemperature(self, bLockModel = True):
     """Returns the heater set temperature"""
-    return self.setTemperature
+    return self.protectedReturn(self.setTemperature, bLockModel)
   
-  def getCurrentTemperature(self):
+  def getCurrentTemperature(self, bLockModel = True):
     """Returns the heater current temperature"""
-    return self.currentTemperature
+    return self.protectedReturn(self.currentTemperature, bLockModel)
   
   def setHeaterOn(self, bHeaterOn):
     """Sets the heater state"""

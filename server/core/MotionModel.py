@@ -11,9 +11,9 @@ from ComponentModel import ComponentModel
 
 # Reactor motion model
 class MotionModel(ComponentModel):
-  def __init__(self, name, reactor, hardwareComm):
+  def __init__(self, name, reactor, hardwareComm, modelLock):
     """Reactor motion model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.setPosition = ""
     self.currentPosition = ""
@@ -23,42 +23,42 @@ class MotionModel(ComponentModel):
     self.setReactorDown = False
     self.currentReactorUp = False
     self.currentReactorDown = False
-  
+
   def getAllowedPositions(self):
     """Return a list of allowed reactor positions"""
     return ["Install", "Transfer", "React1", "Add", "React2", "Evaporate"]
 
-  def getSetPosition(self):
+  def getSetPosition(self, bLockModel = True):
     """Return the set named reactor position"""
-    return self.setPosition
+    return self.protectedReturn(self.setPosition, bLockModel)
     
-  def getCurrentPosition(self):
+  def getCurrentPosition(self, bLockModel = True):
     """Return the current named reactor position"""
-    return self.currentPosition
+    return self.protectedReturn(self.currentPosition, bLockModel)
     
-  def getSetPositionRaw(self):
+  def getSetPositionRaw(self, bLockModel = True):
     """Return the set raw reactor position"""
-    return self.setPositionRaw
+    return self.protectedReturn(self.setPositionRaw, bLockModel)
 
-  def getCurrentPositionRaw(self):
+  def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position"""
-    return self.currentPositionRaw
+    return self.protectedReturn(self.currentPositionRaw, bLockModel)
     
-  def getSetReactorUp(self):
+  def getSetReactorUp(self, bLockModel = True):
     """Returns True if the reactor is set to up, False otherwise"""
-    return self.setReactorUp
+    return self.protectedReturn(self.setReactorUp, bLockModel)
     
-  def getSetReactorDown(self):
+  def getSetReactorDown(self, bLockModel = True):
     """Returns True if the reactor is set to down, False otherwise"""
-    return self.setReactorDown
+    return self.protectedReturn(self.setReactorDown, bLockModel)
 
-  def getCurrentReactorUp(self):
+  def getCurrentReactorUp(self, bLockModel = True):
     """Returns True if the reactor is currently up, False otherwise"""
-    return self.currentReactorUp
+    return self.protectedReturn(self.currentReactorUp, bLockModel)
     
-  def getCurrentReactorDown(self):
+  def getCurrentReactorDown(self, bLockModel = True):
     """Returns True if the reactor is currently down, False otherwise"""
-    return self.currentReactorDown
+    return self.protectedReturn(self.currentReactorDown, bLockModel)
 
   def moveToPosition(self, sPosition):
     """Moves the reactor to the given position"""

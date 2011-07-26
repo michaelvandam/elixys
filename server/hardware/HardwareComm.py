@@ -145,7 +145,8 @@ PLCERRORS = {"0001":"Local node not in network",
 # HardwareComm class implementation for the Elixys system
 class HardwareComm():
 
-    ### Construction ###
+    ### Construction/Destruction ###
+
     def __init__(self):
         # Load the hardware map and robot positions
         self.__pHardwareMap = ConfigObj("../hardware/HardwareMap.ini")
@@ -196,8 +197,7 @@ class HardwareComm():
         
     ### Public functions ###
 
-    # Startup
-    def StartUp(self, bResetSystem = True):
+    def StartUp(self):
         # Spawn the socket thread
         self.__pSocketThread = SocketThread()
         self.__pSocketThreadTerminateEvent = threading.Event()
@@ -210,12 +210,11 @@ class HardwareComm():
         # Enable RoboNet control for all axes
         self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
 
-    # Shutdown               
     def ShutDown(self):
         # Stop the socket thread
         self.__pSocketThreadTerminateEvent.set()
         self.__pSocketThread.join()
-
+        
     # Set the system model
     def SetSystemModel(self, pSystemModel):
         self.__pSystemModel = pSystemModel

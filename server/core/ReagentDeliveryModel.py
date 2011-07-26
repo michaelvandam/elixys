@@ -11,9 +11,9 @@ from ComponentModel import ComponentModel
 
 # Reagent delivery model
 class ReagentDeliveryModel(ComponentModel):
-  def __init__(self, name, hardwareComm):
+  def __init__(self, name, hardwareComm, modelLock):
     """Reagent delivery model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.setPositionReactor = 0
     self.setPositionReagent = 0
     self.setPositionDelivery = 0
@@ -28,7 +28,7 @@ class ReagentDeliveryModel(ComponentModel):
     self.setGripperDown = False
     self.setGripperOpen = False
     self.setGripperClose = False
-    
+
   def getAllowedReagentPositions(self):
     """Return a list of allowed reagent positions"""
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -37,37 +37,37 @@ class ReagentDeliveryModel(ComponentModel):
     """Return a list of allowed delivery positions"""
     return [1, 2]
 
-  def getSetPosition(self):
+  def getSetPosition(self, bLockModel = True):
     """Return the set reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
-    return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery
-    
-  def getSetPositionRaw(self):
+    return self.protectedReturn3(self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery, bLockModel)
+
+  def getSetPositionRaw(self, bLockModel = True):
     """Return the set raw reactor position in the format (X, Z)"""
-    return self.setPositionRawX, self.setPositionRawZ
+    return self.protectedReturn2(self.setPositionRawX, self.setPositionRawZ, bLockModel)
     
-  def getCurrentPosition(self):
+  def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
-    return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery
+    return self.protectedReturn3(self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery, bLockModel)
     
-  def getCurrentPositionRaw(self):
+  def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position in the format (X, Z)"""
-    return self.currentPositionRawX, self.currentPositionRawZ
+    return self.protectedReturn2(self.currentPositionRawX, self.currentPositionRawZ, bLockModel)
 
-  def getSetGripperUp(self):
+  def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
-    return self.setGripperUp
+    return self.protectedReturn(self.setGripperUp, bLockModel)
 
-  def getSetGripperDown(self):
+  def getSetGripperDown(self, bLockModel = True):
     """Returns True if the gripper is set to down, False otherwise"""
-    return self.setGripperDown
+    return self.protectedReturn(self.setGripperDown, bLockModel)
 
-  def getSetGripperOpen(self):
+  def getSetGripperOpen(self, bLockModel = True):
     """Returns True if the gripper is set to open, False otherwise"""
-    return self.setGripperOpen
+    return self.protectedReturn(self.setGripperOpen, bLockModel)
 
-  def getSetGripperClose(self):
+  def getSetGripperClose(self, bLockModel = True):
     """Returns True if the gripper is set to close, False otherwise"""
-    return self.setGripperClose
+    return self.protectedReturn(self.setGripperClose, bLockModel)
 
   def moveToReagentPosition(self, nReactor, nReagentPosition):
     """Moves the reagent robot to the given reagent position"""

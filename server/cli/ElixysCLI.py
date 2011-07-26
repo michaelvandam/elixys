@@ -1,14 +1,19 @@
-""" HardwareCLI.py
+""" ElixysCLI.py
 
-Implements a CLI interface to the Elixys hardware """
+Implements a CLI interface to the Elixys system """
 
 ### Imports
 import inspect
-from HardwareComm import HardwareComm
 import time
+import sys
+sys.path.append("../hardware/")
+sys.path.append("../core/")
+from HardwareComm import HardwareComm
+from SystemModel import SystemModel
+from UnitOperationsWrapper import UnitOperationsWrapper
 
 # Parses and executes the given command
-def ExecuteCommand(sCommand, pHardwareComm):
+def ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm):
     try:
         # Ignore empty commands
         if sCommand == "":
@@ -18,12 +23,18 @@ def ExecuteCommand(sCommand, pHardwareComm):
         pCommandComponents = sCommand.strip(")").split("(")
         sFunctionName = pCommandComponents[0]
 
-        # Make sure the function name exists
-        if not hasattr(HardwareComm, sFunctionName):
+        # Make sure the function name exists on either the unit operations wrapper or the hardware layer
+        if hasattr(UnitOperationsWrapper, sFunctionName):
+            Object = UnitOperationsWrapper
+            pObject = pUnitOperationsWrapper
+        elif hasattr(HardwareComm, sFunctionName):
+            Object = HardwareComm
+            pObject = pHardwareComm
+        else:
             raise Exception("Unknown function " + sFunctionName)
 
         # Make sure the function name maps to a callable object
-        pFunction = getattr(HardwareComm, sFunctionName)
+        pFunction = getattr(Object, sFunctionName)
         if not callable(pFunction):
             raise Exception(sFunctionName + " is not a function")
 
@@ -59,13 +70,21 @@ def ExecuteCommand(sCommand, pHardwareComm):
 
         # Call the function
         if nParameters == 0:
-            pFunction(pHardwareComm)
+            pFunction(pObject)
         elif nParameters == 1:
-            pFunction(pHardwareComm, pParameters[0])
+            pFunction(pObject, pParameters[0])
         elif nParameters == 2:
-            pFunction(pHardwareComm, pParameters[0], pParameters[1])
+            pFunction(pObject, pParameters[0], pParameters[1])
         elif nParameters == 3:
-            pFunction(pHardwareComm, pParameters[0], pParameters[1], pParameters[2])
+            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2])
+        elif nParameters == 4:
+            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3])
+        elif nParameters == 5:
+            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4])
+        elif nParameters == 6:
+            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5])
+        elif nParameters == 7:
+            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6])
         else:
             raise Exception("Too many arguments");
     except Exception as ex:
@@ -80,12 +99,19 @@ def SendCommand(sCommand, pHardwareComm):
 
 # Main CLI function
 if __name__ == "__main__":
-    # Fire up an instance of the hardware comm layer
+    # Create the hardware layer
     pHardwareComm = HardwareComm()
-    pHardwareComm.StartUp();
+    pHardwareComm.StartUp()
+  
+    # Create the system model
+    pSystemModel = SystemModel(pHardwareComm)
+    pSystemModel.StartUp()
+    
+    # Create the unit operations wrapper
+    pUnitOperationsWrapper = UnitOperationsWrapper(pSystemModel)
 
     # CLI loop
-    print "Elixys Hardware Communications Layer CLI"
+    print "Elixys Command Line Interface"
     print "Type help for available commands."
     while True:
         # Get input and strip newlines
@@ -96,15 +122,27 @@ if __name__ == "__main__":
             break
         elif sCommand == "help":
             print "Recognized commands:"
-            print "  list functions  Lists available function"
-            print "  list positions  List the motor positions"
-            print "  get state       Displays the current state of the system"
-            print "  send help       Display a brief description of the PLC command format" 
-            print "  send [command]  Send the raw command to the PLC"
-        elif sCommand == "list functions":
+            print "  help unit operations   Lists available unit operation functions"
+            print "  help hardware          Lists available hardware functions"
+            print "  help send              Display a brief description of the PLC command format" 
+            print "  get state              Displays the current state of the system"
+            print "  send [command]         Send the raw command to the PLC"
+        elif sCommand == "help unit operations":
+            # List the recognized unit operations
+            print "Recognized unit operations:"
+            print "  React(nReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nReactPosition, nStirSpeed)"
+            print "  Add(nReactor, nReagentReactor, nReagentPosition, nReagentDeliveryPosition)"
+            print "  Evaporate(nReactor, nEvaporationTemperature, nEvaporationTime, nFinalTemperature, nStirSpeed)"
+            print "  Install(nReactor)"
+            print "  TransferToHPLC(nReactor, nStopcockPosition)"
+            print "  TransferElute(self, nReactor, nStopcockPosition)"
+            print "  Transfer(nReactor, nStopcockPosition, nTransferReactorID)"
+            print "  UserInput(sUserMessage, bIsCheckBox, sDescription)"
+            print "  DetectRadiation()"
+        elif sCommand == "help hardware":
             # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
             # don't want to list all of our functions
-            print "Recognized functions:"
+            print "Recognized hardware functions:"
             print "  Cooling system functions:"
             print "    CoolingSystemOn()"
             print "    CoolingSystemOff()"
@@ -127,6 +165,13 @@ if __name__ == "__main__":
             print "    LoadHPLCStop()"
             print "  Reactor functions:"
             print "    MoveReactor(nReactor, sPositionName)"
+            print "      Recognized position names: "
+            print "        Install"
+            print "        Transfer"
+            print "        React1"
+            print "        Add"
+            print "        React2"
+            print "        Evaporate"
             print "    ReactorUp(nReactor)"
             print "    ReactorDown(nReactor)"
             print "    ReactorEvaporateStart(nReactor)"
@@ -151,22 +196,7 @@ if __name__ == "__main__":
             print "    EnableRobots()"
             print "    DisableReactorRobot(nReactor)"
             print "    EnableReactorRobot(nReactor)"
-        elif sCommand == "list positions":
-            # Recognized reactor positions
-            print "Recognized reactor positions:"
-            print "  Install"
-            print "  Transfer"
-            print "  React1"
-            print "  Add"
-            print "  React2"
-            print "  Evaporate"
-        elif sCommand == "get state":
-            # Request the state from the hardware
-            pHardwareComm.UpdateState()
-
-            # Sleep a bit and wait for the state to be displayed before displaying the input prompt
-            time.sleep(0.25)
-        elif sCommand == "send help":
+        elif sCommand == "help send":
             # Display a brief description of the PLC command format
             print "Command format:"
             print "    [cccc][xx][xxxxxx][xxxx]"
@@ -179,6 +209,9 @@ if __name__ == "__main__":
             print "    0701 - Controller Read Clock"
             print "  Example:"
             print "    0101800000020001"
+        elif sCommand == "get state":
+            # Dump the state to standard out
+            print pSystemModel.DumpStateToString()
         elif sCommand.startswith("send "):
             # Attempt to send the command
             SendCommand(sCommand, pHardwareComm)
@@ -187,10 +220,11 @@ if __name__ == "__main__":
             time.sleep(0.25)
         else:
             # Attempt to execute the command
-            ExecuteCommand(sCommand, pHardwareComm)
+            ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm)
 
             # Sleep a bit to give the PLC a chance to response before we display the input prompt
             time.sleep(0.25)
 
-    # Clean up the hardware comm layer
+    # Clean up
+    pSystemModel.ShutDown()
     pHardwareComm.ShutDown()

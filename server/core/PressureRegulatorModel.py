@@ -11,9 +11,9 @@ from ComponentModel import ComponentModel
 
 # Pressure regulator model
 class PressureRegulatorModel(ComponentModel):
-  def __init__(self, name, pressureRegulator, hardwareComm):
+  def __init__(self, name, pressureRegulator, hardwareComm, modelLock):
     """Pressure regulator model construction"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.pressureRegulator = pressureRegulator
     self.setPressure = 0
     self.currentPressure = 0
@@ -26,13 +26,13 @@ class PressureRegulatorModel(ComponentModel):
     """Returns the maximum pressure"""
     return 60
     
-  def getSetPressure(self):
+  def getSetPressure(self, bLockModel = True):
     """Returns the set pressure"""
-    return self.setPressure
+    return self.protectedReturn(self.setPressure, bLockModel)
   
-  def getCurrentPressure(self):
+  def getCurrentPressure(self, bLockModel = True):
     """Returns the current pressure"""
-    return self.currentPressure
+    return self.protectedReturn(self.currentPressure, bLockModel)
   
   def setPressure(self, nPressure):
     """Sets the set pressure"""

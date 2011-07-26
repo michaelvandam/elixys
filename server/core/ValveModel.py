@@ -11,35 +11,35 @@ from ComponentModel import ComponentModel
     
 # Valve model
 class ValveModel(ComponentModel):
-  def __init__(self, name, reactor, hardwareComm):
+  def __init__(self, name, reactor, hardwareComm, modelLock):
     """Valve model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.evaporationNitrogenValveOpen = False
     self.evaporationVacuumValveOpen = False
     self.transferValveOpen = False
     self.reagent1TransferValveOpen = False
     self.reagent2TransferValveOpen = False
-         
-  def getEvaporationNitrogenValveOpen(self):
-     """Returns True if the evaporation nitrogen valve is open, False otherwise"""
-     return self.evaporationNitrogenValveOpen
 
-  def getEvaporationVacuumValveOpen(self):
-     """Returns True if the evaporation vacuum valve is open, False otherwise"""
-     return self.evaporationVacuumValveOpen
+  def getEvaporationNitrogenValveOpen(self, bLockModel = True):
+    """Returns True if the evaporation nitrogen valve is open, False otherwise"""
+    return self.protectedReturn(self.evaporationNitrogenValveOpen, bLockModel)
+
+  def getEvaporationVacuumValveOpen(self, bLockModel = True):
+    """Returns True if the evaporation vacuum valve is open, False otherwise"""
+    return self.protectedReturn(self.evaporationVacuumValveOpen, bLockModel)
      
-  def getTransferValveOpen(self):
-     """Returns True if the transfer valve is open, False otherwise"""
-     return self.transferValveOpen
+  def getTransferValveOpen(self, bLockModel = True):
+    """Returns True if the transfer valve is open, False otherwise"""
+    return self.protectedReturn(self.transferValveOpen, bLockModel)
 
-  def getReagent1TransferValveOpen(self):
-     """Returns True if the reagent 1 transfer valve is open, False otherwise"""
-     return self.reagent1TransferValveOpen
+  def getReagent1TransferValveOpen(self, bLockModel = True):
+    """Returns True if the reagent 1 transfer valve is open, False otherwise"""
+    return self.protectedReturn(self.reagent1TransferValveOpen, bLockModel)
 
-  def getReagent2TransferValveOpen(self):
-     """Returns True if the reagent 2 transfer valve is open, False otherwise"""
-     return self.reagent2TransferValveOpen
+  def getReagent2TransferValveOpen(self, bLockModel = True):
+    """Returns True if the reagent 2 transfer valve is open, False otherwise"""
+    return self.protectedReturn(self.reagent2TransferValveOpen, bLockModel)
      
   def setEvaporationValvesOpen(self, bValveOpen):
      """Opens or closes the evaporation nitrogen and vacuum valves"""

@@ -11,24 +11,24 @@ from ComponentModel import ComponentModel
     
 # External systems model
 class ExternalSystemsModel(ComponentModel):
-  def __init__(self, name, hardwareComm):
+  def __init__(self, name, hardwareComm, modelLock):
     """External systems model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.f18LoadValveOpen = False
     self.f18EluteValveOpen = False
     self.hplcLoadValveOpen  = False
 
-  def getF18LoadValveOpen(self):
-     """Returns True if the F18 load valve is open, False otherwise"""
-     return self.f18LoadValveOpen
+  def getF18LoadValveOpen(self, bLockModel = True):
+    """Returns True if the F18 load valve is open, False otherwise"""
+    return self.protectedReturn(self.f18LoadValveOpen, bLockModel)
 
-  def getF18EluteValveOpen(self):
-     """Returns True if the F18 elute valve is open, False otherwise"""
-     return self.f18EluteValveOpen
+  def getF18EluteValveOpen(self, bLockModel = True):
+    """Returns True if the F18 elute valve is open, False otherwise"""
+    return self.protectedReturn(self.f18EluteValveOpen, bLockModel)
      
-  def getHPLCLoadValveOpen(self):
-     """Returns True if the HPLC load valve is open, False otherwise"""
-     return self.hplcLoadValveOpen
+  def getHPLCLoadValveOpen(self, bLockModel = True):
+    """Returns True if the HPLC load valve is open, False otherwise"""
+    return self.protectedReturn(self.hplcLoadValveOpen, bLockModel)
 
   def setF18LoadValveOpen(self, bValveOpen):
      """Opens or closes the F18 load valve"""

@@ -11,24 +11,24 @@ from ComponentModel import ComponentModel
     
 # Stopcock valve model
 class StopcockValveModel(ComponentModel):
-  def __init__(self, name, reactor, stopcock, hardwareComm):
+  def __init__(self, name, reactor, stopcock, hardwareComm, modelLock):
     """Stopcock valve model constructor"""
-    ComponentModel.__init__(self, name, hardwareComm)
+    ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.stopcock = stopcock
     self.valvePosition = 0
-    
+
   def getAllowedPositions(self):
-     """Returns the allowed stopcock positions"""
-     return [1, 2]
+    """Returns the allowed stopcock positions"""
+    return [1, 2]
      
-  def getPosition(self):
-     """Returns the current stopcock position"""
-     return self.valvePosition
+  def getPosition(self, bLockModel = True):
+    """Returns the current stopcock position"""
+    return self.protectedReturn(self.valvePosition, bLockModel)
      
   def setPosition(self, nPosition):
-     """Sets the stopcock position"""
-     self.hardwareComm.ReactorStopcockPosition(self.reactor, self.stopcock, nPosition)
+    """Sets the stopcock position"""
+    self.hardwareComm.ReactorStopcockPosition(self.reactor, self.stopcock, nPosition)
 
   def updateState(self, nValvePosition1, nValvePosition2):
     """Update the internal state"""
