@@ -1,0 +1,64 @@
+"""Tempearature Control Model
+
+Reactor Temperature Control Model Class
+"""
+
+# Imports
+import sys
+sys.path.append("../hardware/")
+from HardwareComm import HardwareComm
+from ComponentModel import ComponentModel
+
+# Reactor temperature model
+class TemperatureControlModel(ComponentModel):
+  def __init__(self, name, reactor, hardwareComm):
+    """Reactor temperature control model constructor"""
+    ComponentModel.__init__(self, name, hardwareComm)
+    self.reactor = reactor
+    self.heaterOn = False
+    self.setTemperature = 0
+    self.currentTemperature = 0
+    
+  def getMinimumTemperature(self):
+    """Returns the minimum reactor temperature"""
+    return 25
+    
+  def getMaximumTemperature(self):
+    """Returns the maximum reactor temperature"""
+    return 180
+  
+  def getHeaterOn(self):
+    """Returns the heater state"""
+    return self.heaterOn
+
+  def getSetTemperature(self):
+    """Returns the heater set temperature"""
+    return self.setTemperature
+  
+  def getCurrentTemperature(self):
+    """Returns the heater current temperature"""
+    return self.currentTemperature
+  
+  def setHeaterOn(self, bHeaterOn):
+    """Sets the heater state"""
+    if bHeaterOn:
+      self.hardwareComm.HeaterOn(self.reactor, 1)
+      self.hardwareComm.HeaterOn(self.reactor, 2)
+      self.hardwareComm.HeaterOn(self.reactor, 3)
+    else:
+      self.hardwareComm.HeaterOff(self.reactor, 1)
+      self.hardwareComm.HeaterOff(self.reactor, 2)
+      self.hardwareComm.HeaterOff(self.reactor, 3)
+
+  def setTemperature(self, nSetTemperature):
+    """Sets the heater set temperature"""
+    self.hardwareComm.SetHeater(self.reactor, 1, nSetTemperature)
+    self.hardwareComm.SetHeater(self.reactor, 2, nSetTemperature)
+    self.hardwareComm.SetHeater(self.reactor, 3, nSetTemperature)
+  
+  def updateState(self, nHeater1On, nHeater2On, nHeater3On, nHeater1SetTemperature, nHeater2SetTemperature, nHeater3SetTemperature, nHeater1CurrentTemperature,
+                  nHeater2CurrentTemperature, nHeater3CurrentTemperature):
+    """Updates the internal state"""
+    self.heaterOn = nHeater1On or nHeater2On or nHeater3On
+    self.setTemperature = (nHeater1SetTemperature + nHeater2SetTemperature + nHeater3SetTemperature) / 3
+    self.currentTemperature = (nHeater1CurrentTemperature + nHeater2CurrentTemperature + nHeater3CurrentTemperature) / 3

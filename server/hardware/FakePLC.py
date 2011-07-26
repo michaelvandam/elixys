@@ -88,7 +88,7 @@ def HandleWrite(sPacket):
         pMemory[nReadOffsetByte] = pMemory[nReadOffsetByte] | (bValue << nReadOffsetBit)
     elif sPacket[24:26] == "b0":
         # Bytes
-        pass
+        print "Implement byte writing if needed"
     else:
         print "Invalid I/O memory area code"
         return
