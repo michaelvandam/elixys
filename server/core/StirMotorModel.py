@@ -27,7 +27,10 @@ class StirMotorModel(ComponentModel):
     
   def getCurrentSpeed(self, bLockModel = True):
     """Returns the current stir motor speed"""
-    return self.protectedReturn(self.stirSpeed, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getCurrentSpeed)
+    else:
+      return self.stirSpeed
   
   def setSpeed(self, nSpeed):
     """Sets the stir motor speed"""

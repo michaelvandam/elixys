@@ -7,6 +7,7 @@ from configobj import ConfigObj
 from SocketThread import SocketThread
 import threading
 import time
+import os.path
 
 ### Constants ###
 
@@ -147,10 +148,15 @@ class HardwareComm():
 
     ### Construction/Destruction ###
 
-    def __init__(self):
+    def __init__(self, sHardwareDirectory):
         # Load the hardware map and robot positions
-        self.__pHardwareMap = ConfigObj("../hardware/HardwareMap.ini")
-        self.__pRobotPositions = ConfigObj("../hardware/RobotPositions.ini")
+        sHardwareMap = sHardwareDirectory + "HardwareMap.ini"
+        sRobotPositions = sHardwareDirectory + "RobotPositions.ini"
+        if not os.path.exists(sHardwareMap) or not os.path.exists(sRobotPositions):
+            print "Invalid path to INI files"
+            return
+        self.__pHardwareMap = ConfigObj(sHardwareMap)
+        self.__pRobotPositions = ConfigObj(sRobotPositions)
 
         # Extract the module offsets and units
         self.__nAnalogOutUnit = int(self.__pHardwareMap["AnalogOutUnit"], 16)
@@ -189,11 +195,14 @@ class HardwareComm():
         self.__nReactor3ReactorOffset = int(self.__pRobotPositions["Reactor3"]["ReactorOffset"])
 
         # Calculate the memory address range.  We will use this information to query for the entire state at once
-        self.__nMemoryLower, self.__nMemoryUpper = self.__CalculateMemoryRange()
+        self.__nMemoryLower, self.__nMemoryUpper = self.CalculateMemoryRange()
 
         # Initialize our variables
         self.__bUpdatingState = False
         self.__pSystemModel = None
+        self.__FakePLC_pMemory = None
+        self.__FakePLC_nMemoryLower = 0
+        self.__FakePLC_nMemoryUpper = 0
         
     ### Public functions ###
 
@@ -219,19 +228,79 @@ class HardwareComm():
     def SetSystemModel(self, pSystemModel):
         self.__pSystemModel = pSystemModel
         
+    # Calculates the memory range used by the PLC modules
+    def CalculateMemoryRange(self):
+        # Create array of minimum and maximum memory offsets for each module
+        pAddressArray = []
+
+        # Digital out
+        pAddressArray += [self.__nDigitalOutOffset]
+        pAddressArray += [self.__nDigitalOutOffset + DIGITALOUT_SIZE]
+
+        # Digital in
+        pAddressArray += [self.__nDigitalInOffset]
+        pAddressArray += [self.__nDigitalInOffset + DIGITALIN_SIZE]
+
+        # Analog out
+        nHardwareOffset = self.__CalculateHardwareOffset(self.__nAnalogOutUnit);
+        pAddressArray += [nHardwareOffset]
+        pAddressArray += [nHardwareOffset + ANALOGOUT_SIZE]
+
+        # Analog in
+        nHardwareOffset = self.__CalculateHardwareOffset(self.__nAnalogInUnit);
+        pAddressArray += [nHardwareOffset]
+        pAddressArray += [nHardwareOffset + ANALOGIN_SIZE]
+
+        # Thermocontroller 1
+        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller1Unit);
+        pAddressArray += [nHardwareOffset]
+        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
+
+        # Thermocontroller 2
+        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller2Unit);
+        pAddressArray += [nHardwareOffset]
+        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
+
+        # Thermocontroller 3
+        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller3Unit);
+        pAddressArray += [nHardwareOffset]
+        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
+
+        # RoboNet
+        pAddressArray += [ROBONET_MIN]
+        pAddressArray += [ROBONET_MAX]
+        
+        # Return the minimum and maximum values
+        return min(pAddressArray), max(pAddressArray)
+        
     # Update state
     def UpdateState(self):
-        # Make sure we're not already in the process of updating the state
-        if self.__bUpdatingState == True:
-            return
-            
-        # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
-        # first chunk of the state
-        self.__bUpdatingState = True
-        self.__nStateOffset = self.__nMemoryLower
-        self.__sState = ""
-        self.__RequestNextStateChunk()
+        # What mode are we in?
+        if (self.__FakePLC_pMemory == None):
+            # We are in normal mode.  Make sure we're not already in the process of updating the state
+            if self.__bUpdatingState == True:
+                return
 
+            # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
+            # first chunk of the state
+            self.__bUpdatingState = True
+            self.__nStateOffset = self.__nMemoryLower
+            self.__sState = ""
+            self.__RequestNextStateChunk()
+        else:
+            # We are in fake PLC mode.  Format our fake memory into a string
+            sMemory = ""
+            for nOffset in range(self.__FakePLC_nMemoryLower, self.__FakePLC_nMemoryUpper + 1):
+                sMemory += ("%0.4X" % self.__FakePLC_pMemory[nOffset - self.__nMemoryLower])
+            
+            # Pass the fake memory to the state processing function
+            self.__bUpdatingState = True
+            self.__nStateOffset = self.__nMemoryLower
+            self.__sState = ""
+            self.__ProcessRawState(sMemory)
+
+    ### Hardware control functions ###
+    
     # Vacuum system (currently not implemented in the hardware)
     def VacuumSystemOn(self):
         pass
@@ -392,6 +461,55 @@ class HardwareComm():
     def EnableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
 
+    ### Fake PLC functions ###
+    
+    # Used by the fake PLC to set the PLC memory
+    def FakePLC_SetMemory(self, pMemory, nMemoryLower, nMemoryUpper):
+        # Make sure the memory ranges match up
+        if (nMemoryLower != self.__nMemoryLower) or (nMemoryUpper != self.__nMemoryUpper):
+            raise Exception("Memory range mismatch")
+
+        # Remember the memory and range
+        self.__FakePLC_pMemory = pMemory
+        self.__FakePLC_nMemoryLower = nMemoryLower
+        self.__FakePLC_nMemoryUpper = nMemoryUpper
+
+    # Used by the fake PLC to read back a range of the fake memory
+    def FakePLC_ReadMemory(self, nReadOffset, nReadLength):
+        # Scan the memory range
+        sMemory = ""
+        for nOffset in range(self.__FakePLC_nMemoryLower, self.__FakePLC_nMemoryUpper + 1):
+            if nOffset >= nReadOffset:
+                # Stop when complete
+                if nOffset > (nReadOffset + nReadLength):
+                    break
+
+                # Append the next word of data
+                sMemory += ("%0.4X" % self.__FakePLC_pMemory[nOffset - self.__nMemoryLower])
+        
+        # Return the memory
+        return sMemory
+        
+    # Used by the fake PLC to change the state of the system
+    def FakePLC_SetVacuumPressure(self, nPressure):
+        pass
+    def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
+        pass
+    def FakePLC_SetReagentRobotPosition(self, xPositionX, nPositionZ):
+        pass
+    def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
+        pass
+    def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
+        pass
+    def FakePLC_SetReactorActualTemperature(self, nReactor, nTemperature):
+        pass
+    def FakePLC_SetBinaryValue(self, nWordOffset, nBitOffset, bValue):
+        # Set the raw binary value
+        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, bValue)
+    def FakePLC_SetWordValue(self, nWordOffset, nValue):
+        # Set the raw word value
+        self.__SetIntegerValueRaw(nWordOffset, nValue)
+
     ### PLC send functions ###
 
     # Set binary value
@@ -409,16 +527,30 @@ class HardwareComm():
         
     # Set binary value raw
     def __SetBinaryValueRaw(self, nWordOffset, nBitOffset, bValue):
-        # Format and send the raw command
-        sCommand = "010230"					            # Write bit to CIO memory
-        sCommand = sCommand + ("%0.4X" % nWordOffset)	# Memory offset (words)
-        sCommand = sCommand + ("%0.2X" % nBitOffset)    # Memory offset (bits)
-        sCommand = sCommand + "0001"				    # Number of bits to write
-        if bValue:
-            sCommand = sCommand + "01"				    # Set bit
+        # What mode are we in?
+        if (self.__FakePLC_pMemory == None):
+            # We are in normal mode.  Format and send the raw command to the PLC
+            sCommand = "010230"					            # Write bit to CIO memory
+            sCommand = sCommand + ("%0.4X" % nWordOffset)	# Memory offset (words)
+            sCommand = sCommand + ("%0.2X" % nBitOffset)    # Memory offset (bits)
+            sCommand = sCommand + "0001"				    # Number of bits to write
+            if bValue:
+                sCommand = sCommand + "01"				    # Set bit
+            else:
+                sCommand = sCommand + "00"				    # Clear bit
+            self.__SendRawCommand(sCommand)
         else:
-            sCommand = sCommand + "00"				    # Clear bit
-        self.__SendRawCommand(sCommand)
+            # We are in fake PLC mode.  Validate the address
+            if (nWordOffset < self.__FakePLC_nMemoryLower) or ((nWordOffset + self.__FakePLC_nMemoryLower) >= self.__FakePLC_nMemoryUpper):
+                raise Exception("Invalid word offset")
+            if nBitOffset > 15:
+                raise Exception("Invalid bit offset")
+
+            # Update the target bit in the fake memory
+            if bValue:
+                self.__FakePLC_pMemory[nWordOffset] = self.__FakePLC_pMemory[nWordOffset] | (bValue << nBitOffset)
+            else:
+                self.__FakePLC_pMemory[nWordOffset] = self.__FakePLC_pMemory[nWordOffset] & ~(1 << nBitOffset)
 
     # Set integer value by hardware name
     def __SetIntegerValue(self, sHardwareName, nValue):
@@ -430,13 +562,22 @@ class HardwareComm():
 
     # Set integer value raw
     def __SetIntegerValueRaw(self, nAddress, nValue):
-        # Format and send the raw command
-        sCommand = "0102B0"					                    # Write word to CIO memory
-        sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
-        sCommand = sCommand + "00"                              # Memory offset (bits)
-        sCommand = sCommand + "0001"				            # Number of bits to write
-        sCommand = sCommand + ("%0.4X" % nValue)				# Set bit
-        self.__SendRawCommand(sCommand)
+        # What mode are we in?
+        if (self.__FakePLC_pMemory == None):
+            # We are in normal mode.  Format and send the raw command to the PLC
+            sCommand = "0102B0"					                    # Write word to CIO memory
+            sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
+            sCommand = sCommand + "00"                              # Memory offset (bits)
+            sCommand = sCommand + "0001"				            # Number of bits to write
+            sCommand = sCommand + ("%0.4X" % nValue)				# Set bit
+            self.__SendRawCommand(sCommand)
+        else:
+            # We are in fake PLC mode.  Validate the address
+            if (nAddress < self.__FakePLC_nMemoryLower) or ((nAddress + self.__FakePLC_nMemoryLower) >= self.__FakePLC_nMemoryUpper):
+                raise Exception("Invalid word offset")
+
+            # Update the target word in the fake memory
+            self.__FakePLC_pMemory[nAddress] = nValue
 
     # Set analog value
     def __SetAnalogValue(self, sHardwareName, nValue):
@@ -802,51 +943,6 @@ class HardwareComm():
         else:
             raise Exception("Invalid reactor")
 
-    # Calculates the memory range used by the PLC modules
-    def __CalculateMemoryRange(self):
-        # Create array of minimum and maximum memory offsets for each module
-        pAddressArray = []
-
-        # Digital out
-        pAddressArray += [self.__nDigitalOutOffset]
-        pAddressArray += [self.__nDigitalOutOffset + DIGITALOUT_SIZE]
-
-        # Digital in
-        pAddressArray += [self.__nDigitalInOffset]
-        pAddressArray += [self.__nDigitalInOffset + DIGITALIN_SIZE]
-
-        # Analog out
-        nHardwareOffset = self.__CalculateHardwareOffset(self.__nAnalogOutUnit);
-        pAddressArray += [nHardwareOffset]
-        pAddressArray += [nHardwareOffset + ANALOGOUT_SIZE]
-
-        # Analog in
-        nHardwareOffset = self.__CalculateHardwareOffset(self.__nAnalogInUnit);
-        pAddressArray += [nHardwareOffset]
-        pAddressArray += [nHardwareOffset + ANALOGIN_SIZE]
-
-        # Thermocontroller 1
-        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller1Unit);
-        pAddressArray += [nHardwareOffset]
-        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
-
-        # Thermocontroller 2
-        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller2Unit);
-        pAddressArray += [nHardwareOffset]
-        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
-
-        # Thermocontroller 3
-        nHardwareOffset = self.__CalculateHardwareOffset(self.__nThermocontroller3Unit);
-        pAddressArray += [nHardwareOffset]
-        pAddressArray += [nHardwareOffset + THERMOCONTROLLER_SIZE]
-
-        # RoboNet
-        pAddressArray += [ROBONET_MIN]
-        pAddressArray += [ROBONET_MAX]
-        
-        # Format and return the minimum and maximum values
-        return min(pAddressArray), max(pAddressArray)
-
     # Look up hardware name details
     def __LookUpHardwareName(self, sHardwareName):
         try:
@@ -996,7 +1092,7 @@ class HardwareComm():
             for nReagent in range(1, 11):
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
-                nReagentYOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
+                nReagentZOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
                 if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentZOffset, nPositionZ):
                   # We're over a reagent
                   return nReactor, nReagent, 0
@@ -1005,7 +1101,7 @@ class HardwareComm():
             for nReagentDelivery in range(1, 3):
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nReagentDelivery))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
-                nReagentYOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
+                nReagentZOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
                 if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentZOffset, nPositionZ):
                   # We're over a reagent delivery position
                   return nReactor, 0, nReagentDelivery

@@ -100,7 +100,7 @@ def SendCommand(sCommand, pHardwareComm):
 # Main CLI function
 if __name__ == "__main__":
     # Create the hardware layer
-    pHardwareComm = HardwareComm()
+    pHardwareComm = HardwareComm("../hardware/")
     pHardwareComm.StartUp()
   
     # Create the system model

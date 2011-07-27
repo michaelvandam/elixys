@@ -20,36 +20,45 @@ class ExternalSystemsModel(ComponentModel):
 
   def getF18LoadValveOpen(self, bLockModel = True):
     """Returns True if the F18 load valve is open, False otherwise"""
-    return self.protectedReturn(self.f18LoadValveOpen, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getF18LoadValveOpen)
+    else:
+      return self.f18LoadValveOpen
 
   def getF18EluteValveOpen(self, bLockModel = True):
     """Returns True if the F18 elute valve is open, False otherwise"""
-    return self.protectedReturn(self.f18EluteValveOpen, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getF18EluteValveOpen)
+    else:
+      return self.f18EluteValveOpen
      
   def getHPLCLoadValveOpen(self, bLockModel = True):
     """Returns True if the HPLC load valve is open, False otherwise"""
-    return self.protectedReturn(self.hplcLoadValveOpen, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getHPLCLoadValveOpen)
+    else:
+      return self.hplcLoadValveOpen
 
   def setF18LoadValveOpen(self, bValveOpen):
-     """Opens or closes the F18 load valve"""
-     if bValveOpen:
-       self.hardwareComm.LoadF18Start()
-     else:
-       self.hardwareComm.LoadF18Stop()
+    """Opens or closes the F18 load valve"""
+    if bValveOpen:
+      self.hardwareComm.LoadF18Start()
+    else:
+      self.hardwareComm.LoadF18Stop()
 
   def setF18EluteValveOpen(self, bValveOpen):
-     """Opens or closes the F18 elute valve"""
-     if bValveOpen:
-       self.hardwareComm.EluteF18Start()
-     else:
-       self.hardwareComm.EluteF18Stop()
+    """Opens or closes the F18 elute valve"""
+    if bValveOpen:
+      self.hardwareComm.EluteF18Start()
+    else:
+      self.hardwareComm.EluteF18Stop()
 
   def setHPLCLoadValveOpen(self, nReagent, bValveOpen):
-     """Opens or closes the HPLC load value"""
-     if bValveOpen:
-       self.hardwareComm.LoadHPLCStart()
-     else:
-       self.hardwareComm.LoadHPLCStop()
+    """Opens or closes the HPLC load value"""
+    if bValveOpen:
+      self.hardwareComm.LoadHPLCStart()
+    else:
+      self.hardwareComm.LoadHPLCStop()
 
   def updateState(self, bF18LoadValveOpen, bF18EluteValveOpen, bHPLCLoadValveOpen):
     """Update the internal state"""

@@ -39,35 +39,59 @@ class ReagentDeliveryModel(ComponentModel):
 
   def getSetPosition(self, bLockModel = True):
     """Return the set reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
-    return self.protectedReturn3(self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery, bLockModel)
+    if bLockModel:
+      return self.protectedReturn3(getSetPosition)
+    else:
+      return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery
 
   def getSetPositionRaw(self, bLockModel = True):
     """Return the set raw reactor position in the format (X, Z)"""
-    return self.protectedReturn2(self.setPositionRawX, self.setPositionRawZ, bLockModel)
+    if bLockModel:
+      return self.protectedReturn2(getSetPositionRaw)
+    else:
+      return self.setPositionRawX, self.setPositionRawZ
     
   def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
-    return self.protectedReturn3(self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery, bLockModel)
+    if bLockModel:
+      return self.protectedReturn3(getCurrentPosition)
+    else:
+      return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery
     
   def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position in the format (X, Z)"""
-    return self.protectedReturn2(self.currentPositionRawX, self.currentPositionRawZ, bLockModel)
+    if bLockModel:
+      return self.protectedReturn2(getCurrentPositionRaw)
+    else:
+      return self.currentPositionRawX, self.currentPositionRawZ
 
   def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
-    return self.protectedReturn(self.setGripperUp, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getSetGripperUp)
+    else:
+      return self.setGripperUp
 
   def getSetGripperDown(self, bLockModel = True):
     """Returns True if the gripper is set to down, False otherwise"""
-    return self.protectedReturn(self.setGripperDown, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getSetGripperDown)
+    else:
+      return self.setGripperDown
 
   def getSetGripperOpen(self, bLockModel = True):
     """Returns True if the gripper is set to open, False otherwise"""
-    return self.protectedReturn(self.setGripperOpen, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getSetGripperOpen)
+    else:
+      return self.setGripperOpen
 
   def getSetGripperClose(self, bLockModel = True):
     """Returns True if the gripper is set to close, False otherwise"""
-    return self.protectedReturn(self.setGripperClose, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getSetGripperClose)
+    else:
+      return self.setGripperClose
 
   def moveToReagentPosition(self, nReactor, nReagentPosition):
     """Moves the reagent robot to the given reagent position"""

@@ -19,11 +19,17 @@ class VacuumSystemModel(ComponentModel):
 
   def getVacuumSystemOn(self, bLockModel = True):
     """Returns True if the vacuum system is on, False otherwise"""
-    return self.protectedReturn(self.vacuumSystemOn, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getVacuumSystemOn)
+    else:
+      return self.vacuumSystemOn
 
   def getVacuumSystemPressure(self, bLockModel = True):
     """Returns the vacuum system pressure"""
-    return self.protectedReturn(self.vacuumSystemPressure, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getVacuumSystemPressure)
+    else:
+      return self.vacuumSystemPressure
     
   def setVacuumSystemOn(self, bVacuumSystemOn):
     """Turns the vacuum system on and off"""

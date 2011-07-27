@@ -17,32 +17,23 @@ class ComponentModel():
     self.hardwareComm = hardwareComm
     self.modelLock = modelLock
 
-  def protectedReturn(self, pVariable, bLockModel):
+  def protectedReturn1(self, pGetFunction):
     """Returns the value of the variable as protected by the model lock"""
-    if bLockModel:
-      self.modelLock.acquire()
-    pReturn = pVariable
-    if bLockModel:
-      self.modelLock.release()
-    return pReturn
+    self.modelLock.acquire()
+    pReturn1 = pGetFunction(self, False)
+    self.modelLock.release()
+    return pReturn1
 
-  def protectedReturn2(self, pVariable1, pVariable2, bLockModel):
+  def protectedReturn2(self, pVariable1, pVariable2):
     """Returns the value of the variables as protected by the model lock"""
-    if bLockModel:
-      self.modelLock.acquire()
-    pReturn1 = pVariable1
-    pReturn2 = pVariable2
-    if bLockModel:
-      self.modelLock.release()
+    self.modelLock.acquire()
+    pReturn1, pReturn2 = pGetFunction(self, False)
+    self.modelLock.release()
     return pReturn1, pReturn2
 
   def protectedReturn3(self, pVariable1, pVariable2, pVariable3, bLockModel):
     """Returns the value of the variables as protected by the model lock"""
-    if bLockModel:
-      self.modelLock.acquire()
-    pReturn1 = pVariable1
-    pReturn2 = pVariable2
-    pReturn3 = pVariable3
-    if bLockModel:
-      self.modelLock.release()
+    self.modelLock.acquire()
+    pReturn1, pReturn2, pReturn3 = pGetFunction(self, False)
+    self.modelLock.release()
     return pReturn1, pReturn2, pReturn3

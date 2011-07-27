@@ -28,11 +28,17 @@ class PressureRegulatorModel(ComponentModel):
     
   def getSetPressure(self, bLockModel = True):
     """Returns the set pressure"""
-    return self.protectedReturn(self.setPressure, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getSetPressure)
+    else:
+      return self.setPressure
   
   def getCurrentPressure(self, bLockModel = True):
     """Returns the current pressure"""
-    return self.protectedReturn(self.currentPressure, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getCurrentPressure)
+    else:
+      return self.currentPressure
   
   def setPressure(self, nPressure):
     """Sets the set pressure"""

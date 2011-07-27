@@ -19,7 +19,10 @@ class RadiationDetectorModel(ComponentModel):
 
   def getRadiation(self, bLockModel = True):
     """Returns the current radiation reading"""
-    return self.protectedReturn(self.radiation, bLockModel)
+    if bLockModel:
+      return self.protectedReturn1(getRadiation)
+    else:
+      return self.radiation
  
   def updateState(self, nRadiation):
     """Update the internal state"""

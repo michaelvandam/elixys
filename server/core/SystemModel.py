@@ -124,10 +124,10 @@ class SystemModel:
         sState += "  F-18 valves open (load/elute): " + str(self.model["ExternalSystems"].getF18LoadValveOpen(False)) + "/" + \
             str(self.model["ExternalSystems"].getF18EluteValveOpen(False)) + "\n"
         sState += "  HPLC load valve open: " + str(self.model["ExternalSystems"].getHPLCLoadValveOpen(False)) + "\n"
-        sState += "Pressure regulator 1 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator1"].getCurrentPressure(False), \
-            self.model["PressureRegulator1"].getSetPressure(False))
-        sState += "Pressure regulator 2 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator2"].getCurrentPressure(False), \
-            self.model["PressureRegulator2"].getSetPressure(False))
+        sState += "Pressure regulator 1 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator1"].getSetPressure(False), \
+            self.model["PressureRegulator1"].getCurrentPressure(False))
+        sState += "Pressure regulator 2 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator2"].getSetPressure(False), \
+            self.model["PressureRegulator2"].getCurrentPressure(False))
         sState += "Reagent robot:\n"
         sState += "  Set position (reactor/reagent/delivery): " + str(nReagentRobotSetPositionReactor) + "/" + \
             str(nReagentRobotSetPositionReagent) + "/" + str(nReagentRobotSetPositionDelivery) + "\n"
