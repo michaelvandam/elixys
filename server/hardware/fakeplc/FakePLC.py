@@ -5,17 +5,14 @@ Behaves like a PLC for testing and demo purposes """
 ### Imports
 import socket
 import configobj
-import platform
 import select
 import sys
 sys.path.append("../../hardware/")
 sys.path.append("../../core/")
+sys.path.append("../../cli/")
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
-try:
-    import msvcrt
-except ImportError:
-    pass
+import Utilities
 
 # Fake PLC class
 class FakePLC():
@@ -46,12 +43,9 @@ class FakePLC():
         self.__pSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.__pSocket.setblocking(False)
         self.__pSocket.bind(("", 9600))
-
-        # We use different techniques to peek at keyboard input depending on the OS
-        if "Windows" in platform.platform():
-            self.__sPlatform = "Windows"
-        else:
-            self.__sPlatform = "Linux"
+        
+        # Create the utilities class
+        self.__pUtilities = Utilities.Utilities()
             
     def Run(self):
         """Runs the fake PLC"""
@@ -59,7 +53,7 @@ class FakePLC():
         print "Listening for packets (press q to quit)..."
         while True:
             # Check if the user pressed 'q' to quit
-            if self.__CheckForQuit():
+            if self.__pUtilities.CheckForQuit():
                 return
         
             # Check socket availability
@@ -133,23 +127,6 @@ class FakePLC():
         # Clean up
         pMemoryFile.close()
 
-    def __CheckForQuit(self):
-        """Check if the user pressed 'q' to quit"""
-        if self.__sPlatform == "Windows":
-            # Check if keyboard input is available
-            if msvcrt.kbhit():
-                # Check for 'q'
-                return msvcrt.getch() == "q"
-        else:
-            # Use select to read standard in
-            pRead, pWrite, pError = select.select([sys.stdin],[],[],0.0001)
-            for pReadable in pRead:
-                if pReadable == sys.stdin:
-                    return sys.stdin.read(1) == "q"
-            
-        # No keyboard input
-        return False
-            
     def __HandleRead(self, sPacket):
         """Handle the read command"""
         # We only read words

@@ -22,6 +22,12 @@ from PressureRegulatorModel import PressureRegulatorModel
 from ValveModel import ValveModel
 from ExternalSystemsModel import ExternalSystemsModel
 
+# Constants
+STATECOMMONCOLUMN1WIDTH = 45
+STATECOMMONCOLUMN2WIDTH = 12
+STATEREACTORCOLUMN1WIDTH = 35
+STATEREACTORCOLUMN2WIDTH = 13
+
 class SystemModel:
   def __init__(self, hardwareComm):
     """SystemModel constructor"""
@@ -80,6 +86,9 @@ class SystemModel:
           self.model[sReactor]["Radiation"] = RadiationDetectorModel(sReactor, nReactor, self.hardwareComm, self.modelLock)
       else:
         raise Exception("Unknown system component: " + key)
+
+    # Initialize variables
+    self.__pStateMonitor = None
     
   def StartUp(self):
     """Starts the system model"""
@@ -92,20 +101,33 @@ class SystemModel:
     """Shuts down the system model"""
     self.stateUpdateThreadTerminateEvent.set()
     self.stateUpdateThread.join()
-        
-  def lockSystemModel(self):
+       
+  def SetStateMonitor(self, pStateMonitor):
+    """Set the state monitor"""
+    self.__pStateMonitor = pStateMonitor
+       
+  def LockSystemModel(self):
     """Acquire the mutex lock and return the system model"""
     self.modelLock.acquire()
     return self.model
     
-  def unlockSystemModel(self):
+  def UnlockSystemModel(self):
     """Release the system model lock"""
     self.modelLock.release()
+
+  def ModelUpdated(self):
+    """Called when the system model has been updated"""
+    if self.__pStateMonitor != None:
+        # Catch EOFErrors in the event that the state monitor process dies
+        try:
+          self.__pStateMonitor.root.UpdateState(self.DumpStateToString())
+        except EOFError, ex:
+          self.__pStateMonitor = None
     
   def DumpStateToString(self):
     """Dumps the state to a string"""
     # Acquire a lock on the system model
-    self.lockSystemModel()
+    self.LockSystemModel()
     sState = ""
 
     # Perform the state dump in a try/except/finally block to make sure we release our lock on the system model
@@ -117,92 +139,200 @@ class SystemModel:
         nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawZ = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
 
         # Format the state into a string
-        sState += "Vacuum system (on/pressure): " + str(self.model["VacuumSystem"].getVacuumSystemOn(False)) + "/" + \
-            str(self.model["VacuumSystem"].getVacuumSystemPressure(False)) + "\n"
-        sState += "Cooling system on: " + str(self.model["CoolingSystem"].getCoolingSystemOn(False)) + "\n"
-        sState += "External systems:\n"
-        sState += "  F-18 valves open (load/elute): " + str(self.model["ExternalSystems"].getF18LoadValveOpen(False)) + "/" + \
-            str(self.model["ExternalSystems"].getF18EluteValveOpen(False)) + "\n"
-        sState += "  HPLC load valve open: " + str(self.model["ExternalSystems"].getHPLCLoadValveOpen(False)) + "\n"
-        sState += "Pressure regulator 1 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator1"].getSetPressure(False), \
-            self.model["PressureRegulator1"].getCurrentPressure(False))
-        sState += "Pressure regulator 2 (set/actual): %.1f/%.1f\n"%(self.model["PressureRegulator2"].getSetPressure(False), \
-            self.model["PressureRegulator2"].getCurrentPressure(False))
-        sState += "Reagent robot:\n"
-        sState += "  Set position (reactor/reagent/delivery): " + str(nReagentRobotSetPositionReactor) + "/" + \
-            str(nReagentRobotSetPositionReagent) + "/" + str(nReagentRobotSetPositionDelivery) + "\n"
-        sState += "  Current position (reactor/reagent/delivery): " + str(nReagentRobotCurrentPositionReactor) + "/" + \
-            str(nReagentRobotCurrentPositionReagent) + "/" + str(nReagentRobotCurrentPositionDelivery) + "\n"
-        sState += "  Set position raw (x/z): " + str(nReagentRobotSetPositionRawX) + "/" + str(nReagentRobotSetPositionRawZ) + "\n"
-        sState += "  Current position raw (x/z): " + str(nReagentRobotCurrentPositionRawX) + "/" + str(nReagentRobotCurrentPositionRawZ) + "\n"
-        sState += "  Gripper set (up/down): " + str(self.model["ReagentDelivery"].getSetGripperUp(False)) + "/" + \
-            str(self.model["ReagentDelivery"].getSetGripperDown(False)) + "\n"
-        sState += "  Gripper set (open/close): " + str(self.model["ReagentDelivery"].getSetGripperOpen(False)) + "/" + \
-            str(self.model["ReagentDelivery"].getSetGripperClose(False)) + "\n"
-        sState += "Reactor 1:\n"
-        sState += "  Set position (raw): " + self.model["Reactor1"]["Motion"].getSetPosition(False) + " (" + \
-            str(self.model["Reactor1"]["Motion"].getSetPositionRaw(False)) + ")\n"
-        sState += "  Current position (raw): " + self.model["Reactor1"]["Motion"].getCurrentPosition(False) + " (" + \
-            str(self.model["Reactor1"]["Motion"].getCurrentPositionRaw(False)) + ")\n"
-        sState += "  Reactor up (set/actual): " + str(self.model["Reactor1"]["Motion"].getSetReactorUp(False)) + "/" + \
-            str(self.model["Reactor1"]["Motion"].getCurrentReactorUp(False)) + "\n"
-        sState += "  Reactor down (set/actual): " + str(self.model["Reactor1"]["Motion"].getSetReactorDown(False)) + "/" + \
-            str(self.model["Reactor1"]["Motion"].getCurrentReactorDown(False)) + "\n"
-        sState += "  Evaporation valves open (nitrogen/vacuum): " + str(self.model["Reactor1"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + str(self.model["Reactor1"]["Valves"].getEvaporationVacuumValveOpen(False)) + "\n"
-        sState += "  Transfer valve open: " + str(self.model["Reactor1"]["Valves"].getTransferValveOpen(False)) + "\n"
-        sState += "  Reagent transfer valves open (1/2): " + str(self.model["Reactor1"]["Valves"].getReagent1TransferValveOpen(False)) + \
-            "/" + str(self.model["Reactor1"]["Valves"].getReagent2TransferValveOpen(False)) + "\n"
-        sState += "  Stopcock positions (1/2/3): " + str(self.model["Reactor1"]["Stopcock1"].getPosition(False)) + "/" + \
-            str(self.model["Reactor1"]["Stopcock2"].getPosition(False)) + "/" + str(self.model["Reactor1"]["Stopcock3"].getPosition(False)) + "\n"
-        sState += "  Temperature controller (on/set/actual): " + str(self.model["Reactor1"]["Thermocouple"].getHeaterOn(False)) + "/" + \
+        sState += self.__PadString("Component", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("Set", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("Actual", STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("----------------------------------", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("--------", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("--------", STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        
+        # Vacuum system
+        sState += self.__PadString("Vacuum system (on/pressure)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["VacuumSystem"].getVacuumSystemOn(False)) + "/" + \
+            str(self.model["VacuumSystem"].getVacuumSystemPressure(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        # Cooling system
+        sState += self.__PadString("Cooling system on", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["CoolingSystem"].getCoolingSystemOn(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        # External systems        
+        sState += self.__PadString("F-18 valves open (load/elute)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ExternalSystems"].getF18LoadValveOpen(False)) + "/" + \
+            self.__BoolToString(self.model["ExternalSystems"].getF18EluteValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("HPLC valve open (load)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ExternalSystems"].getHPLCLoadValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        
+        # Pressure regulators
+        sState += self.__PadString("Pressure regulator 1", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("%.1f"%(self.model["PressureRegulator1"].getSetPressure(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("%.1f"%(self.model["PressureRegulator1"].getCurrentPressure(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Pressure regulator 2", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("%.1f"%(self.model["PressureRegulator2"].getSetPressure(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("%.1f"%(self.model["PressureRegulator2"].getCurrentPressure(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        
+        # Reagent robot
+        sState += "Reagent robot\n"
+        sState += self.__PadString("  Position (reactor/reagent/delivery)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(str(nReagentRobotSetPositionReactor) + "/" + str(nReagentRobotSetPositionReagent) + "/" + \
+            str(nReagentRobotSetPositionDelivery), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotCurrentPositionReactor) + "/" + str(nReagentRobotCurrentPositionReagent) + "/" + \
+            str(nReagentRobotCurrentPositionDelivery), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("  Raw position (x/z)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(str(nReagentRobotSetPositionRawX) + "/" + str(nReagentRobotSetPositionRawZ), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotCurrentPositionRawX) + "/" + str(nReagentRobotCurrentPositionRawZ), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("  Gripper (up/down)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGripperUp(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getSetGripperDown(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("  Gripper (open/close)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGripperOpen(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getSetGripperClose(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n\n"
+        
+        # Reactors
+        sState += self.__PadString("Reactor", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString("1", STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString("2", STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString("3", STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("----------------------------", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString("------", STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString("------", STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString("------", STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Set position", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.model["Reactor1"]["Motion"].getSetPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.model["Reactor2"]["Motion"].getSetPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.model["Reactor3"]["Motion"].getSetPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Actual position", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.model["Reactor1"]["Motion"].getCurrentPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.model["Reactor2"]["Motion"].getCurrentPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.model["Reactor3"]["Motion"].getCurrentPosition(False), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Raw position (set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(self.model["Reactor1"]["Motion"].getSetPositionRaw(False)) + "/" + \
+            str(self.model["Reactor1"]["Motion"].getCurrentPositionRaw(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor2"]["Motion"].getSetPositionRaw(False)) + "/" + \
+            str(self.model["Reactor2"]["Motion"].getCurrentPositionRaw(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor3"]["Motion"].getSetPositionRaw(False)) + "/" + \
+            str(self.model["Reactor3"]["Motion"].getCurrentPositionRaw(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Reactor up (set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Motion"].getSetReactorUp(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor1"]["Motion"].getCurrentReactorUp(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Motion"].getSetReactorUp(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor2"]["Motion"].getCurrentReactorUp(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Motion"].getSetReactorUp(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor3"]["Motion"].getCurrentReactorUp(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Reactor down (set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Motion"].getSetReactorDown(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor1"]["Motion"].getCurrentReactorDown(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Motion"].getSetReactorDown(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor2"]["Motion"].getCurrentReactorDown(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Motion"].getSetReactorDown(False)) + "/" + \
+            self.__BoolToString(self.model["Reactor3"]["Motion"].getCurrentReactorDown(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Evaporation valves open (N2/vac)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor1"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor2"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor3"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Transfer valve open", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Reagent transfer valves open (1/2)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getReagent1TransferValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor1"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getReagent1TransferValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor2"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getReagent1TransferValveOpen(False)) + \
+            "/" + self.__BoolToString(self.model["Reactor3"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Stopcock positions (1/2/3)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(self.model["Reactor1"]["Stopcock1"].getPosition(False)) + "/" + \
+            str(self.model["Reactor1"]["Stopcock2"].getPosition(False)) + "/" + str(self.model["Reactor1"]["Stopcock3"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor2"]["Stopcock1"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor3"]["Stopcock1"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Temp controller (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeaterOn(False)) + "/" + \
             str(self.model["Reactor1"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False)) + "\n";
-        sState += "  Stir motor: " + str(self.model["Reactor1"]["Stir"].getCurrentSpeed(False)) + "\n"
-        sState += "  Radiation detector: " + str(self.model["Reactor1"]["Radiation"].getRadiation(False)) + "\n"
-        sState += "Reactor 2:\n"
-        sState += "  Set position (raw): " + self.model["Reactor2"]["Motion"].getSetPosition(False) + " (" + \
-            str(self.model["Reactor2"]["Motion"].getSetPositionRaw(False)) + ")\n"
-        sState += "  Current position (raw): " + self.model["Reactor2"]["Motion"].getCurrentPosition(False) + " (" + \
-            str(self.model["Reactor2"]["Motion"].getCurrentPositionRaw(False)) + ")\n"
-        sState += "  Reactor up (set/actual): " + str(self.model["Reactor2"]["Motion"].getSetReactorUp(False)) + "/" + \
-            str(self.model["Reactor2"]["Motion"].getCurrentReactorUp(False)) + "\n"
-        sState += "  Reactor down (set/actual): " + str(self.model["Reactor2"]["Motion"].getSetReactorDown(False)) + "/" + \
-            str(self.model["Reactor2"]["Motion"].getCurrentReactorDown(False)) + "\n"
-        sState += "  Evaporation valves open (nitrogen/vacuum): " + str(self.model["Reactor2"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + str(self.model["Reactor2"]["Valves"].getEvaporationVacuumValveOpen(False)) + "\n"
-        sState += "  Transfer valve open: " + str(self.model["Reactor2"]["Valves"].getTransferValveOpen(False)) + "\n"
-        sState += "  Reagent transfer valves open (1/2): " + str(self.model["Reactor2"]["Valves"].getReagent1TransferValveOpen(False)) + \
-            "/" + str(self.model["Reactor2"]["Valves"].getReagent2TransferValveOpen(False)) + "\n"
-        sState += "  Stopcock position: " + str(self.model["Reactor2"]["Stopcock1"].getPosition(False)) + "\n"
-        sState += "  Temperature controller (on/set/actual): " + str(self.model["Reactor2"]["Thermocouple"].getHeaterOn(False)) + "/" + \
+            str(self.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeaterOn(False)) + "/" + \
             str(self.model["Reactor2"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False)) + "\n";
-        sState += "  Stir motor: " + str(self.model["Reactor2"]["Stir"].getCurrentSpeed(False)) + "\n"
-        sState += "  Radiation detector: " + str(self.model["Reactor2"]["Radiation"].getRadiation(False)) + "\n"
-        sState += "Reactor 3:\n"
-        sState += "  Set position (raw): " + self.model["Reactor3"]["Motion"].getSetPosition(False) + " (" + \
-            str(self.model["Reactor3"]["Motion"].getSetPositionRaw(False)) + ")\n"
-        sState += "  Current position (raw): " + self.model["Reactor3"]["Motion"].getCurrentPosition(False) + " (" + \
-            str(self.model["Reactor3"]["Motion"].getCurrentPositionRaw(False)) + ")\n"
-        sState += "  Reactor up (set/actual): " + str(self.model["Reactor3"]["Motion"].getSetReactorUp(False)) + "/" + \
-            str(self.model["Reactor3"]["Motion"].getCurrentReactorUp(False)) + "\n"
-        sState += "  Reactor down (set/actual): " + str(self.model["Reactor3"]["Motion"].getSetReactorDown(False)) + "/" + \
-            str(self.model["Reactor3"]["Motion"].getCurrentReactorDown(False)) + "\n"
-        sState += "  Evaporation valves open (nitrogen/vacuum): " + str(self.model["Reactor3"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + str(self.model["Reactor3"]["Valves"].getEvaporationVacuumValveOpen(False)) + "\n"
-        sState += "  Transfer valve open: " + str(self.model["Reactor3"]["Valves"].getTransferValveOpen(False)) + "\n"
-        sState += "  Reagent transfer valves open (1/2): " + str(self.model["Reactor3"]["Valves"].getReagent1TransferValveOpen(False)) + "/" + \
-            str(self.model["Reactor3"]["Valves"].getReagent2TransferValveOpen(False)) + "\n"
-        sState += "  Stopcock position: " + str(self.model["Reactor3"]["Stopcock1"].getPosition(False)) + "\n"
-        sState += "  Temperature controller (on/set/actual): " + str(self.model["Reactor3"]["Thermocouple"].getHeaterOn(False)) + "/" + \
+            str(self.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeaterOn(False)) + "/" + \
             str(self.model["Reactor3"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)) + "\n";
-        sState += "  Stir motor: " + str(self.model["Reactor3"]["Stir"].getCurrentSpeed(False)) + "\n"
-        sState += "  Radiation detector: " + str(self.model["Reactor3"]["Radiation"].getRadiation(False)) + "\n"
+            str(self.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Stir motor", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(self.model["Reactor1"]["Stir"].getCurrentSpeed(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor2"]["Stir"].getCurrentSpeed(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor3"]["Stir"].getCurrentSpeed(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+        
+        sState += self.__PadString("Radiation detector", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(self.model["Reactor1"]["Radiation"].getRadiation(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor2"]["Radiation"].getRadiation(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(self.model["Reactor3"]["Radiation"].getRadiation(False)), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
     finally:
         # Release the system model lock
-        self.unlockSystemModel()
-
+        self.UnlockSystemModel()
+        
     # Return the state string
     return sState
+
+  def __PadString(self, sString, nTotalCharacters):
+    """Pads a string with whitespace"""
+    # Check input string length
+    if len(sString) > nTotalCharacters:
+      return sString
+    
+    # Create return string
+    sReturn = sString
+    for nCount in range(len(sString), nTotalCharacters + 1):
+      sReturn += " "
+    return sReturn
+  
+  def __BoolToString(self, bValue):
+    """Converts a boolean value to a single character"""
+    if bValue:
+      return "T"
+    else:
+      return "F"

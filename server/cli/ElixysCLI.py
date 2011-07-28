@@ -5,6 +5,8 @@ Implements a CLI interface to the Elixys system """
 ### Imports
 import inspect
 import time
+import rpyc
+import socket
 import sys
 sys.path.append("../hardware/")
 sys.path.append("../core/")
@@ -107,6 +109,13 @@ if __name__ == "__main__":
     pSystemModel = SystemModel(pHardwareComm)
     pSystemModel.StartUp()
     
+    # Create an RPC connection to the state monitoring window
+    try:
+        pStateMonitor = rpyc.connect("localhost", 18861)
+        pSystemModel.SetStateMonitor(pStateMonitor)
+    except socket.error, ex:
+        pass
+    
     # Create the unit operations wrapper
     pUnitOperationsWrapper = UnitOperationsWrapper(pSystemModel)
 
@@ -143,59 +152,27 @@ if __name__ == "__main__":
             # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
             # don't want to list all of our functions
             print "Recognized hardware functions:"
-            print "  Cooling system functions:"
-            print "    CoolingSystemOn()"
-            print "    CoolingSystemOff()"
-            print "  Pressure regulator functions:"
-            print "    SetPressureRegulator(nPressureRegulator, fPressure)"
-            print "  Reagent robot functions:"
-            print "    MoveRobotToReagent(nReactor, nReagent)"
-            print "    MoveRobotToDelivery(nReactor, nPosition)"
-            print "    GripperUp()"
-            print "    GripperDown()"
-            print "    GripperOpen()"
-            print "    GripperClose()"
-            print "  F-18 functions:"
-            print "    LoadF18Start()"
-            print "    LoadF18Stop()"
-            print "    EluteF18Start()"
-            print "    EluteF18Stop()"
-            print "  HPLC functions:"
-            print "    LoadHPLCStart()"
-            print "    LoadHPLCStop()"
-            print "  Reactor functions:"
-            print "    MoveReactor(nReactor, sPositionName)"
-            print "      Recognized position names: "
-            print "        Install"
-            print "        Transfer"
-            print "        React1"
-            print "        Add"
-            print "        React2"
-            print "        Evaporate"
-            print "    ReactorUp(nReactor)"
-            print "    ReactorDown(nReactor)"
-            print "    ReactorEvaporateStart(nReactor)"
-            print "    ReactorEvaporateStop(nReactor)"
-            print "    ReactorTransferStart(nReactor)"
-            print "    ReactorTransferStop(nReactor)"
-            print "    ReactorReagentTransferStart(nReactor, nPosition)"
-            print "    ReactorReagentTransferStop(nReactor, nPosition)"
-            print "    ReactorStopcockOpen(nReactor, nStopcock)"
-            print "    ReactorStopcockClose(nReactor, nStopcock)"
-            print "  Temperature controller functions:"
-            print "    HeaterOn(nReactor, nHeater)"
-            print "    HeaterOff(nReactor, nHeater)"
-            print "    SetHeater(nReactor, nHeater, fSetPoint)"
-            print "  Stir motor functions:"
-            print "    SetMotorSpeed(nReactor, nMotorSpeed)"
-            print "  Radiation detector functions:"
-            print "    Not implemented: ReadRadiationDetector(nReactor)"
-            print "  Robot utility functions:"
-            print "    HomeRobots()"
-            print "    DisableRobots()"
-            print "    EnableRobots()"
-            print "    DisableReactorRobot(nReactor)"
-            print "    EnableReactorRobot(nReactor)"
+            print "  * CoolingSystemOn()   * CoolingSystemOff()"
+            print "  * SetPressureRegulator(nPressureRegulator, fPressure)"
+            print "  * MoveRobotToReagent(nReactor, nReagent)"
+            print "  * MoveRobotToDelivery(nReactor, nPosition)"
+            print "  * GripperUp()      * GripperDown()   * GripperOpen()     * GripperClose()"
+            print "  * LoadF18Start()   * LoadF18Stop()   * EluteF18Start()   * EluteF18Stop()"
+            print "  * LoadHPLCStart()  * LoadHPLCStop()"
+            print "  * MoveReactor(nReactor, sPositionName)"
+            print "    Where position name is one of the following:"
+            print "      Install, Transfer, React1, Add, React2, Evaporate"
+            print "  * ReactorUp(nReactor)               * ReactorDown(nReactor)"
+            print "  * ReactorEvaporateStart(nReactor)   * ReactorEvaporateStop(nReactor)"
+            print "  * ReactorTransferStart(nReactor)    * ReactorTransferStop(nReactor)"
+            print "  * ReactorReagentTransferStart(nReactor, nPosition)"
+            print "  * ReactorReagentTransferStop(nReactor, nPosition)"
+            print "  * ReactorStopcockPosition(nReactor, nStopcock, nPosition)"
+            print "  * HeaterOn(nReactor, nHeater)   * HeaterOff(nReactor, nHeater)"
+            print "  * SetHeater(nReactor, nHeater, fSetPoint)"
+            print "  * SetMotorSpeed(nReactor, nMotorSpeed)"
+            print "  * HomeRobots()   * DisableRobots()   * EnableRobots()"
+            print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
         elif sCommand == "help send":
             # Display a brief description of the PLC command format
             print "Command format:"

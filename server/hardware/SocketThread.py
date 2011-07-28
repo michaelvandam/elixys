@@ -33,6 +33,7 @@ class SocketThread(threading.Thread):
         # Create a socket connection to the PLC
         pSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         pSocket.setblocking(0)
+        pSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         pSocket.bind(("", self.__nServerPort))
         pSockets = [pSocket]
 

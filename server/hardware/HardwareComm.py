@@ -198,8 +198,9 @@ class HardwareComm():
         self.__nMemoryLower, self.__nMemoryUpper = self.CalculateMemoryRange()
 
         # Initialize our variables
-        self.__bUpdatingState = False
         self.__pSystemModel = None
+        self.__nStateOffset = 0
+        self.__sState = ""
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
         self.__FakePLC_nMemoryUpper = 0
@@ -227,7 +228,7 @@ class HardwareComm():
     # Set the system model
     def SetSystemModel(self, pSystemModel):
         self.__pSystemModel = pSystemModel
-        
+
     # Calculates the memory range used by the PLC modules
     def CalculateMemoryRange(self):
         # Create array of minimum and maximum memory offsets for each module
@@ -278,12 +279,11 @@ class HardwareComm():
         # What mode are we in?
         if (self.__FakePLC_pMemory == None):
             # We are in normal mode.  Make sure we're not already in the process of updating the state
-            if self.__bUpdatingState == True:
+            if self.__sState != "":
                 return
 
             # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
             # first chunk of the state
-            self.__bUpdatingState = True
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
             self.__RequestNextStateChunk()
@@ -294,7 +294,6 @@ class HardwareComm():
                 sMemory += ("%0.4X" % self.__FakePLC_pMemory[nOffset - self.__nMemoryLower])
             
             # Pass the fake memory to the state processing function
-            self.__bUpdatingState = True
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
             self.__ProcessRawState(sMemory)
@@ -673,10 +672,6 @@ class HardwareComm():
     
     # Requests the next chunk of the state from the PLC
     def __RequestNextStateChunk(self):
-        # Make sure we're updating our state
-        if self.__bUpdatingState == False:
-            return
-
         # Determine the length of the next chunk
         if (self.__nStateOffset + MAX_PLC_READLENGTH) < self.__nMemoryUpper:
             nLength = MAX_PLC_READLENGTH
@@ -701,16 +696,16 @@ class HardwareComm():
             # No, so request the next chunk and return
             self.__RequestNextStateChunk()
             return
-        else:
-            # Yes, so clear our updating flag
-            self.__bUpdatingState = False
 
         # Make sure we have a system model
         if self.__pSystemModel == None:
+            # No, so reset our state and return
+            self.__nStateOffset = self.__nMemoryLower
+            self.__sState = ""
             return
-            
+        
         # Acquire a lock on the system model
-        pModel = self.__pSystemModel.lockSystemModel()
+        pModel = self.__pSystemModel.LockSystemModel()
 
         # Perform the state update in a try/except/finally block to make sure we release our lock on the system model
         try:        
@@ -789,8 +784,13 @@ class HardwareComm():
             pModel["Reactor3"]["Radiation"].updateState(0)
         finally:
             # Release the system model lock
-            self.__pSystemModel.unlockSystemModel()
+            self.__pSystemModel.UnlockSystemModel()
+            self.__pSystemModel.ModelUpdated()
         
+        # Reset our state
+        self.__nStateOffset = self.__nMemoryLower
+        self.__sState = ""
+
     # Get binary value
     def __GetBinaryValue(self, sHardwareName):
         # Look up the hardware component by name
