@@ -7,7 +7,7 @@ Elixys Unit Operations
 ## MAKE list of all private variables
 ## UPDATE list of constants
 ##
-
+import time
 from threading import Thread
 
 #Z Positions
@@ -123,7 +123,7 @@ class UnitOperation(Thread):
         self.setDescription("Reactor%s already in position %s." % (ReactorID,reactorPosition))
     self.delay = storeDelayValue #Restore previous delay value
     
-  def waitForCondition(self,function,condition,comparator,timeout=3): #Timeout in seconds, default to 3.
+  def waitForCondition(self,function,condition,comparator,timeout): #Timeout in seconds, default to 3.
     startTime = time.time()
     if comparator == EQUAL:
       while not(function() == condition):
@@ -170,6 +170,8 @@ class UnitOperation(Thread):
       self.setStateCheckInterval(50) #Sleep 50ms between checks
       
   def isTimerExpired(startTime,timeout):
+    if (timeout == 65535):
+      return False
     if (time.time()-startTime >= timeout):
       return True
     return False
@@ -232,37 +234,36 @@ class UnitOperation(Thread):
 
   def setStopcock(self):
     self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
-    self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL) 
+    self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL,3) 
 
   def setHeater(self,heaterState):
     self.systemModel[self.ReactorID]['Temperature_controller'].setHeaterState(heaterState)
-    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,heaterState,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,heaterState,EQUAL,3)
     if heaterState = ON:
-      self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getCurrentTemperature,self.reactTemp,GREATER)
+      self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getCurrentTemperature,self.reactTemp,GREATER,3)
 
   def setTemp(self):
     self.systemModel[self.ReactorID]['Temperature_controller'].setSetPoint(self.reactTemp)
-    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getSetPoint,self.reactTemp,GREATER)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getSetPoint,self.reactTemp,EQUAL,3)
 
   def setCool(self):
     self.systemModel[self.ReactorID]['Temperature_controller'].setHeaterState(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,OFF,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getHeaterState,OFF,EQUAL,3)
     self.systemModel[self.ReactorID]['cooling_system'].setCooling(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL,3)
     self.waitForCondition(self.systemModel[self.ReactorID]['Temperature_controller'].getTemperature(),self.coolTemp) 
     self.systemModel[self.ReactorID]['cooling_system'].setCooling(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL,3)
     
   def setStirSpeed(self,stirSpeed):
     self.systemModel[self.ReactorID]['stir_motor'].setSpeed(stirSpeed) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,stirSpeed,EQUAL) #Read value from PLC memory... should be equal
+    self.waitForCondition(self.systemModel[self.ReactorID]['stir_motor'].getCurrentSpeed,stirSpeed,EQUAL,3) #Read value from PLC memory... should be equal
 
   def setVacuum(self,vacuumSetting):
     self.systemModel[self.ReactorID]['vacuum'].setVacuum(vacuumSetting)
-    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,vacuumSetting,EQUAL)     
+    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,vacuumSetting,EQUAL,3)     
 
   def setPressureRegulator(self,pressureSetPoint=self.pressureSetPoint,rampTime=0): #Time in seconds
- 
     if rampTime:
       currentPressure = self.systemModel['pressure_regulator'].getCurrentPressure()
       rampPressure = currentPressure
@@ -274,13 +275,13 @@ class UnitOperation(Thread):
       while (rampPressure<pressureSetPoint):
         rampPressure += pressureStep
         self.systemModel['pressure_regulator'].setPressure(rampPressure) #Set analog value on PLC
-        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,rampPressure,GREATER) #Read value from sensor... should be greater or equal   
+        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
       if (rampPressure >= pressureSetPoint):
         self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
-        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER)
+        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER,3)
     else:
       self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
-      self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER)
+      self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER,3)
       
 class React(UnitOperation):
   def __init__(self,systemModel,params):
@@ -363,45 +364,45 @@ class AddReagent(UnitOperation):
       else:
         #Error, why are we already gripped and not in a down position? 
         logError("ERROR: setGripperPlace() called while already gripped in raised position.")
-    if not(self.waitCheckCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)):
+    if not(self.checkForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)):
       self.systemModel[self.Gripper].setZPosition(UP)
-      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL,3)
       self.systemModel[self.Gripper].setCoordinate(self.ReagentID)
-      self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL,3)
       self.systemModel[self.Gripper].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL,3)
       self.systemModel[self.Gripper].setGripperState(GRIP)
-      self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL,3)
     else: #We're in the right position, make sure we're down on the vial and grip it.
       self.systemModel[self.Gripper].setZPosition(DOWN)
-      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL,3)
       self.systemModel[self.Gripper].setGripperState(GRIP)
-      self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL)
+      self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL,3)
     #Regardless of above, when all is said and done, we want to move up and over to the position where the vial should go.
     self.systemModel[self.Gripper].setZPosition(UP)
-    self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL)
+    self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL,3)
     self.systemModel[self.Gripper].setCoordinate(self.reagentLoadPosition)
-    self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.reagentLoadPosition,EQUAL)
+    self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.reagentLoadPosition,EQUAL,3)
     self.systemModel[self.Gripper].setZPosition(DOWN)
-    self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL)
+    self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL,3)
     
   def setGripperRemove():
     if self.checkForCondition(self.systemModel[self.Gripper].getCoordinate,self.reagentLoadPosition,EQUAL):
       if self.checkForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL):
         self.systemModel[self.Gripper].setGripperState(GRIP)
-        self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getGripperState,GRIP,EQUAL,3)
         self.systemModel[self.Gripper].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL,3)
         self.systemModel[self.Gripper].setCoordinate(self.ReagentID)
-        self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,self.ReagentID,EQUAL,3)
         self.systemModel[self.Gripper].setZPosition(DOWN)
-        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,DOWN,EQUAL,3)
         self.systemModel[self.Gripper].setGripperState(UNGRIP)
-        self.waitForCondition(self.systemModel[self.Gripper].getGripperState,UNGRIP,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getGripperState,UNGRIP,EQUAL,3)
         self.systemModel[self.Gripper].setZPosition(UP)
-        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getCurrentZPosition,UP,EQUAL,3)
         self.systemModel[self.Gripper].setCoordinate(HOME)
-        self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,HOME,EQUAL)
+        self.waitForCondition(self.systemModel[self.Gripper].getCoordinate,HOME,EQUAL,3)
       else:
         logError("Gripper in correct position for removal, but not in down position.")
     else:
@@ -423,8 +424,9 @@ class Evaporate(UnitOperation):
     self.setReactorPosition(EVAPORATE)
     self.beginNextStep("Setting evaporation Temperature")
     self.setTemp(evapTemp)
-    self.stepDescription("Starting on vacuum")
+    self.stepDescription("Starting vacuum and nitrogen")
     self.setVacuum(ON)
+    self.setEvapNitrogen(ON)
     self.stepDescription("Starting stir motor")    
     self.setStirSpeed(self.stirSpeed)
     self.stepDescription("Starting heaters")
@@ -436,8 +438,9 @@ class Evaporate(UnitOperation):
     self.setCool()
     self.stepDescription("Stopping stir motor")    
     self.setStirSpeed(OFF)
-    self.stepDescription("Stopping vacuum")    
+    self.stepDescription("Stopping vacuum and nitrogen")    
     self.setVacuum(OFF)
+    self.setEvapNitrogen(OFF)
     self.beginNextStep("Evaporation Operation Complete!")
   
   def setParams(self,currentParams):
@@ -448,6 +451,10 @@ class Evaporate(UnitOperation):
         self.paramsValid = False
         #Log Error
       self.paramsValidated = True
+      
+  def setEvapNitrogen(self,evapNitrogenSetting):
+    self.systemModel[self.ReactorID]['vacuum'].setVacuum(evapNitrogenSetting)
+    self.waitForCondition(self.systemModel[self.ReactorID]['vacuum'].getVacuum,evapNitrogenSetting,EQUAL,3)   
     
 class InstallVial(UnitOperation):
   def __init__(self,systemModel,params):
@@ -503,11 +510,11 @@ class TransferToHPLC(UnitOperation):
       
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(HPLC)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),HPLC,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),HPLC,EQUAL,3)
     
   def setHPLCValve(self):
     self.systemModel[self.ReactorID]['transfer'].setHPLC(INJECT)       
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getHPLC(),INJECT,EQUAL) 
+    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getHPLC(),INJECT,EQUAL,3) 
   
 class TransferElute(UnitOperation):
   def __init__(self,systemModel,params):
@@ -539,7 +546,7 @@ class TransferElute(UnitOperation):
   
   def setTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),self.transferPosition,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),self.transferPosition,EQUAL,3)
    
 class Transfer(UnitOperation):
   def __init__(self,systemModel,params):
@@ -570,7 +577,7 @@ class Transfer(UnitOperation):
   
   def startTransfer(self):
     self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,EQUAL)
+    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,EQUAL,3)
  
 class UserInput(UnitOperation):
   def __init__(self,systemModel,params):
@@ -598,7 +605,7 @@ class UserInput(UnitOperation):
   def setMessageBox(self):
     self.setDescription("Waiting for user input")
     self.waitForUser = True
-    self.waitForCondition(self.getUserInput,True,EQUAL) # Zero timeout = Infinite
+    self.waitForCondition(self.getUserInput,True,EQUAL,65535) #timeout = Infinite
     self.setDescription()
     
   def getUserInput(self):
@@ -631,7 +638,7 @@ class DetectRadiation(UnitOperation):
     
   def getRadiation(self):
     self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading()
-    self.waitForCondition(self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading,self.calibrationCoefficient,GREATER)
+    self.waitForCondition(self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading,self.calibrationCoefficient,GREATER,3)
     
 def test():
   react1 = React()
