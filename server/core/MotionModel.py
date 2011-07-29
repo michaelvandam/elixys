@@ -31,56 +31,56 @@ class MotionModel(ComponentModel):
   def getSetPosition(self, bLockModel = True):
     """Return the set named reactor position"""
     if bLockModel:
-      return self.protectedReturn1(getSetPosition)
+      return self.protectedReturn1(self.getSetPosition)
     else:
       return self.setPosition
     
   def getCurrentPosition(self, bLockModel = True):
     """Return the current named reactor position"""
     if bLockModel:
-      return self.protectedReturn1(getCurrentPosition)
+      return self.protectedReturn1(self.getCurrentPosition)
     else:
       return self.currentPosition
     
   def getSetPositionRaw(self, bLockModel = True):
     """Return the set raw reactor position"""
     if bLockModel:
-      return self.protectedReturn1(getSetPositionRaw)
+      return self.protectedReturn1(self.getSetPositionRaw)
     else:
       return self.setPositionRaw
 
   def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position"""
     if bLockModel:
-      return self.protectedReturn1(getCurrentPositionRaw)
+      return self.protectedReturn1(self.getCurrentPositionRaw)
     else:
       return self.currentPositionRaw
     
   def getSetReactorUp(self, bLockModel = True):
     """Returns True if the reactor is set to up, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetReactorUp)
+      return self.protectedReturn1(self.getSetReactorUp)
     else:
       return self.setReactorUp
     
   def getSetReactorDown(self, bLockModel = True):
     """Returns True if the reactor is set to down, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetReactorDown)
+      return self.protectedReturn1(self.getSetReactorDown)
     else:
       return self.setReactorDown
 
   def getCurrentReactorUp(self, bLockModel = True):
     """Returns True if the reactor is currently up, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getCurrentReactorUp)
+      return self.protectedReturn1(self.getCurrentReactorUp)
     else:
       return self.currentReactorUp
     
   def getCurrentReactorDown(self, bLockModel = True):
     """Returns True if the reactor is currently down, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getCurrentReactorDown)
+      return self.protectedReturn1(self.getCurrentReactorDown)
     else:
       return self.currentReactorDown
 

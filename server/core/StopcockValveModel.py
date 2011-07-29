@@ -25,7 +25,7 @@ class StopcockValveModel(ComponentModel):
   def getPosition(self, bLockModel = True):
     """Returns the current stopcock position"""
     if bLockModel:
-      return self.protectedReturn1(getPosition)
+      return self.protectedReturn1(self.getPosition)
     else:
       return self.valvePosition
      

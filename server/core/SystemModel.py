@@ -151,6 +151,7 @@ class SystemModel:
         
         # Vacuum system
         sState += self.__PadString("Vacuum system (on/pressure)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["VacuumSystem"].getVacuumSystemOn(False)) + "/" + \
             str(self.model["VacuumSystem"].getVacuumSystemPressure(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"

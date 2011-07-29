@@ -21,21 +21,21 @@ class ExternalSystemsModel(ComponentModel):
   def getF18LoadValveOpen(self, bLockModel = True):
     """Returns True if the F18 load valve is open, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getF18LoadValveOpen)
+      return self.protectedReturn1(self.getF18LoadValveOpen)
     else:
       return self.f18LoadValveOpen
 
   def getF18EluteValveOpen(self, bLockModel = True):
     """Returns True if the F18 elute valve is open, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getF18EluteValveOpen)
+      return self.protectedReturn1(self.getF18EluteValveOpen)
     else:
       return self.f18EluteValveOpen
      
   def getHPLCLoadValveOpen(self, bLockModel = True):
     """Returns True if the HPLC load valve is open, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getHPLCLoadValveOpen)
+      return self.protectedReturn1(self.getHPLCLoadValveOpen)
     else:
       return self.hplcLoadValveOpen
 

@@ -19,7 +19,7 @@ class CoolingSystemModel(ComponentModel):
   def getCoolingSystemOn(self, bLockModel = True):
     """Returns True if the cooling system is on, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getCoolingSystemOn)
+      return self.protectedReturn1(self.getCoolingSystemOn)
     else:
       return self.coolingSystemOn
 

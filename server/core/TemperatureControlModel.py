@@ -30,21 +30,21 @@ class TemperatureControlModel(ComponentModel):
   def getHeaterOn(self, bLockModel = True):
     """Returns the heater state"""
     if bLockModel:
-      return self.protectedReturn1(getHeaterOn)
+      return self.protectedReturn1(self.getHeaterOn)
     else:
       return self.heaterOn
 
   def getSetTemperature(self, bLockModel = True):
     """Returns the heater set temperature"""
     if bLockModel:
-      return self.protectedReturn1(getSetTemperature)
+      return self.protectedReturn1(self.getSetTemperature)
     else:
       return self.setTemperature
       
   def getCurrentTemperature(self, bLockModel = True):
     """Returns the heater current temperature"""
     if bLockModel:
-      return self.protectedReturn1(getCurrentTemperature)
+      return self.protectedReturn1(self.getCurrentTemperature)
     else:
       return self.currentTemperature
   

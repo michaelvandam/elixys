@@ -401,17 +401,20 @@ class HardwareComm():
             raise Exception("Invalid stopcock position")
 
     # Temperature controllers
-    def HeaterOn(self, nReactor, nHeater):
+    def HeaterOn(self, nReactor):
         # Clear the stop bit
-        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
-        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
-    def HeaterOff(self, nReactor, nHeater):
+        for nHeater in range(1, 4):
+            nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
+            self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
+    def HeaterOff(self, nReactor):
         # Set the stop bit
-        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
-        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
-    def SetHeater(self, nReactor, nHeater, nSetPoint):
+        for nHeater in range(1, 4):
+            nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
+            self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
+    def SetHeater(self, nReactor, nSetPoint):
         # Set the heater temperature
-        self.__SetThermocontrollerSetValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater), nSetPoint)
+        for nHeater in range(1, 4):
+            self.__SetThermocontrollerSetValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater), nSetPoint)
 
     # Stir motor
     def SetMotorSpeed(self, nReactor, nMotorSpeed):
@@ -491,22 +494,26 @@ class HardwareComm():
         
     # Used by the fake PLC to change the state of the system
     def FakePLC_SetVacuumPressure(self, nPressure):
-        pass
+        nPressurePLC = (nPressure - self.__nVacuumGaugeIntercept) / self.__nVacuumGaugeSlope
+        self.__SetAnalogValue("VacuumPressure", nPressurePLC)
     def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
-        pass
-    def FakePLC_SetReagentRobotPosition(self, xPositionX, nPositionZ):
-        pass
+        nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
+        self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
+    def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
     def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
-        pass
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionZ)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
-        pass
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorUp", bUpSensor)
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorDown", bDownSensor)
     def FakePLC_SetReactorActualTemperature(self, nReactor, nTemperature):
-        pass
+        for nHeater in range(1, 4):
+            nOffset = self.__LookUpThermocontrollerActualOffset("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater))
+            self.__SetIntegerValueRaw(nOffset, nTemperature)
     def FakePLC_SetBinaryValue(self, nWordOffset, nBitOffset, bValue):
-        # Set the raw binary value
         self.__SetBinaryValueRaw(nWordOffset, nBitOffset, bValue)
     def FakePLC_SetWordValue(self, nWordOffset, nValue):
-        # Set the raw word value
         self.__SetIntegerValueRaw(nWordOffset, nValue)
 
     ### PLC send functions ###
@@ -559,6 +566,17 @@ class HardwareComm():
         # Call the raw function
         self.__SetIntegerValueRaw(int(pHardware["location"]), nValue)
 
+    # Set analog value
+    def __SetAnalogValue(self, sHardwareName, nValue):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word
+        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + int(pHardware["location"])
+        
+        # Set the integer value
+        self.__SetIntegerValueRaw(nAbsoluteWordOffset, int(nValue))
+        
     # Set integer value raw
     def __SetIntegerValueRaw(self, nAddress, nValue):
         # What mode are we in?
@@ -577,17 +595,6 @@ class HardwareComm():
 
             # Update the target word in the fake memory
             self.__FakePLC_pMemory[nAddress] = nValue
-
-    # Set analog value
-    def __SetAnalogValue(self, sHardwareName, nValue):
-        # Look up the hardware component by name
-        pHardware = self.__LookUpHardwareName(sHardwareName)
-
-        # Calculate the absolute address of the target word
-        nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) +  int(pHardware["location"])
-        
-        # Set the integer value
-        self.__SetIntegerValueRaw(nAbsoluteWordOffset, nValue)
 
     # Set thermocontroller value
     def __SetThermocontrollerSetValue(self, sHardwareName, nValue):
@@ -879,19 +886,19 @@ class HardwareComm():
 
     # Get reagent robot positions
     def __GetReagentRobotSetX(self):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4)))
     def __GetReagentRobotSetZ(self):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentZAxis * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentZAxis * 4)))
     def __GetReagentRobotActualX(self):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4)))
     def __GetReagentRobotActualZ(self):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4)))
 
     # Get reactor robot positions
     def __GetReactorRobotSetPosition(self, nReactor):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4)))
     def __GetReactorRobotActualPosition(self, nReactor):
-        return self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4))
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4)))
 
     # Get the robot status
     def __GetRobotStatus(self, nAxis):
@@ -1126,3 +1133,16 @@ class HardwareComm():
     # Hit tests the given reagent position
     def __HitTest(self, nPosition, nSetPosition):
         return ((nSetPosition - ROBOT_POSITION_LIMIT) <= nPosition) and ((nSetPosition + ROBOT_POSITION_LIMIT) >= nPosition)
+
+    # Converts from an unsigned integer to a signed integer
+    def __UnsignedToSigned(self, nUnsignedInt):
+        # Is the MSB set?
+        if nUnsignedInt & (1 << 15):
+            # Yes, so this is a negative number.  Take the complement of the entire number
+            nSignedInt = nUnsignedInt - 0xffff
+        else:
+            # No, so this is a positive number
+            nSignedInt = nUnsignedInt
+
+        # Return the signed integer
+        return nSignedInt

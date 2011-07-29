@@ -40,56 +40,56 @@ class ReagentDeliveryModel(ComponentModel):
   def getSetPosition(self, bLockModel = True):
     """Return the set reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
-      return self.protectedReturn3(getSetPosition)
+      return self.protectedReturn3(self.getSetPosition)
     else:
       return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery
 
   def getSetPositionRaw(self, bLockModel = True):
     """Return the set raw reactor position in the format (X, Z)"""
     if bLockModel:
-      return self.protectedReturn2(getSetPositionRaw)
+      return self.protectedReturn2(self.getSetPositionRaw)
     else:
       return self.setPositionRawX, self.setPositionRawZ
     
   def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
-      return self.protectedReturn3(getCurrentPosition)
+      return self.protectedReturn3(self.getCurrentPosition)
     else:
       return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery
     
   def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position in the format (X, Z)"""
     if bLockModel:
-      return self.protectedReturn2(getCurrentPositionRaw)
+      return self.protectedReturn2(self.getCurrentPositionRaw)
     else:
       return self.currentPositionRawX, self.currentPositionRawZ
 
   def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetGripperUp)
+      return self.protectedReturn1(self.getSetGripperUp)
     else:
       return self.setGripperUp
 
   def getSetGripperDown(self, bLockModel = True):
     """Returns True if the gripper is set to down, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetGripperDown)
+      return self.protectedReturn1(self.getSetGripperDown)
     else:
       return self.setGripperDown
 
   def getSetGripperOpen(self, bLockModel = True):
     """Returns True if the gripper is set to open, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetGripperOpen)
+      return self.protectedReturn1(self.getSetGripperOpen)
     else:
       return self.setGripperOpen
 
   def getSetGripperClose(self, bLockModel = True):
     """Returns True if the gripper is set to close, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(getSetGripperClose)
+      return self.protectedReturn1(self.getSetGripperClose)
     else:
       return self.setGripperClose
 

@@ -168,9 +168,8 @@ if __name__ == "__main__":
             print "  * ReactorReagentTransferStart(nReactor, nPosition)"
             print "  * ReactorReagentTransferStop(nReactor, nPosition)"
             print "  * ReactorStopcockPosition(nReactor, nStopcock, nPosition)"
-            print "  * HeaterOn(nReactor, nHeater)   * HeaterOff(nReactor, nHeater)"
-            print "  * SetHeater(nReactor, nHeater, fSetPoint)"
-            print "  * SetMotorSpeed(nReactor, nMotorSpeed)"
+            print "  * HeaterOn(nReactor)   * HeaterOff(nReactor)"
+            print "  * SetHeater(nReactor, fSetPoint)   * SetMotorSpeed(nReactor, nMotorSpeed)"
             print "  * HomeRobots()   * DisableRobots()   * EnableRobots()"
             print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
         elif sCommand == "help send":

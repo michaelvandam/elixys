@@ -13,9 +13,32 @@ sys.path.append("../../cli/")
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
 import Utilities
+from CoolingThread import CoolingThread
+from PressureRegulatorThread import PressureRegulatorThread
+from MoveReagentRobotThread import MoveReagentRobotThread
+from MoveReactorLinearThread import MoveReactorLinearThread
+from MoveReactorVerticalThread import MoveReactorVerticalThread
+from HeatingThread import HeatingThread
 
 # Fake PLC class
 class FakePLC():
+    def __init__(self):
+        """Fake PLC class constructor"""
+        # Initialize variables
+        self.__pCoolingThread = None
+        self.__pPressureRegulator1Thread = None
+        self.__pPressureRegulator2Thread = None
+        self.__pMoveReagentRobotThread = None
+        self.__pReactor1LinearMovementThread = None
+        self.__pReactor2LinearMovementThread = None
+        self.__pReactor3LinearMovementThread = None
+        self.__pReactor1VerticalMovementThread = None
+        self.__pReactor2VerticalMovementThread = None
+        self.__pReactor3VerticalMovementThread = None
+        self.__pReactor1HeatingThread = None
+        self.__pReactor2HeatingThread = None
+        self.__pReactor3HeatingThread = None
+        
     def StartUp(self):
         """Starts up the fake PLC"""
         # Create the hardware layer
@@ -76,6 +99,9 @@ class FakePLC():
                             print "Unknown command, ignoring"
                     else:
                         print "Packet too short, discarding"
+            
+            # Update the state of the PLC
+            self.__UpdatePLC()
 
     def ShutDown(self):
         """Shuts down the fake PLC"""
@@ -197,6 +223,236 @@ class FakePLC():
         self.__pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9601))
         print "Wrote data and sent response packet"
 
+    def __UpdatePLC(self):
+        """Updates the PLC in response to any changes to system changes"""
+        # Update the various system components
+        self.__UpdateVacuumPressure()
+        self.__UpdateCoolingSystem()
+        self.__UpdatePressureRegulator(1)
+        self.__UpdatePressureRegulator(2)
+        self.__UpdateCoolingSystem()
+        self.__UpdateReagentRobotPosition()
+        self.__UpdateReactorPosition(1)
+        self.__UpdateReactorPosition(2)
+        self.__UpdateReactorPosition(3)
+        self.__UpdateReactorHeating(1)
+        self.__UpdateReactorHeating(2)
+        self.__UpdateReactorHeating(3)
+
+    def __UpdateVacuumPressure(self):
+        """Updates the vacuum pressure in response to system changes"""
+        # Get the current state of the vacuum valves and vacuum pressure
+        nEvaporationValvesOpen = 0
+        if self.__pSystemModel.model["Reactor1"]["Valves"].getEvaporationVacuumValveOpen():
+            nEvaporationValvesOpen += 1
+        if self.__pSystemModel.model["Reactor2"]["Valves"].getEvaporationVacuumValveOpen():
+            nEvaporationValvesOpen += 1
+        if self.__pSystemModel.model["Reactor3"]["Valves"].getEvaporationVacuumValveOpen():
+            nEvaporationValvesOpen += 1
+        nActualPressure = self.__pSystemModel.model["VacuumSystem"].getVacuumSystemPressure()
+
+        # Calculate the target vacuum pressure
+        if nEvaporationValvesOpen == 0:
+            nTargetPressure = -71.6
+        elif nEvaporationValvesOpen == 1:
+            nTargetPressure = -12.4
+        elif nEvaporationValvesOpen == 2:
+            nTargetPressure = -8.1
+        else:
+            nTargetPressure = -5.9
+        
+        # Compare the pressures.  Add leeway to account for rounding errors
+        if ((nActualPressure + 1) < nTargetPressure) or ((nActualPressure - 1) > nTargetPressure):
+            # Update the actual pressure to the target pressure
+            self.__pHardwareComm.FakePLC_SetVacuumPressure(nTargetPressure)
+            
+    def __UpdateCoolingSystem(self):
+        """Updates the cooling system in response to system changes"""
+        # Check if the cooling system is on
+        bCoolingSystemOn = self.__pSystemModel.model["CoolingSystem"].getCoolingSystemOn()
+        if bCoolingSystemOn:
+            # Yes.  Check if the cooling thread is running
+            if (self.__pCoolingThread == None) or not self.__pCoolingThread.is_alive():
+                # No, so kill any running heating threads
+                if (self.__pReactor1HeatingThread != None) and self.__pReactor1HeatingThread.is_alive():
+                    self.__pReactor1HeatingThread.Stop()
+                    self.__pReactor1HeatingThread.join()
+                if (self.__pReactor2HeatingThread != None) and self.__pReactor2HeatingThread.is_alive():
+                    self.__pReactor2HeatingThread.Stop()
+                    self.__pReactor2HeatingThread.join()
+                if (self.__pReactor3HeatingThread != None) and self.__pReactor3HeatingThread.is_alive():
+                    self.__pReactor3HeatingThread.Stop()
+                    self.__pReactor3HeatingThread.join()
+ 
+                # Kick off the cooling thread
+                nReactor1CurrentTemperature = self.__pSystemModel.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False)
+                nReactor2CurrentTemperature = self.__pSystemModel.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False)
+                nReactor3CurrentTemperature = self.__pSystemModel.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)
+                self.__pCoolingThread = CoolingThread()
+                self.__pCoolingThread.SetParameters(self.__pHardwareComm, nReactor1CurrentTemperature, nReactor2CurrentTemperature, nReactor3CurrentTemperature)
+                self.__pCoolingThread.start()
+        else:
+            # No, so kill the cooling thread if it is running
+            if (self.__pCoolingThread != None) and self.__pCoolingThread.is_alive():
+                self.__pCoolingThread.Stop()
+                self.__pCoolingThread.join()
+        
+    def __UpdatePressureRegulator(self, nPressureRegulator):
+        """Updates the pressure regulator in response to system changes"""
+        # Get the set and actual pressures
+        nSetPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getSetPressure()
+        nActualPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getCurrentPressure()
+
+        # Compare the pressures.  Add leeway to account for rounding errors
+        if ((nActualPressure + 1) < nSetPressure) or ((nActualPressure - 1) > nSetPressure):
+            # Get a reference to the pressure regulator thread
+            if nPressureRegulator == 1:
+                pThread = self.__pPressureRegulator1Thread
+            else:
+                pThread = self.__pPressureRegulator2Thread
+
+            # Check if the pressure regulator thread is running
+            if (pThread == None) or not pThread.is_alive():
+                # No, so kick off the thread
+                pThread = PressureRegulatorThread()
+                pThread.SetParameters(self.__pHardwareComm, nPressureRegulator, nActualPressure, nSetPressure)
+                pThread.start()
+                
+                # Save the new reference
+                if nPressureRegulator == 1:
+                    self.__pPressureRegulator1Thread = pThread
+                else:
+                    self.__pPressureRegulator2Thread = pThread
+
+    def __UpdateReagentRobotPosition(self):
+        """Updates the reagent robot position in response to system changes"""
+        # Get the set and actual positions
+        nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ = self.__pSystemModel.model["ReagentDelivery"].getSetPositionRaw()
+        nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ = self.__pSystemModel.model["ReagentDelivery"].getCurrentPositionRaw()
+
+        # Compare the positions.  Add leeway to account for motor positioning errors
+        if ((nReagentRobotSetPositionRawX + 5) < nReagentRobotActualPositionRawX) or ((nReagentRobotSetPositionRawX - 5) > nReagentRobotActualPositionRawX) or \
+           ((nReagentRobotSetPositionRawZ + 5) < nReagentRobotActualPositionRawZ) or ((nReagentRobotSetPositionRawZ - 5) > nReagentRobotActualPositionRawZ):
+            # Check if the reagent robot movement thread is running
+            if (self.__pMoveReagentRobotThread == None) or not self.__pMoveReagentRobotThread.is_alive():
+                # No, so kick off the thread
+                self.__pMoveReagentRobotThread = MoveReagentRobotThread()
+                self.__pMoveReagentRobotThread.SetParameters(self.__pHardwareComm, nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ, \
+                    nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ)
+                self.__pMoveReagentRobotThread.start()
+
+    def __UpdateReactorPosition(self, nReactor):
+        """Updates the reactor position in response to system changes"""
+        # Get the set and actual linear positions
+        nReactorSetPositionZ = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getSetPositionRaw()
+        nReactorActualPositionZ = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentPositionRaw()
+
+        # Compare the linear positions.  Add leeway to account for motor positioning errors
+        if ((nReactorSetPositionZ + 5) < nReactorActualPositionZ) or ((nReactorSetPositionZ - 5) > nReactorActualPositionZ):
+            # Get a reference to the reactor linear movement thread
+            if nReactor == 1:
+                pThread = self.__pReactor1LinearMovementThread
+            elif nReactor == 2:
+                pThread = self.__pReactor2LinearMovementThread
+            else:
+                pThread = self.__pReactor3LinearMovementThread
+
+            # Check if the reactor linear movement thread is running
+            if (pThread == None) or not pThread.is_alive():
+                # No, so kick off the thread
+                pThread = MoveReactorLinearThread()
+                pThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualPositionZ, nReactorSetPositionZ)
+                pThread.start()
+                
+                # Save the new reference
+                if nReactor == 1:
+                    self.__pReactor1LinearMovementThread = pThread
+                elif nReactor == 2:
+                    self.__pReactor2LinearMovementThread = pThread
+                else:
+                    self.__pReactor3LinearMovementThread = pThread
+
+        # Get the set and actual vertical positions
+        bReactorSetUp = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getSetReactorUp()
+        bReactorSetDown = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getSetReactorDown()
+        bReactorActualUp = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorUp()
+        bReactorActualDown = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown()
+            
+        # Compare the vertical positions
+        if (bReactorSetUp != bReactorActualUp) or (bReactorSetDown != bReactorActualDown):
+            # Get a reference to the reactor vertical movement thread
+            if nReactor == 1:
+                pThread = self.__pReactor1VerticalMovementThread
+            elif nReactor == 2:
+                pThread = self.__pReactor2VerticalMovementThread
+            else:
+                pThread = self.__pReactor3VerticalMovementThread
+
+            # Check if the reactor linear movement thread is running
+            if (pThread == None) or not pThread.is_alive():
+                # No, so kick off the thread
+                pThread = MoveReactorVerticalThread()
+                pThread.SetParameters(self.__pHardwareComm, nReactor, bReactorSetUp)
+                pThread.start()
+                
+                # Save the new reference
+                if nReactor == 1:
+                    self.__pReactor1VerticalMovementThread = pThread
+                elif nReactor == 2:
+                    self.__pReactor2VerticalMovementThread = pThread
+                else:
+                    self.__pReactor3VerticalMovementThread = pThread
+        
+    def __UpdateReactorHeating(self, nReactor):
+        """Updates the reactor heating in response to system changes"""
+        # Check if the heater is on
+        bHeaterOn = self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeaterOn()
+        if bHeaterOn:
+            # Yes.  Check if the cooling system is on and return if it is
+            bCoolingSystemOn = self.__pSystemModel.model["CoolingSystem"].getCoolingSystemOn()
+            if bCoolingSystemOn:
+                return
+
+            # Get the set and actual temperatures
+            nReactorSetTemperature = self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getSetTemperature()
+            nReactorActualTemperature = self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getCurrentTemperature()
+
+            # Compare the temperatures to see if we need to turn on the heater.  Add leeway to account for small variations
+            if (nReactorSetTemperature + 2) > nReactorActualTemperature:
+                # Get a reference to the heating thread
+                if nReactor == 1:
+                    pThread = self.__pReactor1HeatingThread
+                elif nReactor == 2:
+                    pThread = self.__pReactor2HeatingThread
+                else:
+                    pThread = self.__pReactor3HeatingThread
+
+                # Check if the heating thread is running
+                if (pThread == None) or not pThread.is_alive():
+                    # No, so kick off the thread
+                    pThread = HeatingThread()
+                    pThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualTemperature, nReactorSetTemperature)
+                    pThread.start()
+                
+                    # Save the new reference
+                    if nReactor == 1:
+                        self.__pReactor1HeatingThread = pThread
+                    elif nReactor == 2:
+                        self.__pReactor2HeatingThread = pThread
+                    else:
+                        self.__pReactor3HeatingThread = pThread
+        else:
+            # No, so kill the heating thread if it is running
+            if nReactor == 1:
+                pThread = self.__pReactor1HeatingThread
+            elif nReactor == 2:
+                pThread = self.__pReactor2HeatingThread
+            else:
+                pThread = self.__pReactor3HeatingThread
+            if (pThread != None) and pThread.is_alive():
+                pThread.Stop()
+                pThread.join()
+        
 # Main entry function
 if __name__ == "__main__":
     # Create the fake PLC and run

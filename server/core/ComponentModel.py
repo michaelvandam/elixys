@@ -20,20 +20,20 @@ class ComponentModel():
   def protectedReturn1(self, pGetFunction):
     """Returns the value of the variable as protected by the model lock"""
     self.modelLock.acquire()
-    pReturn1 = pGetFunction(self, False)
+    pReturn1 = pGetFunction(False)
     self.modelLock.release()
     return pReturn1
 
-  def protectedReturn2(self, pVariable1, pVariable2):
+  def protectedReturn2(self, pGetFunction):
     """Returns the value of the variables as protected by the model lock"""
     self.modelLock.acquire()
-    pReturn1, pReturn2 = pGetFunction(self, False)
+    pReturn1, pReturn2 = pGetFunction(False)
     self.modelLock.release()
     return pReturn1, pReturn2
 
-  def protectedReturn3(self, pVariable1, pVariable2, pVariable3, bLockModel):
+  def protectedReturn3(self, pGetFunction):
     """Returns the value of the variables as protected by the model lock"""
     self.modelLock.acquire()
-    pReturn1, pReturn2, pReturn3 = pGetFunction(self, False)
+    pReturn1, pReturn2, pReturn3 = pGetFunction(False)
     self.modelLock.release()
     return pReturn1, pReturn2, pReturn3
