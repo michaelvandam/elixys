@@ -5,7 +5,7 @@ Implements an wrapper around the unit operations class for use by the CLI interf
 ### Imports
 import sys
 sys.path.append("../core/")
-#import UnitOperations
+import UnitOperations
 
 class UnitOperationsWrapper:
     def __init__(self, pSystemModel):
@@ -20,9 +20,9 @@ class UnitOperationsWrapper:
                    "coolTemp":nFinalTemperature,
                    "reactPosition":nReactPosition,
                    "stirSpeed":nStirSpeed}
-        print "Skipping react unit operation"
-#        pReact = UnitOperations.React(self.__pSystemModel, pParams)
-#        pReact.start()
+        print "Starting react unit operation"
+        pReact = UnitOperations.React(self.__pSystemModel, pParams)
+        pReact.start()
 
     def Add(self, nReactor, nReagentReactor, nReagentPosition, nReagentDeliveryPosition):
         """Performs an add unit operation"""

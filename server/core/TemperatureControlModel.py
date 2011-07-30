@@ -51,19 +51,22 @@ class TemperatureControlModel(ComponentModel):
   def setHeaterOn(self, bHeaterOn):
     """Sets the heater state"""
     if bHeaterOn:
-      self.hardwareComm.HeaterOn(self.reactor, 1)
-      self.hardwareComm.HeaterOn(self.reactor, 2)
-      self.hardwareComm.HeaterOn(self.reactor, 3)
+      self.hardwareComm.HeaterOn(self.reactor)
+      #self.hardwareComm.HeaterOn(self.reactor, 1)
+      #self.hardwareComm.HeaterOn(self.reactor, 2)
+      #self.hardwareComm.HeaterOn(self.reactor, 3)
     else:
-      self.hardwareComm.HeaterOff(self.reactor, 1)
-      self.hardwareComm.HeaterOff(self.reactor, 2)
-      self.hardwareComm.HeaterOff(self.reactor, 3)
+      self.hardwareComm.HeaterOff(self.reactor)
+      #self.hardwareComm.HeaterOff(self.reactor, 1)
+      #self.hardwareComm.HeaterOff(self.reactor, 2)
+      #self.hardwareComm.HeaterOff(self.reactor, 3)
 
-  def setTemperature(self, nSetTemperature):
-    """Sets the heater set temperature"""
-    self.hardwareComm.SetHeater(self.reactor, 1, nSetTemperature)
-    self.hardwareComm.SetHeater(self.reactor, 2, nSetTemperature)
-    self.hardwareComm.SetHeater(self.reactor, 3, nSetTemperature)
+  def setSetPoint(self, nSetTemperature):
+    """Sets the heater set Set Point"""
+    self.hardwareComm.SetHeater(self.reactor, nSetTemperature)
+    #self.hardwareComm.SetHeater(self.reactor, 1, nSetTemperature)
+    #self.hardwareComm.SetHeater(self.reactor, 2, nSetTemperature)
+    #self.hardwareComm.SetHeater(self.reactor, 3, nSetTemperature)
   
   def updateState(self, nHeater1On, nHeater2On, nHeater3On, nHeater1SetTemperature, nHeater2SetTemperature, nHeater3SetTemperature, nHeater1CurrentTemperature,
                   nHeater2CurrentTemperature, nHeater3CurrentTemperature):

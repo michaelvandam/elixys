@@ -83,7 +83,15 @@ class MotionModel(ComponentModel):
       return self.protectedReturn1(self.getCurrentReactorDown)
     else:
       return self.currentReactorDown
-
+      
+  def moveReactorDown(self):
+    """Moves the reactor down"""
+    self.hardwareComm.ReactorDown(self.reactor)
+    
+  def moveReactorUp(self):
+    """Moves the reactor up"""
+    self.hardwareComm.ReactorUp(self.reactor)
+    
   def moveToPosition(self, sPosition):
     """Moves the reactor to the given position"""
     self.hardwareComm.MoveReactor(self.reactor, sPosition)
