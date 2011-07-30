@@ -52,6 +52,7 @@ class UnitOperation(threading.Thread):
     self.paramsValid = False
     self.systemModel = systemModel.model
     self.currentStepNumber = 0
+    self.currentStepDescription = ""
     self.delay = 50#50ms delay
     self.isRunning = False
     self.paused = False
@@ -95,6 +96,7 @@ class UnitOperation(threading.Thread):
     #error.log("error")
     
   def beginNextStep(self,nextStepText = ""):
+    print nextStepText
     if self.paused:
       self.paused()
     if nextStepText:
@@ -134,18 +136,21 @@ class UnitOperation(threading.Thread):
         self.stateCheckInterval(self.delay)
         if self.isTimerExpired(startTime,timeout):
           print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          break
           #ERROR
     elif comparator == GREATER:
       while not(function() >= condition):  
         self.stateCheckInterval(self.delay)
         if self.isTimerExpired(startTime,timeout):
           print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          break
           #ERROR
     elif comparator == LESS:
       while not(function() <=condition):
         self.stateCheckInterval(self.delay)
         if self.isTimerExpired(startTime,timeout):
           print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+          break
           #ERROR
     else:
       print ("Error: Invalid comparator.")
@@ -169,13 +174,13 @@ class UnitOperation(threading.Thread):
   def startTimer(self,timerLength): #In seconds
     timerStartTime = time.time()  #Create a time
     while not(self.isTimerExpired(timerStartTime,timerLength)):
-      self.setDescription("Time remaining:%s" % self.formatTime(timerLength-timerStartTime))
+      #self.setDescription("Time remaining:%s" % self.formatTime(timerLength-(time.time()-timerStartTime)))
       self.stateCheckInterval(50) #Sleep 50ms between checks
-      
-  def isTimerExpired(self,startTime,timeout):
-    if (timeout == 65535):
+    print "Timer Finished"  
+  def isTimerExpired(self,startTime,length):
+    if (length == 65535):
       return False
-    if (time.time()-startTime >= timeout):
+    if (time.time()-startTime >= length):
       return True
     return False
     
@@ -259,6 +264,7 @@ class UnitOperation(threading.Thread):
     if heaterState == ON:
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn(heaterState)
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,heaterState,EQUAL,3)
+      print "Waiting for temperature to rise..."
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,3)
     elif heaterState == OFF:
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn(heaterState)
@@ -272,13 +278,13 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getSetTemperature,self.reactTemp,EQUAL,3)
 
   def setCool(self):
-    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterState(OFF)
+    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn(OFF)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,OFF,EQUAL,3)
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(ON)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,ON,EQUAL,3)
-    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getTemperature(),self.coolTemp) 
-    self.systemModel[self.ReactorID]['cooling_system'].setCooling(OFF)
-    self.waitForCondition(self.systemModel[self.ReactorID]['cooling_system'].getCooling,OFF,EQUAL,3)
+    self.systemModel['CoolingSystem'].setCoolingSystemOn(ON)
+    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,ON,EQUAL,3)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,3) 
+    self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
+    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,OFF,EQUAL,3)
     
   def setStirSpeed(self,stirSpeed):
     self.systemModel[self.ReactorID]['Stir'].setSpeed(stirSpeed) #Set analog value on PLC
@@ -334,7 +340,9 @@ class React(UnitOperation):
     self.startTimer(self.reactTime)
     self.beginNextStep("Starting cooling")
     self.setHeater(OFF)
+    print "setCool"
     self.setCool()
+    print "setStirSpeed"
     self.setStirSpeed(OFF)
     self.beginNextStep("React Operation Complete!")
 """
