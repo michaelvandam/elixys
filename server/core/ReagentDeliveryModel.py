@@ -28,6 +28,8 @@ class ReagentDeliveryModel(ComponentModel):
     self.setGripperDown = False
     self.setGripperOpen = False
     self.setGripperClose = False
+    self.robotXStatus = 0
+    self.robotZStatus = 0
 
   def getAllowedReagentPositions(self):
     """Return a list of allowed reagent positions"""
@@ -93,6 +95,13 @@ class ReagentDeliveryModel(ComponentModel):
     else:
       return self.setGripperClose
 
+  def getRobotStatus(self, bLockModel = True):
+    """Returns the robot axis status code"""
+    if bLockModel:
+      return self.protectedReturn2(self.getRobotXStatus)
+    else:
+      return self.robotXStatus, self.robotZStatus
+      
   def moveToReagentPosition(self, nReactor, nReagentPosition):
     """Moves the reagent robot to the given reagent position"""
     self.hardwareComm.MoveRobotToReagent(nReactor, nReagentPosition)
@@ -119,7 +128,7 @@ class ReagentDeliveryModel(ComponentModel):
 
   def updateState(self, nSetPositionReactor, nSetPositionReagent, nSetPositionDelivery, nCurrentPositionReactor, nCurrentPositionReagent,
                   nCurrentPositionDelivery, nSetPositionRawX, nSetPositionRawZ, nCurrentPositionRawX, nCurrentPositionRawZ, bSetGripperUp,
-                  bSetGripperDown, bSetGripperOpen, bSetGripperClose):
+                  bSetGripperDown, bSetGripperOpen, bSetGripperClose, nRobotXStatus, nRobotZStatus):
     """Updates the internal state"""
     self.setPositionReactor = nSetPositionReactor
     self.setPositionReagent = nSetPositionReagent
@@ -135,3 +144,5 @@ class ReagentDeliveryModel(ComponentModel):
     self.setGripperDown = bSetGripperDown
     self.setGripperOpen = bSetGripperOpen
     self.setGripperClose = bSetGripperClose
+    self.robotXStatus = nRobotXStatus
+    self.robotZStatus = nRobotZStatus

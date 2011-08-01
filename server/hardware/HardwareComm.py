@@ -12,8 +12,8 @@ import os.path
 ### Constants ###
 
 # IP and port of the PLC.  Make sure only one PLC IP is defined
-#PLC_IP = "192.168.1.200"    # Real PLC
-PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
+PLC_IP = "192.168.1.200"    # Real PLC
+#PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
 PLC_PORT = 9600
 
 # Number of words used by each type of module
@@ -750,10 +750,10 @@ class HardwareComm():
                 nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, nReagentRobotSetX,
                 nReagentRobotSetZ, nReagentRobotActualX, nReagentRobotActualZ, self.__GetBinaryValue("ReagentRobot_SetGripperUp"),
                 self.__GetBinaryValue("ReagentRobot_SetGripperDown"), self.__GetBinaryValue("ReagentRobot_SetGripperOpen"),
-                self.__GetBinaryValue("ReagentRobot_SetGripperClose"))
+                self.__GetBinaryValue("ReagentRobot_SetGripperClose"), self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotStatus(self.__nReagentZAxis))
             pModel["Reactor1"]["Motion"].updateState(nReactor1RobotSetPosition, nReactor1RobotActualPosition, nReactor1RobotSetPositionRaw, nReactor1RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor1_SetReactorUp"), self.__GetBinaryValue("Reactor1_SetReactorDown"), self.__GetBinaryValue("Reactor1_ReactorUp"),
-                self.__GetBinaryValue("Reactor1_ReactorDown"))
+                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)))
             pModel["Reactor1"]["Valves"].updateState(self.__GetBinaryValue("Reactor1_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor1_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor1_TransferValve"), self.__GetBinaryValue("Reactor1_Reagent1TransferValve"), self.__GetBinaryValue("Reactor1_Reagent2TransferValve"))
             pModel["Reactor1"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition2"))
@@ -767,7 +767,7 @@ class HardwareComm():
             pModel["Reactor1"]["Radiation"].updateState(0)
             pModel["Reactor2"]["Motion"].updateState(nReactor2RobotSetPosition, nReactor2RobotActualPosition, nReactor2RobotSetPositionRaw, nReactor2RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor2_SetReactorUp"), self.__GetBinaryValue("Reactor2_SetReactorDown"), self.__GetBinaryValue("Reactor2_ReactorUp"),
-                self.__GetBinaryValue("Reactor2_ReactorDown"))
+                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)))
             pModel["Reactor2"]["Valves"].updateState(self.__GetBinaryValue("Reactor2_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor2_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor2_TransferValve"), self.__GetBinaryValue("Reactor2_Reagent1TransferValve"), self.__GetBinaryValue("Reactor2_Reagent2TransferValve"))
             pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition2"))
@@ -779,7 +779,7 @@ class HardwareComm():
             pModel["Reactor2"]["Radiation"].updateState(0)
             pModel["Reactor3"]["Motion"].updateState(nReactor3RobotSetPosition, nReactor3RobotActualPosition, nReactor3RobotSetPositionRaw, nReactor3RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor3_SetReactorUp"), self.__GetBinaryValue("Reactor3_SetReactorDown"), self.__GetBinaryValue("Reactor3_ReactorUp"),
-                self.__GetBinaryValue("Reactor3_ReactorDown"))
+                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)))
             pModel["Reactor3"]["Valves"].updateState(self.__GetBinaryValue("Reactor3_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor3_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor3_TransferValve"), self.__GetBinaryValue("Reactor3_Reagent1TransferValve"), self.__GetBinaryValue("Reactor3_Reagent2TransferValve"))
             pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition2"))

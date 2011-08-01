@@ -23,6 +23,7 @@ class MotionModel(ComponentModel):
     self.setReactorDown = False
     self.currentReactorUp = False
     self.currentReactorDown = False
+    self.robotStatus = 0
 
   def getAllowedPositions(self):
     """Return a list of allowed reactor positions"""
@@ -83,7 +84,14 @@ class MotionModel(ComponentModel):
       return self.protectedReturn1(self.getCurrentReactorDown)
     else:
       return self.currentReactorDown
-      
+  
+  def getCurrentRobotStatus(self, bLockModel = True):
+    """Returns the robot status code"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCurrentRobotStatus)
+    else:
+      return self.robotStatus
+
   def moveReactorDown(self):
     """Moves the reactor down"""
     self.hardwareComm.ReactorDown(self.reactor)
@@ -96,7 +104,7 @@ class MotionModel(ComponentModel):
     """Moves the reactor to the given position"""
     self.hardwareComm.MoveReactor(self.reactor, sPosition)
     
-  def updateState(self, sSetPosition, sCurrentPosition, nSetPositionRaw, nCurrentPositionRaw, bSetReactorUp, bSetReactorDown, bCurrentReactorUp, bCurrentReactorDown):
+  def updateState(self, sSetPosition, sCurrentPosition, nSetPositionRaw, nCurrentPositionRaw, bSetReactorUp, bSetReactorDown, bCurrentReactorUp, bCurrentReactorDown, nRobotStatus):
     """Updates the internal state"""
     self.setPosition = sSetPosition
     self.currentPosition = sCurrentPosition
@@ -106,3 +114,4 @@ class MotionModel(ComponentModel):
     self.setReactorDown = bSetReactorDown
     self.currentReactorUp = bCurrentReactorUp
     self.currentReactorDown = bCurrentReactorDown
+    self.robotStatus = nRobotStatus
