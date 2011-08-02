@@ -23,6 +23,7 @@ class UnitOperationsWrapper:
         print "Starting react unit operation"
         pReact = UnitOperations.React(self.__pSystemModel, pParams)
         pReact.start()
+        return pReact
 
     def Add(self, nReactor, nReagentReactor, nReagentPosition, nReagentDeliveryPosition):
         """Performs an add unit operation"""
@@ -33,6 +34,7 @@ class UnitOperationsWrapper:
         print "Skipping add unit operation"
 #        pAdd = UnitOperations.AddReagent(self.__pSystemModel, pParams)
 #        pAdd.start()
+#        print pAdd
 
     def Evaporate(self, nReactor, nEvaporationTemperature, nEvaporationTime, nFinalTemperature, nStirSpeed):
         """Performs an evaporation unit operation"""
@@ -44,6 +46,7 @@ class UnitOperationsWrapper:
         print "Skipping evaporate unit operation"
 #        pEvaporate = UnitOperations.Evaporate(self.__pSystemModel, pParams)
 #        pEvaporate.start()
+#        return pEvaporate
 
     def Install(self, nReactor):
         """Performs an install unit operation"""
@@ -51,7 +54,8 @@ class UnitOperationsWrapper:
         print "Skipping install unit operation"
 #        pInstall = UnitOperations.InstallVial(self.__pSystemModel, pParams)
 #        pInstall.start()
-        
+#        return pInstall
+
     def TransferToHPLC(self, nReactor, nStopcockPosition):
         """Performs a transfer to HPLC unit operation"""
         pParams = {"ReactorID":nReactor,
@@ -59,6 +63,7 @@ class UnitOperationsWrapper:
         print "Skipping transfer to HPLC unit operation"
 #        pTransfer = UnitOperations.TransferToHPLC(self.__pSystemModel, pParams)
 #        pTransfer.start()
+#        return pTransfer
 
     def TransferElute(self, nReactor, nStopcockPosition):
         """Performs a transfer elute unit operation"""
@@ -67,6 +72,7 @@ class UnitOperationsWrapper:
         print "Skipping transfer elute unit operation"
 #        pTransfer = UnitOperations.TransferElute(self.__pSystemModel, pParams)
 #        pTransfer.start()
+#        return pTransfer
         
     def Transfer(self, nReactor, nStopcockPosition, nTransferReactorID):
         """Performs a transfer elute unit operation"""
@@ -76,6 +82,7 @@ class UnitOperationsWrapper:
         print "Skipping transfer unit operation"
 #        pTransfer = UnitOperations.Transfer(self.__pSystemModel, pParams)
 #        pTransfer.start()
+#        return pTransfer
 
     def UserInput(self, sUserMessage, bIsCheckBox, sDescription):
         """Performs a user input unit operation"""
@@ -85,10 +92,12 @@ class UnitOperationsWrapper:
         print "Skipping user input unit operation"
 #        pUserInput = UnitOperations.UserInput(self.__pSystemModel, pParams)
 #        pUserInput.start()
+#        return pUserInput
 
     def DetectRadiation(self):
         """Performs a radiation detection unit operation"""
         pParams = {}
         print "Skipping detect radiation unit operation"
- #       pDetectRadiation = UnitOperations.DetectRadiation(self.__pSystemModel, pParams)
- #       pDetectRadiation.start()
+#        pDetectRadiation = UnitOperations.DetectRadiation(self.__pSystemModel, pParams)
+#        pDetectRadiation.start()
+#        return pDetectRadiation

@@ -15,7 +15,7 @@ from SystemModel import SystemModel
 from UnitOperationsWrapper import UnitOperationsWrapper
 
 # Parses and executes the given command
-def ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm):
+def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm):
     try:
         # Ignore empty commands
         if sCommand == "":
@@ -27,9 +27,11 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm):
 
         # Make sure the function name exists on either the unit operations wrapper or the hardware layer
         if hasattr(UnitOperationsWrapper, sFunctionName):
+            bHardwareComm = False
             Object = UnitOperationsWrapper
             pObject = pUnitOperationsWrapper
         elif hasattr(HardwareComm, sFunctionName):
+            bHardwareComm = True
             Object = HardwareComm
             pObject = pHardwareComm
         else:
@@ -72,23 +74,28 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm):
 
         # Call the function
         if nParameters == 0:
-            pFunction(pObject)
+            pReturn = pFunction(pObject)
         elif nParameters == 1:
-            pFunction(pObject, pParameters[0])
+            pReturn = pFunction(pObject, pParameters[0])
         elif nParameters == 2:
-            pFunction(pObject, pParameters[0], pParameters[1])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1])
         elif nParameters == 3:
-            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2])
         elif nParameters == 4:
-            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3])
         elif nParameters == 5:
-            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4])
         elif nParameters == 6:
-            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5])
         elif nParameters == 7:
-            pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6])
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6])
         else:
             raise Exception("Too many arguments");
+        
+        # Remember the unit operation objects
+        if not bHardwareComm:
+            pSystemModel.SetUnitOperation(pReturn)
+            
     except Exception as ex:
         # Display the error
         print "Failed to execute command: " + str(ex)
@@ -139,29 +146,80 @@ if __name__ == "__main__":
         elif sCommand == "help unit operations":
             # List the recognized unit operations
             print "Recognized unit operations:"
-            print "  React(nReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nReactPosition, nStirSpeed)"
-            print "  Add(nReactor, nReagentReactor, nReagentPosition, nReagentDeliveryPosition)"
-            print "  Evaporate(nReactor, nEvaporationTemperature, nEvaporationTime, nFinalTemperature, nStirSpeed)"
-            print "  Install(nReactor)"
-            print "  TransferToHPLC(nReactor, nStopcockPosition)"
-            print "  TransferElute(self, nReactor, nStopcockPosition)"
-            print "  Transfer(nReactor, nStopcockPosition, nTransferReactorID)"
-            print "  UserInput(sUserMessage, bIsCheckBox, sDescription)"
-            print "  DetectRadiation()"
+            print "  React"
+            print "  Not implemented: Add"
+            print "  Not implemented: Evaporate"
+            print "  Not implemented: Install"
+            print "  Not implemented: TransferToHPLC"
+            print "  Not implemented: TransferElute"
+            print "  Not implemented: Transfer"
+            print "  Not implemented: UserInput"
+            print "  Not implemented: DetectRadiation"
+            print "For additional information on each operation:"
+            print "  help [unit operation name]"
+        elif sCommand == "help React":
+            # React unit operation
+            print "Heat the given reactor to a specific temperature, holds for a set length of"
+            print "time, cools the reactor to the final temperature, stirs throughout."
+            print ""
+            print "  React(nReactor,                 'Reactor1','Reactor2','Reactor3'"
+            print "        nReactionTemperature,     Celsius"
+            print "        nReactionTime,            Seconds"
+            print "        nFinalTemperature,        Celsius"
+            print "        nReactPosition,           'React1','React2'"
+            print "        nStirSpeed)               Suggested 500"
+        elif sCommand == "help Add":
+            # Add unit operation
+            print "Adds the specified reagent to the reactor"
+            print ""
+            print "  Add(nReactor,                   Reactor where the reagent will be"
+            print "                                  added ('Reactor1','Reactor2','Reactor3')"
+            print "      nReagentReactor,            Reactor of the cassette where the reagent"
+            print "                                  resides ('Reactor1','Reactor2','Reactor3')"
+            print "      nReagentPosition,           1-10 (?)"
+            print "      nReagentDeliveryPosition    1-2 (?)"
+        elif sCommand == "help Evaporate":
+            # Evaporate unit operation
+            print "Evaporates the contents of a reactor using a combination of heating, "
+            print "stirring, nitrogen flow and vacuum."
+            print ""
+            print "  Evaporate(nReactor,             'Reactor1','Reactor2','Reactor3'"
+            print "            nEvaporationTemperature,  Celsius"
+            print "            nEvaporationTime,     Seconds"
+            print "            nFinalTemperature,    Celsius"
+            print "            nStirSpeed)           Suggested 500"
+        elif sCommand == "help Install":
+            # Install unit operation
+            print "Moves a reactor to the installation position for easier access"
+            print ""
+            print "  Install(nReactor)               'Reactor1','Reactor2','Reactor3'"
+        elif sCommand == "help TransferToHPLC":
+            # TransferToHPLC unit operation
+            print "Todo:  TransferToHPLC(nReactor, nStopcockPosition)"
+        elif sCommand == "help TransferElute":
+            # TransferElute unit operation
+            print "Todo: TransferElute(self, nReactor, nStopcockPosition)"
+        elif sCommand == "help Transfer":
+            # Transfer unit operation
+            print "Todo:  Transfer(nReactor, nStopcockPosition, nTransferReactorID)"
+        elif sCommand == "help UserInput":
+            # UserInput unit operation
+            print "Todo: UserInput(sUserMessage, bIsCheckBox, sDescription)"
+        elif sCommand == "help DetectRadiation":
+            # Detect radiation unit operation
+            print "Todo: DetectRadiation()"
         elif sCommand == "help hardware":
             # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
             # don't want to list all of our functions
             print "Recognized hardware functions:"
             print "  * CoolingSystemOn()   * CoolingSystemOff()"
-            print "  * SetPressureRegulator(nPressureRegulator, fPressure)"
-            print "  * MoveRobotToReagent(nReactor, nReagent)"
+            print "  * SetPressureRegulator(nPressureRegulator, nPressure)"
+            print "  * MoveRobotToReagent(nReactor, nReagent)   * MoveRobotToHome()"
             print "  * MoveRobotToDelivery(nReactor, nPosition)"
             print "  * GripperUp()      * GripperDown()   * GripperOpen()     * GripperClose()"
             print "  * LoadF18Start()   * LoadF18Stop()   * EluteF18Start()   * EluteF18Stop()"
             print "  * LoadHPLCStart()  * LoadHPLCStop()"
             print "  * MoveReactor(nReactor, sPositionName)"
-            print "    Where position name is one of the following:"
-            print "      Install, Transfer, React1, Add, React2, Evaporate"
             print "  * ReactorUp(nReactor)               * ReactorDown(nReactor)"
             print "  * ReactorEvaporateStart(nReactor)   * ReactorEvaporateStop(nReactor)"
             print "  * ReactorTransferStart(nReactor)    * ReactorTransferStop(nReactor)"
@@ -172,6 +230,8 @@ if __name__ == "__main__":
             print "  * SetHeater(nReactor, fSetPoint)   * SetMotorSpeed(nReactor, nMotorSpeed)"
             print "  * HomeRobots()   * DisableRobots()   * EnableRobots()"
             print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
+            print "All values are numbers except sPositionName which is one of the following:"
+            print "      Install, Transfer, React1, Add, React2, Evaporate, Radiation"
         elif sCommand == "help send":
             # Display a brief description of the PLC command format
             print "Command format:"
@@ -196,7 +256,7 @@ if __name__ == "__main__":
             time.sleep(0.25)
         else:
             # Attempt to execute the command
-            ExecuteCommand(sCommand, pUnitOperationsWrapper, pHardwareComm)
+            ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
 
             # Sleep a bit to give the PLC a chance to response before we display the input prompt
             time.sleep(0.25)

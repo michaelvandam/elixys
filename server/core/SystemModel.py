@@ -89,6 +89,7 @@ class SystemModel:
 
     # Initialize variables
     self.__pStateMonitor = None
+    self.__pUnitOperation = None
     
   def StartUp(self):
     """Starts the system model"""
@@ -105,7 +106,11 @@ class SystemModel:
   def SetStateMonitor(self, pStateMonitor):
     """Set the state monitor"""
     self.__pStateMonitor = pStateMonitor
-       
+
+  def SetUnitOperation(self, pUnitOperation):
+    """Sets the current unit operation"""
+    self.__pUnitOperation = pUnitOperation
+
   def LockSystemModel(self):
     """Acquire the mutex lock and return the system model"""
     self.modelLock.acquire()
@@ -325,6 +330,12 @@ class SystemModel:
         sState += self.__PadString(str(self.model["Reactor2"]["Radiation"].getRadiation(False)), STATEREACTORCOLUMN2WIDTH)
         sState += self.__PadString(str(self.model["Reactor3"]["Radiation"].getRadiation(False)), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
+
+        if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():
+            sState += "\n"
+            sState += "Current unit operation: (" + str(self.__pUnitOperation.currentStepNumber) + ") " + self.__pUnitOperation.currentStepDescription
+            sState += "\n"
+
     finally:
         # Release the system model lock
         self.UnlockSystemModel()
