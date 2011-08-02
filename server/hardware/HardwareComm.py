@@ -12,8 +12,8 @@ import os.path
 ### Constants ###
 
 # IP and port of the PLC.  Make sure only one PLC IP is defined
-PLC_IP = "192.168.1.200"    # Real PLC
-#PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
+#PLC_IP = "192.168.1.200"    # Real PLC
+PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
 PLC_PORT = 9600
 
 # Number of words used by each type of module
@@ -512,16 +512,10 @@ class HardwareComm():
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
-    def FakePLC_UpdateReactorRobotStatus(self, nReactor):
-        nControlWord = self.__GetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4))
-        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4))
-        print "Control = " + str(nControlWord) + ", check = " + str(nCheckWord)
-        if (nControlWord == 0x10) and (nCheckWord != ROBONET_ENABLED1):
-            print "A"
-            self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
-        elif (nControlWord == 0x08) and (nCheckWord != ROBONET_DISABLED):
-            print "B"
-            self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED)
+    def FakePLC_EnableReactorRobot(self, nReactor):
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
+    def FakePLC_DisableReactorRobot(self, nReactor):
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED)
     def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionZ)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
@@ -612,8 +606,7 @@ class HardwareComm():
             # We are in fake PLC mode.  Validate the address
             if (nAddress < self.__FakePLC_nMemoryLower) or ((nAddress + self.__FakePLC_nMemoryLower) >= self.__FakePLC_nMemoryUpper):
                 raise Exception("Invalid word offset")
-
-            print "Set fake PLC memory address " + str(nAddress) + " to " + str(nValue)
+            
             # Update the target word in the fake memory
             self.__FakePLC_pMemory[nAddress] = nValue
 
@@ -774,7 +767,8 @@ class HardwareComm():
                 self.__GetBinaryValue("ReagentRobot_SetGripperClose"), self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotStatus(self.__nReagentZAxis))
             pModel["Reactor1"]["Motion"].updateState(nReactor1RobotSetPosition, nReactor1RobotActualPosition, nReactor1RobotSetPositionRaw, nReactor1RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor1_SetReactorUp"), self.__GetBinaryValue("Reactor1_SetReactorDown"), self.__GetBinaryValue("Reactor1_ReactorUp"),
-                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)))
+                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotControlWord(1), 
+                self.__GetRobotCheckWord(1))
             pModel["Reactor1"]["Valves"].updateState(self.__GetBinaryValue("Reactor1_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor1_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor1_TransferValve"), self.__GetBinaryValue("Reactor1_Reagent1TransferValve"), self.__GetBinaryValue("Reactor1_Reagent2TransferValve"))
             pModel["Reactor1"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition2"))
@@ -788,7 +782,8 @@ class HardwareComm():
             pModel["Reactor1"]["Radiation"].updateState(0)
             pModel["Reactor2"]["Motion"].updateState(nReactor2RobotSetPosition, nReactor2RobotActualPosition, nReactor2RobotSetPositionRaw, nReactor2RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor2_SetReactorUp"), self.__GetBinaryValue("Reactor2_SetReactorDown"), self.__GetBinaryValue("Reactor2_ReactorUp"),
-                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)))
+                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotControlWord(2), 
+                self.__GetRobotCheckWord(2))
             pModel["Reactor2"]["Valves"].updateState(self.__GetBinaryValue("Reactor2_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor2_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor2_TransferValve"), self.__GetBinaryValue("Reactor2_Reagent1TransferValve"), self.__GetBinaryValue("Reactor2_Reagent2TransferValve"))
             pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition2"))
@@ -800,7 +795,8 @@ class HardwareComm():
             pModel["Reactor2"]["Radiation"].updateState(0)
             pModel["Reactor3"]["Motion"].updateState(nReactor3RobotSetPosition, nReactor3RobotActualPosition, nReactor3RobotSetPositionRaw, nReactor3RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor3_SetReactorUp"), self.__GetBinaryValue("Reactor3_SetReactorDown"), self.__GetBinaryValue("Reactor3_ReactorUp"),
-                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)))
+                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotControlWord(3), 
+                self.__GetRobotCheckWord(3))
             pModel["Reactor3"]["Valves"].updateState(self.__GetBinaryValue("Reactor3_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor3_EvaporationVacuumValve"),
                 self.__GetBinaryValue("Reactor3_TransferValve"), self.__GetBinaryValue("Reactor3_Reagent1TransferValve"), self.__GetBinaryValue("Reactor3_Reagent2TransferValve"))
             pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition2"))
@@ -865,7 +861,7 @@ class HardwareComm():
         if sWord != "":
             return int(sWord, 0x10)
         else:
-            return 0
+            return "Error"
 
     # Get analog value
     def __GetAnalogValue(self, sHardwareName):
@@ -943,6 +939,10 @@ class HardwareComm():
             return "Error"
         else:
             return str(nCheckWord)
+    def __GetRobotControlWord(self, nReactor):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4)))
+    def __GetRobotCheckWord(self, nReactor):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4)))
 
     ### Support functions ###
         

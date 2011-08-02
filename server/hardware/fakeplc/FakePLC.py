@@ -10,7 +10,7 @@ import sys
 sys.path.append("../../hardware/")
 sys.path.append("../../core/")
 sys.path.append("../../cli/")
-from HardwareComm import HardwareComm
+import HardwareComm
 from SystemModel import SystemModel
 import Utilities
 from CoolingThread import CoolingThread
@@ -42,7 +42,7 @@ class FakePLC():
     def StartUp(self):
         """Starts up the fake PLC"""
         # Create the hardware layer
-        self.__pHardwareComm = HardwareComm("../../hardware/")
+        self.__pHardwareComm = HardwareComm.HardwareComm("../../hardware/")
   
         # Determine the memory range we need to emulate
         self.__nMemoryLower, self.__nMemoryUpper = self.__pHardwareComm.CalculateMemoryRange()
@@ -152,7 +152,7 @@ class FakePLC():
         
         # Clean up
         pMemoryFile.close()
-
+        
     def __HandleRead(self, sPacket):
         """Handle the read command"""
         # We only read words
@@ -346,8 +346,15 @@ class FakePLC():
 
     def __UpdateReactorRobotStatus(self, nReactor):
         """Updates the reactor robot status in response to system changes"""
-        # Allow the HardwareComm to update the reactor robot status
-        self.__pHardwareComm.FakePLC_UpdateReactorRobotStatus(nReactor)
+        # Get the reactor robot control and check words
+        nControlWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotControlWord()
+        nCheckWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotCheckWord()
+
+        # Enable or disable the robot
+        if (nControlWord == 0x10) and (nCheckWord != HardwareComm.ROBONET_ENABLED1):
+            self.__pHardwareComm.FakePLC_EnableReactorRobot(nReactor)
+        elif (nControlWord == 0x08) and (nCheckWord != HardwareComm.ROBONET_DISABLED):
+            self.__pHardwareComm.FakePLC_DisableReactorRobot(nReactor)
 
     def __UpdateReactorPosition(self, nReactor):
         """Updates the reactor position in response to system changes"""
