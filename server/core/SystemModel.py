@@ -122,6 +122,7 @@ class SystemModel:
         try:
           self.__pStateMonitor.root.UpdateState(self.DumpStateToString())
         except EOFError, ex:
+          print "Warning: failed to send state to monitor, will not attempt again"
           self.__pStateMonitor = None
     
   def DumpStateToString(self):

@@ -232,6 +232,9 @@ class FakePLC():
         self.__UpdatePressureRegulator(2)
         self.__UpdateCoolingSystem()
         self.__UpdateReagentRobotPosition()
+        self.__UpdateReactorRobotStatus(1)
+        self.__UpdateReactorRobotStatus(2)
+        self.__UpdateReactorRobotStatus(3)
         self.__UpdateReactorPosition(1)
         self.__UpdateReactorPosition(2)
         self.__UpdateReactorPosition(3)
@@ -340,6 +343,11 @@ class FakePLC():
                 self.__pMoveReagentRobotThread.SetParameters(self.__pHardwareComm, nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ, \
                     nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ)
                 self.__pMoveReagentRobotThread.start()
+
+    def __UpdateReactorRobotStatus(self, nReactor):
+        """Updates the reactor robot status in response to system changes"""
+        # Allow the HardwareComm to update the reactor robot status
+        self.__pHardwareComm.FakePLC_UpdateReactorRobotStatus(nReactor)
 
     def __UpdateReactorPosition(self, nReactor):
         """Updates the reactor position in response to system changes"""

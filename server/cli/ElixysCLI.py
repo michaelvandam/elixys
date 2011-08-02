@@ -114,7 +114,7 @@ if __name__ == "__main__":
         pStateMonitor = rpyc.connect("localhost", 18861)
         pSystemModel.SetStateMonitor(pStateMonitor)
     except socket.error, ex:
-        pass
+        print "Warning: failed to connect to state monitor, no output will be displayed"
     
     # Create the unit operations wrapper
     pUnitOperationsWrapper = UnitOperationsWrapper(pSystemModel)

@@ -24,6 +24,7 @@ ADDREAGENT = "ADDREAGENT"
 VIALREMOVE = "VIALREMOVE"
 ON = True
 OFF = False
+ENABLED = "Enabled"
 
 #Robot Coordinate positions:
 LOAD_A = "LOAD_A"
@@ -39,6 +40,7 @@ VIAL_8 = "VIAL_8"
 
 #Comparators for 'waitForCondition' function
 EQUAL = "="
+NOTEQUAL = "!="
 GREATER = ">"
 LESS = "<"
 
@@ -107,6 +109,9 @@ class UnitOperation(threading.Thread):
     motionTimeout = 10 #How long to wait before erroring out.
     if (ReactorID==255):
       ReactorID = self.ReactorID
+    if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
+        self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
+        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL)):
       self.setDescription("Moving Reactor%s down." % ReactorID)
       self.systemModel[ReactorID]['Motion'].moveReactorDown()
@@ -118,6 +123,7 @@ class UnitOperation(threading.Thread):
         self.setDescription("Moving Reactor%s up." % ReactorID)
         self.systemModel[ReactorID]['Motion'].moveReactorUp()
         self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,UP,EQUAL,motionTimeout)
+        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
       else:
         self.systemModel[ReactorID]['Motion'].setDisableReactorRobot(ReactorID)
         self.waitForCondition(self.systemModel[ReactorID]['Motion'].getReactorRobotEnabled,False,EQUAL,3)
@@ -138,6 +144,14 @@ class UnitOperation(threading.Thread):
     self.delay = 500
     if comparator == EQUAL:
       while not(function() == condition):
+        #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+        self.stateCheckInterval(self.delay)
+        if not(timeout == 65535):
+          if self.isTimerExpired(startTime,timeout):
+            print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            break
+    elif comparator == NOTEQUAL:
+      while (function() == condition):
         #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):

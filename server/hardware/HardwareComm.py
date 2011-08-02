@@ -26,13 +26,22 @@ DEVICENET_SIZE = 0x19
 
 # RoboNet constants
 ROBONET_MIN = 3201
-ROBONET_MAX = 3309 + (5 * 4)
+ROBONET_MAX = 3312 + (5 * 4)
 ROBONET_ENABLE = 3201
 ROBONET_CONTROL = 3212
 ROBONET_AXISPOSSET = 3209
 ROBONET_AXISPOSREAD = 3309
-ROBONET_SUCCESS = 0x7013
-ROBONET_ERROR = 0x700a
+ROBONET_CHECK = 3312
+ROBONET_INIT = 0x4000
+ROBONET_ERROR1 = 0x400A
+ROBONET_SERVOON = 0x4011
+ROBONET_ERROR2 = 0x4013
+ROBONET_HOMING = 0x4014
+ROBONET_DISABLED = 0x7002
+ROBONET_ENABLED1 = 0x7012
+ROBONET_ENABLED2 = 0x7013
+ROBONET_MOVING = 0x7016
+ROBONET_ERROR3 = 0x700A
 
 # Robot position hit test limit
 ROBOT_POSITION_LIMIT = 20
@@ -467,6 +476,7 @@ class HardwareComm():
     
     # Used by the fake PLC to set the PLC memory
     def FakePLC_SetMemory(self, pMemory, nMemoryLower, nMemoryUpper):
+        print "Fake PLC set memory: " + str(nMemoryLower) + " - " + str(nMemoryUpper)
         # Make sure the memory ranges match up
         if (nMemoryLower != self.__nMemoryLower) or (nMemoryUpper != self.__nMemoryUpper):
             raise Exception("Memory range mismatch")
@@ -502,6 +512,16 @@ class HardwareComm():
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
+    def FakePLC_UpdateReactorRobotStatus(self, nReactor):
+        nControlWord = self.__GetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4))
+        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4))
+        print "Control = " + str(nControlWord) + ", check = " + str(nCheckWord)
+        if (nControlWord == 0x10) and (nCheckWord != ROBONET_ENABLED1):
+            print "A"
+            self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
+        elif (nControlWord == 0x08) and (nCheckWord != ROBONET_DISABLED):
+            print "B"
+            self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED)
     def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionZ)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
@@ -593,6 +613,7 @@ class HardwareComm():
             if (nAddress < self.__FakePLC_nMemoryLower) or ((nAddress + self.__FakePLC_nMemoryLower) >= self.__FakePLC_nMemoryUpper):
                 raise Exception("Invalid word offset")
 
+            print "Set fake PLC memory address " + str(nAddress) + " to " + str(nValue)
             # Update the target word in the fake memory
             self.__FakePLC_pMemory[nAddress] = nValue
 
@@ -841,7 +862,10 @@ class HardwareComm():
 
         # Extract the return the value
         sWord = self.__sState[((nAddress - self.__nMemoryLower) * 4):((nAddress - self.__nMemoryLower + 1) * 4)]
-        return int(sWord, 0x10)
+        if sWord != "":
+            return int(sWord, 0x10)
+        else:
+            return 0
 
     # Get analog value
     def __GetAnalogValue(self, sHardwareName):
@@ -902,7 +926,23 @@ class HardwareComm():
 
     # Get the robot status
     def __GetRobotStatus(self, nAxis):
-        return self.__GetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4))
+        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4))
+        if nCheckWord == ROBONET_INIT:
+            return "Init"
+        elif nCheckWord == ROBONET_SERVOON:
+            return "On"
+        elif nCheckWord == ROBONET_HOMING:
+            return "Homing"
+        elif nCheckWord == ROBONET_DISABLED:
+            return "Disabled"
+        elif (nCheckWord == ROBONET_ENABLED1) or (nCheckWord == ROBONET_ENABLED2):
+            return "Enabled"
+        elif nCheckWord == ROBONET_MOVING:
+            return "Moving"
+        elif (nCheckWord == ROBONET_ERROR1) or (nCheckWord == ROBONET_ERROR2) or (nCheckWord == ROBONET_ERROR3):
+            return "Error"
+        else:
+            return str(nCheckWord)
 
     ### Support functions ###
         

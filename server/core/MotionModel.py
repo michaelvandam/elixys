@@ -86,11 +86,19 @@ class MotionModel(ComponentModel):
       return self.currentReactorDown
   
   def getCurrentRobotStatus(self, bLockModel = True):
-    """Returns the robot status code"""
+    """Returns the robot status"""
     if bLockModel:
       return self.protectedReturn1(self.getCurrentRobotStatus)
     else:
       return self.robotStatus
+
+  def setDisableReactorRobot(self):
+    """Disables the reactor robot"""
+    self.hardwareComm.DisableReactorRobot(self.reactor)
+
+  def setEnableReactorRobot(self):
+    """Disables the reactor robot"""
+    self.hardwareComm.EnableReactorRobot(self.reactor)
 
   def moveReactorDown(self):
     """Moves the reactor down"""
