@@ -20,13 +20,23 @@ rm -rf /var/www/http/*
 mv -f elixys/bin/WebContent/* /var/www/http/
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*
 
-# Update the core python server
+# Update the web server
 rm -rf /var/www/wsgi/*
-mv -f elixys/server/* /var/www/wsgi
+mv -f elixys/server/web/* /var/www/wsgi
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
 # Restart Apache
 /usr/sbin/apachectl restart
+
+# Update the core server
+rm -rf /opt/elixys/cli
+rm -rf /opt/elixys/core
+rm -rf /opt/elixys/database
+rm -rf /opt/elixys/hardware
+cp -R elixys/server/cli /opt/elixys
+cp -R elixys/server/core /opt/elixys
+cp -R elixys/server/database /opt/elixys
+cp -R elixys/server/hardware /opt/elixys
 
 # Remove the git repository
 rm -rf elixys

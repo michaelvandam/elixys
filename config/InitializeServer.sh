@@ -33,11 +33,12 @@ yum -y install mod_wsgi
 
 # Install configobj
 wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
-unzip configobj-4.7.2.zip
-cd configobj-4.7.2
+mkdir configobj
+unzip -d configobj configobj-4.7.2.zip
+cd configobj/configobj-4.7.2
 python setup.py install
-cd ..
-rm -rf configobj-4.7.2*
+cd ../..
+rm -rf configobj*
 
 # Set Apache and MySQL to start at boot - Use upstart
 #echo "/usr/sbin/apachectl start" >> /etc/rc.local
@@ -63,6 +64,17 @@ chown apache:apache /var/www/wsgi
 # Update the firewall settings
 mv -f elixys/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
+/sbin/service iptables restart
+
+# Put shortcuts on the user's desktop
+mkdir /opt/elixys
+mkdir /opt/elixys/config
+cp elixys/config/UpdateServer.sh /opt/elixys/config
+chmod 777 elixys/config/shortcuts/*.sh
+cp elixys/config/shortcuts/* /home/$USER/Desktop
+
+# Give all users the ability to run the update script as root
+echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
 
 # Remove the git repository
 rm -rf /root/elixys
