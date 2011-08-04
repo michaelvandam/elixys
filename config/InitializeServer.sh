@@ -12,13 +12,13 @@ fi
 cd /root
 
 # Install git from the EPEL repository
-wget http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.rpm
-rpm -Uhv epel-release-5-4.noarch.rpm
-rm -f epel-release-5-4.noarch.rpm
+wget http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-5.noarch.rpm
+rpm -Uhv epel-release-6-5.noarch.rpm
+rm -f epel-release-6-5.noarch.rpm
 yum -y install git
 
 # Get the current git repository
-git clone --depth 1 git://github.com/michaelvandam/elixys.git
+git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
 # Install and configure MySQL
 yum -y install mysql mysql-server apr-util-mysql
@@ -28,29 +28,20 @@ mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
 
-# Install python and JSON libraries
-yum -y install python-wsgiref python-json
+# Install mod_wsgi
+yum -y install mod_wsgi
+
+# Install configobj
 wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
-tar -xzf configobj-4.7.2.zip
+unzip configobj-4.7.2.zip
 cd configobj-4.7.2
-python26 setup.py install
+python setup.py install
 cd ..
-rm -rf configobj-4.7.2
+rm -rf configobj-4.7.2*
 
-# Build mod_wsgi from source so we can point it to Python 2.6
-yum -y install httpd-devel python26-devel
-wget http://modwsgi.googlecode.com/files/mod_wsgi-3.3.tar.gz
-tar xvfz mod_wsgi-3.3.tar.gz
-cd mod_wsgi-3.3
-./configure --with-python=/usr/bin/python26
-make
-make install
-cd ..
-rm -rf mod_wsgi-3.3*
-
-# Set Apache and MySQL to start at boot
-echo "/usr/sbin/apachectl start" >> /etc/rc.local
-echo "/sbin/service mysqld start" >> /etc/rc.local
+# Set Apache and MySQL to start at boot - Use upstart
+#echo "/usr/sbin/apachectl start" >> /etc/rc.local
+#echo "/sbin/service mysqld start" >> /etc/rc.local
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
@@ -61,7 +52,6 @@ mkdir /var/www/wsgi
 # Install the Adobe policy module and file
 cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so
-/usr/sbin/semanage port -a -t http_port_t -p tcp 843
 cp elixys/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
 chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
@@ -76,3 +66,4 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 
 # Remove the git repository
 rm -rf /root/elixys
+

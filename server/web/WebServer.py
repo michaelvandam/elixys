@@ -1,4 +1,4 @@
-#!/usr/bin/python26
+#!/usr/bin/python
 
 # Imports
 from wsgiref.simple_server import make_server
@@ -7,7 +7,7 @@ from wsgiref.headers import Headers
 import sys
 
 # Import and create the core Elixys server
-sys.path.append('/var/www/wsgi')
+sys.path.append('/var/www/wsgi/web')
 from DummyElixys import Elixys 
 gElixys = Elixys()
 

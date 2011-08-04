@@ -9,7 +9,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Get the current git repository
-git clone --depth 1 git://github.com/michaelvandam/elixys.git
+git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
 # Update the Apache configuration file
 mv -f elixys/config/httpd.conf /etc/httpd/conf
