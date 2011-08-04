@@ -3,6 +3,8 @@
 Utility functions for CLI """
 
 ### Imports
+import select
+import sys
 import platform
 try:
     import msvcrt

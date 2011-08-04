@@ -40,6 +40,13 @@ python setup.py install
 cd ../..
 rm -rf configobj*
 
+# Install rpyc
+wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip?r=&ts=1312473513&use_mirror=cdnetworks-us-2
+unzip RPyC-3.1.0.zip
+cd unzip RPyC-3.1.0
+python setup.py install
+rm -rf RPyC-3.1.0*
+
 # Set Apache and MySQL to start at boot - Use upstart
 #echo "/usr/sbin/apachectl start" >> /etc/rc.local
 #echo "/sbin/service mysqld start" >> /etc/rc.local
@@ -70,7 +77,7 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 mkdir /opt/elixys
 mkdir /opt/elixys/config
 cp elixys/config/UpdateServer.sh /opt/elixys/config
-chmod 777 elixys/config/shortcuts/*.sh
+chmod 755 /opt/elixys/config/UpdateServer.sh
 cp elixys/config/shortcuts/* /home/$USER/Desktop
 
 # Give all users the ability to run the update script as root
