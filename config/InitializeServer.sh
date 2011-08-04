@@ -41,9 +41,9 @@ cd ../..
 rm -rf configobj*
 
 # Install rpyc
-wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip?r=&ts=1312473513&use_mirror=cdnetworks-us-2
+wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
 unzip RPyC-3.1.0.zip
-cd unzip RPyC-3.1.0
+cd RPyC-3.1.0
 python setup.py install
 rm -rf RPyC-3.1.0*
 
@@ -79,6 +79,9 @@ mkdir /opt/elixys/config
 cp elixys/config/UpdateServer.sh /opt/elixys/config
 chmod 755 /opt/elixys/config/UpdateServer.sh
 cp elixys/config/shortcuts/* /home/$USER/Desktop
+chmod 755 /home/$USER/Desktop/ElixysCLI.sh
+chmod 755 /home/$USER/Desktop/StateMonitor.sh
+chmod 755 /home/$USER/Desktop/UpdateServer.sh
 
 # Give all users the ability to run the update script as root
 echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
