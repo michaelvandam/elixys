@@ -27,6 +27,7 @@ mysql -e "CREATE DATABASE Elixys;"
 mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
+mkdir /opt/elixys
 cp -R elixys/server/database /opt/elixys
 
 # Install mod_wsgi
@@ -79,9 +80,9 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 cp -R elixys/bin/rtmpd /opt/elixys
 cp elixys/config/elixys.conf /etc/ld.so.conf.d
 ldconfig
+chmod +x /opt/elixys/rtmpd/crtmpserver/crtmpserver
 
 # Put shortcuts on the user's desktop
-mkdir /opt/elixys
 mkdir /opt/elixys/config
 cp elixys/config/UpdateServer.sh /opt/elixys/config
 chmod 755 /opt/elixys/config/UpdateServer.sh
