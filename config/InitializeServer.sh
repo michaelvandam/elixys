@@ -8,11 +8,27 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# The following lines shouldn't be necessary but they are.  Something strange is going on with the networking in my VMs and disabling IPv6
+# is a quick fix.  Hopefully it can be removed at some point in the future.  All of the "-4" arguments on the following wget commands are part
+# of this hack and should be remove in the future as well
+if lsmod | grep ipv6 > /dev/null
+then
+   echo "Disabling IPv6..."
+   /sbin/service ip6tables disable
+   /sbin/chkconfig ip6tables off
+   echo "install ipv6 /bin/true" > /etc/modprobe.d/blacklist-ipv6.conf
+   echo "blacklist ipv6" >> /etc/modprobe.d/blacklist-ipv6.conf
+   echo "NETWORKING_IPV6=no" >> /etc/sysconfig/network
+   echo "Done.  Press any key to reboot the computer and then run this script again"
+   read CONTINUE
+   shutdown -r now
+fi
+
 # Start in the root directory
 cd /root
 
 # Install git from the EPEL repository
-wget http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-5.noarch.rpm
+wget -4 http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-5.noarch.rpm
 rpm -Uhv epel-release-6-5.noarch.rpm
 rm -f epel-release-6-5.noarch.rpm
 yum -y install git
@@ -34,7 +50,7 @@ cp -R elixys/server/database /opt/elixys
 yum -y install mod_wsgi
 
 # Install configobj
-wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
+wget -4 http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
 mkdir configobj
 unzip -d configobj configobj-4.7.2.zip
 cd configobj/configobj-4.7.2
@@ -43,7 +59,7 @@ cd ../..
 rm -rf configobj*
 
 # Install rpyc
-wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
+wget -4 http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
 unzip RPyC-3.1.0.zip
 cd RPyC-3.1.0
 python setup.py install
