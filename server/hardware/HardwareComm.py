@@ -221,6 +221,7 @@ class HardwareComm():
         self.__pSocketThread = SocketThread()
         self.__pSocketThreadTerminateEvent = threading.Event()
         self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
+        self.__pSocketThread.setDaemon(True)
         self.__pSocketThread.start()
         
         # Enable analog out

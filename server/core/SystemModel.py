@@ -96,6 +96,7 @@ class SystemModel:
     self.stateUpdateThread = StateUpdateThread()
     self.stateUpdateThreadTerminateEvent = threading.Event()
     self.stateUpdateThread.SetParameters(self.hardwareComm, self.stateUpdateThreadTerminateEvent)
+    self.stateUpdateThread.setDaemon(True)
     self.stateUpdateThread.start()
         
   def ShutDown(self):
