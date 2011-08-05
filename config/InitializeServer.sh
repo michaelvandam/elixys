@@ -27,6 +27,7 @@ mysql -e "CREATE DATABASE Elixys;"
 mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
+cp -R elixys/server/database /opt/elixys
 
 # Install mod_wsgi
 yum -y install mod_wsgi
@@ -45,6 +46,7 @@ wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
 unzip RPyC-3.1.0.zip
 cd RPyC-3.1.0
 python setup.py install
+cd ..
 rm -rf RPyC-3.1.0*
 
 # Set Apache and MySQL to start at boot - Use upstart
@@ -72,6 +74,11 @@ chown apache:apache /var/www/wsgi
 mv -f elixys/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
+
+# Install rtmpd
+cp -R elixys/bin/rtmpd /opt/elixys
+cp elixys/config/elixys.conf /etc/ld.so.conf.d
+ldconfig
 
 # Put shortcuts on the user's desktop
 mkdir /opt/elixys

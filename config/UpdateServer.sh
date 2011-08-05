@@ -31,11 +31,9 @@ chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/
 # Update the core server
 rm -rf /opt/elixys/cli
 rm -rf /opt/elixys/core
-rm -rf /opt/elixys/database
 rm -rf /opt/elixys/hardware
 cp -R elixys/server/cli /opt/elixys
 cp -R elixys/server/core /opt/elixys
-cp -R elixys/server/database /opt/elixys
 cp -R elixys/server/hardware /opt/elixys
 
 # Remove the git repository
