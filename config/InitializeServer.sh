@@ -8,17 +8,33 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# The following lines shouldn't be necessary but they are.  Something strange is going on with the networking in my VMs and disabling IPv6
+# is a quick fix.  Hopefully it can be removed at some point in the future.  All of the "-4" arguments on the following wget commands are part
+# of this hack and should be remove in the future as well
+if lsmod | grep ipv6 > /dev/null
+then
+   echo "Disabling IPv6..."
+   /sbin/service ip6tables disable
+   /sbin/chkconfig ip6tables off
+   echo "install ipv6 /bin/true" > /etc/modprobe.d/blacklist-ipv6.conf
+   echo "blacklist ipv6" >> /etc/modprobe.d/blacklist-ipv6.conf
+   echo "NETWORKING_IPV6=no" >> /etc/sysconfig/network
+   echo "Done.  Press any key to reboot the computer and then run this script again"
+   read CONTINUE
+   shutdown -r now
+fi
+
 # Start in the root directory
 cd /root
 
 # Install git from the EPEL repository
-wget http://download.fedoraproject.org/pub/epel/5/i386/epel-release-5-4.noarch.rpm
-rpm -Uhv epel-release-5-4.noarch.rpm
-rm -f epel-release-5-4.noarch.rpm
+wget -4 http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-5.noarch.rpm
+rpm -Uhv epel-release-6-5.noarch.rpm
+rm -f epel-release-6-5.noarch.rpm
 yum -y install git
 
 # Get the current git repository
-git clone --depth 1 git://github.com/michaelvandam/elixys.git
+git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
 # Install and configure MySQL
 yum -y install mysql mysql-server apr-util-mysql
@@ -27,30 +43,32 @@ mysql -e "CREATE DATABASE Elixys;"
 mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
 mysql Elixys < elixys/config/CreateDatabase.sql
+mkdir /opt/elixys
+cp -R elixys/server/database /opt/elixys
 
-# Install python and JSON libraries
-yum -y install python-wsgiref python-json
-wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
-tar -xzf configobj-4.7.2.zip
-cd configobj-4.7.2
-python26 setup.py install
+# Install mod_wsgi
+yum -y install mod_wsgi
+
+# Install configobj
+wget -4 http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
+mkdir configobj
+unzip -d configobj configobj-4.7.2.zip
+cd configobj/configobj-4.7.2
+python setup.py install
+cd ../..
+rm -rf configobj*
+
+# Install rpyc
+wget -4 http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
+unzip RPyC-3.1.0.zip
+cd RPyC-3.1.0
+python setup.py install
 cd ..
-rm -rf configobj-4.7.2
+rm -rf RPyC-3.1.0*
 
-# Build mod_wsgi from source so we can point it to Python 2.6
-yum -y install httpd-devel python26-devel
-wget http://modwsgi.googlecode.com/files/mod_wsgi-3.3.tar.gz
-tar xvfz mod_wsgi-3.3.tar.gz
-cd mod_wsgi-3.3
-./configure --with-python=/usr/bin/python26
-make
-make install
-cd ..
-rm -rf mod_wsgi-3.3*
-
-# Set Apache and MySQL to start at boot
-echo "/usr/sbin/apachectl start" >> /etc/rc.local
-echo "/sbin/service mysqld start" >> /etc/rc.local
+# Set Apache and MySQL to start at boot - Use upstart
+#echo "/usr/sbin/apachectl start" >> /etc/rc.local
+#echo "/sbin/service mysqld start" >> /etc/rc.local
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
@@ -61,7 +79,6 @@ mkdir /var/www/wsgi
 # Install the Adobe policy module and file
 cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so
-/usr/sbin/semanage port -a -t http_port_t -p tcp 843
 cp elixys/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
 chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
@@ -73,6 +90,26 @@ chown apache:apache /var/www/wsgi
 # Update the firewall settings
 mv -f elixys/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
+/sbin/service iptables restart
+
+# Install rtmpd
+cp -R elixys/bin/rtmpd /opt/elixys
+cp elixys/config/elixys.conf /etc/ld.so.conf.d
+ldconfig
+chmod +x /opt/elixys/rtmpd/crtmpserver/crtmpserver
+
+# Put shortcuts on the user's desktop
+mkdir /opt/elixys/config
+cp elixys/config/UpdateServer.sh /opt/elixys/config
+chmod 755 /opt/elixys/config/UpdateServer.sh
+cp elixys/config/shortcuts/* /home/$USER/Desktop
+chmod 755 /home/$USER/Desktop/ElixysCLI.sh
+chmod 755 /home/$USER/Desktop/StateMonitor.sh
+chmod 755 /home/$USER/Desktop/UpdateServer.sh
+
+# Give all users the ability to run the update script as root
+echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
 
 # Remove the git repository
 rm -rf /root/elixys
+

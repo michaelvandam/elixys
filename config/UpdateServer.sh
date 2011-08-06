@@ -9,7 +9,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Get the current git repository
-git clone --depth 1 git://github.com/michaelvandam/elixys.git
+git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
 # Update the Apache configuration file
 mv -f elixys/config/httpd.conf /etc/httpd/conf
@@ -20,13 +20,21 @@ rm -rf /var/www/http/*
 mv -f elixys/bin/WebContent/* /var/www/http/
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*
 
-# Update the core python server
+# Update the web server
 rm -rf /var/www/wsgi/*
-mv -f elixys/server/* /var/www/wsgi
+mv -f elixys/server/web/* /var/www/wsgi
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
 # Restart Apache
 /usr/sbin/apachectl restart
+
+# Update the core server
+rm -rf /opt/elixys/cli
+rm -rf /opt/elixys/core
+rm -rf /opt/elixys/hardware
+cp -R elixys/server/cli /opt/elixys
+cp -R elixys/server/core /opt/elixys
+cp -R elixys/server/hardware /opt/elixys
 
 # Remove the git repository
 rm -rf elixys
