@@ -31,12 +31,13 @@ class VacuumSystemModel(ComponentModel):
     else:
       return self.vacuumSystemPressure
     
-  def setVacuumSystemOn(self, bVacuumSystemOn):
-    """Turns the vacuum system on and off"""
-    if bVacuumSystemOn:
-      self.hardwareComm.VacuumSystemOn()
-    else:
-      self.hardwareComm.VacuumSystemOff()
+  def setVacuumSystemOn(self):
+    """Turns the vacuum system on"""
+    self.hardwareComm.VacuumSystemOn()
+      
+  def setVacuumSystemOff(self):
+    """Turns the vacuum system on"""
+    self.hardwareComm.VacuumSystemOff()
 
   def updateState(self, bVacuumSystemOn, fVacuumSystemPressure):
     """Update the internal state"""

@@ -293,6 +293,7 @@ class FakePLC():
                 nReactor3CurrentTemperature = self.__pSystemModel.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)
                 self.__pCoolingThread = CoolingThread()
                 self.__pCoolingThread.SetParameters(self.__pHardwareComm, nReactor1CurrentTemperature, nReactor2CurrentTemperature, nReactor3CurrentTemperature)
+                self.__pCoolingThread.setDaemon(True)
                 self.__pCoolingThread.start()
         else:
             # No, so kill the cooling thread if it is running
@@ -319,6 +320,7 @@ class FakePLC():
                 # No, so kick off the thread
                 pThread = PressureRegulatorThread()
                 pThread.SetParameters(self.__pHardwareComm, nPressureRegulator, nActualPressure, nSetPressure)
+                pThread.setDaemon(True)
                 pThread.start()
                 
                 # Save the new reference
@@ -342,6 +344,7 @@ class FakePLC():
                 self.__pMoveReagentRobotThread = MoveReagentRobotThread()
                 self.__pMoveReagentRobotThread.SetParameters(self.__pHardwareComm, nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ, \
                     nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ)
+                self.__pMoveReagentRobotThread.setDaemon(True)
                 self.__pMoveReagentRobotThread.start()
 
     def __UpdateReactorRobotStatus(self, nReactor):
@@ -377,6 +380,7 @@ class FakePLC():
                 # No, so kick off the thread
                 pThread = MoveReactorLinearThread()
                 pThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualPositionZ, nReactorSetPositionZ)
+                pThread.setDaemon(True)
                 pThread.start()
                 
                 # Save the new reference
@@ -408,6 +412,7 @@ class FakePLC():
                 # No, so kick off the thread
                 pThread = MoveReactorVerticalThread()
                 pThread.SetParameters(self.__pHardwareComm, nReactor, bReactorSetUp)
+                pThread.setDaemon(True)
                 pThread.start()
                 
                 # Save the new reference
@@ -447,6 +452,7 @@ class FakePLC():
                     # No, so kick off the thread
                     pThread = HeatingThread()
                     pThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualTemperature, nReactorSetTemperature)
+                    pThread.setDaemon(True)
                     pThread.start()
                 
                     # Save the new reference

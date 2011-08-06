@@ -3,6 +3,7 @@
 Implements a CLI interface to the Elixys system """
 
 ### Imports
+import threading
 import inspect
 import time
 import rpyc
