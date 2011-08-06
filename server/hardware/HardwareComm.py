@@ -12,8 +12,8 @@ import os.path
 ### Constants ###
 
 # IP and port of the PLC.  Make sure only one PLC IP is defined
-PLC_IP = "192.168.1.200"    # Real PLC
-#PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
+#PLC_IP = "192.168.1.200"    # Real PLC
+PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
 PLC_PORT = 9600
 
 # Number of words used by each type of module

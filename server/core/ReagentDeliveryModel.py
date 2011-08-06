@@ -59,20 +59,6 @@ class ReagentDeliveryModel(ComponentModel):
       return self.protectedReturn3(self.getCurrentPosition)
     else:
       return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery
-      
-  def getCurrentDeliveryPosition(self, bLockModel = True):
-    """Return the current reagent robot position in the format (nDeliveryPosition)"""
-    if bLockModel:
-      return self.protectedReturn3(self.getCurrentDeliveryPosition)
-    else:
-      return self.currentPositionDelivery
-  
-  def getCurrentReagentPosition(self, bLockModel = True):
-    """Return the current reagent robot position in the format (nReagentPosition)"""
-    if bLockModel:
-      return self.protectedReturn3(self.getCurrentReagentPosition)
-    else:
-      return self.currentPositionReagent
     
   def getCurrentPositionRaw(self, bLockModel = True):
     """Return the current raw reactor position in the format (X, Z)"""
@@ -124,19 +110,19 @@ class ReagentDeliveryModel(ComponentModel):
     """Moves the reagent robot to the given delivery position"""
     self.hardwareComm.MoveRobotToDelivery(nReactor, nDeliveryPosition)
 
-  def setGripperUp(self):
+  def setMoveGripperUp(self):
     """Raise the gripper"""
     self.hardwareComm.GripperUp()
     
-  def setGripperDown(self):
+  def setMoveGripperDown(self):
     """Lower the gripper"""
     self.hardwareComm.GripperDown()
 
-  def setGripperOpen(self):
+  def setMoveGripperOpen(self):
     """Open the gripper"""
     self.hardwareComm.GripperOpen()
 
-  def setGripperClose(self):
+  def setMoveGripperClose(self):
     """Close the gripper"""
     self.hardwareComm.GripperClose()
 

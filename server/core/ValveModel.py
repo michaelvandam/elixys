@@ -20,6 +20,8 @@ class ValveModel(ComponentModel):
     self.transferValveOpen = False
     self.reagent1TransferValveOpen = False
     self.reagent2TransferValveOpen = False
+    self.evaporationValvesSetOpen = False
+    self.reagentTransferValve = False
 
   def getEvaporationNitrogenValveOpen(self, bLockModel = True):
     """Returns True if the evaporation nitrogen valve is open, False otherwise"""
@@ -60,9 +62,15 @@ class ValveModel(ComponentModel):
     """Opens or closes the evaporation nitrogen and vacuum valves"""
     if bValveOpen:
       self.hardwareComm.ReactorEvaporateStart(self.reactor)
+      self.evaporationValvesSetOpen = True
     else:
       self.hardwareComm.ReactorEvaporateStop(self.reactor)
-
+      self.evaporationValvesSetOpen = False
+      
+  def getSetEvaporationValvesOpen(self):
+    """Checks if nitrogen and vacuum valves are set open or close."""
+    return self.evaporationValvesSetOpen
+      
   def setTransferValveOpen(self, bValveOpen):
     """Returns True if the transfer valve is open, False otherwise"""
     if bValveOpen:
@@ -70,12 +78,18 @@ class ValveModel(ComponentModel):
     else:
       self.hardwareComm.ReactorTransferStop(self.reactor)
 
-  def setReagentTransferValveOpen(self, nReagent, bValveOpen):
-    """Returns True if the reagent transfer valve is open, False otherwise"""
+  def setReagentTransferValve(self, nReagent, bValveOpen):
+    """Opens or closes the reagent transfer valve"""
     if bValveOpen:
       self.hardwareComm.ReactorReagentTransferStart(self.reactor, nReagent)
     else:
       self.hardwareComm.ReactorReagentTransferStop(self.reactor, nReagent)
+    self.reagentTransferValve = bValveOpen
+      
+  def getSetReagentTransferValve(self):
+    """Returns True if the reagent transfer valve is open, False otherwise"""
+    return self.reagentTransferValve
+  
 
   def updateState(self, bEvaporationNitrogenValveOpen, bEvaporationVacuumValveOpen, bTransferValveOpen, bReagent1TransferValveOpen, bReagent2TransferValveOpen):
     """Update the internal state"""
