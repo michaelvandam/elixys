@@ -433,7 +433,7 @@ class AddReagent(UnitOperation):
   def addReagent(self):
     self.systemModel[self.ReactorID]['Valves'].setTransferValveOpen() #set pressure on
     self.waitForCondition(self.systemModel[self.ReactorID].getTransferValveOpen,True,EQUAL,2)
-    time.sleep(8) #Wait for reagent to drain from vial
+    time.sleep(10) #Wait for reagent to drain from vial
     self.systemModel[self.ReactorID].setTransferValveClosed() #set pressure off
     self.waitForCondition(self.systemModel[self.ReactorID].getTransferValveClosed,True,EQUAL,2)
     
