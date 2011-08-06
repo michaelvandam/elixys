@@ -63,14 +63,14 @@ class ReagentDeliveryModel(ComponentModel):
   def getCurrentDeliveryPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nDeliveryPosition)"""
     if bLockModel:
-      return self.protectedReturn3(self.getCurrentPosition)
+      return self.protectedReturn3(self.getCurrentDeliveryPosition)
     else:
       return self.currentPositionDelivery
   
   def getCurrentReagentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReagentPosition)"""
     if bLockModel:
-      return self.protectedReturn3(self.getCurrentPosition)
+      return self.protectedReturn3(self.getCurrentReagentPosition)
     else:
       return self.currentPositionReagent
     
