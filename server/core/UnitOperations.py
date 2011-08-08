@@ -428,10 +428,10 @@ class AddReagent(UnitOperation):
       self.paramsValidated = True"""
       
   def addReagent(self):
-    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentPosition,ON) #set pressure on
+    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,ON) #set pressure on
     self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,True,EQUAL,2)
     time.sleep(10) #Wait for reagent to drain from vial
-    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentPosition,OFF) #set pressure off
+    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,OFF) #set pressure off
     self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,False,EQUAL,2)
     
   def setGripperPlace(self):
