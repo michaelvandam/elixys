@@ -92,11 +92,13 @@ mv -f elixys/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
-# Install rtmpd
-cp -R elixys/bin/rtmpd /opt/elixys
-cp elixys/config/elixys.conf /etc/ld.so.conf.d
-ldconfig
-chmod +x /opt/elixys/rtmpd/crtmpserver/crtmpserver
+# Install FFmpeg
+yum install ffmpeg
+cp elixys/config/ffserver.conf /etc
+
+# Install openRTSP
+cp -R elixys/bin/openRTSP /opt/elixys
+chmod +x /opt/elixys/openRTSP/openRTSP
 
 # Put shortcuts on the user's desktop
 mkdir /opt/elixys/config
