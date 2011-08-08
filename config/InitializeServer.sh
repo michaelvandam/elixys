@@ -14,7 +14,7 @@ fi
 if lsmod | grep ipv6 > /dev/null
 then
    echo "Disabling IPv6..."
-   /sbin/service ip6tables disable
+   /sbin/service ip6tables stop
    /sbin/chkconfig ip6tables off
    echo "install ipv6 /bin/true" > /etc/modprobe.d/blacklist-ipv6.conf
    echo "blacklist ipv6" >> /etc/modprobe.d/blacklist-ipv6.conf
@@ -92,11 +92,16 @@ mv -f elixys/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
-# Install rtmpd
-cp -R elixys/bin/rtmpd /opt/elixys
-cp elixys/config/elixys.conf /etc/ld.so.conf.d
-ldconfig
-chmod +x /opt/elixys/rtmpd/crtmpserver/crtmpserver
+# Install FFmpeg
+wget -4 http://packages.sw.be/rpmforge-release/rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+rpm -Uhv rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+rm -f rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+yum -y install ffmpeg
+cp elixys/config/ffserver.conf /etc
+
+# Install openRTSP
+cp -R elixys/bin/openRTSP /opt/elixys
+chmod +x /opt/elixys/openRTSP/openRTSP
 
 # Put shortcuts on the user's desktop
 mkdir /opt/elixys/config
