@@ -442,7 +442,7 @@ class AddReagent(UnitOperation):
       self.abortOperation("ERROR: setGripperPlace called while gripper was down. Operation aborted.") 
     
     #If we make it here, we are up and open. We want to move to ReagentPosition, then down, then close.
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition) #Move Reagent Robot to position
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition) #Move Reagent Robot to position
     time.sleep(2)
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown() #Move Gripper down
@@ -456,7 +456,7 @@ class AddReagent(UnitOperation):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
     time.sleep(2)#**Need sensor here
-    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(self.ReactorID,self.reagentLoadPosition)
+    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, self.reagentLoadPosition),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
@@ -473,7 +473,7 @@ class AddReagent(UnitOperation):
         self.systemModel['ReagentDelivery'].setMoveGripperUp()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
-        self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition)
+        self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0),EQUAL,5)
         self.systemModel['ReagentDelivery'].setMoveGripperDown()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
