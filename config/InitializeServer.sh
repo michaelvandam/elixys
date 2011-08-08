@@ -14,7 +14,7 @@ fi
 if lsmod | grep ipv6 > /dev/null
 then
    echo "Disabling IPv6..."
-   /sbin/service ip6tables disable
+   /sbin/service ip6tables stop
    /sbin/chkconfig ip6tables off
    echo "install ipv6 /bin/true" > /etc/modprobe.d/blacklist-ipv6.conf
    echo "blacklist ipv6" >> /etc/modprobe.d/blacklist-ipv6.conf
