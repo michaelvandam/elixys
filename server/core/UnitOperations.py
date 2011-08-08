@@ -474,7 +474,7 @@ class AddReagent(UnitOperation):
         self.systemModel['ReagentDelivery'].setMoveGripperUp()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
-        self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.self.reagentPosition)
+        self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition)
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
         self.systemModel['ReagentDelivery'].setMoveGripperDown()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
