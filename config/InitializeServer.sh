@@ -93,7 +93,10 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
 # Install FFmpeg
-yum install ffmpeg
+wget -4 http://packages.sw.be/rpmforge-release/rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+rpm -Uhv rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+rm -f rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+yum -y install ffmpeg
 cp elixys/config/ffserver.conf /etc
 
 # Install openRTSP
