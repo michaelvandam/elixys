@@ -810,6 +810,33 @@ class HardwareComm():
                 self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3"), self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1"),
                 self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2"), self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3"))
             pModel["Reactor3"]["Radiation"].updateState(0)
+
+            # This chunk of code can be used to log the temperature of a specific thermocouple
+            if False:
+                nMeasureReactor = 1
+                nLiquidReactor = 3
+                nLiquidThermocouple = 1
+                try:
+                    self.__startTime
+                except NameError:
+                    self.__startTime = time.time()
+                    f = open("temp_profile.txt","w")
+                    f.write("Time,Heater1Set,Heater2Set,Heater3Set,Heater1Actual,Heater2Actual,Heater3Actual,Liquid\n")
+                    f.flush()
+                    f.close()
+                currentTime = time.time()
+                f = open("temp_profile.txt","a")
+                f.write("%.1f"%(currentTime - self.__startTime) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController1")) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController2")) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController3")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController1")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController2")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController3")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLiquidReactor) + "_TemperatureController" + str(nLiquidThermocouple))) + "," + "\n")
+                f.flush()
+                f.close()
+            
         finally:
             # Release the system model lock
             self.__pSystemModel.UnlockSystemModel()
