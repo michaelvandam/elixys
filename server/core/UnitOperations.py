@@ -403,6 +403,8 @@ class AddReagent(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
+      print "user input: %s, %s, %s" % (self.ReactorID, self.reagentPosition, 0)
+      print "function onput: %s, %s, %s" % (self.systemModel['ReagentDelivery'].getCurrentPosition())
       self.beginNextStep("Moving to position")
       self.setReactorPosition(ADDREAGENT)
       self.beginNextStep("Moving vial to addition position")
@@ -442,7 +444,7 @@ class AddReagent(UnitOperation):
     #If we make it here, we are up and open. We want to move to ReagentPosition, then down, then close.
     self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition) #Move Reagent Robot to position
     time.sleep(2)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(self.ReactorID, self.reagentPosition, 0),EQUAL,5)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown() #Move Gripper down
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,2)
     time.sleep(2)#**Need sensor here
@@ -454,8 +456,8 @@ class AddReagent(UnitOperation):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
     time.sleep(2)#**Need sensor here
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentLoadPosition)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(self.ReactorID, 0, self.reagentLoadPosition),EQUAL,5)
+    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(self.ReagentReactorID,self.reagentLoadPosition)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, int(self.reagentLoadPosition)),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
     time.sleep(2)#**Need sensor here
@@ -473,7 +475,7 @@ class AddReagent(UnitOperation):
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
         self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.self.reagentPosition)
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(self.ReactorID, self.reagentPosition, 0),EQUAL,5)
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
         self.systemModel['ReagentDelivery'].setMoveGripperDown()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
