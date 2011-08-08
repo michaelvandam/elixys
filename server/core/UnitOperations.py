@@ -393,9 +393,11 @@ class AddReagent(UnitOperation):
     UnitOperation.__init__(self,systemModel)
     self.setParams(params)
 		#Should have parameters listed below:
-    print "ReactorID %s" % self.ReactorID
-    print "reagentPosition %s" % self.reagentPosition
-    print "reagentLoadPosition %s" % self.reagentLoadPosition
+    print "ReactorID %s" % self.ReactorID #= 3
+    print "ReagentReactorID %s" % self.ReagentReactorID
+    print "reagentPosition %s" % self.reagentPosition #= 1 
+    print "reagentLoadPosition %s" % self.reagentLoadPosition #= 2
+    
     #self.ReactorID
     #self.ReagentPosition
     #self.reagentLoadPosition
@@ -403,8 +405,6 @@ class AddReagent(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
-      print "user input: %s, %s, %s" % (self.ReactorID, self.reagentPosition, 0)
-      print "function onput: %s, %s, %s" % (self.systemModel['ReagentDelivery'].getCurrentPosition())
       self.beginNextStep("Moving to position")
       self.setReactorPosition(ADDREAGENT)
       self.beginNextStep("Moving vial to addition position")
@@ -444,7 +444,7 @@ class AddReagent(UnitOperation):
     #If we make it here, we are up and open. We want to move to ReagentPosition, then down, then close.
     self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition) #Move Reagent Robot to position
     time.sleep(2)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown() #Move Gripper down
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,2)
     time.sleep(2)#**Need sensor here
@@ -456,15 +456,14 @@ class AddReagent(UnitOperation):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
     time.sleep(2)#**Need sensor here
-    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(self.ReagentReactorID,self.reagentLoadPosition)
+    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(self.ReactorID,self.reagentLoadPosition)
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, int(self.reagentLoadPosition)),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
     time.sleep(2)#**Need sensor here
     
   def setGripperRemove(self):
-    #if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(self.ReactorID, self.reagentPosition, self.reagentLoadPosition),EQUAL):
-    if 1:
+    if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, int(self.reagentLoadPosition)),EQUAL):
       #We are in position
       if self.checkForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL):
         #We are down
@@ -475,7 +474,7 @@ class AddReagent(UnitOperation):
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
         self.systemModel['ReagentDelivery'].moveToReagentPosition(self.ReagentReactorID,self.reagentPosition)
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), int(self.reagentPosition), 0),EQUAL,5)
         self.systemModel['ReagentDelivery'].setMoveGripperDown()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperDown,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
