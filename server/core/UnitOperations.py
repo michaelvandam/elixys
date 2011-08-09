@@ -129,16 +129,18 @@ class UnitOperation(threading.Thread):
         self.systemModel[ReactorID]['Motion'].moveReactorUp()
         self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
         self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)
       else:
-        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot(ReactorID)
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getReactorRobotEnabled,False,EQUAL,3)
-        
+        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)   
     else: #We're in the right position, check if we're sealed.
       if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL)):
         if not(reactorPosition==INSTALL):
           self.setDescription("Moving Reactor%s up." % ReactorID)
           self.systemModel[ReactorID]['Motion'].moveReactorUp()
           self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
+          self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)
         else:
           self.setDescription("Reactor%s in position %s." % (ReactorID,reactorPosition))
       else:
@@ -319,11 +321,29 @@ class UnitOperation(threading.Thread):
     self.systemModel[self.ReactorID]['Stir'].setSpeed(stirSpeed) #Set analog value on PLC
     self.waitForCondition(self.systemModel[self.ReactorID]['Stir'].getCurrentSpeed,stirSpeed,EQUAL,10) #Read value from PLC memory... should be equal
 
-
-
-  def setPressureRegulator(self,pressureSetPoint,rampTime=0): #Time in seconds
+  def setEvapValves(self,evapValvesSetting):
+    if (evapValvesSetting):
+      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(ON)
+      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,True,EQUAL,3)     
+    else:
+      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(OFF)
+      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,False,EQUAL,3)      
+  
+  def setReagentTransferValves(self,transferValvesSetting):
+    if (transferValvesSetting):
+      self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,ON) #set pressure on
+      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,True,EQUAL,2)
+    else:
+      self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,OFF) #set pressure off
+      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,False,EQUAL,2)
+  
+  def setPressureRegulator(self,regulator,pressureSetPoint,rampTime=0): #Time in seconds
+    if (str(regulator) == '1') or (str(regulator) == 'PressureRegulator1'):
+      self.pressureRegulator = 'PressureRegulator1'
+    elif (str(regulator) == '2') or (str(regulator) == 'PressureRegulator2'):
+      self.pressureRegulator = 'PressureRegulator2'
     if rampTime:
-      currentPressure = self.systemModel['pressure_regulator'].getCurrentPressure()
+      currentPressure = self.systemModel[self.pressureRegulator].getSetPressure()
       rampPressure = currentPressure
       if (int(currentPressure/rampTime)>1):
         pressureStep = int(currentPressure/rampTime)
@@ -332,14 +352,16 @@ class UnitOperation(threading.Thread):
       
       while (rampPressure<pressureSetPoint):
         rampPressure += pressureStep
-        self.systemModel['pressure_regulator'].setPressure(rampPressure) #Set analog value on PLC
-        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
+        self.systemModel[self.pressureRegulator].setRegulatorPressure(rampPressure) #Set analog value on PLC
+        self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
       if (rampPressure >= pressureSetPoint):
-        self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
-        self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER,3)
+        self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
+        self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+        self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
     else:
-      self.systemModel['pressure_regulator'].setPressure(pressureSetPoint)
-      self.waitForCondition(self.systemModel['pressure_regulator'].getCurrentPressure,pressureSetPoint,GREATER,3)
+      self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
+      self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+      self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
       
 class React(UnitOperation):
   def __init__(self,systemModel,params):
@@ -392,12 +414,7 @@ class AddReagent(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
     self.setParams(params)
-		#Should have parameters listed below:
-    print "ReactorID %s" % self.ReactorID #= 3
-    print "ReagentReactorID %s" % self.ReagentReactorID
-    print "reagentPosition %s" % self.reagentPosition #= 1 
-    print "reagentLoadPosition %s" % self.reagentLoadPosition #= 2
-    
+		#Should have parameters listed below: 
     #self.ReactorID
     #self.ReagentPosition
     #self.reagentLoadPosition
@@ -428,11 +445,9 @@ class AddReagent(UnitOperation):
       self.paramsValidated = True"""
       
   def addReagent(self):
-    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,ON) #set pressure on
-    self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,True,EQUAL,2)
+    self.setReagentTransferValves(ON)
     time.sleep(10) #Wait for reagent to drain from vial
-    self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,OFF) #set pressure off
-    self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,False,EQUAL,2)
+    self.setReagentTransferValves(OFF)
     
   def setGripperPlace(self):
     if self.checkForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,False,EQUAL):
@@ -543,14 +558,7 @@ class Evaporate(UnitOperation):
         #Log Error
       self.paramsValidated = True"""
       
-  def setEvapValves(self,evapValvesSetting):
-    if (evapValvesSetting):
-      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(ON)
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,True,EQUAL,3)     
-    else:
-      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(OFF)
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,False,EQUAL,3)      
-    
+
 class InstallVial(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
@@ -774,15 +782,34 @@ class DetectRadiation(UnitOperation):
 class Initialize(UnitOperation):
   def __init__(self,systemModel):
     UnitOperation.__init__(self,systemModel)
+    self.ReactorTuple=('Reactor1','Reactor2','Reactor3')
+    self.reagentLoadPositionTuple=(1,2)
     
   def run(self):
-    """
-    Turn off/set all valves...
-    Pressures 2,5  and  1,59
-    Reactors down->Enable
-    ReagentRobot open->up
-    HomeRobots
-    """
+    self.stepDescription = "Starting Init Operation"
+    #Close all valves (set state)
+    for self.ReactorID in self.ReactorTuple:
+      self.setEvapValves(OFF)
+      for self.reagentLoadPosition in self.reagentLoadPositionTuple:
+        self.setReagentTransferValves(OFF)
+      self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
+    
+    #Set pressures
+    self.setPressureRegulator(2,5)
+    self.setPressureRegulator(1,59)
+    
+    #Home robots
+    for self.ReactorID in self.ReactorTuple:
+      self.systemModel[self.ReactorID]['Motion'].setEnableReactorRobot()
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,2)
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,True,EQUAL,2) 
+    self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
+    time.sleep(2)
+    for self.ReactorID in self.ReactorTuple:
+      self.setReactorPosition(INSTALL)
+    print "System Initialized."
 
     
 def test():
