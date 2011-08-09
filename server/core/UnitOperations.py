@@ -357,11 +357,11 @@ class UnitOperation(threading.Thread):
       if (rampPressure >= pressureSetPoint):
         self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
         self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
-        self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
+        #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
     else:
       self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
       self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
-      self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
+      #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
       
 class React(UnitOperation):
   def __init__(self,systemModel,params):
@@ -803,11 +803,22 @@ class Initialize(UnitOperation):
     self.systemModel['ReagentDelivery'].setMoveGripperOpen()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,True,EQUAL,2) 
     self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
-    time.sleep(2)
+    time.sleep(5)
+    while not(self.areRobotsHomed()):
+      self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
+      time.sleep(5)
     for self.ReactorID in self.ReactorTuple:
       self.setReactorPosition(INSTALL)
     print "System Initialized."
-
+  
+  def areRobotsHomed(self):
+    self.robotsHomed=True
+    for self.ReactorID in self.ReactorTuple:
+      if checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL):
+        self.robotsHomed=False
+    if self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL):
+      self.robotsHomed=False
+    return self.robotsHomed
     
 def test():
   react1 = React()
