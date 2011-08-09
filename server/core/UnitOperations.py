@@ -804,9 +804,7 @@ class Initialize(UnitOperation):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,True,EQUAL,2) 
     self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
     time.sleep(5)
-    while not(self.areRobotsHomed()):
-      self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
-      time.sleep(5)
+    self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
     for self.ReactorID in self.ReactorTuple:
       self.setReactorPosition(INSTALL)
     print "System Initialized."
