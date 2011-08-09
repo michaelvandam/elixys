@@ -98,7 +98,7 @@ class ReagentDeliveryModel(ComponentModel):
   def getRobotStatus(self, bLockModel = True):
     """Returns the robot axis status code"""
     if bLockModel:
-      return self.protectedReturn2(self.getRobotXStatus)
+      return self.protectedReturn2(self.getRobotStatus)
     else:
       return self.robotXStatus, self.robotZStatus
       
