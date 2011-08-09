@@ -812,27 +812,27 @@ class HardwareComm():
             pModel["Reactor3"]["Radiation"].updateState(0)
 
             # This chunk of code can be used to log the temperature of a specific thermocouple
-            if False:
+            if True:
                 nMeasureReactor = 1
                 nLiquidReactor = 3
                 nLiquidThermocouple = 1
                 try:
                     self.__startTime
-                except NameError:
+                except Exception, e:
                     self.__startTime = time.time()
-                    f = open("temp_profile.txt","w")
+                    f = open("/home/Elixys/Desktop/temp_profile.txt","w")
                     f.write("Time,Heater1Set,Heater2Set,Heater3Set,Heater1Actual,Heater2Actual,Heater3Actual,Liquid\n")
                     f.flush()
                     f.close()
                 currentTime = time.time()
-                f = open("temp_profile.txt","a")
+                f = open("/home/Elixys/Desktop/temp_profile.txt","a")
                 f.write("%.1f"%(currentTime - self.__startTime) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController1")) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController2")) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nLoggingReactor) + "_TemperatureController3")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController1")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController2")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLoggingReactor) + "_TemperatureController3")) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController1")) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController2")) + "," + \
+                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController3")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController1")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController2")) + "," + \
+                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController3")) + "," + \
                     str(self.__GetThermocontrollerActualValue("Reactor" + str(nLiquidReactor) + "_TemperatureController" + str(nLiquidThermocouple))) + "," + "\n")
                 f.flush()
                 f.close()
