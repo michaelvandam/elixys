@@ -425,11 +425,13 @@ class AddReagent(UnitOperation):
       self.beginNextStep("Moving to position")
       self.setReactorPosition(ADDREAGENT)
       self.beginNextStep("Moving vial to addition position")
+      self.setReagentTransferValves(ON)# Turn on valves
       self.setGripperPlace()#Move reagent from it's home position to the addition position.
       self.setDescription("Adding reagent")
-      self.addReagent()# Turn on valves to add reagent, pause, turn off valves
+      time.sleep(10)#Dispense reagent
       self.beginNextStep("Removing vial from addition position")
       self.setGripperRemove()
+      self.setReagentTransferValves(OFF)#Turn off valves
       self.beginNextStep("Add Reagent Operation Complete")
     except Exception as e:
       print type(e)
@@ -443,11 +445,6 @@ class AddReagent(UnitOperation):
         self.paramsValid = False
         #Log Error
       self.paramsValidated = True"""
-      
-  def addReagent(self):
-    self.setReagentTransferValves(ON)
-    time.sleep(10) #Wait for reagent to drain from vial
-    self.setReagentTransferValves(OFF)
     
   def setGripperPlace(self):
     if self.checkForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,False,EQUAL):
