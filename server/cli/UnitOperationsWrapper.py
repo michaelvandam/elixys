@@ -12,6 +12,14 @@ class UnitOperationsWrapper:
         """Unit operations wrapper constructor"""
         self.__pSystemModel = pSystemModel
     
+    def Init(self):
+        """Initializes Elixys hardware for use"""
+        pParams = {}
+        pInit = UnitOperations.Initialize(self.__pSystemModel)
+        pInit.setDaemon(True)
+        pInit.start()
+        return pInit
+       
     def React(self, nReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nReactPosition, nStirSpeed):
         """Performs a react unit operation"""
         pParams = {"ReactorID":nReactor,

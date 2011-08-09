@@ -40,7 +40,7 @@ class PressureRegulatorModel(ComponentModel):
     else:
       return self.currentPressure
   
-  def setPressure(self, nPressure):
+  def setRegulatorPressure(self, nPressure):
     """Sets the set pressure"""
     self.hardwareComm.SetPressureRegulator(self.pressureRegulator, nPressure)
 

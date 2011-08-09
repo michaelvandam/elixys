@@ -99,7 +99,7 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm
             
     except Exception as ex:
         # Display the error
-        print "Failed to execute command: " + str(ex)
+        print "Failed to execute command: " + str(ex) +str(type(ex))
 
 # Parses and sends the raw command
 def SendCommand(sCommand, pHardwareComm):
@@ -147,9 +147,10 @@ if __name__ == "__main__":
         elif sCommand == "help unit operations":
             # List the recognized unit operations
             print "Recognized unit operations:"
+            print "  Init"
             print "  React"
-            print "  Not implemented: Add"
-            print "  Not implemented: Evaporate"
+            print "  Add"
+            print "  Evaporate"
             print "  Not implemented: Install"
             print "  Not implemented: TransferToHPLC"
             print "  Not implemented: TransferElute"
@@ -158,6 +159,11 @@ if __name__ == "__main__":
             print "  Not implemented: DetectRadiation"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
+        elif sCommand == "help Init":
+            # React unit operation
+            print "Initialize the Elixys hardware for use."
+            print ""
+            print "  Init()"
         elif sCommand == "help React":
             # React unit operation
             print "Heat the given reactor to a specific temperature, holds for a set length of"
