@@ -19,6 +19,15 @@ class UnitOperationsWrapper:
         pInit.setDaemon(True)
         pInit.start()
         return pInit
+
+    def TempProfile(self, nReactor, nReactionTemperature):
+        """Performs a react unit operation, with a 15 minute heating cycle"""
+        pParams = {"ReactorID":nReactor,
+                   "reactTemp":nReactionTemperature}
+        pTempProfile = UnitOperations.TempProfile(self.__pSystemModel, pParams)
+        pTempProfile.setDaemon(True)
+        pTempProfile.start()
+        return pTempProfile
        
     def React(self, nReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nReactPosition, nStirSpeed):
         """Performs a react unit operation"""

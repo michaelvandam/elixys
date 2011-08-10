@@ -787,6 +787,7 @@ class Initialize(UnitOperation):
     #Close all valves (set state)
     for self.ReactorID in self.ReactorTuple:
       self.setEvapValves(OFF)
+      self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
       for self.reagentLoadPosition in self.reagentLoadPositionTuple:
         self.setReagentTransferValves(OFF)
       self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
@@ -817,6 +818,48 @@ class Initialize(UnitOperation):
     if self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL):
       self.robotsHomed=False
     return self.robotsHomed
+
+    
+class TempProfile(UnitOperation):
+  def __init__(self,systemModel,params):
+    UnitOperation.__init__(self,systemModel)
+    self.setParams(params)
+    #Should have parameters listed below:
+    #self.ReactorID
+    #self.reactTemp
+    self.reactTime = 900
+  def run(self):
+    try:
+      self.beginNextStep("Starting TempProfile Operation")
+      self.beginNextStep("Moving to position")
+      self.setReactorPosition(INSTALL)
+      self.beginNextStep("Setting reactor Temperature")
+      self.setTemp()
+      self.beginNextStep("Starting heater")
+      self.setHeater(ON)
+      self.setDescription("Starting reaction timer")
+      self.startTimer(self.reactTime)
+      self.beginNextStep("Starting cooling")
+      self.setHeater(OFF)
+      self.systemModel['CoolingSystem'].setCoolingSystemOn(True)
+      self.beginNextStep("TempProfile Operation Complete")
+    except Exception as e:
+      print type(e)
+      print e
+      
+"""
+  def setParams(self,currentParams):
+    expectedParams = ['ReactorID','reactTemp','reactTime','coolTemp','reactPosition','stirSpeed']
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        #Log Error
+      self.paramsValidated = True
+"""
+    
+    
+   
     
 def test():
   react1 = React()

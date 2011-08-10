@@ -157,6 +157,7 @@ if __name__ == "__main__":
             print "  Not implemented: Transfer"
             print "  Not implemented: UserInput"
             print "  Not implemented: DetectRadiation"
+            print "  TempProfile"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
         elif sCommand == "help Init":
@@ -164,6 +165,12 @@ if __name__ == "__main__":
             print "Initialize the Elixys hardware for use."
             print ""
             print "  Init()"
+        elif sCommand == "help TempProfile":
+            # React unit operation
+            print "Performs a react unit operation, with a 15 minute heating cycle."
+            print ""
+            print " TempProfile(nReactor,           'Reactor1','Reactor2','Reactor3'"
+            print "             reactTemp           Celsius"
         elif sCommand == "help React":
             # React unit operation
             print "Heat the given reactor to a specific temperature, holds for a set length of"
