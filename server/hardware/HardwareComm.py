@@ -813,7 +813,7 @@ class HardwareComm():
 
             # This chunk of code can be used to log the temperature of a specific thermocouple
             if True:
-                nMeasureReactor = 2
+                nMeasureReactor = 1
                 nLiquidReactor = 3
                 nLiquidThermocouple = 1
                 try:
