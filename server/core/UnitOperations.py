@@ -832,7 +832,7 @@ class TempProfile(UnitOperation):
     try:
       self.beginNextStep("Starting TempProfile Operation")
       self.beginNextStep("Moving to position")
-      self.setReactorPosition(INSTALL)
+      self.setReactorPosition(TRANSFER)
       self.beginNextStep("Setting reactor Temperature")
       self.setTemp()
       self.beginNextStep("Starting heater")
