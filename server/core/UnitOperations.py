@@ -11,17 +11,33 @@ import time
 import threading
 
 #Reactor X Positions
-REACT_A = "React1"
-REACT_B = "React2"
-INSTALL = "Install"
-TRANSFER = "Transfer"
-RADIATION = "Radation"
-EVAPORATE = "Evaporate"
-ADDREAGENT = "Add"
+REACT_A    = 'React1'
+REACT_B    = 'React2'
+INSTALL    = 'Install'
+TRANSFER   = 'Transfer'
+RADIATION  = 'Radation'
+EVAPORATE  = 'Evaporate'
+ADDREAGENT = 'Add'
+ENABLED    = 'Enabled'
 HOME = 3
 ON = True
 OFF = False
-ENABLED = "Enabled"
+
+EVAPTEMP  = 'evapTemp'
+EVAPTIME  = 'evapTime'
+REACTORID = 'ReactorID'
+REACTTEMP = 'reactTemp'
+REACTTIME = 'reactTime'
+COOLTEMP  = 'coolTemp'
+STIRSPEED = 'stirSpeed'
+REACTPOSITION = 'reactPosition'
+REAGENTPOSITION = 'ReagentPosition'
+REAGENTREACTORID = 'ReagentReactorID'
+REAGENTLOADPOSITION = 'reagentLoadPosition'
+
+STR   = 'str'
+INT   = 'int'
+FLOAT = 'float'
 
 #Robot ReagentPosition positions:
 LOAD_A = "LOAD_A"
@@ -36,16 +52,21 @@ VIAL_7 = "VIAL_7"
 VIAL_8 = "VIAL_8"
 
 #Comparators for 'waitForCondition' function
-EQUAL = "="
+EQUAL    = "="
 NOTEQUAL = "!="
-GREATER = ">"
-LESS = "<"
+GREATER  = ">"
+LESS     = "<"
 
+class UnitOpError(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
 
+    
 class UnitOperation(threading.Thread):
   def __init__(self,systemModel):
     threading.Thread.__init__(self)
-    print "Initialized unit operation class"   
     self.time = time.time()
     self.params = {}
     self.paramsValidated = False
@@ -94,10 +115,60 @@ class UnitOperation(threading.Thread):
         self.reactPosition = params['reactPosition']
       if paramname=="ReagentPosition":
         self.reagentPosition = params['ReagentPosition']
-        
+  
+  """def validateParams(self,currentParams,expectedParams):
+    errorMessage = ""
+    self.paramsValid = True
+    for parameter in expectedParams:
+      if not(parameter in currentParams):
+        self.paramsValid = False
+        errorMessage += "Parameter: \'%s\' was not set." % parameter
+      else:
+        if not(currentParams[parameter]):
+          self.paramsValid = False
+          errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,currentParams[parameter])
+    self.paramsValidated = True
+    return errorMessage"""
+    
   def logError(self,error):
     """Logs an error."""
     print error
+    
+  def validateParams(self,userSetParams,expectedParamDict):
+    """Validates parameters before starting unit operation"""
+    errorMessage = ""
+    self.paramsValid = True
+    paramTypeInt = ""
+    for parameter in expectedParamDict.keys():
+      try:
+        paramType = userSetParams[parameter].__class__.__name__
+      except:
+        pass
+      if not(parameter in userSetParams): #Parameter not entered in CLI
+        self.paramsValid = False
+        errorMessage += "Parameter: \'%s\' was not set." % parameter
+      elif (not((paramType) in (STR,INT,FLOAT)) and (userSetParams[parameter])): #Check for invalid value -- Including none and empty strings.
+        self.paramsValid = False
+        errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+      else:
+        if not(paramType == expectedParamDict[parameter]):
+          valid = False
+          if not(paramType == STR): #As long as it's not a string, check if float/int were mixed up.
+            if (int(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == INT):
+              valid = True
+            if (float(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == FLOAT):
+              valid = True
+          if not(valid):
+            self.paramsValid=False
+            errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+        if (paramType == STR):
+          try:
+            if (int(userSetParams[parameter])) and (expectedParamDict[parameter] == STR):
+              self.paramsValid=False
+              errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+          except ValueError:
+            pass    
+    return errorMessage
     
   def beginNextStep(self,nextStepText = ""):
     print nextStepText
@@ -110,13 +181,19 @@ class UnitOperation(threading.Thread):
     self.currentStepNumber+=1
     self.setDescription()
   
+  def setDescription(self,newDescription = ""):
+    if newDescription:
+      self.currentStepDescription = self.stepDescription+":"+newDescription
+    else:
+      self.currentStepDescription = self.stepDescription
+  
   def setReactorPosition(self,reactorPosition,ReactorID=255):
     motionTimeout = 10 #How long to wait before erroring out.
     if (ReactorID==255):
       ReactorID = self.ReactorID
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
-        self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
+      self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL)):
       self.setDescription("Moving Reactor%s down." % ReactorID)
       self.systemModel[ReactorID]['Motion'].moveReactorDown()
@@ -265,15 +342,11 @@ class UnitOperation(threading.Thread):
    self.paused = False
    self.pausedLock.release()  
       
-  def setDescription(self,newDescription = ""):
-    if newDescription:
-      self.currentStepDescription = self.stepDescription+":"+newDescription
-      
   def abortOperation(self,error):
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(OFF)
     self.setHeater(OFF)
-    raise Exception(error)
+    raise UnitOpError(error)
     
     
   def getTotalSteps(self):
@@ -366,7 +439,13 @@ class UnitOperation(threading.Thread):
 class React(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.setParams(params)
+    
+    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,REACTPOSITION:STR,STIRSPEED:INT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
     #Should have parameters listed below:
     #self.ReactorID
     #self.reactTemp
@@ -377,7 +456,6 @@ class React(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting React Operation")
-      self.abortOperation()
       self.beginNextStep("Moving to position")
       self.setReactorPosition(self.reactPosition)#REACTA OR REACTB
       self.beginNextStep("Setting reactor Temperature")
@@ -413,9 +491,15 @@ class React(UnitOperation):
 class AddReagent(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.setParams(params)
+    expectedParams = {REACTORID:STR,REAGENTREACTORID:STR,REAGENTPOSITION:INT,REAGENTLOADPOSITION:INT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
 		#Should have parameters listed below: 
     #self.ReactorID
+    #self.ReagentReactorID
     #self.ReagentPosition
     #self.reagentLoadPosition
 
@@ -423,7 +507,9 @@ class AddReagent(UnitOperation):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
       self.beginNextStep("Moving to position")
+      self.setPressureRegulator(1,20)
       self.setReactorPosition(ADDREAGENT)
+      self.setPressureRegulator(1,59)
       self.beginNextStep("Moving vial to addition position")
       self.setReagentTransferValves(ON)# Turn on valves
       self.setGripperPlace()#Move reagent from it's home position to the addition position.
@@ -508,8 +594,12 @@ class AddReagent(UnitOperation):
 class Evaporate(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    UnitOperation.__init__(self,systemModel)
-    self.setParams(params)
+    expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
 		#Should have parameters listed below:
     #self.ReactorID
     #self.evapTemp
@@ -856,15 +946,47 @@ class TempProfile(UnitOperation):
         self.paramsValid = False
         #Log Error
       self.paramsValidated = True
-"""
-    
-    
-   
-    
-def test():
-  react1 = React()
-  react1.run()
+      
+class ParamTest(UnitOperation):
+  def __init__(self,systemModel,params):
+    UnitOperation.__init__(self,systemModel)
 
+
+    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,PARAMTEST:STR}
+    paramError = self.validateParamsTest(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
+    #Should have parameters listed below:
+    #self.ReactorID
+    #self.reactTemp
+    #self.paramTest
+
+    self.paramsValidated = True
+    return errorMessage
+"""
+
+class fakeSystem():
+  def __init__(self):
+    self.model = "winner"
+
+def test():
+  sysModel = fakeSystem()
+  reactParams = {'ReactorID':'Reactor1','reactTemp':30,'reactTime':10,'coolTemp':30,'reactPosition':'React2','stirSpeed':500}
+  react1 = React(sysModel,reactParams)
+  react1.setDaemon(True)
+  #react1.run()
+  addParams = {'ReactorID':'Reactor1','ReagentReactorID':'Reactor1','ReagentPosition':1,'reagentLoadPosition':1}
+  add1 = AddReagent(sysModel,addParams)
+  add1.setDaemon(True)
+  #add1.run()
+  evapParams = {'ReactorID':'Reactor1','evapTemp':30,'evapTime':10,'coolTemp':30,'stirSpeed':500}
+  evap1 = Evaporate(sysModel,evapParams)
+  evap1.setDaemon(True)
+  #evap1.run()
+  #myParams = {'ReactorID':'Reactor1','reactTemp':25,'paramTest':'False'}
+  #pTest = ParamTest(sysModel,myParams)
     
 if __name__=="__main__":
     test()
