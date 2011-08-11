@@ -114,7 +114,7 @@ if __name__ == "__main__":
     pHardwareComm.StartUp()
   
     # Create the system model
-    pSystemModel = SystemModel(pHardwareComm)
+    pSystemModel = SystemModel(pHardwareComm, "../core/")
     pSystemModel.StartUp()
     
     # Create an RPC connection to the state monitoring window

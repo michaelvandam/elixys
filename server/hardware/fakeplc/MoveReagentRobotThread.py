@@ -38,7 +38,7 @@ class MoveReagentRobotThread(threading.Thread):
             self.__pHardwareComm.FakePLC_SetReagentRobotPosition(x, z)
 
         # Set the position to the target
-        self.__pHardwareComm.FakePLC_SetReagentRobotPosition(self.__nStartX, self.__nStartZ)
+        self.__pHardwareComm.FakePLC_SetReagentRobotPosition(self.__nTargetX, self.__nTargetZ)
         
         # Sleep an additional second to allow everything to settle
         time.sleep(1)

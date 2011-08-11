@@ -8,6 +8,7 @@ from SocketThread import SocketThread
 import threading
 import time
 import os.path
+import sys
 
 ### Constants ###
 
@@ -184,6 +185,8 @@ class HardwareComm():
         self.__nPressureRegulatorActualIntercept = float(self.__pHardwareMap["PressureRegulatorActualIntercept"])
         self.__nVacuumGaugeSlope = float(self.__pHardwareMap["VacuumGaugeSlope"])
         self.__nVacuumGaugeIntercept = float(self.__pHardwareMap["VacuumGaugeIntercept"])
+        self.__nRadiationDetectorSlope = float(self.__pHardwareMap["RadiationDetectorSlope"])
+        self.__nRadiationDetectorIntercept = float(self.__pHardwareMap["RadiationDetectorIntercept"])
 
         # Load the motor axes
         self.__nReagentXAxis = int(self.__pRobotPositions["ReagentXAxis"])
@@ -327,6 +330,7 @@ class HardwareComm():
     # Pressure regulator
     def SetPressureRegulator(self, nPressureRegulator, nPressurePSI):
         nPressurePLC = (nPressurePSI * self.__nPressureRegulatorSetSlope) + self.__nPressureRegulatorSetIntercept
+        print "Raw set pressure = " + str(int(nPressurePLC))
         if nPressurePLC < 0:
             nPressurePLC = 0
         self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
@@ -514,6 +518,7 @@ class HardwareComm():
         nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
         self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
+        print "Setting reagent robot position: " + str(nPositionX) + ", " + str(nPositionZ)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
     def FakePLC_EnableReactorRobot(self, nReactor):
@@ -603,8 +608,8 @@ class HardwareComm():
             sCommand = "0102B0"					                    # Write word to CIO memory
             sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
             sCommand = sCommand + "00"                              # Memory offset (bits)
-            sCommand = sCommand + "0001"				            # Number of bits to write
-            sCommand = sCommand + ("%0.4X" % nValue)				# Set bit
+            sCommand = sCommand + "0001"				            # Number of words to write
+            sCommand = sCommand + ("%0.4X" % nValue)				# Set word
             self.__SendRawCommand(sCommand)
         else:
             # We are in fake PLC mode.  Validate the address
@@ -783,7 +788,7 @@ class HardwareComm():
                 self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2"),
                 self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3"), self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1"),
                 self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2"), self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3"))
-            pModel["Reactor1"]["Radiation"].updateState(0)
+            pModel["Reactor1"]["Radiation"].updateState(self.__GetRadiation(1))
             pModel["Reactor2"]["Motion"].updateState(nReactor2RobotSetPosition, nReactor2RobotActualPosition, nReactor2RobotSetPositionRaw, nReactor2RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor2_SetReactorUp"), self.__GetBinaryValue("Reactor2_SetReactorDown"), self.__GetBinaryValue("Reactor2_ReactorUp"),
                 self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotControlWord(2), 
@@ -796,7 +801,7 @@ class HardwareComm():
                 self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2"),
                 self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3"), self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1"),
                 self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2"), self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3"))
-            pModel["Reactor2"]["Radiation"].updateState(0)
+            pModel["Reactor2"]["Radiation"].updateState(self.__GetRadiation(2))
             pModel["Reactor3"]["Motion"].updateState(nReactor3RobotSetPosition, nReactor3RobotActualPosition, nReactor3RobotSetPositionRaw, nReactor3RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor3_SetReactorUp"), self.__GetBinaryValue("Reactor3_SetReactorDown"), self.__GetBinaryValue("Reactor3_ReactorUp"),
                 self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotControlWord(3), 
@@ -809,10 +814,14 @@ class HardwareComm():
                 self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2"),
                 self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3"), self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1"),
                 self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2"), self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3"))
-            pModel["Reactor3"]["Radiation"].updateState(0)
+            pModel["Reactor3"]["Radiation"].updateState(self.__GetRadiation(3))
 
             # This chunk of code can be used to log the temperature of a specific thermocouple
             if True:
+                if sys.platform == "win32":
+                   sLogFile = "temp_profile.txt"
+                else:
+                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
                 nMeasureReactor = 1
                 nLiquidReactor = 3
                 nLiquidThermocouple = 1
@@ -820,12 +829,12 @@ class HardwareComm():
                     self.__startTime
                 except Exception, e:
                     self.__startTime = time.time()
-                    f = open("/home/Elixys/Desktop/temp_profile.txt","w")
+                    f = open(sLogFile, "w")
                     f.write("Time,Heater1Set,Heater2Set,Heater3Set,Heater1Actual,Heater2Actual,Heater3Actual,Liquid\n")
                     f.flush()
                     f.close()
                 currentTime = time.time()
-                f = open("/home/Elixys/Desktop/temp_profile.txt","a")
+                f = open(sLogFile, "a")
                 f.write("%.1f"%(currentTime - self.__startTime) + "," + \
                     str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController1")) + "," + \
                     str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController2")) + "," + \
@@ -907,9 +916,9 @@ class HardwareComm():
         return int(sWord, 0x10)
 
     # Get thermocontroller values
-    def __GetHeaterOn(self, sReactor, sHeater):
+    def __GetHeaterOn(self, nReactor, sHeater):
         # Read the stop bit
-        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(sReactor, sHeater)
+        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, sHeater)
         return (self.__GetBinaryValueRaw(nWordOffset, nBitOffset) == False)
     def __GetThermocontrollerSetValue(self, sHardwareName):
         # Look up the temperature set offset and return the value
@@ -934,6 +943,11 @@ class HardwareComm():
     def __GetPressureRegulatorActualPressure(self, nPressureRegulator):
         nPressurePLC = float(self.__GetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure"))
         return ((nPressurePLC * self.__nPressureRegulatorActualSlope) + self.__nPressureRegulatorActualIntercept)
+
+    # Get radiation reading
+    def __GetRadiation(self, nReactor):
+        nRadiationPLC = float(self.__GetAnalogValue("Reactor" + str(nReactor) + "_RadiationDetector"))
+        return ((nRadiationPLC - self.__nRadiationDetectorIntercept) / self.__nRadiationDetectorSlope)
 
     # Get reagent robot positions
     def __GetReagentRobotSetX(self):

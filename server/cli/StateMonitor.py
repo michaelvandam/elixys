@@ -9,22 +9,24 @@ from rpyc.utils.server import ThreadedServer
 import Utilities
 import StateMonitorThread
 from datetime import datetime
+import sys
 
 # The console package we import depends on the OS
-gOS = None
 gConsole = None
-try:
-    import WConio
-    gOS = "Windows"
-except ImportError:
-    pass
-try:
-    import curses
-    gOS = "Linux"
-except ImportError:
-    pass
-if gOS == None:
-    raise Exception("You must install WConio on Windows or curses on Linux")
+if sys.platform == "win32":
+    try:
+        import WConio
+        gOS = "Windows"
+    except ImportError:
+        raise Exception("You must install WConio on Windows")
+elif sys.platform == "linux2":
+    try:
+        import curses
+        gOS = "Linux"
+    except ImportError:
+        raise Exception("You must install curses on Linux")
+else:
+    raise Exception("Unrecognized platform")
 
 def ClearScreen():
     # Clears the screen and moves the cursor to the upper left corner

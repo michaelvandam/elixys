@@ -4,8 +4,10 @@ Elixys System Model
 """
 
 # Imports
+from configobj import ConfigObj
 import time
 import threading
+import os.path
 import sys
 sys.path.append("../hardware/")
 from HardwareComm import HardwareComm
@@ -29,10 +31,10 @@ STATEREACTORCOLUMN1WIDTH = 35
 STATEREACTORCOLUMN2WIDTH = 13
 
 class SystemModel:
-  def __init__(self, hardwareComm):
+  def __init__(self, pHardwareComm, sSystemModelDirectory):
     """SystemModel constructor"""
     # Remember the hardware layer
-    self.hardwareComm = hardwareComm
+    self.hardwareComm = pHardwareComm
     
     # Pass a pointer to the system model so the hardware layer can update our state
     self.hardwareComm.SetSystemModel(self)
@@ -41,41 +43,35 @@ class SystemModel:
     self.model = {}
     self.modelLock = threading.Lock()
 
-    # Load the system component from the INI file
-    self.SystemComponents = {
-      "CoolingSystem":True,
-      "VacuumSystem":True,
-      "ExternalSystems":True,
-      "PressureRegulators":2,
-      "ReagentDelivery":True,
-      "Reactors":[
-        {"Reactor":1, "Stopcocks":3},
-        {"Reactor":2, "Stopcocks":1},
-        {"Reactor":3, "Stopcocks":1}]}
-      
+    # Load the system model from the INI file
+    sSystemModel = sSystemModelDirectory + "SystemModel.ini"
+    if not os.path.exists(sSystemModel):
+        print "Invalid path to INI files"
+        return
+    self.SystemComponents = ConfigObj(sSystemModel)
+    
     # Build the system model
     for key,value in self.SystemComponents.items():
       if key == "CoolingSystem":
-        if value == True:
+        if value == "True":
           self.model[key] = CoolingSystemModel(key, self.hardwareComm, self.modelLock)
       elif key == "VacuumSystem":
-        if value == True:
+        if value == "True":
           self.model[key] = VacuumSystemModel(key, self.hardwareComm, self.modelLock)
       elif key == "ExternalSystems":
-        if value == True:
+        if value == "True":
           self.model[key] = ExternalSystemsModel(key, self.hardwareComm, self.modelLock)
       elif key == "PressureRegulators":
-        for nPressureRegulator in range(1, value + 1):
+        for nPressureRegulator in range(1, int(value) + 1):
           sPressureRegulator = "PressureRegulator" + str(nPressureRegulator)
           self.model[sPressureRegulator] = PressureRegulatorModel(sPressureRegulator, nPressureRegulator, self.hardwareComm, self.modelLock)
       elif key == "ReagentDelivery":
-        if value == True:
+        if value == "True":
           self.model[key] = ReagentDeliveryModel(key, self.hardwareComm, self.modelLock)
-      elif key == 'Reactors':
-        for item in value:
-          nReactor = item["Reactor"]
-          sReactor = "Reactor" + str(nReactor)
-          nStopcocks = item["Stopcocks"]
+      elif key[:7] == 'Reactor':
+          sReactor = key
+          nReactor = int(key[7:])
+          nStopcocks = int(value["Stopcocks"])
           self.model[sReactor] = {}
           self.model[sReactor]["Motion"] = MotionModel(sReactor, nReactor, self.hardwareComm, self.modelLock)
           self.model[sReactor]["Valves"] = ValveModel(sReactor, nReactor, self.hardwareComm, self.modelLock)

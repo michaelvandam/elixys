@@ -40,7 +40,10 @@ class SocketThread(threading.Thread):
         # Loop until the terminate event is set
         while not self.__pTerminateEvent.is_set():
             # Call select() to wait until the socket is ready
-            pReadySockets = select.select(pSockets, pSockets, [], 0.1)
+            if self.__pOutgoingPackets.empty():
+                pReadySockets = select.select(pSockets, [], [], 0.05)
+            else:
+                pReadySockets = select.select(pSockets, pSockets, [], 0.05)
             if len(pReadySockets[0]) > 0:
                 # The socket has data available to be read.  Pass the data to the HardwareComm for processing
                 pBinaryResponse = pSocket.recv(10240)

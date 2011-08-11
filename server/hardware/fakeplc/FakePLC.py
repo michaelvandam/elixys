@@ -59,7 +59,7 @@ class FakePLC():
         self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, self.__nMemoryLower, self.__nMemoryUpper)
         
         # Create the system model
-        self.__pSystemModel = SystemModel(self.__pHardwareComm)
+        self.__pSystemModel = SystemModel(self.__pHardwareComm, "../../core/")
         self.__pSystemModel.StartUp()
 
         # Create the socket
