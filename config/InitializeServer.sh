@@ -42,7 +42,8 @@ yum -y install mysql mysql-server apr-util-mysql
 mysql -e "CREATE DATABASE Elixys;"
 mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
-mysql Elixys < elixys/config/CreateDatabase.sql
+mysql Elixys < elixys/config/DatabaseTables.sql
+mysql Elixys < elixys/config/DatabaseProcedures.sql
 mkdir /opt/elixys
 cp -R elixys/server/database /opt/elixys
 
