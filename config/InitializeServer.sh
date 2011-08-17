@@ -27,13 +27,8 @@ fi
 # Start in the root directory
 cd /root
 
-# Install git from the EPEL repository
-wget -4 http://download.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-5.noarch.rpm
-rpm -Uhv epel-release-6-5.noarch.rpm
-rm -f epel-release-6-5.noarch.rpm
+# Install git and do a pull
 yum -y install git
-
-# Get the current git repository
 git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
 # Install and configure MySQL
@@ -70,7 +65,7 @@ cd ..
 rm -rf RPyC-3.1.0*
 
 # Install setuptools for Python
-wget http://peak.telecommunity.com/dist/ez_setup.py
+wget -4 http://peak.telecommunity.com/dist/ez_setup.py
 python ez_setup.py
 rm -f ez_setup.py
 
@@ -102,8 +97,8 @@ chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
 # Allow Apache to save the server state to files in the WSGI directory.  This is temporary and will go away once we get the
 # WSGI interface integrated with MySQL
-chmod 777 /var/www/wsgi
-chown apache:apache /var/www/wsgi
+#chmod 777 /var/www/wsgi
+#chown apache:apache /var/www/wsgi
 
 # Update the firewall settings
 mv -f elixys/config/iptables /etc/sysconfig/
@@ -111,15 +106,15 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
 # Install FFmpeg
-wget -4 http://packages.sw.be/rpmforge-release/rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
-rpm -Uhv rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
-rm -f rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
-yum -y install ffmpeg
-cp elixys/config/ffserver.conf /etc
+#wget -4 http://packages.sw.be/rpmforge-release/rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+#rpm -Uhv rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+#rm -f rpmforge-release-0.5.2-2.el6.rf.x86_64.rpm
+#yum -y install ffmpeg
+#cp elixys/config/ffserver.conf /etc
 
 # Install openRTSP
-cp -R elixys/bin/openRTSP /opt/elixys
-chmod +x /opt/elixys/openRTSP/openRTSP
+#cp -R elixys/bin/openRTSP /opt/elixys
+#chmod +x /opt/elixys/openRTSP/openRTSP
 
 # Put shortcuts on the user's desktop
 mkdir /opt/elixys/config
