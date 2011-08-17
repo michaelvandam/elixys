@@ -822,7 +822,7 @@ class HardwareComm():
                    sLogFile = "temp_profile.txt"
                 else:
                    sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
-                nMeasureReactor = 1
+                nMeasureReactor = 2
                 nLiquidReactor = 3
                 nLiquidThermocouple = 1
                 try:
