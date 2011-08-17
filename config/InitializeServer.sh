@@ -40,8 +40,10 @@ git clone --depth 1 http://github.com/michaelvandam/elixys.git
 yum -y install mysql mysql-server apr-util-mysql
 /sbin/service mysqld start
 mysql -e "CREATE DATABASE Elixys;"
-mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'devel';"
+mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'Apache';"
 mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
+mysql -e "GRANT USAGE ON *.* TO Elixys@localhost IDENTIFIED BY 'Elixys';"
+mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Elixys@localhost;"
 mysql Elixys < elixys/config/DatabaseTables.sql
 mysql Elixys < elixys/config/DatabaseProcedures.sql
 mkdir /opt/elixys
@@ -50,7 +52,7 @@ cp -R elixys/server/database /opt/elixys
 # Install mod_wsgi
 yum -y install mod_wsgi
 
-# Install configobj
+# Install configobj for Python
 wget -4 http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
 mkdir configobj
 unzip -d configobj configobj-4.7.2.zip
@@ -59,13 +61,28 @@ python setup.py install
 cd ../..
 rm -rf configobj*
 
-# Install rpyc
+# Install RPyC for Python
 wget -4 http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
 unzip RPyC-3.1.0.zip
 cd RPyC-3.1.0
 python setup.py install
 cd ..
 rm -rf RPyC-3.1.0*
+
+# Install setuptools for Python
+wget http://peak.telecommunity.com/dist/ez_setup.py
+python ez_setup.py
+rm -f ez_setup.py
+
+# Install MySQL for Python
+yum -y install python-devel mysql-devel
+wget -4 http://sourceforge.net/projects/mysql-python/files/mysql-python/1.2.3/MySQL-python-1.2.3.tar.gz/download
+tar -xf MySQL-python-1.2.3.tar.gz
+cd MySQL-python-1.2.3
+python setup.py build
+python setup.py install
+cd ..
+rm -rf MySQL-python-1.2.3*
 
 # Set Apache and MySQL to start at boot - Use upstart
 #echo "/usr/sbin/apachectl start" >> /etc/rc.local
