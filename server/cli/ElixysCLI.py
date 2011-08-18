@@ -334,6 +334,8 @@ if __name__ == "__main__":
         elif sCommand.startswith("OpenScript"):
             # Open the script
             pScriptSteps = OpenScript(sCommand)
+            bRunningScript = True
+            nScriptStep = 0
         elif sCommand.startswith("CloseScript"):
             # Close the script
             pScriptSteps = []
