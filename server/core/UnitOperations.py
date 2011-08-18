@@ -507,9 +507,8 @@ class AddReagent(UnitOperation):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
       self.beginNextStep("Moving to position")
-      self.setPressureRegulator(1,20)
+      self.setPressureRegulator(2,5)
       self.setReactorPosition(ADDREAGENT)
-      self.setPressureRegulator(1,59)
       self.beginNextStep("Moving vial to addition position")
       self.setReagentTransferValves(ON)# Turn on valves
       self.setGripperPlace()#Move reagent from it's home position to the addition position.

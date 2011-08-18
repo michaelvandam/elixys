@@ -107,6 +107,25 @@ def SendCommand(sCommand, pHardwareComm):
     pCommandComponents = sCommand.split(" ")
     pHardwareComm._HardwareComm__SendRawCommand(pCommandComponents[1])
 
+# Opens the script
+def OpenScript(sCommand):
+    # Strip off the trailing parenthesis from the command and split into the function name and script parameter
+    pCommandComponents = sCommand.strip(")").split("(")
+    sFunctionName = pCommandComponents[0]
+    sScriptName = pCommandComponents[1]
+    
+    # Open and parse the file
+    pScriptFile = open(sScriptName)
+    return pScriptFile.readlines()
+
+# Clean the input command
+def CleanCommand(sCommand):
+    nComment = sCommand.find("//")
+    if nComment != -1:
+        sCommand = sCommand[:nComment]
+        sCommand = sCommand.strip()
+    return sCommand
+
 # Main CLI function
 if __name__ == "__main__":
     # Create the hardware layer
@@ -130,9 +149,46 @@ if __name__ == "__main__":
     # CLI loop
     print "Elixys Command Line Interface"
     print "Type help for available commands."
+    pScriptSteps = []
+    bRunningScript = False
+    nScriptStep = 0
     while True:
+        # Prepare script prompt
+        pScriptCommands = []
+        if bRunningScript:
+            # Check for end of script
+            if nScriptStep >= len(pScriptSteps):
+                bRunningScript = False
+                print "Script complete"
+                sPrompt = ">>> "
+            else:
+                # Get the next script commands
+                nCommandCount = 0
+                while bRunningScript:
+                    # Stop if we are out of commands
+                    if (nScriptStep + nCommandCount) == len(pScriptSteps):
+                        break
+                    
+                    # Get the next command and append it to our array
+                    sNextCommand = pScriptSteps[nScriptStep + nCommandCount].strip("\r\n")
+                    pScriptCommands.append(sNextCommand)
+                
+                    # Clean off any comments and whitespace
+                    sNextCommand = CleanCommand(sNextCommand)
+                    if sNextCommand != "":
+                        break
+                    nCommandCount += 1
+                sPrompt = "Next step:" + "\n"
+                for sCommand in pScriptCommands:
+                    if sCommand != "":
+                        sPrompt += "  " + sCommand + "\n"
+                sPrompt += ">>> "
+        else:
+            # We're not running a script
+            sPrompt = ">>> "
+
         # Get input and strip newlines
-        sCommand = raw_input(">>> ").strip("\r\n")
+        sCommand = raw_input(sPrompt).strip("\r\n")
 
         # Handle commands
         if sCommand == "exit":
@@ -141,6 +197,7 @@ if __name__ == "__main__":
             print "Recognized commands:"
             print "  help unit operations   Lists available unit operation functions"
             print "  help hardware          Lists available hardware functions"
+            print "  help script            List available script functions"
             print "  help send              Display a brief description of the PLC command format" 
             print "  get state              Displays the current state of the system"
             print "  send [command]         Send the raw command to the PLC"
@@ -246,6 +303,12 @@ if __name__ == "__main__":
             print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
             print "All values are numbers except sPositionName which is one of the following:"
             print "      Install, Transfer, React1, Add, React2, Evaporate, Radiation"
+        elif sCommand == "help script":
+            # List the available script functions
+            print "Recognized script functions:"
+            print "  OpenScript(sFilename)"
+            print "  CloseScript()"
+            print "  RestartScript()"
         elif sCommand == "help send":
             # Display a brief description of the PLC command format
             print "Command format:"
@@ -268,12 +331,37 @@ if __name__ == "__main__":
 
             # Sleep a bit to give the PLC a chance to response before we display the input prompt
             time.sleep(0.25)
+        elif sCommand.startswith("OpenScript"):
+            # Open the script
+            pScriptSteps = OpenScript(sCommand)
+        elif sCommand.startswith("CloseScript"):
+            # Close the script
+            pScriptSteps = []
+            bRunningScript = False
+            nScriptStep = 0
+        elif sCommand.startswith("RestartScript"):
+            # Restart the script
+            bRunningScript = True
+            nScriptStep = 0
         else:
-            # Attempt to execute the command
-            ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
+            # Are we running a script and executing the next command?
+            if bRunningScript and (sCommand == ""):
+                # Yes, so execute each valid command
+                print "Executing step: "
+                for sNextCommand in pScriptCommands:
+                    sNextCommand = CleanCommand(sNextCommand)
+                    if sNextCommand != "":
+                        print "  " + sNextCommand
+                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
 
-            # Sleep a bit to give the PLC a chance to response before we display the input prompt
-            time.sleep(0.25)
+                # Update our step number
+                nScriptStep += len(pScriptCommands)
+            else:
+                # No, so attempt to execute the command
+                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
+
+                # Sleep a bit to give the PLC a chance to response before we display the input prompt
+                time.sleep(0.1)
 
     # Clean up
     pSystemModel.ShutDown()
