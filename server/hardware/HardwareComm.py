@@ -333,6 +333,8 @@ class HardwareComm():
         print "Raw set pressure = " + str(int(nPressurePLC))
         if nPressurePLC < 0:
             nPressurePLC = 0
+        if nPressurePLC > 4200:
+            nPressurePLC = 4200
         self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
 
     # Reagent robot
@@ -407,13 +409,13 @@ class HardwareComm():
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Reagent" + str(nPosition) + "TransferValve", False)
     def ReactorStopcockPosition(self, nReactor, nStopcock, nPosition):
         if nPosition == 1:
-            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition1", False)
-            time.sleep(0.1)
-            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition2", True)
-        elif nPosition == 2:
             self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition2", False)
             time.sleep(0.1)
             self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition1", True)
+        elif nPosition == 2:
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition1", False)
+            time.sleep(0.1)
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition2", True)
         else:
             raise Exception("Invalid stopcock position")
 
