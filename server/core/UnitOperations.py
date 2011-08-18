@@ -280,7 +280,7 @@ class UnitOperation(threading.Thread):
     print "%s Timer set to: %s" % (self.formatTime(time.time()-self.time),self.formatTime(timerLength))
     timerStartTime = time.time()  #Create a time
     while not(self.isTimerExpired(timerStartTime,timerLength)):
-      #self.setDescription("Time remaining:%s" % self.formatTime(timerLength-(time.time()-timerStartTime)))
+      self.setDescription("Time remaining:%s" % self.formatTime(timerLength-(time.time()-timerStartTime)))
       self.stateCheckInterval(50) #Sleep 50ms between checks
     print "%s Timer finished." % (self.formatTime(time.time()-self.time))
     
