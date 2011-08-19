@@ -330,7 +330,6 @@ class HardwareComm():
     # Pressure regulator
     def SetPressureRegulator(self, nPressureRegulator, nPressurePSI):
         nPressurePLC = (nPressurePSI * self.__nPressureRegulatorSetSlope) + self.__nPressureRegulatorSetIntercept
-        print "Raw set pressure = " + str(int(nPressurePLC))
         if nPressurePLC < 0:
             nPressurePLC = 0
         if nPressurePLC > 4200:
