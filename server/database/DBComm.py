@@ -66,14 +66,59 @@ class DBComm:
     self.__LogDBAccess(sCurrentUsername, "CreateUser(%s, %s, %s, %s, %s)" % (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName))
     return self.__callStoredProcedure("CreateUser", (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName), True)
 
+  def UpdateUser(self, sCurrentUsername, sUsername, sFirstName, sLastName, sRoleName):
+    """Updates an existing user"""
+    self.__LogDBAccess(sCurrentUsername, "UpdateUser(%s, %s, %s, %s)" % (sUsername, sFirstName, sLastName, sRoleName))
+    return self.__callStoredProcedure("UpdateUser", (sUsername, sFirstName, sLastName, sRoleName), True)
+
+  def UpdateUserPassword(self, sCurrentUsername, sUsername, sPasswordHash):
+    """Updates an existing user's password"""
+    self.__LogDBAccess(sCurrentUsername, "UpdateUserPassword(%s, %s)" % (sUsername, sPasswordHash))
+    return self.__callStoredProcedure("UpdateUserPassword", (sUsername, sPasswordHash), True)
+
+  def DeleteUser(self, sCurrentUsername, sUsername):
+    """Deletes an existing user"""
+    self.__LogDBAccess(sCurrentUsername, "DeleteUser(%s, %s, %s, %s)" % (sUsername, DeleteUser))
+    return self.__callStoredProcedure("DeleteUser", (sUsername, ), True)
+
+  def GetUserClientState(self, sCurrentUsername, sUsername):
+    """Returns the client state of a user"""
+    self.__LogDBAccess(sCurrentUsername, "GetUserClientState(%s)" % (Username, ))
+    return self.__callStoredProcedure("GetUserClientState", (sUsername, ))
+
+  def UpdateUserClientState(self, sCurrentUsername, sUsername, sClientState):
+    """Updates the client state of a user"""
+    self.__LogDBAccess(sCurrentUsername, "UpdateUserClientState(%s, %s)" % (sUsername, sClientState))
+    return self.__callStoredProcedure("UpdateUserClientState", (sUsername, sClientState), True)
+
   ### Sequence functions ###
 
-  def CreateSequence(self, sCurrentUsername, sName, sComment, nCassettes, nReagents, nColumns):
+  def GetAllSequences(self, sCurrentUsername, sType):
+    """Return all sequences"""
+    self.__LogDBAccess(sCurrentUsername, "GetAllSequences(%s)" % (sType, ))
+    return self.__callStoredProcedure("GetAllSequences", (sType, ))
+
+  def GetSequence(self, sCurrentUsername, nSequenceID):
+    """Gets a sequence"""
+    self.__LogDBAccess(sCurrentUsername, "GetSequence(%i)" % (nSequenceID, ))
+    return self.__callStoredProcedure("GetSequence", (nSequenceID, ))
+
+  def CreateSequence(self, sCurrentUsername, sName, sComment, sType, nCassettes, nReagents, nColumns):
     """Creates a new sequence"""
-    self.__LogDBAccess(sCurrentUsername, "CreateSequence(%s, %s, %i, %i, %i)" % (sName, sComment, nCassettes, nReagents, nColumns))
+    self.__LogDBAccess(sCurrentUsername, "CreateSequence(%s, %s, %s, %i, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents, nColumns))
     nSequenceID = 0
-    self.__callStoredProcedure("CreateSequence", (sName, sComment, sCurrentUsername, nCassettes, nReagents, nColumns, nSequenceID), True)
+    self.__callStoredProcedure("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns, nSequenceID), True)
     return self.__executeQuery("SELECT @_CreateSequence_6")[0][0]
+
+  def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment):
+    """Update a sequence"""
+    self.__LogDBAccess(sCurrentUsername, "UpdateSequence(%i, %s, %s)" % (nSequenceID, sName, sComment))
+    return self.__callStoredProcedure("UpdateSequence", (nSequenceID, sName, sComment), True)
+
+  def DeleteSequence(self, sCurrentUsername, nSequenceID):
+    """Delete a sequence"""
+    self.__LogDBAccess(sCurrentUsername, "DeleteSequence(%i)" % (nSequenceID, ))
+    return self.__callStoredProcedure("DeleteSequence", (nSequenceID, ), True)
 
   ### Reagent functions ###
 
@@ -109,12 +154,17 @@ class DBComm:
 
   ### Component functions ###
 
-  def AddComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
-    """Adds a component to the end of a sequence"""
-    self.__LogDBAccess(sCurrentUsername, "AddComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
+  def GetComponent(self, sCurrentUsername, nComponentID):
+    """Gets the specified component"""
+    self.__LogDBAccess(sCurrentUsername, "GetComponent(%i)" % (nComponentID, ))
+    return self.__callStoredProcedure("GetComponent", (nComponentID, ))
+
+  def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
+    """Creates a new component and inserts it at the end of a sequence"""
+    self.__LogDBAccess(sCurrentUsername, "CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
     nComponentID = 0
-    self.__callStoredProcedure("AddComponent", (nSequenceID, sType, sName, sContent, nComponentID), True)
-    return self.__executeQuery("SELECT @_AddComponent_4")[0][0]
+    self.__callStoredProcedure("CreateComponent", (nSequenceID, sType, sName, sContent, nComponentID), True)
+    return self.__executeQuery("SELECT @_CreateComponent_4")[0][0]
 
   def InsertComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent, nInsertID):
     """Inserts a component into a sequence"""

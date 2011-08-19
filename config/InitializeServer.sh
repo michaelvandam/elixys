@@ -120,6 +120,8 @@ chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 mkdir /opt/elixys/config
 cp elixys/config/UpdateServer.sh /opt/elixys/config
 chmod 755 /opt/elixys/config/UpdateServer.sh
+cp elixys/config/LoadDemoData.py /opt/elixys/config
+cp elixys/config/FACSynthesis.seq /opt/elixys/config
 cp elixys/config/shortcuts/* /home/$USER/Desktop
 chmod 755 /home/$USER/Desktop/ElixysCLI.sh
 chmod 755 /home/$USER/Desktop/StateMonitor.sh

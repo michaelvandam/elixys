@@ -148,7 +148,8 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
         SELECT * FROM tmp_User WHERE Username = iUsername;
     END //
 
-/* Create a new user:
+/* Creates a new user:
+ *   
  *   IN Username - Username
  *   IN Password - Hash of the user's password
  *   IN FirstName - User's first name
@@ -166,14 +167,95 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
         -- Create the user
         INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, "");
     END //
+
+/* Updates an existing user:
+ *   IN Username - Username of the user to update
+ *   IN FirstName - User's first name
+ *   IN LastName - User's last name
+ *   IN RoleName - User's role
+ */
+DROP PROCEDURE IF EXISTS UpdateUser;
+CREATE PROCEDURE UpdateUser(IN iUsername VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), IN iRoleName VARCHAR(20))
+    BEGIN
+        DECLARE lRoleID INT UNSIGNED;
+
+        -- Look up the role ID
+        CALL Internal_GetRoleID(iRoleName, lRoleID);
+
+        -- Update the user
+        UPDATE Users SET FirstName = iFirstName, LastName = iLastName, RoleID = lRoleID WHERE Username = iUsername;
+    END //
  
+/* Updates a user's password:
+ *   IN Username - Username of the user to update
+ *   IN Password - Hash of the user's password
+ */
+DROP PROCEDURE IF EXISTS UpdateUserPassword;
+CREATE PROCEDURE UpdateUserPassword(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30))
+    BEGIN
+        -- Update the user
+        UPDATE Users SET Password = iPassword WHERE Username = iUsername;
+    END //
+
+/* Deletes a user:
+ *   IN Username - Username of the user to delete
+ */
+DROP PROCEDURE IF EXISTS DeleteUser;
+CREATE PROCEDURE DeleteUser(IN iUsername VARCHAR(30))
+    BEGIN
+        -- Delete the user
+        DELETE FROM Users WHERE Username = iUsername;
+    END //
+
+/* Returns the client state of a user:
+ *   IN Username - Username
+ */
+DROP PROCEDURE IF EXISTS GetUserClientState;
+CREATE PROCEDURE GetUserClientState(IN iUsername VARCHAR(30))
+    BEGIN
+        -- Return the user's client state
+        SELECT ClientState FROM Users WHERE Username = iUsername;
+    END //
+
+/* Updates the client state of a user:
+ *   IN Username - Username
+ *   IN ClientState - String describing the state of the client
+ */
+DROP PROCEDURE IF EXISTS UpdateUserClientState;
+CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState VARCHAR(64))
+    BEGIN
+        -- Save the user's client state
+        UPDATE Users SET ClientState = iClientState WHERE Username = iUsername;
+    END //
+
 /****************************************************************************************************************************************************************
  ** Sequences ***************************************************************************************************************************************************
  ***************************************************************************************************************************************************************/
 
+/* Get a list of sequences:
+ *   IN Type - Type of sequence to return (either "Saved" or "Manual")
+ */
+DROP PROCEDURE IF EXISTS GetAllSequences;
+CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
+    BEGIN
+        -- Fetch the sequences
+        SELECT * FROM Sequences WHERE Type = iType;
+    END //
+
+/* Get a sequence:
+ *   IN SequenceID - ID of the sequence to get
+ */
+DROP PROCEDURE IF EXISTS GetSequence;
+CREATE PROCEDURE GetSequence(IN iSequenceID INT UNSIGNED)
+    BEGIN
+        -- Fetch the sequence
+        SELECT * FROM Sequences WHERE SequenceID = iSequenceID;
+    END //
+
 /* Create a new sequence:
  *   IN Name - Name of the new sequence
  *   IN Comment - Comment associated with the new sequence
+ *   IN Type - Type of the sequence (either "Saved" or "Manual")
  *   IN Username - Username of the user creating the new sequence
  *   IN Cassettes - Number of cassettes in the new sequence
  *   IN Reagents - Number of reagents per cassette
@@ -181,8 +263,8 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
  *   OUT SequenceID - ID of the new sequence
  */
 DROP PROCEDURE IF EXISTS CreateSequence;
-CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), IN iUsername VARCHAR(30), IN iCassettes INT UNSIGNED, IN iReagents INT UNSIGNED, 
-                                IN iColumns INT UNSIGNED, OUT oSequenceID INT UNSIGNED)
+CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), IN iType VARCHAR(20), IN iUsername VARCHAR(30), IN iCassettes INT UNSIGNED,
+                                IN iReagents INT UNSIGNED, IN iColumns INT UNSIGNED, OUT oSequenceID INT UNSIGNED)
     BEGIN
         DECLARE lUserID INT UNSIGNED;
         DECLARE lSequenceID INT UNSIGNED;
@@ -198,7 +280,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
 
         -- Create the entry in the sequences table
-        INSERT INTO Sequences VALUES (NULL, iName, iComment, NULL, lUserID, 0);
+        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0);
         SET lSequenceID = LAST_INSERT_ID();
 
         -- Create each cassette
@@ -210,10 +292,10 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             -- Update references to the new cassette
             IF lCassette = 0 THEN
                 -- This is the first cassette.  Update the sequences table
-                UPDATE Sequences SET FirstComponentID = lCurrentCassetteID where SequenceID = lSequenceID;
+                UPDATE Sequences SET FirstComponentID = lCurrentCassetteID WHERE SequenceID = lSequenceID;
             ELSE
                 -- This is a subsequenct cassette.  Update the previous cassette
-                UPDATE Components SET NextComponentID = lCurrentCassetteID where ComponentID = lPreviousCassetteID;
+                UPDATE Components SET NextComponentID = lCurrentCassetteID WHERE ComponentID = lPreviousCassetteID;
             END IF;
 
             -- Start the cassette JSON string
@@ -264,6 +346,28 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
 
         -- Return the sequence ID
         SET oSequenceID = lSequenceID;
+    END //
+
+/* Updates an existing sequence:
+ *   IN SequenceID - ID of the sequence to update
+ *   IN Name - Name of the sequence
+ *   IN Comment - Comment associated with the new sequence
+ */
+DROP PROCEDURE IF EXISTS UpdateSequence;
+CREATE PROCEDURE UpdateSequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64), IN iComment VARCHAR(255))
+    BEGIN
+        -- Update the sequence
+        UPDATE Sequences SET Name = iName, Comment = iComment WHERE SequenceID = iSequenceID;
+    END //
+
+/* Deletes a sequence:
+ *   IN SequenceID - ID of the sequence to delete
+ */
+DROP PROCEDURE IF EXISTS DeleteSequence;
+CREATE PROCEDURE DeleteSequence(IN iSequenceID INT UNSIGNED)
+    BEGIN
+        -- Delete the sequence
+        DELETE FROM Sequences WHERE SequenceID = iSequenceID;
     END //
 
 /****************************************************************************************************************************************************************
@@ -354,15 +458,25 @@ CREATE PROCEDURE CreateReservedReagent(IN iName VARCHAR(64), IN iDescription VAR
  ** Components **************************************************************************************************************************************************
  ***************************************************************************************************************************************************************/
 
-/* Adds a component to the end of a sequence:
+/* Gets a component:
+ *   IN ComponentID - ID of the component
+ */
+DROP PROCEDURE IF EXISTS GetComponent;
+CREATE PROCEDURE GetComponent(IN iComponentID INT UNSIGNED)
+    BEGIN
+        -- Return the component
+        SELECT * FROM Components WHERE ComponentID = iComponentID;
+    END //
+
+/* Creates a new component and inserts it at the end of a sequence:
  *   IN SequenceID - ID of the sequence
  *   IN Type - Type of the component
  *   IN Name - Name of the component
  *   IN Details - Component details
  *   OUT ComponentID - ID of the new component
  */
-DROP PROCEDURE IF EXISTS AddComponent;
-CREATE PROCEDURE AddComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(20), IN iDetails VARCHAR(2048), OUT oComponentID INT UNSIGNED)
+DROP PROCEDURE IF EXISTS CreateComponent;
+CREATE PROCEDURE CreateComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(20), IN iDetails VARCHAR(2048), OUT oComponentID INT UNSIGNED)
     BEGIN
         DECLARE lLastComponentID INT UNSIGNED;
 
@@ -373,7 +487,7 @@ CREATE PROCEDURE AddComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20),
         CALL InsertComponent(iSequenceID, iType, iName, iDetails, lLastComponentID, oComponentID);
     END //
 
-/* Inserts a component into a sequence:
+/* Creates a new component and inserts it at the desired location in a sequence:
  *   IN SequenceID - ID of the sequence
  *   IN Type - Type of the component
  *   IN Name - Name of the component
@@ -393,6 +507,19 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
 
         -- Update the insert component's reference
         UPDATE Components SET NextComponentID = oComponentID WHERE ComponentID = iInsertID;
+    END //
+
+/* Updates an existing component:
+ *   IN ComponentID - ID of the component to update
+ *   IN Type - Type of the component
+ *   IN Name - Name of the component
+ *   IN Details - Component details
+ */
+DROP PROCEDURE IF EXISTS UpdateComponent;
+CREATE PROCEDURE UpdateComponent(IN iComponentID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(20), IN iDetails VARCHAR(2048))
+    BEGIN
+        -- Update the component
+        UPDATE Components SET Type = iType, Name = iName, Details = iDetails WHERE ComponentID = iComponentID;
     END //
 
 /****************************************************************************************************************************************************************
