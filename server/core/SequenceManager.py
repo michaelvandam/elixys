@@ -83,7 +83,6 @@ class SequenceManager:
     # Add the reagents
     for pReagent in pSequence["reagents"]:
       if (pReagent["type"] == "reagent") and (pReagent["cassette"] != 0) and (pReagent["position"] != "") and (pReagent["name"] != ""):
-        print "Adding reagent"
         self.database.UpdateReagentByPosition("System", nSequenceID, pReagent["cassette"], pReagent["position"], True, pReagent["name"],
           pReagent["description"])
       else:

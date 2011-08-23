@@ -5,9 +5,11 @@ from wsgiref.simple_server import make_server
 import json
 from wsgiref.headers import Headers
 import sys
+sys.path.append("/opt/elixys/core")
+#sys.path.append("/opt/elixys/database")
+#from DBComm import DBComm
 
 # Import and create the core Elixys server
-sys.path.append('/var/www/wsgi/web')
 from DummyElixys import Elixys 
 gElixys = Elixys()
 

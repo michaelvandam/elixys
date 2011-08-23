@@ -108,7 +108,7 @@ class DBComm:
     self.__LogDBAccess(sCurrentUsername, "CreateSequence(%s, %s, %s, %i, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents, nColumns))
     nSequenceID = 0
     self.__callStoredProcedure("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns, nSequenceID), True)
-    return self.__executeQuery("SELECT @_CreateSequence_6")[0][0]
+    return self.__executeQuery("SELECT @_CreateSequence_7")[0][0]
 
   def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment):
     """Update a sequence"""
@@ -159,6 +159,11 @@ class DBComm:
     self.__LogDBAccess(sCurrentUsername, "GetComponent(%i)" % (nComponentID, ))
     return self.__callStoredProcedure("GetComponent", (nComponentID, ))
 
+  def GetSequenceComponents(self, sCurrentUsername, nSequenceID):
+    """Gets all components associated with a sequence"""
+    self.__LogDBAccess(sCurrentUsername, "GetSequenceComponents(%i)" % (nSequenceID, ))
+    return self.__callStoredProcedure("GetSequenceComponents", (nSequenceID, ))
+
   def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
     self.__LogDBAccess(sCurrentUsername, "CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
@@ -172,6 +177,11 @@ class DBComm:
     nComponentID = 0
     self.__callStoredProcedure("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID), True)
     return self.__executeQuery("SELECT @_InsertComponent_5")[0][0]
+
+  def DeleteComponent(self, sCurrentUsername, nComponentID):
+    """Deletes the component and removes it from the sequence"""
+    self.__LogDBAccess(sCurrentUsername, "DeleteComponent(%i)" % (nComponentID, ))
+    return self.__callStoredProcedure("DeleteComponent", (nComponentID, ), True)
 
   ### Internal functions ###
 

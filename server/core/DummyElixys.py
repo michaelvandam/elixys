@@ -33,6 +33,197 @@ class Elixys:
             "Comment",
             "Activity"]
 
+    def GetServerState(self, sUsername):
+        # Are we running the user running the system?
+        sRunUsername = self.GetRunUser(sUsername)
+        sClientState = self.GetClientState(sUsername)
+        if sUsername == sRunUsername:
+           # Yes.  Advance the system state to simulate a run
+           self.AdvanceSystemState(sUsername)
+        else:
+           # No. Is the client currently showing the unit operation prompt?
+           if sClientState.startswith("PROMPT_UNITOPERATION"):
+               # Yes.  Are we in sync with the run state?
+               sRunState = self.GetRunState(sUsername)
+               if sClientState != sRunState:
+                   # No.  Update the client state
+                   sClientState = sRunState
+                   self.SaveClientState(sUsername, sClientState)
+
+        # Is the user on one of the run screens?
+        if sClientState.startswith("RUNSEQUENCE") or sClientState.startswith("MANUALRUN"):
+            # Yes.  Is the system running?
+            sSystemState = self.GetSystemState(sUsername)
+            if sSystemState != "NONE":
+                # The system is running.  Make sure the client is displaying the prompt window if the sequence run calls for it
+                pSystemStateComponents = sSystemState.split(".")
+                nSequenceID = int(pSystemStateComponents[2])
+                nComponentID = int(pSystemStateComponents[3])
+                if len(pSystemStateComponents) == 5:
+                    sManualRunStep = pSystemStateComponents[4]
+                else:
+                    sManualRunStep = ""
+                pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
+
+                # Are we on a prompt or install unit operation?
+                if (pSequence["components"][0]["componenttype"] == "PROMPT") or (pSequence["components"][0]["componenttype"] == "INSTALL"):
+                    # Yes.  Is the client currently showing the unit operation prompt?
+                    if not sClientState.startswith("PROMPT_UNITOPERATION"):
+                        # No.  Are we running a sequence automatically or on the run step of a manual run?
+                        if sClientState.startswith("RUNSEQUENCE") or (sManualRunStep == "RUN"):
+                            # Yes.  Move the client state to the unit operation prompt
+                            sClientState = "PROMPT_UNITOPERATION;" + sClientState;
+                            self.SaveClientState(sUsername, sClientState)
+            else:
+                # The system is no longer running.  Move the client away from the run page
+                sClientState = "HOME"
+                self.SaveClientState(sUsername, sClientState)
+
+        # Update and return the default system state
+        return self.UpdateServerState(DummyData.GetDefaultSystemState(sRunUsername))
+
+    def GetRunState(self, sUsername):
+        # Are we running?
+        sSystemState = self.GetSystemState(sUsername)
+        if sSystemState != "NONE":
+            # Yes, so strip the user name
+            sSystemState = sSystemState[len(sSystemState.split(".")[0]) + 1:]
+
+        # Return the state
+        return sSystemState
+
+    def SaveRunState(self, sUsername, sSystemState):
+        # Get the run user
+        sRunUsername = self.GetRunUser(sUsername)
+        if sRunUsername == "":
+            raise Exception("System is not running")
+
+        # Save the state
+        self.SaveSystemState(sUsername, sRunUsername + "." + sSystemState)
+        return True
+
+    def GetRunUser(self, sUsername):
+        # Are we running?
+        sSystemState = self.GetSystemState(sUsername)
+        sRunUser = ""
+        if sSystemState != "NONE":
+            # Yes, so extract the user name
+            sRunUser = sSystemState.split(".")[0]
+
+        # Return the user
+        return sRunUser
+
+    def RunSequence(self, sUsername, nSequenceID):
+        # Load the user's sequence and save it as the system sequence
+        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
+        pSequence["metadata"]["id"] = 10000
+        self.SaveSequence(sUsername, pSequence, True, True)
+
+        # Load the user's sequence reagents and save them as the system sequence reagents
+        pReagents = self.GetSequenceReagentsInternal(sUsername, nSequenceID)
+        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
+
+        # Format the initial system state
+        sSystemState = sUsername + ".RUNSEQUENCE.10000."
+        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
+        sSystemState += str(pSequence["components"][3]["id"])
+
+        # Save the state
+        self.SaveSystemState(sUsername, sSystemState)
+        return True
+
+    def AbortRun(self, sUsername):
+        # Save the state and return
+        self.SaveSystemState(sUsername, "NONE")
+        return True
+
+    def ContinueRun(self, sUsername):
+        # Look up the current run component
+        sSystemState = self.GetSystemState(sUsername)
+        pSystemStateComponents = sSystemState.split(".")
+        sMode = pSystemStateComponents[1]
+        nSequenceID = int(pSystemStateComponents[2])
+        nComponentID = int(pSystemStateComponents[3])
+        if sMode == "MANUALRUN":
+            sManualRunStep = pSystemStateComponents[4]
+        else:
+            sManualRunStep = ""
+
+        # Attempt to advance to the next component
+        nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID, sManualRunStep)
+        if nNextComponentID == None:
+            # Run is complete
+            return
+
+        # Set the component ID and state
+        nComponentID = nNextComponentID
+        nComponentState = 0
+
+        # Save the states and return
+        sRunState = sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
+        self.SaveRunState(sUsername, sRunState)
+        self.SaveClientState(sUsername, sRunState)
+        return True
+
+    def StartManualRun(self, sUsername):
+        # Create a new blank sequence save it as the system sequence
+        pSequence = DummyData.GetBlankSequence(sUsername)
+        pSequence["metadata"]["id"] = 10000
+        self.SaveSequence(sUsername, pSequence, True, True)
+
+        # Create and save the blank reagent array
+        pReagents = []
+        for nCassetteID in range(0, 3):
+            for nPositionID in range(0, 10):
+                pReagent = {"available":False,
+                    "reagentid":((nCassetteID * 10) + nPositionID + 31),
+                    "componentid":(nCassetteID + 1),
+                    "position":str(nPositionID + 1),
+                    "name":"",
+                    "description":""},
+                pReagents.extend(pReagent)
+        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
+
+        # Format the initial system state
+        sSystemState = sUsername + ".MANUALRUN.10000."
+        pSequence = self.GetSequenceInternal(sUsername, 10000)
+        sSystemState += str(pSequence["components"][0]["id"])
+        sSystemState += ".CASSETTE"
+
+        # Save the state
+        self.SaveSystemState(sUsername, sSystemState)
+        return True
+
+    def PerformOperation(self, sUsername, nComponentID, nSequenceID):
+        # Update the run state
+        sRunState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".RUN"
+        self.SaveRunState(sUsername, sRunState)
+        return True
+
+    def AbortOperation(self, sUsername):
+        return False
+
+    def ContinueOperation(self, sUsername):
+        # Get the run state
+        sRunState = self.GetRunState(sUsername)
+        pRunStateComponents = sRunState.split(".")
+
+        # Advance to the select step
+        sRunState = "MANUALRUN." + pRunStateComponents[1] + "." + pRunStateComponents[2] + ".SELECT"
+        self.SaveRunState(sUsername, sRunState)
+        self.SaveClientState(sUsername, sRunState)
+        return True
+
+    def FinishManualRun(self, sUsername):
+        # Complete the run
+        self.SaveSystemState(sUsername, "NONE")
+        return True
+
+
+
+
+
+
     def GetUserAccessLevels(self, sUsername):
         return {}
 
@@ -84,55 +275,6 @@ class Elixys:
         if bLockSystem:
             self.UnlockSystem(sUsername)
         return True
-
-    def GetServerState(self, sUsername):
-        # Are we running the user running the system?
-        sRunUsername = self.GetRunUser(sUsername)
-        sClientState = self.GetClientState(sUsername)
-        if sUsername == sRunUsername:
-           # Yes.  Advance the system state to simulate a run
-           self.AdvanceSystemState(sUsername)
-        else:
-           # No. Is the client currently showing the unit operation prompt?
-           if sClientState.startswith("PROMPT_UNITOPERATION"):
-               # Yes.  Are we in sync with the run state?
-               sRunState = self.GetRunState(sUsername)
-               if sClientState != sRunState:
-                   # No.  Update the client state
-                   sClientState = sRunState
-                   self.SaveClientState(sUsername, sClientState)
-
-        # Is the user on one of the run screens?
-        if sClientState.startswith("RUNSEQUENCE") or sClientState.startswith("MANUALRUN"):
-            # Yes.  Is the system running?
-            sSystemState = self.GetSystemState(sUsername)
-            if sSystemState != "NONE":
-                # The system is running.  Make sure the client is displaying the prompt window if the sequence run calls for it
-                pSystemStateComponents = sSystemState.split(".")
-                nSequenceID = int(pSystemStateComponents[2])
-                nComponentID = int(pSystemStateComponents[3])
-                if len(pSystemStateComponents) == 5:
-                    sManualRunStep = pSystemStateComponents[4]
-                else:
-                    sManualRunStep = ""
-                pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
-
-                # Are we on a prompt or install unit operation?
-                if (pSequence["components"][0]["componenttype"] == "PROMPT") or (pSequence["components"][0]["componenttype"] == "INSTALL"):
-                    # Yes.  Is the client currently showing the unit operation prompt?
-                    if not sClientState.startswith("PROMPT_UNITOPERATION"):
-                        # No.  Are we running a sequence automatically or on the run step of a manual run?
-                        if sClientState.startswith("RUNSEQUENCE") or (sManualRunStep == "RUN"):
-                            # Yes.  Move the client state to the unit operation prompt
-                            sClientState = "PROMPT_UNITOPERATION;" + sClientState;
-                            self.SaveClientState(sUsername, sClientState)
-            else:
-                # The system is no longer running.  Move the client away from the run page
-                sClientState = "HOME"
-                self.SaveClientState(sUsername, sClientState)
-
-        # Update and return the default system state
-        return self.UpdateServerState(DummyData.GetDefaultSystemState(sRunUsername))
 
     def GetSequenceList(self, sUsername, sType):
         # Load the sequence
@@ -341,143 +483,6 @@ class Elixys:
 
         # Save the reagents
         self.SaveSequenceReagentsInternal(sUsername, pReagents, True, nSequenceID == 10000)
-        return True
-
-    def GetRunState(self, sUsername):
-        # Are we running?
-        sSystemState = self.GetSystemState(sUsername)
-        if sSystemState != "NONE":
-            # Yes, so strip the user name
-            sSystemState = sSystemState[len(sSystemState.split(".")[0]) + 1:]
-
-        # Return the state
-        return sSystemState
-
-    def SaveRunState(self, sUsername, sSystemState):
-        # Get the run user
-        sRunUsername = self.GetRunUser(sUsername)
-        if sRunUsername == "":
-            raise Exception("System is not running")
-
-        # Save the state
-        self.SaveSystemState(sUsername, sRunUsername + "." + sSystemState)
-        return True
-
-    def GetRunUser(self, sUsername):
-        # Are we running?
-        sSystemState = self.GetSystemState(sUsername)
-        sRunUser = ""
-        if sSystemState != "NONE":
-            # Yes, so extract the user name
-            sRunUser = sSystemState.split(".")[0]
-
-        # Return the user
-        return sRunUser
-
-    def RunSequence(self, sUsername, nSequenceID):
-        # Load the user's sequence and save it as the system sequence
-        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
-        pSequence["metadata"]["id"] = 10000
-        self.SaveSequence(sUsername, pSequence, True, True)
-
-        # Load the user's sequence reagents and save them as the system sequence reagents
-        pReagents = self.GetSequenceReagentsInternal(sUsername, nSequenceID)
-        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
-
-        # Format the initial system state
-        sSystemState = sUsername + ".RUNSEQUENCE.10000."
-        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
-        sSystemState += str(pSequence["components"][3]["id"])
-
-        # Save the state
-        self.SaveSystemState(sUsername, sSystemState)
-        return True
-
-    def AbortRun(self, sUsername):
-        # Save the state and return
-        self.SaveSystemState(sUsername, "NONE")
-        return True
-
-    def ContinueRun(self, sUsername):
-        # Look up the current run component
-        sSystemState = self.GetSystemState(sUsername)
-        pSystemStateComponents = sSystemState.split(".")
-        sMode = pSystemStateComponents[1]
-        nSequenceID = int(pSystemStateComponents[2])
-        nComponentID = int(pSystemStateComponents[3])
-        if sMode == "MANUALRUN":
-            sManualRunStep = pSystemStateComponents[4]
-        else:
-            sManualRunStep = ""
-
-        # Attempt to advance to the next component
-        nNextComponentID = self.RunSequenceAdvance(sUsername, nSequenceID, nComponentID, sManualRunStep)
-        if nNextComponentID == None:
-            # Run is complete
-            return
-
-        # Set the component ID and state
-        nComponentID = nNextComponentID
-        nComponentState = 0
-
-        # Save the states and return
-        sRunState = sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
-        self.SaveRunState(sUsername, sRunState)
-        self.SaveClientState(sUsername, sRunState)
-        return True
-
-    def StartManualRun(self, sUsername):
-        # Create a new blank sequence save it as the system sequence
-        pSequence = DummyData.GetBlankSequence(sUsername)
-        pSequence["metadata"]["id"] = 10000
-        self.SaveSequence(sUsername, pSequence, True, True)
-
-        # Create and save the blank reagent array
-        pReagents = []
-        for nCassetteID in range(0, 3):
-            for nPositionID in range(0, 10):
-                pReagent = {"available":False,
-                    "reagentid":((nCassetteID * 10) + nPositionID + 31),
-                    "componentid":(nCassetteID + 1),
-                    "position":str(nPositionID + 1),
-                    "name":"",
-                    "description":""},
-                pReagents.extend(pReagent)
-        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, True)
-
-        # Format the initial system state
-        sSystemState = sUsername + ".MANUALRUN.10000."
-        pSequence = self.GetSequenceInternal(sUsername, 10000)
-        sSystemState += str(pSequence["components"][0]["id"])
-        sSystemState += ".CASSETTE"
-
-        # Save the state
-        self.SaveSystemState(sUsername, sSystemState)
-        return True
-
-    def PerformOperation(self, sUsername, nComponentID, nSequenceID):
-        # Update the run state
-        sRunState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".RUN"
-        self.SaveRunState(sUsername, sRunState)
-        return True
-
-    def AbortOperation(self, sUsername):
-        return False
-
-    def ContinueOperation(self, sUsername):
-        # Get the run state
-        sRunState = self.GetRunState(sUsername)
-        pRunStateComponents = sRunState.split(".")
-
-        # Advance to the select step
-        sRunState = "MANUALRUN." + pRunStateComponents[1] + "." + pRunStateComponents[2] + ".SELECT"
-        self.SaveRunState(sUsername, sRunState)
-        self.SaveClientState(sUsername, sRunState)
-        return True
-
-    def FinishManualRun(self, sUsername):
-        # Complete the run
-        self.SaveSystemState(sUsername, "NONE")
         return True
 
     ### Internal functions ###

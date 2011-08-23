@@ -268,8 +268,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
     BEGIN
         DECLARE lUserID INT UNSIGNED;
         DECLARE lSequenceID INT UNSIGNED;
-        DECLARE lCurrentCassetteID INT UNSIGNED;
-        DECLARE lPreviousCassetteID INT UNSIGNED;
+        DECLARE lCassetteID INT UNSIGNED;
         DECLARE lReagentID INT UNSIGNED;
         DECLARE lCassette INT UNSIGNED default 0;
         DECLARE lReagent INT UNSIGNED;
@@ -286,16 +285,11 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         -- Create each cassette
         WHILE lCassette < iCassettes DO
             -- Create the cassette
-            INSERT INTO Components VALUES (NULL, lSequenceID, 0, "CASSETTE", "", "");
-            SET lCurrentCassetteID = LAST_INSERT_ID();
+            CALL CreateComponent(lSequenceID, "Saved", "CASSETTE", "", lCassetteID);
 
-            -- Update references to the new cassette
+            -- Update the sequence table reference if this is the first cassette
             IF lCassette = 0 THEN
-                -- This is the first cassette.  Update the sequences table
-                UPDATE Sequences SET FirstComponentID = lCurrentCassetteID WHERE SequenceID = lSequenceID;
-            ELSE
-                -- This is a subsequenct cassette.  Update the previous cassette
-                UPDATE Components SET NextComponentID = lCurrentCassetteID WHERE ComponentID = lPreviousCassetteID;
+                UPDATE Sequences SET FirstComponentID = lCassetteID WHERE SequenceID = lSequenceID;
             END IF;
 
             -- Start the cassette JSON string
@@ -305,7 +299,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lReagent = 0;
             WHILE lReagent < iReagents DO
                 -- Create an entry in the reagents table
-                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCurrentCassetteID, lReagent + 1, False, "", "");
+                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, lReagent + 1, False, "", "");
                 SET lReagentID = LAST_INSERT_ID();
 
                 -- Update the cassette JSON string
@@ -323,7 +317,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lColumn = 0; 
             WHILE lColumn < iColumns DO
                 -- Create an entry in the reagents table
-                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCurrentCassetteID, CHAR(ASCII('A') + lColumn), False, "", "");
+                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, CHAR(ASCII('A') + lColumn), False, "", "");
                 SET lReagentID = LAST_INSERT_ID();
 
                 -- Update the cassette JSON string
@@ -337,10 +331,9 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lCassetteJSON = CONCAT(lCassetteJSON, "]}");
 
             -- Update the cassette JSON string
-            UPDATE Components SET Details = lCassetteJSON WHERE ComponentID = lCurrentCassetteID;
+            UPDATE Components SET Details = lCassetteJSON WHERE ComponentID = lCassetteID;
 
-            -- Remember the previous cassette and increment the cassette counter
-            SET lPreviousCassetteID = lCurrentCassetteID;
+            -- Increment the cassette counter
             SET lCassette = lCassette + 1;
         END WHILE;
 
@@ -348,16 +341,16 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         SET oSequenceID = lSequenceID;
     END //
 
-/* Updates an existing sequence:
- *   IN SequenceID - ID of the sequence to update
- *   IN Name - Name of the sequence
+/* Creates a copy of an existing sequence:
+ *   IN SequenceID - ID of the sequence to copy
+ *   IN Name - Name of the new sequence
  *   IN Comment - Comment associated with the new sequence
+ *   IN Username - Username of the user creating the new sequence
+ *   OUT SequenceID - ID of the new sequence
  */
-DROP PROCEDURE IF EXISTS UpdateSequence;
-CREATE PROCEDURE UpdateSequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64), IN iComment VARCHAR(255))
+DROP PROCEDURE IF EXISTS CopySequence;
+CREATE PROCEDURE CopySequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64), IN iComment VARCHAR(255), IN iUsername VARCHAR(30), OUT oSequenceID INT UNSIGNED)
     BEGIN
-        -- Update the sequence
-        UPDATE Sequences SET Name = iName, Comment = iComment WHERE SequenceID = iSequenceID;
     END //
 
 /* Deletes a sequence:
@@ -366,6 +359,12 @@ CREATE PROCEDURE UpdateSequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64
 DROP PROCEDURE IF EXISTS DeleteSequence;
 CREATE PROCEDURE DeleteSequence(IN iSequenceID INT UNSIGNED)
     BEGIN
+        -- Delete the sequence reagents
+        DELETE FROM Reagents WHERE SequenceID = iSequenceID;
+
+        -- Delete the sequence components
+        DELETE FROM Components WHERE SequenceID = iSequenceID;
+
         -- Delete the sequence
         DELETE FROM Sequences WHERE SequenceID = iSequenceID;
     END //
@@ -468,6 +467,16 @@ CREATE PROCEDURE GetComponent(IN iComponentID INT UNSIGNED)
         SELECT * FROM Components WHERE ComponentID = iComponentID;
     END //
 
+/* Gets all components associated with a sequence:
+ *   IN SequenceID - ID of the sequence
+ */
+DROP PROCEDURE IF EXISTS GetSequenceComponents;
+CREATE PROCEDURE GetSequenceComponents(IN iSequenceID INT UNSIGNED)
+    BEGIN
+        -- Return the components
+        SELECT * FROM Components WHERE SequenceID = iSequenceID;
+    END //
+
 /* Creates a new component and inserts it at the end of a sequence:
  *   IN SequenceID - ID of the sequence
  *   IN Type - Type of the component
@@ -500,13 +509,21 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
                                  OUT oComponentID INT UNSIGNED)
     BEGIN
         DECLARE lUserID INT UNSIGNED;
+        DECLARE lNextComponentID INT UNSIGNED;
+
+        -- Get the component after the insert position
+        CALL Internal_GetNextComponent(iInsertID, lNextComponentID);
+        IF lNextComponentID IS NULL THEN
+            SET lNextComponentID = 0;
+        END IF;
 
         -- Add the component
-        INSERT INTO Components VALUES (NULL, iSequenceID, 0, iType, iName, iDetails);
+        INSERT INTO Components VALUES (NULL, iSequenceID, iInsertID, lNextComponentID, iType, iName, iDetails);
         SET oComponentID = LAST_INSERT_ID();
 
-        -- Update the insert component's reference
+        -- Update the previous and next components
         UPDATE Components SET NextComponentID = oComponentID WHERE ComponentID = iInsertID;
+        UPDATE Components SET PreviousComponentID = oComponentID WHERE ComponentID = lNextComponentID;
     END //
 
 /* Updates an existing component:
@@ -520,6 +537,27 @@ CREATE PROCEDURE UpdateComponent(IN iComponentID INT UNSIGNED, IN iType VARCHAR(
     BEGIN
         -- Update the component
         UPDATE Components SET Type = iType, Name = iName, Details = iDetails WHERE ComponentID = iComponentID;
+    END //
+
+/* Deletes the component and removes it from the sequence:
+ *   IN ComponentID - ID of the component to delete
+ */
+DROP PROCEDURE IF EXISTS DeleteComponent;
+CREATE PROCEDURE DeleteComponent(IN iComponentID INT UNSIGNED)
+    BEGIN
+        DECLARE lPreviousComponentID INT UNSIGNED;
+        DECLARE lNextComponentID INT UNSIGNED;
+
+        -- Find the previous and next component IDs
+        CALL Internal_GetPreviousComponent(iComponentID, lPreviousComponentID);
+        CALL Internal_GetNextComponent(iComponentID, lNextComponentID);
+
+        -- Update the component references
+        UPDATE Components SET NextComponentID = lNextComponentID WHERE ComponentID = lPreviousComponentID;
+        UPDATE Components SET PreviousComponentID = lPreviousComponentID WHERE ComponentID = lNextComponentID;
+
+        -- Delete the component
+        DELETE FROM Components WHERE ComponentID = iComponentID;
     END //
 
 /****************************************************************************************************************************************************************
@@ -558,6 +596,17 @@ CREATE PROCEDURE Internal_GetFirstComponent(IN iSequenceID INT UNSIGNED, OUT oCo
     BEGIN
         -- Get the first component ID
         SET oComponentID = (SELECT FirstComponentID FROM Sequences WHERE SequenceID = iSequenceID);
+    END //
+
+/* Returns the previous component of a sequence:
+ *   IN ComponentID - ID of the current component
+ *   OUT ComponentID - ID of the previous component in the sequence
+ */
+DROP PROCEDURE IF EXISTS Internal_GetPreviousComponent;
+CREATE PROCEDURE Internal_GetPreviousComponent(IN iComponentID INT UNSIGNED, OUT oComponentID INT UNSIGNED)
+    BEGIN
+        -- Get the previous component ID
+        SET oComponentID = (SELECT PreviousComponentID FROM Components WHERE ComponentID = iComponentID);
     END //
 
 /* Returns the next component of a sequence:

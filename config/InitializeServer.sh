@@ -35,12 +35,14 @@ git clone --depth 1 http://github.com/michaelvandam/elixys.git
 yum -y install mysql mysql-server apr-util-mysql
 /sbin/service mysqld start
 mysql -e "CREATE DATABASE Elixys;"
-mysql -e "GRANT USAGE ON *.* TO Apache@localhost IDENTIFIED BY 'Apache';"
-mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@localhost;"
-mysql -e "GRANT USAGE ON *.* TO Elixys@localhost IDENTIFIED BY 'Elixys';"
-mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Elixys@localhost;"
+mysql -e "GRANT USAGE ON *.* TO Apache@'localhost' IDENTIFIED BY 'devel';"
+mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@'localhost' IDENTIFIED BY 'devel';"
+mysql -e "GRANT USAGE ON *.* TO Elixys@'localhost' IDENTIFIED BY 'devel';"
+mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Elixys@'localhost' IDENTIFIED BY 'devel';"
+mysql -e "FLUSH PRIVILEGES;"
 mysql Elixys < elixys/config/DatabaseTables.sql
 mysql Elixys < elixys/config/DatabaseProcedures.sql
+/sbin/service mysqld restart
 mkdir /opt/elixys
 cp -R elixys/server/database /opt/elixys
 
