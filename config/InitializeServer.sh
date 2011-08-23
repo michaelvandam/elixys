@@ -99,8 +99,8 @@ chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
 # Allow Apache to save the server state to files in the WSGI directory.  This is temporary and will go away once we get the
 # WSGI interface integrated with MySQL
-#chmod 777 /var/www/wsgi
-#chown apache:apache /var/www/wsgi
+chmod 777 /var/www/wsgi
+chown apache:apache /var/www/wsgi
 
 # Update the firewall settings
 mv -f elixys/config/iptables /etc/sysconfig/

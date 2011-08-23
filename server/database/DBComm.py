@@ -18,7 +18,7 @@ class DBComm:
     """Initializes the DBComm class"""
     # Create the database connection
     try:
-      self.__pDatabase = SQL.connect(host="localhost", user="Elixys", passwd="Elixys", db="Elixys");
+      self.__pDatabase = SQL.connect(host="localhost", user="Elixys", passwd="devel", db="Elixys");
     except:
       print "Unable to connect to SQL database."
 
