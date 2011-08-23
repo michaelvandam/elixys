@@ -39,6 +39,8 @@ STR   = 'str'
 INT   = 'int'
 FLOAT = 'float'
 
+ABORT = 'ABORT'
+
 #Robot ReagentPosition positions:
 LOAD_A = "LOAD_A"
 LOAD_B = "LOAD_B"
@@ -175,7 +177,7 @@ class UnitOperation(threading.Thread):
     if self.paused:
       self.paused()
     if self.abort:
-      self.abortOperation()
+      self.abortOperation(ABORT)
     if nextStepText:
       self.stepDescription = nextStepText
     self.currentStepNumber+=1
@@ -234,6 +236,8 @@ class UnitOperation(threading.Thread):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
+        if self.abort:
+          self.abortOperation(ABORT)
     elif comparator == NOTEQUAL:
       while (function() == condition):
         #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
@@ -242,6 +246,8 @@ class UnitOperation(threading.Thread):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
+        if self.abort:
+          self.abortOperation(ABORT)
     elif comparator == GREATER:
       while not(function() >= condition):
         #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
@@ -250,6 +256,8 @@ class UnitOperation(threading.Thread):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break            
+        if self.abort:
+          self.abortOperation(ABORT)
     elif comparator == LESS:
       while not(function() <=condition):
         #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
@@ -258,6 +266,8 @@ class UnitOperation(threading.Thread):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
+        if self.abort:
+          self.abortOperation(ABORT)
     else:
       print ("Error: Invalid comparator.")
     #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
@@ -277,11 +287,13 @@ class UnitOperation(threading.Thread):
       return False
     
   def startTimer(self,timerLength): #In seconds
-    print "%s Timer set to: %s" % (self.formatTime(time.time()-self.time),self.formatTime(timerLength))
+    #print "%s Timer set to: %s" % (self.formatTime(time.time()-self.time),self.formatTime(timerLength))
     timerStartTime = time.time()  #Create a time
     while not(self.isTimerExpired(timerStartTime,timerLength)):
       self.setDescription("Time remaining:%s" % self.formatTime(timerLength-(time.time()-timerStartTime)))
       self.stateCheckInterval(50) #Sleep 50ms between checks
+      if self.abort:
+        self.abortOperation(ABORT)
     print "%s Timer finished." % (self.formatTime(time.time()-self.time))
     
   def isTimerExpired(self,startTime,length):
@@ -347,7 +359,6 @@ class UnitOperation(threading.Thread):
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(OFF)
     self.setHeater(OFF)
     raise UnitOpError(error)
-    
     
   def getTotalSteps(self):
     return self.steps #Integer

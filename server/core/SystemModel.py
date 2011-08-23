@@ -108,6 +108,13 @@ class SystemModel:
     """Sets the current unit operation"""
     self.__pUnitOperation = pUnitOperation
 
+  def GetUnitOperation(self):
+    """Returns the current unit operation"""
+    if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():
+        return self.__pUnitOperation
+    else:
+        return None
+    
   def LockSystemModel(self):
     """Acquire the mutex lock and return the system model"""
     self.modelLock.acquire()

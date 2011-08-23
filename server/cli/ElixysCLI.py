@@ -236,6 +236,8 @@ if __name__ == "__main__":
             print "  TempProfile"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
+            print "To abort the currently unit operation:"
+            print "  AbortUnitOperation()"
         elif sCommand == "help Init":
             # React unit operation
             print "Initialize the Elixys hardware for use."
@@ -298,6 +300,14 @@ if __name__ == "__main__":
         elif sCommand == "help DetectRadiation":
             # Detect radiation unit operation
             print "Todo: DetectRadiation()"
+        elif sCommand == "AbortUnitOperation()":
+            # Get the current unit operation
+            pCurrentUnitOperation = pSystemModel.GetUnitOperation()
+            if pCurrentUnitOperation != None:
+                # Abort the current unit operation
+                pCurrentUnitOperation.abort = True
+            else:
+                print "No current unit operation to abort"
         elif sCommand == "help hardware":
             # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
             # don't want to list all of our functions
@@ -373,13 +383,13 @@ if __name__ == "__main__":
                     sNextCommand = CleanCommand(sNextCommand)
                     if sNextCommand != "":
                         print "  " + sNextCommand
-                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
+                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
 
                 # Update our step number
                 nScriptStep += len(pScriptCommands)
             else:
                 # No, so attempt to execute the command
-                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
+                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
  
                 # Sleep a bit to give the PLC a chance to response before we display the input prompt
                 time.sleep(0.1)
