@@ -519,9 +519,13 @@ class HardwareComm():
         nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
         self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
-        print "Setting reagent robot position: " + str(nPositionX) + ", " + str(nPositionZ)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
+    def FakePLC_SetReagentRobotGripper(self, bGripperUp, bGripperDown, bGripperOpen, bGripperClose):
+        self.__SetBinaryValue("ReagentRobot_GripperUp", bGripperUp)
+        self.__SetBinaryValue("ReagentRobot_GripperDown", bGripperDown)
+        self.__SetBinaryValue("ReagentRobot_GripperOpen", bGripperOpen)
+        self.__SetBinaryValue("ReagentRobot_GripperClose", bGripperClose)
     def FakePLC_EnableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReactorRobot(self, nReactor):
@@ -774,7 +778,9 @@ class HardwareComm():
                 nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, nReagentRobotSetX,
                 nReagentRobotSetZ, nReagentRobotActualX, nReagentRobotActualZ, self.__GetBinaryValue("ReagentRobot_SetGripperUp"),
                 self.__GetBinaryValue("ReagentRobot_SetGripperDown"), self.__GetBinaryValue("ReagentRobot_SetGripperOpen"),
-                self.__GetBinaryValue("ReagentRobot_SetGripperClose"), self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotStatus(self.__nReagentZAxis))
+                self.__GetBinaryValue("ReagentRobot_SetGripperClose"), self.__GetBinaryValue("ReagentRobot_GripperUp"), self.__GetBinaryValue("ReagentRobot_GripperDown"), 
+                self.__GetBinaryValue("ReagentRobot_GripperOpen"), self.__GetBinaryValue("ReagentRobot_GripperClose"), self.__GetRobotStatus(self.__nReagentXAxis), 
+                self.__GetRobotStatus(self.__nReagentZAxis))
             pModel["Reactor1"]["Motion"].updateState(nReactor1RobotSetPosition, nReactor1RobotActualPosition, nReactor1RobotSetPositionRaw, nReactor1RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor1_SetReactorUp"), self.__GetBinaryValue("Reactor1_SetReactorDown"), self.__GetBinaryValue("Reactor1_ReactorUp"),
                 self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotControlWord(1), 

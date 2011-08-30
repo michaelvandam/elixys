@@ -232,6 +232,7 @@ class FakePLC():
         self.__UpdatePressureRegulator(2)
         self.__UpdateCoolingSystem()
         self.__UpdateReagentRobotPosition()
+        self.__UpdateReagentRobotGripper()
         self.__UpdateReactorRobotStatus(1)
         self.__UpdateReactorRobotStatus(2)
         self.__UpdateReactorRobotStatus(3)
@@ -346,6 +347,17 @@ class FakePLC():
                     nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ)
                 self.__pMoveReagentRobotThread.setDaemon(True)
                 self.__pMoveReagentRobotThread.start()
+
+    def __UpdateReagentRobotGripper(self):
+        """Updates the reagent robot gripper in response to system changes"""
+        # Get the gripper set values
+        bGripperSetUp = self.__pSystemModel.model["ReagentDelivery"].getSetGripperUp()
+        bGripperSetDown = self.__pSystemModel.model["ReagentDelivery"].getSetGripperDown()
+        bGripperSetOpen = self.__pSystemModel.model["ReagentDelivery"].getSetGripperOpen()
+        bGripperSetClose = self.__pSystemModel.model["ReagentDelivery"].getSetGripperClose()
+        
+        # Set the current gripper values
+        self.__pHardwareComm.FakePLC_SetReagentRobotGripper(bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose)
 
     def __UpdateReactorRobotStatus(self, nReactor):
         """Updates the reactor robot status in response to system changes"""

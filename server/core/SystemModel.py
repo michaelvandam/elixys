@@ -215,13 +215,17 @@ class SystemModel:
         sState += self.__PadString("  Gripper (up/down)", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGripperUp(False)) + "/" + \
             self.__BoolToString(self.model["ReagentDelivery"].getSetGripperDown(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperUp(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperDown(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
 
         sState += self.__PadString("  Gripper (open/close)", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGripperOpen(False)) + "/" + \
             self.__BoolToString(self.model["ReagentDelivery"].getSetGripperClose(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperOpen(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperClose(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n\n"
-        
+
         # Reactors
         sState += self.__PadString("Reactor", STATEREACTORCOLUMN1WIDTH)
         sState += self.__PadString("1", STATEREACTORCOLUMN2WIDTH)
