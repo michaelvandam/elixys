@@ -40,6 +40,7 @@ CREATE TABLE Sequences
     CreationDate TIMESTAMP DEFAULT NOW(),
     UserID INT UNSIGNED NOT NULL,
     FirstComponentID INT UNSIGNED NOT NULL,
+    ComponentCount INT UNSIGNED NOT NULL,
     PRIMARY KEY (SequenceID)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

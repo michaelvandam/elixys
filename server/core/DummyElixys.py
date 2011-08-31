@@ -17,6 +17,9 @@ class Elixys:
 
     ### Interface functions ###
 
+    def SetDatabase(self, pDatabase):
+        self.pDatabase = pDatabase
+
     def GetConfiguration(self, sUsername):
         return {"name":"Mini cell 3",
             "version":"2.0",
@@ -36,7 +39,7 @@ class Elixys:
     def GetServerState(self, sUsername):
         # Are we running the user running the system?
         sRunUsername = self.GetRunUser(sUsername)
-        sClientState = self.GetClientState(sUsername)
+        sClientState = self.pDatabase.GetUserClientState(sUsername, sUsername)
         if sUsername == sRunUsername:
            # Yes.  Advance the system state to simulate a run
            self.AdvanceSystemState(sUsername)
@@ -48,7 +51,7 @@ class Elixys:
                if sClientState != sRunState:
                    # No.  Update the client state
                    sClientState = sRunState
-                   self.SaveClientState(sUsername, sClientState)
+                   self.pDatabase.UpdateUserClientState(sUsername, sUsername, sClientState)
 
         # Is the user on one of the run screens?
         if sClientState.startswith("RUNSEQUENCE") or sClientState.startswith("MANUALRUN"):
@@ -63,7 +66,7 @@ class Elixys:
                     sManualRunStep = pSystemStateComponents[4]
                 else:
                     sManualRunStep = ""
-                pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
+                pSequence = None #self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
 
                 # Are we on a prompt or install unit operation?
                 if (pSequence["components"][0]["componenttype"] == "PROMPT") or (pSequence["components"][0]["componenttype"] == "INSTALL"):
@@ -73,11 +76,11 @@ class Elixys:
                         if sClientState.startswith("RUNSEQUENCE") or (sManualRunStep == "RUN"):
                             # Yes.  Move the client state to the unit operation prompt
                             sClientState = "PROMPT_UNITOPERATION;" + sClientState;
-                            self.SaveClientState(sUsername, sClientState)
+                            self.pDatabase.UpdateUserClientState(sUsername, sUsername, sClientState)
             else:
                 # The system is no longer running.  Move the client away from the run page
                 sClientState = "HOME"
-                self.SaveClientState(sUsername, sClientState)
+                self.pDatabase.UpdateUserClientState(sUsername, sUsername, sClientState)
 
         # Update and return the default system state
         return self.UpdateServerState(DummyData.GetDefaultSystemState(sRunUsername))
@@ -162,7 +165,7 @@ class Elixys:
         # Save the states and return
         sRunState = sMode + "." + str(nSequenceID) + "." + str(nComponentID) + "." + str(nComponentState)
         self.SaveRunState(sUsername, sRunState)
-        self.SaveClientState(sUsername, sRunState)
+        self.pDatabase.UpdateUserClientState(sUsername, sUsername, sRunState)
         return True
 
     def StartManualRun(self, sUsername):
@@ -211,7 +214,7 @@ class Elixys:
         # Advance to the select step
         sRunState = "MANUALRUN." + pRunStateComponents[1] + "." + pRunStateComponents[2] + ".SELECT"
         self.SaveRunState(sUsername, sRunState)
-        self.SaveClientState(sUsername, sRunState)
+        self.pDatabase.UpdateUserClientState(sUsername, sUsername, sRunState)
         return True
 
     def FinishManualRun(self, sUsername):
@@ -223,6 +226,7 @@ class Elixys:
 
 
 
+    ### Functions below to be moved to DBComm.py ###
 
     def GetUserAccessLevels(self, sUsername):
         return {}
@@ -236,89 +240,6 @@ class Elixys:
 
     def DeleteUser(self, sUsername):
         return False
-
-    def GetClientState(self, sUsername):
-        # Obtain a lock on the system
-        self.LockSystem(sUsername)
-
-        # Attempt to get the client state from the file system
-        try:
-            pStateFile = os.open("/var/www/wsgi/" + sUsername + "/state.txt", os.O_RDWR)
-            sClientState = os.read(pStateFile, 99)
-            os.close(pStateFile)
-        except OSError as e:
-            # Check the error type
-            if e.errno != errno.ENOENT:
-                # An error other than file does not exist was encountered.  Release the system lock and raise again
-                self.UnlockSystem(sUsername, True)
-                raise
-            else:
-                # Client state file does not exist.  Default to the home state and create the file
-                sClientState = "HOME"
-                self.SaveClientState(sUsername, sClientState, False)
-
-        # Release the system lock and return
-        self.UnlockSystem(sUsername)
-        return sClientState
-
-    def SaveClientState(self, sUsername, sClientState, bLockSystem = True):
-        # Obtain a lock on the system
-        if bLockSystem:
-            self.LockSystem(sUsername)
-
-        # Open and write to the client state file
-        pStateFile = os.open("/var/www/wsgi/" + sUsername + "/state.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
-        os.write(pStateFile, str(sClientState))
-        os.close(pStateFile)
-
-        # Release the system lock
-        if bLockSystem:
-            self.UnlockSystem(sUsername)
-        return True
-
-    def GetSequenceList(self, sUsername, sType):
-        # Load the sequence
-        pSequence = self.GetSequenceInternal(sUsername, 108)
-
-        # Create 25 copies of our sequence
-        pSequenceList = []
-        for x in range(0, 25):
-            pSequenceListItem = pSequence["metadata"].copy()
-            pSequenceListItem["name"] += " (" + str(x) + ")"
-            pSequenceListItem["comment"] += " (" + str(x) + ")"
-            pSequenceListItem["id"] += x
-            pSequenceList.append(pSequenceListItem)
-
-        # Return the sequence list
-        return pSequenceList
-
-    def GetSequence(self, sUsername, nSequenceID):
-        # Get the basic sequence
-        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
-
-        # Add details to each component
-        for pComponent in pSequence["components"]:
-            self.AddComponentDetails(sUsername, nSequenceID, pComponent)
-
-        # Return the sequence
-        return pSequence
-
-    def GetSequenceComponent(self, sUsername, nSequenceID, nComponentID):
-        # Load the sequence
-        pSequence = self.GetSequenceInternal(sUsername, nSequenceID)
-
-        # Remove all the components except the one we are interested in
-        pSequence["components"] = filter(lambda pComponent: pComponent["id"] == nComponentID, pSequence["components"])
-
-        # Make sure we found the component
-        if len(pSequence["components"]) == 0:
-            raise Exception("Failed to locate sequence component")
-
-        # Add details to the component
-        self.AddComponentDetails(sUsername, nSequenceID, pSequence["components"][0])
-
-        # Return the sequence
-        return pSequence
 
     def SaveSequence(self, sUsername, pSequence, bLockSystem = True, bSystemSequence = False):
         # Obtain a lock on the system
@@ -379,7 +300,7 @@ class Elixys:
             if nInsertionID != None:
                 # Load the component if we don't have one
                 if pComponent == None:
-                    pComponent = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)["components"][0]
+                    pComponent = None  #self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)["components"][0]
 
                 # Insert the component and remove the old
                 pSequence["components"].insert(nInsertionIndex, self.RemoveComponentDetails(pComponent))
@@ -401,10 +322,10 @@ class Elixys:
                 pSequence["components"].append(self.RemoveComponentDetails(pComponent))
 
             # Select the component
-            sClientState = self.GetClientState(sUsername)
+            sClientState = self.pDatabase.GetUserClientState(sUsername, sUsername)
             pClientStateComponents = sClientState.split(".")
             sClientState = pClientStateComponents[0] + "." + str(nSequenceID) + "." + str(pComponent["id"])
-            self.SaveClientState(sUsername, sClientState)
+            self.pDatabase.UpdateUserClientState(sUsername, sUsername, sClientState)
 
         # Save the sequence
         self.SaveSequence(sUsername, pSequence, False, nSequenceID == 10000)
@@ -439,51 +360,6 @@ class Elixys:
 
     def CopySequence(self, sUsername, nSequenceID, sName, sComment, sCreator):
         return False
-
-    def GetSequenceReagent(self, sUsername, nSequenceID, nReagentID):
-        # Load all of our reagents
-        pReagents = self.GetSequenceReagentsInternal(sUsername, nSequenceID)
-
-        # Locate and return the reagent of interest
-        pReagent = {"type":"reagent"}
-        for pSequenceReagent in pReagents:
-            if pSequenceReagent["reagentid"] == nReagentID:
-                pReagent.update(pSequenceReagent)
-                return pReagent
-
-        # Request reagent not found
-        pReagent.update({"available":False,
-            "reagentid":0,
-            "componentid":0,
-            "position":"",
-            "name":"[invalid]",
-            "description":"[invalid]"})
-        return pReagent
-
-    def SaveSequenceReagent(self, sUsername, nSequenceID, pReagent):
-        # Load all of our reagents
-        pReagents = self.GetSequenceReagentsInternal(sUsername, nSequenceID)
-
-        # Locate the reagent of interest
-        nReagentIndex = 0
-        for pTargetReagent in pReagents:
-            if pTargetReagent["reagentid"] == pReagent["reagentid"]:
-                # The index points to this reagent
-                break
-            else:
-                nReagentIndex += 1
-
-        # Update the existing reagent
-        if nReagentIndex < len(pReagents):
-            pReagents[nReagentIndex]["available"] = pReagent["available"]
-            pReagents[nReagentIndex]["name"] = pReagent["name"]
-            pReagents[nReagentIndex]["description"] = pReagent["description"]
-        else:
-            raise Exception("Failed to find reagent")
-
-        # Save the reagents
-        self.SaveSequenceReagentsInternal(sUsername, pReagents, True, nSequenceID == 10000)
-        return True
 
     ### Internal functions ###
 
@@ -560,58 +436,6 @@ class Elixys:
         # Return the sequence
         return pSequence
 
-    def GetSequenceReagentsInternal(self, sUsername, nSequenceID):
-        # Obtain a lock on the system
-        self.LockSystem(sUsername)
-
-        # Determine the subdirectory
-        if nSequenceID == 10000:
-            sSubdirectory = "system"
-        else:
-            sSubdirectory = sUsername
-
-        # Attempt to get the reagents from the file system
-        try:
-            pReagentsFile = os.open("/var/www/wsgi/" + sSubdirectory + "/reagents.txt", os.O_RDWR)
-            sReagents = os.read(pReagentsFile, 10000)
-            os.close(pReagentsFile)
-            pReagents = json.loads(sReagents)
-        except OSError as e:
-            # Check the error type
-            if e.errno != errno.ENOENT:
-                # An error other than file does not exist was encountered.  Release the system lock and raise again
-                self.UnlockSystem(sUsername)
-                raise
-            else:
-                # Reagents do not exist.  Default to the dummy reagents and create the file
-                pReagents = DummyData.GetDefaultSequenceReagents()
-                self.SaveSequenceReagentsInternal(sUsername, pReagents, False, nSequenceID == 10000)
-
-        # Release the system lock and return the list of reagents
-        self.UnlockSystem(sUsername)
-        return pReagents
-
-    def SaveSequenceReagentsInternal(self, sUsername, pReagents, bLockSystem = True, bSystemSequence = False):
-        # Obtain a lock on the system
-        if bLockSystem:
-            self.LockSystem(sUsername, bSystemSequence)
-
-        # Set the subdirectory
-        if bSystemSequence:
-            sSubdirectory = "system"
-        else:
-            sSubdirectory = sUsername
-
-        # Open and write to the reagent file
-        pReagentsFile = os.open("/var/www/wsgi/" + sSubdirectory + "/reagents.txt", os.O_CREAT | os.O_TRUNC | os.O_RDWR)
-        os.write(pReagentsFile, json.dumps(pReagents))
-        os.close(pReagentsFile)
-
-        # Release the system lock
-        if bLockSystem:
-            self.UnlockSystem(sUsername, bSystemSequence)
-        return True
-
     def GetSystemState(self, sUsername):
         # Obtain a lock on the system
         self.LockSystem(sUsername, True)
@@ -650,103 +474,6 @@ class Elixys:
         if bLockSystem:
             self.UnlockSystem(sUsername, True)
         return True
-
-    def AddComponentDetails(self, sUsername, nSequenceID, pComponent):
-        # Determine the starting reagent ID
-        if nSequenceID != 10000:
-            nBaseReagentID = 1
-        else:
-            nBaseReagentID = 31;
-
-        # Add component-specific details
-        if pComponent["componenttype"] == "CASSETTE":
-            pComponent.update({"name":"Cassette " + str(pComponent["id"])})
-            pComponent.update({"reactordescription":"Reactor associated with this cassette"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "ADD":
-            pReagent = self.GetSequenceReagent(sUsername, nSequenceID, pComponent["reagent"])
-            if pReagent["name"] != "[invalid]":
-                pComponent.update({"name":"Add " + pReagent["name"]})
-            else:
-                pComponent.update({"name":"Add"})
-            pComponent.update({"reactordescription":"Reactor where the reagent will be added"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
-            pComponent.update({"reagentvalidation":"type=enum-reagent; values=" + str(nBaseReagentID) + "," + str(nBaseReagentID + 1) + "," +
-                str(nBaseReagentID + 2) + "," + str(nBaseReagentID + 3) + "," + str(nBaseReagentID + 4) + "," + str(nBaseReagentID + 5) + "," +
-                str(nBaseReagentID + 6) + "," + str(nBaseReagentID + 7) + "; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "EVAPORATE":
-            pComponent.update({"name":"Evaporate"})
-            pComponent.update({"reactordescription":"Reactor where the evaporation will be performed"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
-            pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
-            pComponent.update({"evaporationtemperaturedescription":"Reaction temperature in degrees Celsius"})
-            pComponent.update({"evaporationtemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-            pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
-            pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-            pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
-            pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "TRANSFER":
-            pComponent.update({"name":"Transfer"})
-            pComponent.update({"reactordescription":"Reactor where the source reagent resides"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"targetdescription":"Target where the reactor contents will be transferred"})
-	    pComponent.update({"targetvalidation":"type=enum-target; values=" + str(nBaseReagentID + 8) + "; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "ELUTE":
-            pComponent.update({"name":"Elute"})
-            pComponent.update({"reactordescription":"Reactor where the reagent will be eluted"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"reagentdescription":"Reagent used to elute the target"})
-            pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
-            pComponent.update({"targetdescription":"Target to be eluted with the reagent"})
-            pComponent.update({"targetvalidation":"type=enum-target; values=" + str(nBaseReagentID + 9) + "; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "REACT":
-            pComponent.update({"name":"React"})
-            pComponent.update({"reactordescription":"Reactor where the reaction will be performed"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"positiondescription":"Position where the reaction will take place"})
-            pComponent.update({"positionvalidation":"type=enum-literal; values=1,2; required=true"})
-            pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
-            pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
-            pComponent.update({"reactiontemperaturedescription":"Reaction temperature in degrees Celsius"})
-            pComponent.update({"reactiontemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-            pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
-            pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
-            pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
-            pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "PROMPT":
-            pComponent.update({"name":"Prompt"})
-            pComponent.update({"reactordescription":""})
-            pComponent.update({"reactorvalidation":""})
-            pComponent.update({"messagedescription":"This will be displayed to the user"})
-            pComponent.update({"messagevalidation":"type=string; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "INSTALL":
-            pComponent.update({"name":"Install"})
-            pComponent.update({"reactordescription":"Reactor that will be moved to the install position"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"messagedescription":"This will be displayed to the user"})
-            pComponent.update({"messagevalidation":"type=string; required=true"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "COMMENT":
-            pComponent.update({"name":"Comment"})
-            pComponent.update({"reactordescription":""})
-            pComponent.update({"reactorvalidation":""})
-            pComponent.update({"commentdescription":"Enter a comment"})
-            pComponent.update({"commentvalidation":"type=string"})
-            pComponent.update({"validationerror":False})
-        elif pComponent["componenttype"] == "ACTIVITY":
-            pComponent.update({"name":"Activity"})
-            pComponent.update({"reactordescription":"Reactor where the radioactivity will be measures"})
-            pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
-            pComponent.update({"validationerror":False})
 
     def UpdateComponentDetails(self, pTargetComponent, pSourceComponent):
         # Update the parts of the component that we save
@@ -844,7 +571,7 @@ class Elixys:
                 nComponentState = int(pSystemStateComponents[4])
 
         # Load the component
-        pSequence = self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
+        pSequence = None #self.GetSequenceComponent(sUsername, nSequenceID, nComponentID)
 
         # Advance the system state depending on the component type
         if pSequence["components"][0]["componenttype"] == "COMMENT":
@@ -886,7 +613,7 @@ class Elixys:
 
     def RunSequenceAdvance(self, sUsername, nSequenceID, nComponentID, sManualRunStep):
         # Try and find the next component
-        pSequence = self.GetSequence(sUsername, nSequenceID)
+        pSequence = None #self.GetSequence(sUsername, nSequenceID)
         nIndex = 0
         bComponentFound = False
         nNextComponentID = None
@@ -910,11 +637,11 @@ class Elixys:
                 # The manual run step is complete.  Return to the selection step
                 sRunState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
                 self.SaveRunState(sUsername, sRunState)
-                self.SaveClientState(sUsername, sRunState)
+                self.pDatabase.UpdateUserClientState(sUsername, sUsername, sRunState)
             else:
                 # The noninteractive sequence run is complete.  Return to the home page
                 self.SaveSystemState(sUsername, "NONE")
-                self.SaveClientState(sUsername, "HOME")
+                self.pDatabase.UpdateUserClientState(sUsername, sUsername, "HOME")
             return None
 
     def UpdateServerState(self, pServerState):

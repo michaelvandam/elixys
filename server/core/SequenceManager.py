@@ -12,6 +12,7 @@ import json
 class SequenceManager:
   def __init__(self):
     self.database = DBComm.DBComm()
+    self.database.Connect()
     #self.currentSequence = Sequences.Sequence()
   def logError(self):
     pass
@@ -81,10 +82,14 @@ class SequenceManager:
       raise Exception("Invalid sequence parameters")
 
     # Add the reagents
+    nCurrentCassette = 0
     for pReagent in pSequence["reagents"]:
       if (pReagent["type"] == "reagent") and (pReagent["cassette"] != 0) and (pReagent["position"] != "") and (pReagent["name"] != ""):
         self.database.UpdateReagentByPosition("System", nSequenceID, pReagent["cassette"], pReagent["position"], True, pReagent["name"],
           pReagent["description"])
+        if nCurrentCassette != pReagent["cassette"]:
+          self.database.EnableCassette("System", nSequenceID, pReagent["cassette"] - 1)
+          nCurrentCassette = pReagent["cassette"]
       else:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 
@@ -132,7 +137,7 @@ class SequenceManager:
                 pComponent["target"] = pReagent[0]
 
         # Add the component
-        self.database.CreateComponent("System", nSequenceID, pComponent["type"], "", json.dumps(pComponent))
+        self.database.CreateComponent("System", nSequenceID, pComponent["componenttype"], "", json.dumps(pComponent))
       else:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 

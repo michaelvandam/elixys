@@ -12,6 +12,7 @@ from SequenceManager import SequenceManager
 if __name__ == '__main__':
     # Create the database layer and sequence manager
     pDBComm = DBComm()
+    pDBComm.Connect()
     pSequenceManager = SequenceManager()
 
     # Create the user roles
@@ -44,5 +45,6 @@ if __name__ == '__main__':
     pSequenceManager.ImportSequence("FACSynthesis.seq")
 
     # Complete
+    pDBComm.Disconnect()
     print "Done"
 

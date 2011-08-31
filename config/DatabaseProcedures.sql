@@ -75,12 +75,13 @@ CREATE PROCEDURE DeleteRole(IN iRoleName VARCHAR(30))
 DROP PROCEDURE IF EXISTS GetAllUsers;
 CREATE PROCEDURE GetAllUsers()
     BEGIN
+        DECLARE lUserID INT UNSIGNED;
         DECLARE lUsername VARCHAR(30);
         DECLARE lFirstName VARCHAR(20);
         DECLARE lLastName VARCHAR(20);
         DECLARE lRoleName VARCHAR(30);
         DECLARE lNoMoreRows BOOLEAN default FALSE;
-        DECLARE lUsersCursor CURSOR FOR SELECT Username FROM Users;
+        DECLARE lUsersCursor CURSOR FOR SELECT UserID FROM Users;
 
         -- Declare exception handler
         DECLARE CONTINUE HANDLER FOR NOT FOUND
@@ -94,15 +95,15 @@ CREATE PROCEDURE GetAllUsers()
             FirstName VARCHAR(20) NOT NULL,
             LastName VARCHAR(20) NOT NULL,
             RoleName VARCHAR(30) NOT NULL
-        ) ENGINE=Memory COMMENT="Temporary users.";
+        ) ENGINE=Memory COMMENT="Temporary users";
 
-        -- Open the cursor and get the number of rows
+        -- Open the cursor
         OPEN lUsersCursor;
 
         -- Iterate over the users and fill our temporary table
         UsersLoop: LOOP
             -- Get the next username
-            FETCH lUsersCursor INTO lUsername;
+            FETCH lUsersCursor INTO lUserID;
 
             -- Break out of the loop if we failed to get a username
             IF lNoMoreRows THEN
@@ -111,7 +112,7 @@ CREATE PROCEDURE GetAllUsers()
             END IF;
 
             -- Call the internal function and insert into the temporary table
-            CALL Internal_GetUser(lUsername, lFirstName, lLastName, lRoleName);
+            CALL Internal_GetUserByID(lUserID, lUsername, lFirstName, lLastName, lRoleName);
             INSERT INTO tmp_Users VALUES (lUsername, lFirstName, lLastName, lRoleName);
         END LOOP UsersLoop;
 
@@ -138,10 +139,10 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
             FirstName VARCHAR(20) NOT NULL,
             LastName VARCHAR(20) NOT NULL,
             RoleName VARCHAR(30) NOT NULL
-        ) ENGINE=Memory COMMENT="Temporary user data.";
+        ) ENGINE=Memory COMMENT="Temporary user data";
 
         -- Call the internal function
-        CALL Internal_GetUser(iUsername, lFirstName, lLastName, lRoleName);
+        CALL Internal_GetUserByName(iUsername, lFirstName, lLastName, lRoleName);
 
         -- Fill and return the user result set
         INSERT INTO tmp_User VALUES (iUsername, lFirstName, lLastName, lRoleName);
@@ -238,8 +239,9 @@ CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState
 DROP PROCEDURE IF EXISTS GetAllSequences;
 CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
     BEGIN
-        -- Fetch the sequences
-        SELECT * FROM Sequences WHERE Type = iType;
+        -- Filter the sequences based on type and replace the user IDs with names
+        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID, Sequences.ComponentCount
+            FROM Sequences, Users WHERE Sequences.Type = iType AND Sequences.UserID = Users.UserID;
     END //
 
 /* Get a sequence:
@@ -248,8 +250,9 @@ CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
 DROP PROCEDURE IF EXISTS GetSequence;
 CREATE PROCEDURE GetSequence(IN iSequenceID INT UNSIGNED)
     BEGIN
-        -- Fetch the sequence
-        SELECT * FROM Sequences WHERE SequenceID = iSequenceID;
+        -- Filter the sequences based on type and replace the user IDs with names
+        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID, Sequences.ComponentCount
+            FROM Sequences, Users WHERE Sequences.SequenceID = iSequenceID AND Sequences.UserID = Users.UserID;
     END //
 
 /* Create a new sequence:
@@ -279,13 +282,13 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
 
         -- Create the entry in the sequences table
-        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0);
+        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0, 0);
         SET lSequenceID = LAST_INSERT_ID();
 
         -- Create each cassette
         WHILE lCassette < iCassettes DO
             -- Create the cassette
-            CALL CreateComponent(lSequenceID, "Saved", "CASSETTE", "", lCassetteID);
+            CALL CreateComponent(lSequenceID, "CASSETTE", "", "", lCassetteID);
 
             -- Update the sequence table reference if this is the first cassette
             IF lCassette = 0 THEN
@@ -293,7 +296,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             END IF;
 
             -- Start the cassette JSON string
-            SET lCassetteJSON = CONCAT("{\"type\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"available\":False, \"reagents\":[");
+            SET lCassetteJSON = CONCAT("{\"type\":\"component\", \"componenttype\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"available\":false, \"reagents\":[");
 
             -- Create the reagents
             SET lReagent = 0;
@@ -331,7 +334,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lCassetteJSON = CONCAT(lCassetteJSON, "]}");
 
             -- Update the cassette JSON string
-            UPDATE Components SET Details = lCassetteJSON WHERE ComponentID = lCassetteID;
+            CALL UpdateComponent(lCassetteID, "CASSETTE", "", lCassetteJSON);
 
             -- Increment the cassette counter
             SET lCassette = lCassette + 1;
@@ -467,14 +470,20 @@ CREATE PROCEDURE GetComponent(IN iComponentID INT UNSIGNED)
         SELECT * FROM Components WHERE ComponentID = iComponentID;
     END //
 
-/* Gets all components associated with a sequence:
- *   IN SequenceID - ID of the sequence
+/* Looks up a cassette component by number:
+ *   IN SequenceID - ID of the sequence containing the cassette
+ *   IN Cassette - Number of the cassette
  */
-DROP PROCEDURE IF EXISTS GetSequenceComponents;
-CREATE PROCEDURE GetSequenceComponents(IN iSequenceID INT UNSIGNED)
+DROP PROCEDURE IF EXISTS GetCassette;
+CREATE PROCEDURE GetCassette(IN iSequenceID INT UNSIGNED, IN iCassette INT UNSIGNED)
     BEGIN
-        -- Return the components
-        SELECT * FROM Components WHERE SequenceID = iSequenceID;
+        DECLARE lCassetteID INT UNSIGNED;
+
+        -- Get the cassette component ID
+        CALL Internal_GetComponentByOffset(iSequenceID, iCassette, lCassetteID);
+
+        -- Return the cassette
+        SELECT * FROM Components WHERE ComponentID = lCassetteID;
     END //
 
 /* Creates a new component and inserts it at the end of a sequence:
@@ -510,6 +519,7 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
     BEGIN
         DECLARE lUserID INT UNSIGNED;
         DECLARE lNextComponentID INT UNSIGNED;
+        DECLARE lComponentCount INT UNSIGNED;
 
         -- Get the component after the insert position
         CALL Internal_GetNextComponent(iInsertID, lNextComponentID);
@@ -524,6 +534,10 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
         -- Update the previous and next components
         UPDATE Components SET NextComponentID = oComponentID WHERE ComponentID = iInsertID;
         UPDATE Components SET PreviousComponentID = oComponentID WHERE ComponentID = lNextComponentID;
+
+        -- Update the sequences's component count
+        SET lComponentCount = (SELECT ComponentCount FROM Sequences WHERE SequenceID = iSequenceID) + 1;
+        UPDATE Sequences SET ComponentCount = lComponentCount WHERE SequenceID = iSequenceID;
     END //
 
 /* Updates an existing component:
@@ -539,6 +553,37 @@ CREATE PROCEDURE UpdateComponent(IN iComponentID INT UNSIGNED, IN iType VARCHAR(
         UPDATE Components SET Type = iType, Name = iName, Details = iDetails WHERE ComponentID = iComponentID;
     END //
 
+/* Moves an existing component:
+ *   IN ComponentID - ID of the component to update
+ *   IN InsertAfterID - ID of the component that will preceed ComponentID after the move
+ */
+DROP PROCEDURE IF EXISTS MoveComponent;
+CREATE PROCEDURE MoveComponent(IN iComponentID INT UNSIGNED, iInsertAfterID INT UNSIGNED)
+    BEGIN
+        DECLARE lOldPreviousComponentID INT UNSIGNED;
+        DECLARE lOldNextComponentID INT UNSIGNED;
+        DECLARE lNewNextComponentID INT UNSIGNED;
+
+        -- Find the old previous and next component IDs
+        CALL Internal_GetPreviousComponent(iComponentID, lOldPreviousComponentID);
+        CALL Internal_GetNextComponent(iComponentID, lOldNextComponentID);
+
+        -- Find the new next component ID
+        CALL Internal_GetNextComponent(iInsertAfterID, lNewNextComponentID);
+
+        -- Remove the component
+        UPDATE Components SET NextComponentID = lOldNextComponentID WHERE ComponentID = lOldPreviousComponentID;
+        UPDATE Components SET PreviousComponentID = lOldPreviousComponentID WHERE ComponentID = lOldNextComponentID;
+
+        -- Insert the component
+        UPDATE Components SET NextComponentID = iComponentID WHERE ComponentID = iInsertAfterID;
+        UPDATE Components SET PreviousComponentID = iComponentID WHERE ComponentID = lNewNextComponentID;
+
+        -- Update the component
+        UPDATE Components SET PreviousComponentID = iInsertAfterID WHERE ComponentID = iComponentID;
+        UPDATE Components SET NextComponentID = lNewNextComponentID WHERE ComponentID = iComponentID;
+    END //
+
 /* Deletes the component and removes it from the sequence:
  *   IN ComponentID - ID of the component to delete
  */
@@ -547,6 +592,8 @@ CREATE PROCEDURE DeleteComponent(IN iComponentID INT UNSIGNED)
     BEGIN
         DECLARE lPreviousComponentID INT UNSIGNED;
         DECLARE lNextComponentID INT UNSIGNED;
+        DECLARE lSequenceID INT UNSIGNED;
+        DECLARE lComponentCount INT UNSIGNED;
 
         -- Find the previous and next component IDs
         CALL Internal_GetPreviousComponent(iComponentID, lPreviousComponentID);
@@ -555,6 +602,11 @@ CREATE PROCEDURE DeleteComponent(IN iComponentID INT UNSIGNED)
         -- Update the component references
         UPDATE Components SET NextComponentID = lNextComponentID WHERE ComponentID = lPreviousComponentID;
         UPDATE Components SET PreviousComponentID = lPreviousComponentID WHERE ComponentID = lNextComponentID;
+
+        -- Update the sequences's component count
+        SET lSequenceID = (SELECT SequenceID FROM Components WHERE ComponentID = iComponentID);
+        SET lComponentCount = (SELECT ComponentCount FROM Sequences WHERE SequenceID = lSequenceID) - 1;
+        UPDATE Sequences SET ComponentCount = lComponentCount WHERE SequenceID = lSequenceID;
 
         -- Delete the component
         DELETE FROM Components WHERE ComponentID = iComponentID;
@@ -565,8 +617,8 @@ CREATE PROCEDURE DeleteComponent(IN iComponentID INT UNSIGNED)
  ***************************************************************************************************************************************************************/
 
 /* Gets information about the specified user */
-DROP PROCEDURE IF EXISTS Internal_GetUser;
-CREATE PROCEDURE Internal_GetUser(IN iUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30))
+DROP PROCEDURE IF EXISTS Internal_GetUserByName;
+CREATE PROCEDURE Internal_GetUserByName(IN iUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30))
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -574,6 +626,22 @@ CREATE PROCEDURE Internal_GetUser(IN iUsername VARCHAR(30), OUT oFirstName VARCH
         SELECT FirstName FROM Users WHERE Username = iUsername INTO oFirstName;
         SELECT LastName FROM Users WHERE Username = iUsername INTO oLastName;
         SELECT RoleID FROM Users WHERE Username = iUsername INTO lRoleID;
+
+        -- Look up the role name
+        SELECT RoleName FROM Roles WHERE RoleID = lRoleID INTO oRoleName;
+    END //
+
+/* Gets information about the specified user */
+DROP PROCEDURE IF EXISTS Internal_GetUserByID;
+CREATE PROCEDURE Internal_GetUserByID(IN iUserID INT UNSIGNED, OUT oUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30))
+    BEGIN
+        DECLARE lRoleID INT UNSIGNED;
+
+        -- Fetch the user data
+        SELECT Username FROM Users WHERE UserID = iUserID INTO oUsername;
+        SELECT FirstName FROM Users WHERE UserID = iUserID INTO oFirstName;
+        SELECT LastName FROM Users WHERE UserID = iUserID INTO oLastName;
+        SELECT RoleID FROM Users WHERE UserID = iUserID INTO lRoleID;
 
         -- Look up the role name
         SELECT RoleName FROM Roles WHERE RoleID = lRoleID INTO oRoleName;

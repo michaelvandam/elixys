@@ -6,12 +6,20 @@ import json
 from wsgiref.headers import Headers
 import sys
 sys.path.append("/opt/elixys/core")
-#sys.path.append("/opt/elixys/database")
-#from DBComm import DBComm
+sys.path.append("/opt/elixys/database")
+
+# Change the python egg cache directory to a place where Apache has write permission
+import os
+os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi"
+
+# Import and create the database connection
+import DBComm
+gDatabase = DBComm.DBComm()
 
 # Import and create the core Elixys server
 from DummyElixys import Elixys 
 gElixys = Elixys()
+gElixys.SetDatabase(gDatabase)
 
 ### Logging function
 
@@ -48,17 +56,18 @@ def HandleGetConfiguration(sRemoteUser):
 def HandleGetState(sClientState, sRemoteUser):
     # Is the remote user the one that is currently running the system?
     global gElixys
+    global gDatabase
     if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
         # Yes, so make sure the user is in the appropriate run state
         sRunState = gElixys.GetRunState(sRemoteUser)
         if sRunState.startswith("RUNSEQUENCE") and not sClientState.startswith("RUNSEQUENCE") and not sClientState.startswith("PROMPT"):
             pRunStateComponents = sRunState.split(".")
             sClientState = "RUNSEQUENCE." + pRunStateComponents[1] + "." + pRunStateComponents[2]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
         elif sRunState.startswith("RUNMANUAL") and not sClientState.startswith("RUNMANUAL") and not sClientState.startswith("PROMPT"):
             pRunStateComponents = sRunState.split(".")
             sClientState = "RUNMANUAL." + pRunStateComponents[1] + "." + pRunStateComponents[2]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
 
     # Get the user information and server state
     pUser = {"type":"user"}
@@ -67,7 +76,7 @@ def HandleGetState(sClientState, sRemoteUser):
     pServerState.update(gElixys.GetServerState(sRemoteUser))
 
     # Update the full client state because GetServerState() may have changed it
-    sClientState = gElixys.GetClientState(sRemoteUser)
+    sClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
 
     # Get the full client state and break it into prompt and client components
     pPromptStateComponent = GetPromptStateComponent(sClientState, sRemoteUser)
@@ -212,7 +221,7 @@ def HandleGetStateSelect(sRemoteUser):
 
 # Handle GET /state for Select Sequence (Saved Sequences tab)
 def HandleGetStateSelectSavedSequences(sRemoteUser):
-    global gElixys
+    global gDatabase
     pState = HandleGetStateSelect(sRemoteUser)
     pState.update({"tabid":"SAVEDSEQUENCES"})
     pState["optionbuttons"].append({"type":"button",
@@ -221,21 +230,22 @@ def HandleGetStateSelectSavedSequences(sRemoteUser):
     pState["optionbuttons"].append({"type":"button",
         "text":"Delete",
         "id":"DELETE"})
-    pState.update({"sequences":gElixys.GetSequenceList(sRemoteUser, "Saved")})
+    pState.update({"sequences":gDatabase.GetAllSequences(sRemoteUser, "Saved")})
     return pState
 
 # Handle GET /state for Select Sequence (Manual Runs tab)
 def HandleGetStateSelectManualRuns(sRemoteUser):
-    global gElixys
+    global gDatabase
     pState = HandleGetStateSelect(sRemoteUser)
     pState.update({"tabid":"MANUALRUNS"})
-    pState.update({"sequences":gElixys.GetSequenceList(sRemoteUser, "Manual")})
+    pState.update({"sequences":gDatabase.GetAllSequences(sRemoteUser, "Manual")})
     return pState
 
 # Handle GET /state for View Sequence
 def HandleGetStateView(sClientState, sRemoteUser):
     # Split the state and extract the sequence ID
     global gElixys
+    global gDatabase
     pClientStateComponents = sClientState.split(".")
     nSequenceID = int(pClientStateComponents[1])
 
@@ -245,12 +255,12 @@ def HandleGetStateView(sClientState, sRemoteUser):
         nComponentID = int(pClientStateComponents[2])
     else:
         # No, the component ID is missing.  Get the sequence and the ID of the first component
-        pSequence = gElixys.GetSequence(sRemoteUser, nSequenceID)
+        pSequence = GetSequence(sRemoteUser, nSequenceID)
         nComponentID = pSequence["components"][0]["id"]
 
         # Update our state
         sClientState = "VIEW." + str(nSequenceID) + "." + str(nComponentID)
-        gElixys.SaveClientState(sRemoteUser, sClientState)
+        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
 
     # Start with the common return object
     pState = {"navigationbuttons":[{"type":"button",
@@ -273,6 +283,7 @@ def HandleGetStateView(sClientState, sRemoteUser):
 def HandleGetStateEdit(sClientState, sRemoteUser):
     # Split the state and extract the sequence ID
     global gElixys
+    global gDatabase
     pClientStateComponents = sClientState.split(".")
     nSequenceID = int(pClientStateComponents[1])
 
@@ -282,12 +293,12 @@ def HandleGetStateEdit(sClientState, sRemoteUser):
         nComponentID = int(pClientStateComponents[2])
     else:
         # No, the component ID is missing.  Get the sequence and the ID of the first component
-        pSequence = gElixys.GetSequence(sRemoteUser, nSequenceID)
+        pSequence = GetSequence(sRemoteUser, nSequenceID)
         nComponentID = pSequence["components"][0]["id"]
 
         # Update our state
         sClientState = "EDIT." + str(nSequenceID) + "." + str(nComponentID)
-        gElixys.SaveClientState(sRemoteUser, sClientState)
+        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
 
     # Start with the common return object
     pState = {"navigationbuttons":[{"type":"button",
@@ -465,23 +476,24 @@ def HandleGetStateRunSequencePromptAbort(pPromptState):
 def HandleGetStateRunSequencePromptUnitOperation(pPromptState, sClientState, sRemoteUser):
     # Look up the current sequence component
     global gElixys
+    global gDatabase
     sRunState = gElixys.GetRunState(sRemoteUser)
     pRunStateComponents = sRunState.split(".")
     nSequenceID = int(pRunStateComponents[1])
     nComponentID = int(pRunStateComponents[2])
-    pSequence = gElixys.GetSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
+    pComponent = GetComponent(sRemoteUser, nComponentID)
 
     # Make sure this component requires a prompt
-    if (pSequence["components"][0]["componenttype"] != "PROMPT") and (pSequence["components"][0]["componenttype"] != "INSTALL"):
+    if (pComponent["componenttype"] != "PROMPT") and (pComponent["componenttype"] != "INSTALL"):
         # No, so update the client state and return
         sClientState = gElixys.GetRunState(sRemoteUser)
-        gElixys.SaveClientState(sRemoteUser, sClientState)
+        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
         return pPromptState
 
     # Set the prompt message
     pPromptState["show"] = True
     pPromptState["title"] = "Prompt"
-    pPromptState["text1"] = pSequence["components"][0]["message"]
+    pPromptState["text1"] = pComponent["message"]
 
     # Set the button text depending on whether we are the user running the system
     if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
@@ -549,7 +561,7 @@ def HandleGetSequence(sRemoteUser, sPath):
 
     # Load the entire sequence
     pSequence = {"type":"sequence"}
-    pSequence.update(gElixys.GetSequence(sRemoteUser, nSequenceID))
+    pSequence.update(GetSequence(sRemoteUser, nSequenceID))
 
     # Remove excess sequence data
     pNewComponents = []
@@ -568,31 +580,22 @@ def HandleGetSequence(sRemoteUser, sPath):
 # Handle GET /sequence/[sequenceid]/component/[componentid]
 def HandleGetComponent(sRemoteUser, sPath):
     # Extract sequence and component IDs
-    global gElixys
     pPathComponents = sPath.split("/")
-    nSequenceID = int(pPathComponents[2])
     nComponentID = int(pPathComponents[4])
 
-    # Load the sequence and only the desired component
-    pSequence = gElixys.GetSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
-
-    # Create and return the component
-    pComponent = {"type":"component"}
-    pComponent.update(pSequence["components"][0])
-    return pComponent
+    # Return the desired component
+    return GetComponent(sRemoteUser, nComponentID)
 
 # Handle GET /sequence/[sequenceid]/reagent/[reagentid]
 def HandleGetReagent(sRemoteUser, sPath):
     # Extract sequence and reagent IDs
-    global gElixys
+    global gDatabase
     pPathComponents = sPath.split("/")
     nSequenceID = int(pPathComponents[2])
     nReagentID = int(pPathComponents[4])
 
     # Return the sequence reagent
-    pReagent = {"type":"reagent"}
-    pReagent.update(gElixys.GetSequenceReagent(sRemoteUser, nSequenceID, nReagentID))
-    return pReagent
+    return gDatabase.GetReagent(sRemoteUser, nReagentID)
 
 ### POST handler functions ###
 
@@ -628,6 +631,7 @@ def HandlePost(sClientState, sRemoteUser, sPath, pBody, nBodyLength):
 def HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on the home page
     global gElixys
+    global gDatabase
     if sClientState.startswith("HOME") == False:
         raise Exception("State misalignment");
 
@@ -641,17 +645,17 @@ def HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "CREATE":
             # Switch states to Select Sequence
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUAL":
             # Switch states to Prompt (Manual Run)
             sClientState = "PROMPT_MANUALRUN;" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "OBSERVE":
             # Swtich to Run Sequence
             sClientState = gElixys.GetRunState(sRemoteUser)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -661,6 +665,7 @@ def HandlePostHome(sClientState, sRemoteUser, pBody, nBodyLength):
 def HandlePostSelect(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Select Sequence
     global gElixys
+    global gDatabase
     if sClientState.startswith("SELECT") == False:
         raise Exception("State misalignment");
 
@@ -675,48 +680,48 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "VIEW":
             # Switch states to View Sequence
             sClientState = "VIEW." + str(nSequenceID)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "EDIT":
             # Switch states to Edit Sequence
             sClientState = "EDIT." + str(nSequenceID)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "RUN":
             # Switch states to Prompt (Run Sequence)
             sClientState = "PROMPT_RUNSEQUENCE;" + str(nSequenceID) + ";" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "BACK":
             # Switch states to Home
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "CREATE":
             # Switch states to Prompt (Create Sequence)
             sClientState = "PROMPT_CREATESEQUENCE;" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "COPY":
             # Switch states to Prompt (Copy Sequence)
             sClientState = "PROMPT_COPYSEQUENCE;" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "DELETE":
             # Switch states to Prompt (Delete Sequence)
             sClientState = "PROMPT_DELETESEQUENCE;" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sActionType == "TABCLICK":
         if sActionTargetID == "SAVEDSEQUENCES":
             # Switch states to the Saved Sequences tab
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "MANUALRUNS":
             # Switch states to the Manual Runs tab
             sClientState = "SELECT_MANUALRUNS"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -726,6 +731,7 @@ def HandlePostSelect(sClientState, sRemoteUser, pBody, nBodyLength):
 def HandlePostView(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on View Sequence
     global gElixys
+    global gDatabase
     if sClientState.startswith("VIEW") == False:
         raise Exception("State misalignment")
 
@@ -750,12 +756,12 @@ def HandlePostView(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "EDIT":
             # Switch states to Edit Sequence
             sClientState = "EDIT." + str(nSequenceID) + "." + str(nComponentID)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "RUN":
             # Switch states to Prompt (Run Sequence)
             sClientState = "PROMPT_RUNSEQUENCE;" + str(nSequenceID) + ";" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -765,6 +771,7 @@ def HandlePostView(sClientState, sRemoteUser, pBody, nBodyLength):
 def HandlePostEdit(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Edit Sequence
     global gElixys
+    global gDatabase
     if sClientState.startswith("EDIT") == False:
         raise Exception("State misalignment")
 
@@ -789,7 +796,7 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "RUN":
             # Switch states to Prompt (Run Sequence)
             sClientState = "PROMPT_RUNSEQUENCE;" + str(nSequenceID) + ";" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -799,6 +806,7 @@ def HandlePostEdit(sClientState, sRemoteUser, pBody, nBodyLength):
 def HandlePostRunSequence(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Run Sequence
     global gElixys
+    global gDatabase
     if sClientState.startswith("RUNSEQUENCE") == False:
         raise Exception("State misalignment")
 
@@ -817,12 +825,12 @@ def HandlePostRunSequence(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "ABORT":
             # Switch states to Prompt (Abort sequence run)
             sClientState = "PROMPT_ABORTSEQUENCERUN;" + sClientState
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         elif sActionTargetID == "BACK":
             # Switch states to Home
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -832,6 +840,7 @@ def HandlePostRunSequence(sClientState, sRemoteUser, pBody, nBodyLength):
 def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Manual Run
     global gElixys
+    global gDatabase
     if sClientState.startswith("MANUALRUN") == False:
         raise Exception("State misalignment")
 
@@ -853,7 +862,7 @@ def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
             if sActionTargetID == "BACK":
                 # Switch states to home
                 sClientState = "HOME"
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
 
         # State misalignment in the observing client
@@ -865,26 +874,26 @@ def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
             if sActionTargetID == "ABORT":
                 # Switch states to Prompt (Abort manual run)
                 sClientState = "PROMPT_ABORTMANUALRUN;" + sClientState
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
             elif sActionTargetID == "START":
                 # Advance to the SELECT step
                 sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
                 gElixys.SaveRunState(sRemoteUser, sClientState)
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
             else:
                 # Change the selected cassette
                 sClientState = "MANUALRUN." + str(nSequenceID) + "." + sActionTargetID + ".CASSETTE"
                 gElixys.SaveRunState(sRemoteUser, sClientState)
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
     elif sManualRunStep == "SELECT":
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "COMPLETE":
                 # Switch states to Prompt (Complete manual run)
                 sClientState = "PROMPT_COMPLETEMANUALRUN;" + sClientState
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
     elif sManualRunStep == "CONFIGURE":
         if sActionType == "BUTTONCLICK":
@@ -893,10 +902,10 @@ def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
                 gElixys.DeleteSequenceComponent(sRemoteUser, nSequenceID, nComponentID)
 
                 # Return to the SELECT step
-                nComponentID = gElixys.GetSequence(sRemoteUser, nSequenceID)["components"][0]["id"]
+                nComponentID = GetSequence(sRemoteUser, nSequenceID)["components"][0]["id"]
                 sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
                 gElixys.SaveRunState(sRemoteUser, sClientState)
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
             elif sActionTargetID == "RUN":
                 # Perform the unit operation
@@ -904,14 +913,14 @@ def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
 
                 # Update the client state
                 sClientState = gElixys.GetRunState(sRemoteUser)
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
     elif sManualRunStep == "RUN":
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "ABORT":
                 # Switch states to Prompt (Abort manual operation)
                 sClientState = "PROMPT_ABORTMANUALOPERATION;" + sClientState
-                gElixys.SaveClientState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                 return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -920,20 +929,22 @@ def HandlePostManualRun(sClientState, sRemoteUser, pBody, nBodyLength):
 # Handle sequence POST requests
 def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
     # Check which option the user selected
+    global gDatabase
     if sActionType == "BUTTONCLICK":
         if sActionTargetID == "BACK":
             # Switch states to Select Sequence
             sClientState = "SELECT_SAVEDSEQUENCES"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return sClientState
         elif sActionTargetID == "PREVIOUS":
             # Move to the previous component ID
             nPreviousComponentID = -1
-            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
+            pSequence = GetSequence(sRemoteUser, nSequenceID)
+            for pComponent in pSequence["components"]:
                 if pComponent["id"] == nComponentID:
                     if nPreviousComponentID != -1:
                         sClientState = sType + "." + str(nSequenceID) + "." + str(nPreviousComponentID)
-                        gElixys.SaveClientState(sRemoteUser, sClientState)
+                        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                     return sClientState
                 else:
                     nPreviousComponentID = pComponent["id"]
@@ -941,10 +952,11 @@ def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nCompo
         elif sActionTargetID == "NEXT":
             # Move to the next component ID
             bComponentIDFound = False
-            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
+            pSequence = GetSequence(sRemoteUser, nSequenceID)
+            for pComponent in pSequence["components"]:
                 if bComponentIDFound:
                     sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
-                    gElixys.SaveClientState(sRemoteUser, sClientState)
+                    gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                     return sClientState
                 elif pComponent["id"] == nComponentID:
                     bComponentIDFound = True
@@ -953,11 +965,12 @@ def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nCompo
             raise Exception("Component ID not found in sequence" + str(nComponentID))
         else:
             # Check if the target ID corresponds to one of our sequence components
-            for pComponent in gElixys.GetSequence(sRemoteUser, nSequenceID)["components"]:
+            pSequence = GetSequence(sRemoteUser, nSequenceID)
+            for pComponent in pSequence["components"]:
                 if str(pComponent["id"]) == sActionTargetID:
                     # Update the current component and return the latest state to the client
                     sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
-                    gElixys.SaveClientState(sRemoteUser, sClientState)
+                    gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
                     return sClientState
 
     # Tell the caller we didn't handle the use case
@@ -967,6 +980,7 @@ def HandlePostBaseSequence(sClientState, sRemoteUser, sType, nSequenceID, nCompo
 def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
     # Make sure we are on Prompt
     global gElixys
+    global gDatabase
     if sClientState.startswith("PROMPT") == False:
         raise Exception("State misalignment");
 
@@ -991,7 +1005,7 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
         if sActionTargetID == "COPY":
@@ -1000,7 +1014,7 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
         if sActionTargetID == "DELETE":
@@ -1009,31 +1023,31 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_ABORTSEQUENCERUN"):
         if sActionTargetID == "ABORT":
             # Abort the run and return to the home page
             gElixys.AbortRun(sRemoteUser)
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_RUNSEQUENCE"):
         if sActionTargetID == "OK":
             # Run the sequence
             gElixys.RunSequence(sRemoteUser, int(sClientState.split(";")[1]))
             sClientState = gElixys.GetRunState(sRemoteUser)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[2]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_UNITOPERATION"):
         if sActionTargetID == "OK":
@@ -1046,36 +1060,36 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
                 # Continue the manual run
                 gElixys.ContinueOperation(sRemoteUser)
             sClientState = gElixys.GetRunState(sRemoteUser)
-            #gElixys.SaveClientState(sRemoteUser, sClientState)
+            #gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "BACK":
             # Return to the home page
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_MANUALRUN"):
         if sActionTargetID == "OK":
             # Start the manual run
             gElixys.StartManualRun(sRemoteUser)
             sClientState = gElixys.GetRunState(sRemoteUser)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_ABORTMANUALRUN"):
         if sActionTargetID == "ABORT":
             # Set the client and system states
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             gElixys.SaveSystemState(sRemoteUser, "NONE")
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_ABORTMANUALOPERATION"):
         if sActionTargetID == "ABORT":
@@ -1084,24 +1098,24 @@ def HandlePostPrompt(sClientState, sRemoteUser, pBody, nBodyLength):
             pRunStateComponents = sRunState.split(".")
             sClientState = "MANUALRUN." + pRunStateComponents[1] + "." + pRunStateComponents[2] + ".SELECT"
             gElixys.SaveRunState(sRemoteUser, sClientState)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
     elif sClientState.startswith("PROMPT_COMPLETEMANUALRUN"):
         if sActionTargetID == "SAVE":
             # Finish the manual run
             gElixys.FinishManualRun(sRemoteUser)
             sClientState = "HOME"
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
         if sActionTargetID == "CANCEL":
             # Switch to the previous state
             sClientState = sClientState.split(";")[1]
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+            gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
             return HandleGet(sClientState, sRemoteUser, "/state")
 
     # Unhandled use case
@@ -1115,7 +1129,7 @@ def HandlePostSequence(sClientState, sRemoteUser, pBody, sPath):
 # Handle POST /sequence/[sequenceid]/component/[componentid]
 def HandlePostComponent(sClientState, sRemoteUser, pBody, nBodyLength, sPath):
     # Extract sequence and component IDs
-    global gElixys
+    global gDatabase
     pPathComponents = sPath.split("/")
     nSequenceID = int(pPathComponents[2])
     nComponentID = int(pPathComponents[4])
@@ -1123,35 +1137,47 @@ def HandlePostComponent(sClientState, sRemoteUser, pBody, nBodyLength, sPath):
     if len(pPathComponents) == 6:
         nInsertionID = int(pPathComponents[5])
 
-    # Save the sequence component
+    # Parse the component JSON if present
+    pComponent = None
     if nBodyLength != 0:
         pComponent = json.loads(pBody)
-    else:
-        pComponent = None
-    gElixys.SaveSequenceComponent(sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent)
 
-    # Is the remote user the one that is currently running the system?
-    if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
-        # Yes, so advance to the configuration step after adding a new component
-        if nComponentID == 0:
-            sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(pComponent["id"]) + ".CONFIGURE"
-            gElixys.SaveRunState(sRemoteUser, sClientState)
-            gElixys.SaveClientState(sRemoteUser, sClientState)
+    # Are we working with an existing component?
+    if nComponentID != 0:
+        # Yes, so update the existing component
+        UpdateComponent(sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent)
+    else:
+        # No, so add a new component
+        nComponentID = AddComponent(sRemoteUser, nSequenceID, nInsertionID, pComponent)
+
+        # Update the client to show the new component
+        sClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
+        pClientStateComponents = sClientState.split(".")
+        sClientState = pClientStateComponents[0] + "." + str(nSequenceID) + "." + str(pComponent["id"])
+        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
+
+        # Is the remote user the one that is currently running the system?
+        if sRemoteUser == gElixys.GetRunUser(sRemoteUser):
+            # Yes, so advance to the configuration step after adding a new component
+            if nComponentID == 0:
+                sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(pComponent["id"]) + ".CONFIGURE"
+                gElixys.SaveRunState(sRemoteUser, sClientState)
+                gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
 
     # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
 
 # Handle POST /sequence/[sequenceid]/reagent/[reagentid]
 def HandlePostReagent(sClientState, sRemoteUser, pBody, nBodyLength, sPath):
-    # Extract sequence and component IDs
-    global gElixys
+    # Extract sequence and reagent IDs
+    global gDatabase
     pPathComponents = sPath.split("/")
     nSequenceID = int(pPathComponents[2])
     nReagentID = int(pPathComponents[4])
 
-    # Save the sequence component
+    # Save the reagent
     pReagent = json.loads(pBody)
-    gElixys.SaveSequenceReagent(sRemoteUser, nSequenceID, pReagent)
+    gDatabase.UpdateReagent(sRemoteUser, nReagentID, pReagent["available"], pReagent["name"], pReagent["description"])
 
     # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
@@ -1179,10 +1205,234 @@ def HandleDeleteComponent(sClientState, sRemoteUser, sPath):
     # Return the new state
     return HandleGet(sClientState, sRemoteUser, "/state")
 
-# Main WSGI application entry point
+### Utility functions ###
+
+# Fetches a sequence and components from the database
+def GetSequence(sRemoteUser, nSequenceID):
+    # Fetch the sequence from the databse
+    global gDatabase
+    pSequence = gDatabase.GetSequence(sRemoteUser, nSequenceID)
+
+    # Add details to each component
+    for pComponent in pSequence["components"]:
+        AddComponentDetails(pComponent)
+
+    # Return
+    return pSequence
+
+# Fetches a component from the database
+def GetComponent(sRemoteUser, nComponentID):
+    # Fetch the component from the databse
+    global gDatabase
+    pComponent = gDatabase.GetComponent(sRemoteUser, nComponentID)
+
+    # Add details to the component and return
+    AddComponentDetails(pComponent)
+    return pComponent
+
+# Adds a new component to the database
+def AddComponent(sRemoteUser, nSequenceID, nInsertionID, pComponent):
+    # Strip the component down to the fields we want to save
+    global gDatabase
+    pDBComponent = RemoveComponentDetails(pComponent)
+
+    # Insert the new component
+    return gDatabase.InsertComponent(sRemoteUser, nSequenceID, pComponent["componenttype"], pComponent["name"], json.dumps(pDBComponent), nInsertionID)
+
+# Updates an existing component
+def UpdateComponent(sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent):
+    # Update the component if one was provided
+    global gDatabase
+    if pComponent != None:
+        # Pull the component from the database and update it with the fields we want to save
+        pDBComponent = GetComponent(sRemoteUser, nComponentID)
+        UpdateComponentDetails(pDBComponent, pComponent)
+
+        # Update the component
+        gDatabase.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+    # Move the component as needed
+    if nInsertionID != None:
+        gDatabase.MoveComponent(sRemoteUser, nComponentID, nInsertionID)
+
+# Adds details to the component after retrieving it from the database and prior to sending it to the client
+def AddComponentDetails(pComponent):
+    # Determine the starting reagent ID
+    #if nSequenceID != 10000:
+    nBaseReagentID = 1
+    #else:
+    #    nBaseReagentID = 31;
+
+    # Add component-specific details
+    if pComponent["componenttype"] == "CASSETTE":
+        pComponent.update({"name":"Cassette " + str(pComponent["id"])})
+        pComponent.update({"reactordescription":"Reactor associated with this cassette"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "ADD":
+        #pReagent = self.GetSequenceReagent(sUsername, nSequenceID, pComponent["reagent"])
+        #if pReagent["name"] != "[invalid]":
+        #    pComponent.update({"name":"Add " + pReagent["name"]})
+        #else:
+        pComponent.update({"name":"Add"})
+        pComponent.update({"reactordescription":"Reactor where the reagent will be added"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
+        pComponent.update({"reagentvalidation":"type=enum-reagent; values=" + str(nBaseReagentID) + "," + str(nBaseReagentID + 1) + "," +
+            str(nBaseReagentID + 2) + "," + str(nBaseReagentID + 3) + "," + str(nBaseReagentID + 4) + "," + str(nBaseReagentID + 5) + "," +
+            str(nBaseReagentID + 6) + "," + str(nBaseReagentID + 7) + "; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "EVAPORATE":
+        pComponent.update({"name":"Evaporate"})
+        pComponent.update({"reactordescription":"Reactor where the evaporation will be performed"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
+        pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
+        pComponent.update({"evaporationtemperaturedescription":"Reaction temperature in degrees Celsius"})
+        pComponent.update({"evaporationtemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
+        pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
+        pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "TRANSFER":
+        pComponent.update({"name":"Transfer"})
+        pComponent.update({"reactordescription":"Reactor where the source reagent resides"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"targetdescription":"Target where the reactor contents will be transferred"})
+        pComponent.update({"targetvalidation":"type=enum-target; values=" + str(nBaseReagentID + 8) + "; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "ELUTE":
+        pComponent.update({"name":"Elute"})
+        pComponent.update({"reactordescription":"Reactor where the reagent will be eluted"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"reagentdescription":"Reagent used to elute the target"})
+        pComponent.update({"reagentvalidation":"type=enum-reagent; values=1,2,3,4,5,6,7,8; required=true"})
+        pComponent.update({"targetdescription":"Target to be eluted with the reagent"})
+        pComponent.update({"targetvalidation":"type=enum-target; values=" + str(nBaseReagentID + 9) + "; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "REACT":
+        pComponent.update({"name":"React"})
+        pComponent.update({"reactordescription":"Reactor where the reaction will be performed"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"positiondescription":"Position where the reaction will take place"})
+        pComponent.update({"positionvalidation":"type=enum-literal; values=1,2; required=true"})
+        pComponent.update({"durationdescription":"Evaporation duration after the target temperature is reached"})
+        pComponent.update({"durationvalidation":"type=time; min=00:00.00; max=02:00.00; required=true"})
+        pComponent.update({"reactiontemperaturedescription":"Reaction temperature in degrees Celsius"})
+        pComponent.update({"reactiontemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"finaltemperaturedescription":"Final temperature after evaporation in degrees Celsius"})
+        pComponent.update({"finaltemperaturevalidation":"type=temperature; min=20; max=200; required=true"})
+        pComponent.update({"stirspeeddescription":"Speed of the stir bar in rotations per minute"})
+        pComponent.update({"stirespeedvalidation":"type=speed; min=0; max=5000; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "PROMPT":
+        pComponent.update({"name":"Prompt"})
+        pComponent.update({"reactordescription":""})
+        pComponent.update({"reactorvalidation":""})
+        pComponent.update({"messagedescription":"This will be displayed to the user"})
+        pComponent.update({"messagevalidation":"type=string; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "INSTALL":
+        pComponent.update({"name":"Install"})
+        pComponent.update({"reactordescription":"Reactor that will be moved to the install position"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"messagedescription":"This will be displayed to the user"})
+        pComponent.update({"messagevalidation":"type=string; required=true"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "COMMENT":
+        pComponent.update({"name":"Comment"})
+        pComponent.update({"reactordescription":""})
+        pComponent.update({"reactorvalidation":""})
+        pComponent.update({"commentdescription":"Enter a comment"})
+        pComponent.update({"commentvalidation":"type=string"})
+        pComponent.update({"validationerror":False})
+    elif pComponent["componenttype"] == "ACTIVITY":
+        pComponent.update({"name":"Activity"})
+        pComponent.update({"reactordescription":"Reactor where the radioactivity will be measures"})
+        pComponent.update({"reactorvalidation":"type=enum-literal; values=1,2,3; required=true"})
+        pComponent.update({"validationerror":False})
+
+# Update the database component with the relavent details that we have received from the client
+def UpdateComponentDetails(pTargetComponent, pSourceComponent):
+    # Update the parts of the component that we save
+    if pTargetComponent["componenttype"] == "CASSETTE":
+        pTargetComponent["available"] = pSourceComponent["available"]
+    elif pTargetComponent["componenttype"] == "ADD":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["reagent"] = pSourceComponent["reagent"]
+    elif pTargetComponent["componenttype"] == "EVAPORATE":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["duration"] = pSourceComponent["duration"]
+        pTargetComponent["evaporationtemperature"] = pSourceComponent["evaporationtemperature"]
+        pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
+        pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
+    elif pTargetComponent["componenttype"] == "TRANSFER":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["target"] = pSourceComponent["target"]
+    elif pTargetComponent["componenttype"] == "ELUTE":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["reagent"] = pSourceComponent["reagent"]
+        pTargetComponent["target"] = pSourceComponent["target"]
+    elif pTargetComponent["componenttype"] == "REACT":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["position"] = pSourceComponent["position"]
+        pTargetComponent["duration"] = pSourceComponent["duration"]
+        pTargetComponent["reactiontemperature"] = pSourceComponent["reactiontemperature"]
+        pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
+        pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
+    elif pTargetComponent["componenttype"] == "PROMPT":
+        pTargetComponent["message"] = pSourceComponent["message"]
+    elif pTargetComponent["componenttype"] == "INSTALL":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+        pTargetComponent["message"] = pSourceComponent["message"]
+    elif pTargetComponent["componenttype"] == "COMMENT":
+        pTargetComponent["comment"] = pSourceComponent["comment"]
+    elif pTargetComponent["componenttype"] == "ACTIVITY":
+        pTargetComponent["reactor"] = pSourceComponent["reactor"]
+
+# Strips a component down to only the details we want to save in the database
+def RemoveComponentDetails(pComponent):
+    # Get a list of component-specific keys we want to save
+    pDesiredKeys = None
+    if pComponent["componenttype"] == "ADD":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "reagent"]
+    elif pComponent["componenttype"] == "EVAPORATE":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "duration", "evaporationtemperature", "finaltemperature", "stirspeed"]
+    elif pComponent["componenttype"] == "TRANSFER":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "target"]
+    elif pComponent["componenttype"] == "ELUTE":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "reagent", "target"]
+    elif pComponent["componenttype"] == "REACT":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "position", "duration", "reactiontemperature", "finaltemperature", "stirspeed"]
+    elif pComponent["componenttype"] == "PROMPT":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "message"]
+    elif pComponent["componenttype"] == "INSTALL":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "message"]
+    elif pComponent["componenttype"] == "COMMENT":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor", "comment"]
+    elif pComponent["componenttype"] == "ACTIVITY":
+        pDesiredKeys = ["type", "componenttype", "id", "reactor"]
+
+    # Remove the keys that we do not want to save
+    pReturn = pComponent.copy()
+    if pDesiredKeys != None:
+        pUnwantedKeys = set(pReturn) - set(pDesiredKeys)
+        for pUnwantedKey in pUnwantedKeys:
+            del pReturn[pUnwantedKey]
+    return pReturn
+
+### Main WSGI application entry point ###
+
 def application(pEnvironment, fStartResponse):
-    # Extract important input variables
+    # Connnect to the database.  It is important that we do this at the start of every request or two things happen:
+    #  1. We start receiving stale data from MySQLdb depending on which thread handles this request
+    #  2. MySQL will run out of available database connections under heavy loads
     global gElixys
+    global gDatabase
+    gDatabase.Connect()
+
+    # Extract input variables
     if pEnvironment.has_key("REMOTE_USER"):
         sRemoteUser = pEnvironment["REMOTE_USER"]
     else:
@@ -1194,7 +1444,11 @@ def application(pEnvironment, fStartResponse):
         sPath = sPath[7:]
 
     # Load the client and system state
-    sClientState = gElixys.GetClientState(sRemoteUser)
+    sClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
+    if sClientState == "":
+        # Default to the home screen
+        sClientState = "HOME"
+        gDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)
     sSystemState = gElixys.GetSystemState(sRemoteUser)
 
     # Log the request
@@ -1222,6 +1476,9 @@ def application(pEnvironment, fStartResponse):
     sStatus = "200 OK"
     sResponseJSON = json.dumps(sResponse)
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
+
+    # Close the database connection
+    gDatabase.Disconnect()
 
     # Send the response
     fStartResponse(sStatus, pHeaders)
