@@ -1,8 +1,6 @@
 """Unit operations
-
 Elixys Unit Operations
 """
-
 ## TO DO:
 ## MAKE list of all private variables
 ## UPDATE list of constants
@@ -19,7 +17,15 @@ RADIATION  = 'Radation'
 EVAPORATE  = 'Evaporate'
 ADDREAGENT = 'Add'
 ENABLED    = 'Enabled'
-HOME = 3
+DISABLED   = 'Disabled'
+HOME = (3,3)
+F18TRAP = (2,1,0)
+#Set Stopcock 1 to Position 2
+#Set Stopcock 2 to Position 1
+F18ELUTE = (1,2,0)
+#Set Stopcock 1 to Position 1
+#Set Stopcock 2 to Position 2
+
 ON = True
 OFF = False
 
@@ -38,8 +44,6 @@ REAGENTLOADPOSITION = 'reagentLoadPosition'
 STR   = 'str'
 INT   = 'int'
 FLOAT = 'float'
-
-ABORT = 'ABORT'
 
 #Robot ReagentPosition positions:
 LOAD_A = "LOAD_A"
@@ -117,6 +121,14 @@ class UnitOperation(threading.Thread):
         self.reactPosition = params['reactPosition']
       if paramname=="ReagentPosition":
         self.reagentPosition = params['ReagentPosition']
+      if paramname=="trapTime":
+        self.trapTime = params['trapTime']
+      if paramname=="trapPressure":
+        self.trapPressure = params['trapPressure']
+      if paramname=="eluteTime":
+        self.eluteTime = params['eluteTime']
+      if paramname=="elutePressure":
+        self.elutePressure = params['elutePressure']
   
   """def validateParams(self,currentParams,expectedParams):
     errorMessage = ""
@@ -173,11 +185,11 @@ class UnitOperation(threading.Thread):
     return errorMessage
     
   def beginNextStep(self,nextStepText = ""):
-    print nextStepText
+    #print nextStepText
     if self.paused:
       self.paused()
     if self.abort:
-      self.abortOperation(ABORT)
+      self.abortOperation()
     if nextStepText:
       self.stepDescription = nextStepText
     self.currentStepNumber+=1
@@ -207,11 +219,10 @@ class UnitOperation(threading.Thread):
         self.setDescription("Moving Reactor%s up." % ReactorID)
         self.systemModel[ReactorID]['Motion'].moveReactorUp()
         self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)
-      else:
-        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)   
+      #Removed 'else' with duplicated code, this will work because we want it to disable regardless of position.
+      self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
+
     else: #We're in the right position, check if we're sealed.
       if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL)):
         if not(reactorPosition==INSTALL):
@@ -219,7 +230,7 @@ class UnitOperation(threading.Thread):
           self.systemModel[ReactorID]['Motion'].moveReactorUp()
           self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
           self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,False,EQUAL,3)
+          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
         else:
           self.setDescription("Reactor%s in position %s." % (ReactorID,reactorPosition))
       else:
@@ -230,71 +241,65 @@ class UnitOperation(threading.Thread):
     self.delay = 500
     if comparator == EQUAL:
       while not(function() == condition):
-        #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
-        if self.abort:
-          self.abortOperation(ABORT)
     elif comparator == NOTEQUAL:
       while (function() == condition):
-        #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
-        if self.abort:
-          self.abortOperation(ABORT)
     elif comparator == GREATER:
       while not(function() >= condition):
-        #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break            
-        if self.abort:
-          self.abortOperation(ABORT)
     elif comparator == LESS:
       while not(function() <=condition):
-        #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
             break
-        if self.abort:
-          self.abortOperation(ABORT)
     else:
       print ("Error: Invalid comparator.")
-    #print "%s Function %s == %s, expected %s" % (self.formatTime(time.time()-self.time),str(function.__name__),str(function()),str(condition))
+    #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
     
   def checkForCondition(self,function,condition,comparator):
+    ret = False #Default False
     if comparator == EQUAL:
       if (function() == condition):
-        return True
+        ret=True
+        #return True  #Changed for debug purposes
     elif comparator == GREATER:
       if (function() >= condition):
-        return True
+        ret=True
     elif comparator == LESS:
       if (function() <= condition):
-        return True
+        ret=True
     else:
       print ("Error: Invalid comparator.")
-      return False
+      ret=False
+    #print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
+    return ret
     
   def startTimer(self,timerLength): #In seconds
-    #print "%s Timer set to: %s" % (self.formatTime(time.time()-self.time),self.formatTime(timerLength))
+    print "%s Timer set to: %s" % (self.curTime(),self.formatTime(timerLength))
     timerStartTime = time.time()  #Create a time
     while not(self.isTimerExpired(timerStartTime,timerLength)):
       self.setDescription("Time remaining:%s" % self.formatTime(timerLength-(time.time()-timerStartTime)))
       self.stateCheckInterval(50) #Sleep 50ms between checks
-      if self.abort:
-        self.abortOperation(ABORT)
-    print "%s Timer finished." % (self.formatTime(time.time()-self.time))
+    print "%s Timer finished." % (self.curTime())
     
   def isTimerExpired(self,startTime,length):
     if (length == 65535):
@@ -302,6 +307,9 @@ class UnitOperation(threading.Thread):
     if (time.time()-startTime >= length):
       return True
     return False
+    
+  def curTime(self):
+    return time.strftime("%H:%M:%S", time.localtime())
     
   def formatTime(self,timeValue):
     hours = 0
@@ -360,6 +368,7 @@ class UnitOperation(threading.Thread):
     self.setHeater(OFF)
     raise UnitOpError(error)
     
+    
   def getTotalSteps(self):
     return self.steps #Integer
     
@@ -372,9 +381,11 @@ class UnitOperation(threading.Thread):
   def getCurrentStep(self):
     return self.currentStepDescription
 
-  def setStopcock(self):
-    self.systemModel[self.ReactorID]['stopcock'].setStopcock(self.stopcockPosition)       
-    self.waitForCondition(self.systemModel[self.ReactorID]['stopcock'].getStopcock(),self.stopcockPosition,EQUAL,3) 
+  def setStopcockPosition(self,stopcockPositions):
+    for stopcock in range(1,(len(stopcockPositions)+1)):
+      if (stopcockPositions[stopcock-1]==1) or (stopcockPositions[stopcock-1]==2):
+        self.systemModel[self.ReactorID]['Stopcock'+str(stopcock)].setPosition(stopcockPositions[stopcock-1])       
+        self.waitForCondition(self.systemModel[self.ReactorID]['Stopcock'+str(stopcock)].getPosition,stopcockPositions[stopcock-1],EQUAL,3) 
 
   def setHeater(self,heaterState):
     if heaterState == ON:
@@ -440,11 +451,11 @@ class UnitOperation(threading.Thread):
         self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
       if (rampPressure >= pressureSetPoint):
         self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
-        self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+        self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint-1,GREATER,3)
         #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
     else:
       self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
-      self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+      self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,(pressureSetPoint-1),GREATER,3)
       #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
       
 class React(UnitOperation):
@@ -497,6 +508,28 @@ class React(UnitOperation):
       self.paramsValidated = True
 """
     
+class Move(UnitOperation):
+  def __init__(self,systemModel,params):
+    UnitOperation.__init__(self,systemModel)
+    
+    expectedParams = {REACTORID:STR,REACTPOSITION:STR}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
+    #Should have parameters listed below:
+    #self.ReactorID
+    #self.reactPosition
+  def run(self):
+    try:
+      self.beginNextStep("Starting Move Operation")
+      self.beginNextStep("Moving to position")
+      self.setReactorPosition(self.reactPosition)#REACTA OR REACTB
+      self.beginNextStep("Move Operation Complete")
+    except Exception as e:
+      print type(e)
+      print e
     
     
 class AddReagent(UnitOperation):
@@ -517,8 +550,8 @@ class AddReagent(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
-      self.beginNextStep("Moving to position")
       self.setPressureRegulator(2,5)
+      self.beginNextStep("Moving to position")
       self.setReactorPosition(ADDREAGENT)
       self.beginNextStep("Moving vial to addition position")
       self.setReagentTransferValves(ON)# Turn on valves
@@ -526,10 +559,8 @@ class AddReagent(UnitOperation):
       self.setDescription("Adding reagent")
       time.sleep(10)#Dispense reagent
       self.beginNextStep("Removing vial from addition position")
-      self.setPressureRegulator(2,0)
       self.setGripperRemove()
       self.setReagentTransferValves(OFF)#Turn off valves
-      self.setPressureRegulator(2,5)
       self.beginNextStep("Add Reagent Operation Complete")
     except Exception as e:
       print type(e)
@@ -594,8 +625,8 @@ class AddReagent(UnitOperation):
         self.systemModel['ReagentDelivery'].setMoveGripperUp()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,3)
         time.sleep(2)#**Need sensor here
-        self.systemModel['ReagentDelivery'].moveToReagentPosition(HOME,HOME)
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(HOME, HOME, 0),EQUAL,5)
+        self.systemModel['ReagentDelivery'].moveToReagentPosition(*HOME)
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(3,3,0),EQUAL,5)
 
         
       else:
@@ -624,6 +655,7 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Evaporate Operation")
+      self.setPressureRegulator(2,5)
       self.beginNextStep("Moving to position")
       self.setReactorPosition(EVAPORATE)
       self.beginNextStep("Setting evaporation Temperature")
@@ -698,7 +730,7 @@ class TransferToHPLC(UnitOperation):
       self.beginNextStep("Moving to transfer position")
       self.setReactorPosition(TRANSFER)
       self.beginNextStep("Moving stopcocks to transfer position")
-      self.setStopcock(TRANSFER)
+      self.setStopcockPosition(TRANSFER)
       self.beginNextStep("Moving HPLC valve to transfer position")
       self.setHPLCValve()
       self.beginNextStep("Starting transfer")
@@ -843,6 +875,60 @@ class UserInput(UnitOperation):
   def getUserInput(self):
     return not(self.waitForUser)
     
+class DeliverF18(UnitOperation):
+  def __init__(self,systemModel,params):
+    UnitOperation.__init__(self,systemModel)
+    self.setParams(params)
+    self.ReactorID='Reactor1'
+    #Should have parameters listed below:
+    #self.trapTime
+    #self.trapPressure
+    #self.eluteTime
+    #self.elutePressure
+    
+  def run(self):
+    try:
+      self.beginNextStep("Starting F18 Delivery Operation")
+      self.setPressureRegulator(2,0) #Vent pressure to avoid delivery issues
+      self.beginNextStep("Moving to Reactor1 to Add position")
+      self.setReactorPosition(ADDREAGENT)
+      self.beginNextStep("Setting stopcock positions for trapping")
+      self.setStopcockPosition(F18TRAP)
+      self.beginNextStep("Starting F18 trapping")
+      self.F18Trap(self.trapTime,self.trapPressure)
+      self.beginNextStep("Trap complete")
+      self.setPressureRegulator(2,0) #Vent pressure to avoid delivery issues
+      self.beginNextStep("Setting stopcock positions for elution")
+      self.setStopcockPosition(F18ELUTE)
+      self.beginNextStep("Starting F18 Elute")
+      self.F18Elute(self.eluteTime,self.elutePressure)
+      self.beginNextStep("Elution complete")
+      self.beginNextStep("F18 Delivery Operation complete")
+    except Exception as e:
+      print type(e)
+      print e
+      
+  def F18Trap(self,time,pressure):
+    self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
+    self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
+    self.setPressureRegulator(2,pressure) #Set pressure after valve is opened
+    self.startTimer(time)
+    self.beginNextStep("Stopping F18 trapping")
+    self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
+    self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,OFF,EQUAL,5)
+    
+  def F18Elute(self,time,pressure):
+    self.systemModel['ExternalSystems'].setF18EluteValveOpen(ON)
+    self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,ON,EQUAL,5)
+    self.setPressureRegulator(2,pressure)
+    self.startTimer(time)
+    self.beginNextStep("Stopping F18 elution")
+    self.systemModel['ExternalSystems'].setF18EluteValveOpen(OFF)
+    self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,OFF,EQUAL,5)
+        
+
+  
+    
 class DetectRadiation(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
@@ -885,7 +971,7 @@ class Initialize(UnitOperation):
     self.reagentLoadPositionTuple=(1,2)
     
   def run(self):
-    self.stepDescription = "Starting Init Operation"
+    self.stepDescription = "Starting Initialize Operation"
     #Close all valves (set state)
     for self.ReactorID in self.ReactorTuple:
       self.setEvapValves(OFF)
@@ -910,14 +996,14 @@ class Initialize(UnitOperation):
     self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
     for self.ReactorID in self.ReactorTuple:
       self.setReactorPosition(INSTALL)
-    print "System Initialized."
+    print "System Initialized.\n"
   
   def areRobotsHomed(self):
     self.robotsHomed=True
     for self.ReactorID in self.ReactorTuple:
-      if self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL):
+      if not(self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
         self.robotsHomed=False
-    if self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL):
+    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
       self.robotsHomed=False
     return self.robotsHomed
 

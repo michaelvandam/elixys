@@ -14,10 +14,9 @@ sys.path.append("../core/")
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
 from UnitOperationsWrapper import UnitOperationsWrapper
-from SequenceManager import SequenceManager
 
 # Parses and executes the given command
-def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm):
+def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm):
     try:
         # Ignore empty commands
         if sCommand == "":
@@ -27,17 +26,13 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemMo
         pCommandComponents = sCommand.strip(")").split("(")
         sFunctionName = pCommandComponents[0]
 
-        # Make sure the function name exists on either the unit operations wrapper, the sequence manager or the hardware layer
+        # Make sure the function name exists on either the unit operations wrapper or the hardware layer
         if hasattr(UnitOperationsWrapper, sFunctionName):
-            bUnitOperationsWrapper = True
+            bHardwareComm = False
             Object = UnitOperationsWrapper
             pObject = pUnitOperationsWrapper
-        elif hasattr(SequenceManager, sFunctionName):
-            bUnitOperationsWrapper = False
-            Object = SequenceManager
-            pObject = pSequenceManager
         elif hasattr(HardwareComm, sFunctionName):
-            bUnitOperationsWrapper = False
+            bHardwareComm = True
             Object = HardwareComm
             pObject = pHardwareComm
         else:
@@ -97,14 +92,10 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemMo
             pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6])
         else:
             raise Exception("Too many arguments");
-
-        # Handle result
-        if bUnitOperationsWrapper:
-            # Remember the unit operation objects
+        
+        # Remember the unit operation objects
+        if not bHardwareComm:
             pSystemModel.SetUnitOperation(pReturn)
-        elif pReturn != None:
-            # Display results
-            print str(pReturn)
             
     except Exception as ex:
         # Display the error
@@ -144,9 +135,6 @@ if __name__ == "__main__":
     # Create the system model
     pSystemModel = SystemModel(pHardwareComm, "../core/")
     pSystemModel.StartUp()
-
-    # Create the sequence manager
-    pSequenceManager = SequenceManager()
     
     # Create an RPC connection to the state monitoring window
     try:
@@ -201,30 +189,24 @@ if __name__ == "__main__":
 
         # Get input and strip newlines
         sCommand = raw_input(sPrompt).strip("\r\n")
- 
+
         # Handle commands
         if sCommand == "exit":
             break
         elif sCommand == "help":
             print "Recognized commands:"
-            print "  help sequences         Lists available sequence functions"
             print "  help unit operations   Lists available unit operation functions"
             print "  help hardware          Lists available hardware functions"
             print "  help script            List available script functions"
             print "  help send              Display a brief description of the PLC command format" 
             print "  get state              Displays the current state of the system"
             print "  send [command]         Send the raw command to the PLC"
-        elif sCommand == "help sequences":
-            # List the recognized sequence functions
-            print "Recognized sequence functions:"
-            print "  ListSequences()"
-            print "  ImportSequence(sFilename)"
-            print "  ExportSequence(nSequenceID, sFilename)"
         elif sCommand == "help unit operations":
             # List the recognized unit operations
             print "Recognized unit operations:"
             print "  Init"
             print "  React"
+            print "  Move"
             print "  Add"
             print "  Evaporate"
             print "  Not implemented: Install"
@@ -236,8 +218,6 @@ if __name__ == "__main__":
             print "  TempProfile"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
-            print "To abort the currently unit operation:"
-            print "  AbortUnitOperation()"
         elif sCommand == "help Init":
             # React unit operation
             print "Initialize the Elixys hardware for use."
@@ -260,6 +240,13 @@ if __name__ == "__main__":
             print "        nFinalTemperature,        Celsius"
             print "        nReactPosition,           'React1','React2'"
             print "        nStirSpeed)               Suggested 500"
+        elif sCommand == "help Move":
+            # React unit operation
+            print "Move the reactor to position specified."
+            print ""
+            print "  React(nReactor,                 'Reactor1','Reactor2','Reactor3'"
+            print "        nPosition)                'Add','Install','Evaporate','React1',"
+            print "                                  'React2','Transfer'"
         elif sCommand == "help Add":
             # Add unit operation
             print "Adds the specified reagent to the reactor"
@@ -285,6 +272,14 @@ if __name__ == "__main__":
             print "Moves a reactor to the installation position for easier access"
             print ""
             print "  Install(nReactor)               'Reactor1','Reactor2','Reactor3'"
+        elif sCommand == "help DeliverF18":
+            # Install unit operation
+            print "Delivers F18 to Reactor 1 through a cartridge"
+            print ""
+            print "  DeliverF18(nTrapTime,         Seconds"
+            print "             nTrapPressure,     PSI"
+            print "             nEluteTime,        Seconds"
+            print "             nElutePressure)    PSI"
         elif sCommand == "help TransferToHPLC":
             # TransferToHPLC unit operation
             print "Todo:  TransferToHPLC(nReactor, nStopcockPosition)"
@@ -300,14 +295,6 @@ if __name__ == "__main__":
         elif sCommand == "help DetectRadiation":
             # Detect radiation unit operation
             print "Todo: DetectRadiation()"
-        elif sCommand == "AbortUnitOperation()":
-            # Get the current unit operation
-            pCurrentUnitOperation = pSystemModel.GetUnitOperation()
-            if pCurrentUnitOperation != None:
-                # Abort the current unit operation
-                pCurrentUnitOperation.abort = True
-            else:
-                print "No current unit operation to abort"
         elif sCommand == "help hardware":
             # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
             # don't want to list all of our functions
@@ -383,14 +370,14 @@ if __name__ == "__main__":
                     sNextCommand = CleanCommand(sNextCommand)
                     if sNextCommand != "":
                         print "  " + sNextCommand
-                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
+                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
 
                 # Update our step number
                 nScriptStep += len(pScriptCommands)
             else:
                 # No, so attempt to execute the command
-                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
- 
+                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
+
                 # Sleep a bit to give the PLC a chance to response before we display the input prompt
                 time.sleep(0.1)
 
