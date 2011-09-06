@@ -32,9 +32,12 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemMo
             bUnitOperationsWrapper = True
             Object = UnitOperationsWrapper
             pObject = pUnitOperationsWrapper
+        elif hasattr(SequenceManager, sFunctionName):
+            bUnitOperationsWrapper = False
+            Object = SequenceManager
+            pObject = pSequenceManager
         elif hasattr(HardwareComm, sFunctionName):
             bUnitOperationsWrapper = False
-            bHardwareComm = True
             Object = HardwareComm
             pObject = pHardwareComm
         else:
@@ -232,6 +235,7 @@ if __name__ == "__main__":
             print "  Not implemented: UserInput"
             print "  Not implemented: DetectRadiation"
             print "  TempProfile"
+            print "  RampPressure"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
             print "To abort the currently unit operation:"
@@ -313,6 +317,13 @@ if __name__ == "__main__":
         elif sCommand == "help DetectRadiation":
             # Detect radiation unit operation
             print "Todo: DetectRadiation()"
+        elif sCommand == "help RampPressure":
+            # Ramp pressure unit operation
+            print "Ramps the pressure of one of the pressure regulators over a period of time"
+            print ""
+            print "  RampPressure(nPressureRegulator,      1 or 2"
+            print "               fTargetPressure,         PSI"
+            print "               nDuration)               Seconds"
         elif sCommand == "AbortUnitOperation()":
             # Get the current unit operation
             pCurrentUnitOperation = pSystemModel.GetUnitOperation()

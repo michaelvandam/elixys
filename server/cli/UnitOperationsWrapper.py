@@ -147,3 +147,14 @@ class UnitOperationsWrapper:
         pDetectRadiation.setDaemon(True)
         pDetectRadiation.start()
         return pDetectRadiation
+
+    def RampPressure(self, nPressureRegulator, fTargetPressure, nDuration):
+        """Performs a ramp pressure unit operation"""
+        pParams = {"pressureRegulator":nPressureRegulator,
+                   "pressure":fTargetPressure,
+                   "duration":nDuration}
+        print "Starting ramp pressure unit operation"
+        pRampPressure = UnitOperations.RampPressure(self.__pSystemModel, pParams)
+        pRampPressure.setDaemon(True)
+        pRampPressure.start()
+        return pRampPressure

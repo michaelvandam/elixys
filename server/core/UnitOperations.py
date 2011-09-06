@@ -40,6 +40,9 @@ REACTPOSITION = 'reactPosition'
 REAGENTPOSITION = 'ReagentPosition'
 REAGENTREACTORID = 'ReagentReactorID'
 REAGENTLOADPOSITION = 'reagentLoadPosition'
+PRESSUREREGULATOR = 'pressureRegulator'
+PRESSURE = 'pressure'
+DURATION = 'duration'
 
 STR   = 'str'
 INT   = 'int'
@@ -129,6 +132,12 @@ class UnitOperation(threading.Thread):
         self.eluteTime = params['eluteTime']
       if paramname=="elutePressure":
         self.elutePressure = params['elutePressure']
+      if paramname=="pressureRegulator":
+        self.pressureRegulator = params['pressureRegulator']
+      if paramname=="pressure":
+        self.pressure = params['pressure']
+      if paramname=="duration":
+        self.duration = params['duration']
   
   """def validateParams(self,currentParams,expectedParams):
     errorMessage = ""
@@ -438,26 +447,19 @@ class UnitOperation(threading.Thread):
     elif (str(regulator) == '2') or (str(regulator) == 'PressureRegulator2'):
       self.pressureRegulator = 'PressureRegulator2'
     if rampTime:
-      currentPressure = self.systemModel[self.pressureRegulator].getSetPressure()
-      rampPressure = currentPressure
-      if (int(currentPressure/rampTime)>1):
-        pressureStep = int(currentPressure/rampTime)
-      else:
-        pressureStep=1
-      
-      while (rampPressure<pressureSetPoint):
-        rampPressure += pressureStep
-        self.systemModel[self.pressureRegulator].setRegulatorPressure(rampPressure) #Set analog value on PLC
-        self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
-      if (rampPressure >= pressureSetPoint):
-        self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
-        self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint-1,GREATER,3)
-        #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
-    else:
-      self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
-      self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,(pressureSetPoint-1),GREATER,3)
-      #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,pressureSetPoint,GREATER,3)
-      
+      nRefreshFrequency = 8  # Update pressure this number of times per second
+      currentPressure = float(self.systemModel[self.pressureRegulator].getSetPressure())
+      rampRate = (float(pressureSetPoint) - float(currentPressure)) / float(rampTime) / float(nRefreshFrequency)
+      nElapsedTime = 0
+      while nElapsedTime < rampTime:
+        time.sleep(1 / float(nRefreshFrequency))
+        nElapsedTime += 1 / float(nRefreshFrequency)
+        currentPressure += rampRate
+        self.systemModel[self.pressureRegulator].setRegulatorPressure(currentPressure) #Set analog value on PLC
+        #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
+    self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
+    #self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+   
 class React(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
@@ -541,7 +543,7 @@ class AddReagent(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-		#Should have parameters listed below: 
+	#Should have parameters listed below: 
     #self.ReactorID
     #self.ReagentReactorID
     #self.ReagentPosition
@@ -550,8 +552,8 @@ class AddReagent(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
-      self.setPressureRegulator(2,5)
       self.beginNextStep("Moving to position")
+      self.setPressureRegulator(2,5)
       self.setReactorPosition(ADDREAGENT)
       self.beginNextStep("Moving vial to addition position")
       self.setReagentTransferValves(ON)# Turn on valves
@@ -559,8 +561,10 @@ class AddReagent(UnitOperation):
       self.setDescription("Adding reagent")
       time.sleep(10)#Dispense reagent
       self.beginNextStep("Removing vial from addition position")
+      self.setPressureRegulator(2,0)
       self.setGripperRemove()
       self.setReagentTransferValves(OFF)#Turn off valves
+      self.setPressureRegulator(2,5)
       self.beginNextStep("Add Reagent Operation Complete")
     except Exception as e:
       print type(e)
@@ -1035,6 +1039,28 @@ class TempProfile(UnitOperation):
       print type(e)
       print e
       
+class RampPressure(UnitOperation):
+  def __init__(self,systemModel,params):
+    UnitOperation.__init__(self,systemModel)
+    expectedParams = {PRESSUREREGULATOR:INT,PRESSURE:FLOAT,DURATION:INT}
+    self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
+    # Should have the params listed below:
+    # self.pressureRegulator
+    # self.pressure
+    # self.duration
+  def run(self):
+    try:
+      self.beginNextStep("Ramping pressure")
+      self.setPressureRegulator(str(self.pressureRegulator),self.pressure,self.duration)
+      self.beginNextStep("Pressure ramp complete")
+    except Exception as e:
+      print type(e)
+      print e
+
 """
   def setParams(self,currentParams):
     expectedParams = ['ReactorID','reactTemp','reactTime','coolTemp','reactPosition','stirSpeed']
