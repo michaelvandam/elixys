@@ -655,7 +655,7 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Evaporate Operation")
-      self.setPressureRegulator(2,5)
+      self.setPressureRegulator(2,15)
       self.beginNextStep("Moving to position")
       self.setReactorPosition(EVAPORATE)
       self.beginNextStep("Setting evaporation Temperature")
