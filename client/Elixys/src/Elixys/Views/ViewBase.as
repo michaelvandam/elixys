@@ -431,8 +431,9 @@ package Elixys.Views
 					pGridData.addItem(pReagent);
 				}
 				
-				// Remember the reagent ID
-				pReagent.ReagentID = pServerReagents[nReagent];
+				// Update the reagent
+				pReagent.Copy(pServerReagents[nReagent]);
+				pGridData.setItemAt(pReagent, nReagent);
 			}
 			
 			// Remove any extra reagents
@@ -443,44 +444,7 @@ package Elixys.Views
 			
 			// Update the data provider
 			pGrid.dataProvider = pGridData;
-			
-			// Request the reagents from the server
-			for (nReagent = 0; nReagent < pServerReagents.length; ++nReagent)
-			{
-				RequestSequenceReagent(pServerReagents[nReagent]);
-			}
 		}
-
-		// Updates the specified reagent in the grid
-		protected function UpdateReagentGridItem(pGrid:DataGrid, pServerReagent:Reagent):void
-		{
-			// Locate the corresponding reagent
-			var pGridData:ArrayList = pGrid.dataProvider as ArrayList, nReagent:uint;
-			if (pGridData == null)
-			{
-				// Can't find reagent
-				return;
-			}
-			for (nReagent = 0; nReagent < pGridData.length; ++nReagent)
-			{
-				var pClientReagent:Reagent = pGridData.getItemAt(nReagent) as Reagent;
-				if (pClientReagent.ReagentID == pServerReagent.ReagentID)
-				{
-					// Found it
-					break;
-				}
-			}
-			if (nReagent == pGridData.length)
-			{
-				// Failed to find reagent
-				return;
-			}
-			
-			// Update the corresponding reagent
-			pClientReagent.Copy(pServerReagent);
-			pGrid.dataProvider.setItemAt(pClientReagent, nReagent);
-		}
-
 
 		// Update the given combo box with the specified enum-literal validation string
 		protected function UpdateEnumLiteralComboBox(sEnumLiteralValidation:String, pComboBox:ComboBox, sCurrentValue:String):void

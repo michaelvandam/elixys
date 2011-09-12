@@ -80,20 +80,6 @@
 				}
 			}
 
-			// Called when reagent details arrive from the server
-			public override function UpdateReagent(pReagent:Reagent):void
-			{
-				// Handle according to our view mode
-				if (m_sViewMode == SubviewBase.VIEWMODE)
-				{
-					UpdateReagentGridItem(_viewCassetteGrid, pReagent);
-				}
-				else if (m_sViewMode == SubviewBase.EDITMODE)
-				{
-					UpdateReagentGridItem(_editCassetteGrid, pReagent);
-				}
-			}
-			
 			// Start editing the reagent
 			protected function StartEditing(pButton:Button, pReagent:Reagent):void
 			{

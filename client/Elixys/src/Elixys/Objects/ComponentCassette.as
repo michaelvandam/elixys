@@ -36,7 +36,8 @@ package Elixys.Objects
 				var pReagents:Array = super.flash_proxy::getProperty("reagents");
 				for each (var pReagentObject:Object in pReagents)
 				{
-					m_pReagents.push(pReagentObject);
+					var pReagent:Reagent = new Reagent(null, pReagentObject);
+					m_pReagents.push(pReagent);
 				}
 			}
 			return m_pReagents;

@@ -38,7 +38,11 @@
 					_text1Group.includeInLayout = false;
 				}
 				_edit1Group.visible = pPromptState.Edit1();
-				_edit1Group.includeInLayout = pPromptState.Edit1();
+				_edit1Group.includeInLayout = _edit1Group.visible;
+				if (_edit1Group.visible && !m_bPromptLoaded)
+				{
+					_edit1.text = pPromptState.Edit1Default();
+				}
 
 				// Update the first text and edit control
 				if (pPromptState.Text2() != "")
@@ -54,6 +58,18 @@
 				}
 				_edit2Group.visible = pPromptState.Edit2();
 				_edit2Group.includeInLayout = pPromptState.Edit2();
+				_edit2Group.visible = pPromptState.Edit2();
+				_edit2Group.includeInLayout = _edit2Group.visible;
+				if (_edit2Group.visible && !m_bPromptLoaded)
+				{
+					_edit2.text = pPromptState.Edit2Default();
+				}
+
+				// Update our loaded flag
+				if (!m_bPromptLoaded)
+				{
+					m_bPromptLoaded = true;
+				}
 
 				// Update our button array with the server data
 				UpdateButtons(_buttonGroup, pPromptState.Buttons(), CreateNewButton);
@@ -90,6 +106,9 @@
 				pHTTPRequest.m_pBody = pBody;
 				dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 			}
+			
+			// Load flag
+			private var m_bPromptLoaded:Boolean = false;
 		]]>
 	</fx:Script>
 

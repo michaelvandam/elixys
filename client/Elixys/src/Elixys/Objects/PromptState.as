@@ -38,6 +38,10 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("edit1");
 		}
+		public function Edit1Default():String
+		{
+			return super.flash_proxy::getProperty("edit1default");
+		}
 		public function Edit1Validation():String
 		{
 			return super.flash_proxy::getProperty("edit1validation");
@@ -49,6 +53,10 @@ package Elixys.Objects
 		public function Edit2():Boolean
 		{
 			return super.flash_proxy::getProperty("edit2");
+		}
+		public function Edit2Default():String
+		{
+			return super.flash_proxy::getProperty("edit2default");
 		}
 		public function Edit2Validation():String
 		{

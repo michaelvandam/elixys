@@ -10,7 +10,6 @@
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
 			import Elixys.Objects.StateSequence;
-			import Elixys.Objects.TimeUtils;
 			
 			import mx.controls.TextArea;
 			import mx.events.FlexEvent;
@@ -32,7 +31,7 @@
 				{
 					// Format the output text
 					_outputText.text = "React reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position + " at " + 
-						m_pComponentReact.ReactionTemperature+ " C for " + m_pComponentReact.Duration + " and cool to " + 
+						m_pComponentReact.ReactionTemperature+ " C for " + m_pComponentReact.Duration + " seconds and cool to " + 
 						m_pComponentReact.FinalTemperature + " C.  Stir at " + m_pComponentReact.StirSpeed + " rpm.";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
@@ -42,13 +41,9 @@
 					UpdateEnumLiteralComboBox(m_pComponentReact.PositionValidation, _editPositionCombo, m_pComponentReact.Position);
 					
 					// Set all evaporation variables except the one the user is editing
-					if (m_pKeyboardFocusTextArea != _editDurationMinutes)
+					if (m_pKeyboardFocusTextArea != _editDuration)
 					{
-						_editDurationMinutes.text = TimeUtils.GetMinutes(m_pComponentReact.Duration).toString();
-					}
-					if (m_pKeyboardFocusTextArea != _editDurationSeconds)
-					{
-						_editDurationSeconds.text = TimeUtils.GetSeconds(m_pComponentReact.Duration).toString();
+						_editDuration.text = m_pComponentReact.Duration;
 					}
 					if (m_pKeyboardFocusTextArea != _editReactionTemperature)
 					{
@@ -72,8 +67,8 @@
 					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Reacting reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position +
-						" at " + m_pComponentReact.ReactionTemperature + " C for " + TimeUtils.GetMinutes(m_pComponentReact.Duration) +
-						" minutes and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
+						" at " + m_pComponentReact.ReactionTemperature + " C for " + m_pComponentReact.Duration +
+						" seconds and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
 						m_pComponentReact.StirSpeed + " rpm.";
 					_runOutputText2.text = "Status: " + pStateSequence.ServerState().Status() + "\nTemperature: " +
 						pReactor.ActualTemperature() + " C";
@@ -129,9 +124,9 @@
 			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
 			{
 				// Update our component
-				if ((m_pKeyboardFocusTextArea == _editDurationMinutes) || (m_pKeyboardFocusTextArea == _editDurationSeconds))
+				if (m_pKeyboardFocusTextArea == _editDuration)
 				{
-					m_pComponentReact.Duration = TimeUtils.FormatTime(parseInt(_editDurationMinutes.text), parseInt(_editDurationSeconds.text));
+					m_pComponentReact.Duration = _editDuration.text;
 				}
 				if (m_pKeyboardFocusTextArea == _editReactionTemperature)
 				{
@@ -190,10 +185,7 @@
 						<s:Label text="Duration" styleName="TextMedium" />
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
-						<Renderers:AutoTextArea id="_editDurationMinutes" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-							focusOut="OnTextFocusOut(event)" width="100" />
-						<s:Label text="min" styleName="TextMedium" />
-						<Renderers:AutoTextArea id="_editDurationSeconds" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+						<Renderers:AutoTextArea id="_editDuration" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 							focusOut="OnTextFocusOut(event)" width="100" />
 						<s:Label text="sec" styleName="TextMedium" />
 					</s:HGroup>
