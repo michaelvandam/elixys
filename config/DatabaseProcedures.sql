@@ -166,7 +166,7 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
         CALL Internal_GetRoleID(iRoleName, lRoleID);
 
         -- Create the user
-        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, "");
+        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, "HOME");
     END //
 
 /* Updates an existing user:
@@ -296,7 +296,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             END IF;
 
             -- Start the cassette JSON string
-            SET lCassetteJSON = CONCAT("{\"type\":\"component\", \"componenttype\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"available\":false, \"reagents\":[");
+            SET lCassetteJSON = CONCAT("{\"type\":\"component\", \"componenttype\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"available\":false, \"reagentids\":[");
 
             -- Create the reagents
             SET lReagent = 0;
@@ -334,7 +334,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lCassetteJSON = CONCAT(lCassetteJSON, "]}");
 
             -- Update the cassette JSON string
-            CALL UpdateComponent(lCassetteID, "CASSETTE", "", lCassetteJSON);
+            CALL UpdateComponent(lCassetteID, "CASSETTE", CONCAT("Cassette ", lCassette + 1), lCassetteJSON);
 
             -- Increment the cassette counter
             SET lCassette = lCassette + 1;
@@ -395,6 +395,24 @@ CREATE PROCEDURE GetReagentsByName(IN iSequenceID INT UNSIGNED, IN iName VARCHAR
     BEGIN
         -- Look up the reagent
         SELECT * FROM Reagents WHERE SequenceID = iSequenceID AND Name = iName;
+    END //
+
+/* Get the reagent as the specified position:
+ *   IN SequenceID - Sequence ID of the reagent
+ *   IN CassetteNumber - Cassette number of the reagent
+ *   IN Position - Position of the reagent
+ */
+DROP PROCEDURE IF EXISTS GetReagentByPosition;
+CREATE PROCEDURE GetReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCassetteNumber INT UNSIGNED, IN iPosition VARCHAR(2))
+    BEGIN
+        DECLARE lComponentID INT UNSIGNED;
+        DECLARE lReagentID INT UNSIGNED;
+
+        -- Look up the component ID of the cassette
+        CALL Internal_GetComponentByOffset(iSequenceID, iCassetteNumber - 1, lComponentID);
+
+        -- Look up the reagent by position
+        SELECT * FROM Reagents WHERE SequenceID = iSequenceID AND ComponentID = lComponentID AND Position = iPosition;
     END //
 
 /* Gets all reserved reagents in the database that match the given name:
@@ -470,17 +488,17 @@ CREATE PROCEDURE GetComponent(IN iComponentID INT UNSIGNED)
         SELECT * FROM Components WHERE ComponentID = iComponentID;
     END //
 
-/* Looks up a cassette component by number:
+/* Looks up a cassette component by offset:
  *   IN SequenceID - ID of the sequence containing the cassette
- *   IN Cassette - Number of the cassette
+ *   IN CassetteOffset - Cassette offset
  */
 DROP PROCEDURE IF EXISTS GetCassette;
-CREATE PROCEDURE GetCassette(IN iSequenceID INT UNSIGNED, IN iCassette INT UNSIGNED)
+CREATE PROCEDURE GetCassette(IN iSequenceID INT UNSIGNED, IN iCassetteOffset INT UNSIGNED)
     BEGIN
         DECLARE lCassetteID INT UNSIGNED;
 
         -- Get the cassette component ID
-        CALL Internal_GetComponentByOffset(iSequenceID, iCassette, lCassetteID);
+        CALL Internal_GetComponentByOffset(iSequenceID, iCassetteOffset, lCassetteID);
 
         -- Return the cassette
         SELECT * FROM Components WHERE ComponentID = lCassetteID;

@@ -69,8 +69,17 @@ class DBComm:
 
   def GetUser(self, sCurrentUsername, sUsername):
     """Returns details of the specified user"""
-    self.__LogDBAccess(sCurrentUsername, "GetUser(%s)" % (Username, ))
-    return self.__CallStoredProcedure("GetUser", (sUsername, ))
+    # Load the database access and get the user data
+    self.__LogDBAccess(sCurrentUsername, "GetUser(%s)" % (sUsername, ))
+    pUserRaw = self.__CallStoredProcedure("GetUser", (sUsername, ))
+
+    # Create the user object
+    pUser = {}
+    pUser["username"] = pUserRaw[0][0]
+    pUser["firstname"] = pUserRaw[0][1]
+    pUser["lastname"] = pUserRaw[0][2]
+    pUser["useraccesslevel"] = pUserRaw[0][3]
+    return pUser
 
   def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName):
     """Creates a new user"""
@@ -95,16 +104,8 @@ class DBComm:
   def GetUserClientState(self, sCurrentUsername, sUsername):
     """Returns the client state of a user"""
     self.__LogDBAccess(sCurrentUsername, "GetUserClientState(%s)" % (sUsername, ))
-    # I keep seeing an intermittent error being thrown here, in particular when the database is first initialized
-    # This shows up in the Apache error logs when the error is encountered:
-    #   SQL Error 2006: MySQL server has gone away
-    try:
-        pUserClientState = self.__CallStoredProcedure("GetUserClientState", (sUsername, ))
-        with open("/var/www/wsgi/dblog.txt", "a") as myfile:
-            myfile.write("Returned " + str(pUserClientState) + "\n")
-        return pUserClientState[0][0]
-    except Exception, ex:
-        raise Exception("GetUserClientState failed on '" + str(pUserClientState) + "' with '" + str(ex) + "'")
+    pUserClientState = self.__CallStoredProcedure("GetUserClientState", (sUsername, ))
+    return pUserClientState[0][0]
 
   def UpdateUserClientState(self, sCurrentUsername, sUsername, sClientState):
     """Updates the client state of a user"""
@@ -115,7 +116,6 @@ class DBComm:
 
   def GetAllSequences(self, sCurrentUsername, sType):
     """Return all sequences"""
-
     # Load the access and get the sequence data
     self.__LogDBAccess(sCurrentUsername, "GetAllSequences(%s)" % (sType, ))
     pSequencesRaw = self.__CallStoredProcedure("GetAllSequences", (sType, ))
@@ -138,7 +138,6 @@ class DBComm:
 
   def GetSequence(self, sCurrentUsername, nSequenceID):
     """Gets a sequence"""
-
     # Log the function call and get the sequence data
     self.__LogDBAccess(sCurrentUsername, "GetSequence(%i)" % (nSequenceID, ))
     pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
@@ -187,26 +186,26 @@ class DBComm:
 
   def GetReagent(self, sCurrentUsername, nReagentID):
     """Gets the specified reagent"""
-
-    # Load the access and get the reagent
+    # Log the access and get the reagent
     self.__LogDBAccess(sCurrentUsername, "GetReagent(%i)" % (nReagentID, ))
-    pReagentRaw = self.__CallStoredProcedure("GetReagent", (nReagentID, ))
-
-    # Create each reagent object
-    pReagent = {}
-    pReagent["type"] = "reagent"
-    pReagent["reagentid"] = pReagentRaw[0][0]
-    pReagent["componentid"] = pReagentRaw[0][2]
-    pReagent["position"] = pReagentRaw[0][3]
-    pReagent["available"] = bool(pReagentRaw[0][4])
-    pReagent["name"] = pReagentRaw[0][5]
-    pReagent["description"] = pReagentRaw[0][6] 
-    return pReagent
+    return self.__CreateReagent(self.__CallStoredProcedure("GetReagent", (nReagentID, ))[0])
 
   def GetReagentsByName(self, sCurrentUsername, nSequenceID, sName):
     """Gets all reagents in the sequence that match the given name"""
+    # Log the access and get the reagents
     self.__LogDBAccess(sCurrentUsername, "GetReagentsByName(%i, %s)" % (nSequenceID, sName))
-    return self.__CallStoredProcedure("GetReagentsByName", (nSequenceID, sName))
+    pReagentsRaw = self.__CallStoredProcedure("GetReagentsByName", (nSequenceID, sName))
+
+    # Create and return the reagent array
+    pReagents = []
+    for pReagentRaw in pReagentsRaw:
+        pReagents.append(self.__CreateReagent(pReagentRaw))
+    return pReagents
+
+  def GetReagentByPosition(self, sCurrentUsername, nSequenceID, nCassette, sPosition):
+    """Gets the reagent at the given position"""
+    self.__LogDBAccess(sCurrentUsername, "GetReagentByPosition(%i, %i, %s)" % (nSequenceID, nCassette, sPosition))
+    return self.__CreateReagent(self.__CallStoredProcedure("GetReagentByPosition", (nSequenceID, nCassette, sPosition))[0])
 
   def GetReservedReagentsByName(self, sCurrentUsername, sName):
     """Gets all reserved reagents in the database that match the given name"""
@@ -236,6 +235,31 @@ class DBComm:
     pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
     return pComponent
 
+  def GetPreviousComponent(self, sCurrentUsername, nComponentID):
+    """Gets the component previous to the one specified"""
+    self.__LogDBAccess(sCurrentUsername, "GetPreviousComponent(%i)" % (nComponentID, ))
+    pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
+    if nPreviousComponentID == 0:
+        return None
+    pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nPreviousComponentID)
+    return pComponent
+
+  def GetNextComponent(self, sCurrentUsername, nComponentID):
+    """Gets the component after to the one specified"""
+    self.__LogDBAccess(sCurrentUsername, "GetPreviousComponent(%i)" % (nComponentID, ))
+    pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
+    if nNextComponentID == 0:
+        return None
+    pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nNextComponentID)
+    return pComponent
+
+  def GetCassette(self, sCurrentUsername, nSequenceID, nCassetteOffset):
+    """Gets the cassette specified by the offset"""
+    self.__LogDBAccess(sCurrentUsername, "GetCassette(%i, %i)" % (nSequenceID, nCassetteOffset))
+    pComponentRaw = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassetteOffset))
+    pComponent, nPreviousComponentID, nNextComponentID = self.__CreateComponent(pComponentRaw)
+    return pComponent
+
   def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
     self.__LogDBAccess(sCurrentUsername, "CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
@@ -247,7 +271,7 @@ class DBComm:
     """Inserts a component into a sequence"""
     self.__LogDBAccess(sCurrentUsername, "InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sName, sContent, nInsertID))
     nComponentID = 0
-    self.__CallStoredProcedure("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID), True)
+    self.__CallStoredProcedure("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID, nComponentID), True)
     return self.__ExecuteQuery("SELECT @_InsertComponent_5")[0][0]
 
   def UpdateComponent(self, sCurrentUsername, nComponentID, sType, sName, sDetails):
@@ -267,7 +291,6 @@ class DBComm:
 
   def EnableCassette(self, sCurrentUsername, nSequenceID, nCassette):
     """Enables the target cassette"""
-
     # Log the function call and get the cassette component
     self.__LogDBAccess(sCurrentUsername, "EnableCassette(%i, %i)" % (nSequenceID, nCassette))
     pCassetteComponent = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassette))
@@ -279,7 +302,7 @@ class DBComm:
 
     # Save the updated JSON back to the database
     sDetailsJSON = json.dumps(pDetails)
-    self.__CallStoredProcedure("UpdateComponent", (pCassetteComponent[0][0], pCassetteComponent[0][4], pCassetteComponent[0][5], sDetailsJSON), True)
+    self.UpdateComponent(sCurrentUsername, pCassetteComponent[0][0], pCassetteComponent[0][4], pCassetteComponent[0][5], sDetailsJSON)
 
   ### Internal functions ###
 
@@ -325,12 +348,28 @@ class DBComm:
   def __GetComponent(self, nComponentID):
     """Fetches and packages a component"""
     pComponentRaw = self.__CallStoredProcedure("GetComponent", (nComponentID, ))
+    return self.__CreateComponent(pComponentRaw)
+
+  def __CreateComponent(self, pComponentRaw):
+    """Packages a component"""
     pComponent = json.loads(pComponentRaw[0][6])
     pComponent["id"] = int(pComponentRaw[0][0])
     pComponent["name"] = pComponentRaw[0][5]
     nPreviousComponentID = int(pComponentRaw[0][2])
     nNextComponentID = int(pComponentRaw[0][3])
     return pComponent, nPreviousComponentID, nNextComponentID
+
+  def __CreateReagent(self, pReagentRaw):
+    """Packages a reagent"""
+    pReagent = {}
+    pReagent["type"] = "reagent"
+    pReagent["reagentid"] = pReagentRaw[0]
+    pReagent["componentid"] = pReagentRaw[2]
+    pReagent["position"] = pReagentRaw[3]
+    pReagent["available"] = bool(pReagentRaw[4])
+    pReagent["name"] = pReagentRaw[5]
+    pReagent["description"] = pReagentRaw[6] 
+    return pReagent
 
 if __name__ == '__main__':
   pDBComm = DBComm()
