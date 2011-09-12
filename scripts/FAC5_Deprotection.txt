@@ -1,0 +1,25 @@
+//This will take the finish the FAC synthesis and should be run after FAC4_Transfer.txt is complete
+
+// Add sodium methoxide manually and mix
+Move(Reactor1,Install)
+SetMotorSpeed(1,450)
+SetMotorSpeed(1,0)
+
+// Deprotection
+React(Reactor1,103,300,40,React2,450)
+
+// Add hydrochloric acid manually and mix
+Move(Reactor1,Install)
+SetMotorSpeed(1,450)
+SetMotorSpeed(1,0)
+
+// Partially evaporate the contents of reactor 1
+Evaporate(Reactor1,80,60,40,450)
+
+// Add HPLC mobile phase manually and mix
+Move(Reactor1,Install)
+SetMotorSpeed(1,450)
+SetMotorSpeed(1,0)
+
+// Manually remove the contents of reactor 1 and inject into the HPLC of hot cell 4
+Move(Reactor1,Install)
