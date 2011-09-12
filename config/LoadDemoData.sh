@@ -6,7 +6,3 @@
 cd /opt/elixys/config
 python LoadDemoData.py
 cd ~
-
-# Remove the git repository
-rm -rf elixys
-
