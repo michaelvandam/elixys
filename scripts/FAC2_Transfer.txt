@@ -1,4 +1,4 @@
-//This will transfer the contents of reactor 1 to 2 and should be run after FAC1_Fluorination.txt is complete
+// This will transfer the contents of reactor 1 to 2 and should be run after FAC1_Fluorination.txt is complete
 
 // Transfer contents of reactor 1 through to the silica Sep-pak to waste
 Move(Reactor1,Transfer)
@@ -8,7 +8,7 @@ ReactorTransferStart(1)
 ReactorTransferStop(1)
 
 // Add EtOAc to reactor 1 and mix
-Add(Reactor1,Reactor1,6,2)
+Add(Reactor1,Reactor1,7,2)
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
 
@@ -26,7 +26,7 @@ SetMotorSpeed(2,0)
 Evaporate(Reactor2,80,180,40,450)
 
 // Add EtOAc to reactor 1 and mix
-Add(Reactor1,Reactor1,7,2)
+Add(Reactor1,Reactor1,8,2)
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
 

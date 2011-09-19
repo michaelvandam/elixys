@@ -1,9 +1,10 @@
 // This will take the FAC synthesis through bromination and cytosine coupling and should be run after FAC2_Transfer.txt is complete
 
-// Add HBr/dichloroethane mixture manually and mix
+// Add HBr manually
 Move(Reactor2,Install)
-SetMotorSpeed(2,450)
-SetMotorSpeed(2,0)
+
+// Add DCE
+Add(Reactor2,Reactor2,1,2)
 
 // Bromination
 React(Reactor2,80,600,40,React1,450)
@@ -12,15 +13,15 @@ React(Reactor2,80,600,40,React1,450)
 Evaporate(Reactor2,60,90,40,450)
 
 // Add toluene and mix
-Add(Reactor2,Reactor2,1,1)
+Add(Reactor2,Reactor2,2,2)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Evaporate
 Evaporate(Reactor2,80,180,40,450)
 
-// Add Precursor2 manually and mix
-Move(Reactor2,Install)
+// Add Precursor2 and mix
+Add(Reactor2,Reactor2,3,2)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 

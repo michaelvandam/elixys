@@ -8,7 +8,7 @@ ReactorTransferStart(2)
 ReactorTransferStop(2)
 
 // Add dichloromethane to reactor 2 and mix
-Add(Reactor2,Reactor2,2,2)
+Add(Reactor2,Reactor2,4,2)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
@@ -22,10 +22,10 @@ RampPressure(2,20,90)
 ReactorTransferStop(2)
 
 // Evaporate #1
-Evaporate(Reactor1,60,60,40,450)
+Evaporate(Reactor1,80,60,40,450)
 
 // Add dichloromethane to reactor 2 and mix
-Add(Reactor2,Reactor2,3,2)
+Add(Reactor2,Reactor2,5,2)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
@@ -39,10 +39,10 @@ ReactorTransferStop(2)
 // Mix and evaporate #2
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
-Evaporate(Reactor1,60,60,40,450)
+Evaporate(Reactor1,80,60,40,450)
 
 // Add dichloromethane to reactor 2 and mix
-Add(Reactor2,Reactor2,4,2)
+Add(Reactor2,Reactor2,6,2)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
@@ -56,4 +56,4 @@ ReactorTransferStop(2)
 // Mix and evaporate #3
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
-Evaporate(Reactor1,60,120,40,450)
+Evaporate(Reactor1,80,120,40,450)
