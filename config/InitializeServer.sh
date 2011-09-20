@@ -75,6 +75,11 @@ mkdir /var/www/adobepolicyfile
 mkdir /var/www/http
 mkdir /var/www/wsgi
 
+# Create a directory where Apache has write permissions for Python Eggs 
+mkdir /var/www/wsgi/eggs
+chmod 777 /var/www/wsgi/eggs
+chown apache:apache /var/www/wsgi/eggs
+
 # Install the Adobe policy module and file
 cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so

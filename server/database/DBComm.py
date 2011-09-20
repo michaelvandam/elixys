@@ -143,13 +143,13 @@ class DBComm:
     pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
 
     # Fill in the sequence metadata
-    pSequence = {}
+    pSequence = {"type":"sequence"}
     pSequence["metadata"] = {}
+    pSequence["metadata"]["type"] = "sequencemetadata"
     pSequence["metadata"]["id"] = int(pSequenceRaw[0][0])
     pSequence["metadata"]["name"] = pSequenceRaw[0][1]
     pSequence["metadata"]["comment"] = pSequenceRaw[0][2]
-    pSequence["metadata"]["date"] = pSequenceRaw[0][4].strftime("%m/%d/%Y")
-    pSequence["metadata"]["time"] = pSequenceRaw[0][4].strftime("%H:%M.%S")
+    pSequence["metadata"]["timestamp"] = pSequenceRaw[0][4].strftime("%Y-%m-%d %H:%M:%S")
     pSequence["metadata"]["creator"] = pSequenceRaw[0][5]
     pSequence["metadata"]["components"] = int(pSequenceRaw[0][7])
 
@@ -189,6 +189,18 @@ class DBComm:
     # Log the access and get the reagent
     self.__LogDBAccess(sCurrentUsername, "GetReagent(%i)" % (nReagentID, ))
     return self.__CreateReagent(self.__CallStoredProcedure("GetReagent", (nReagentID, ))[0])
+
+  def GetReagentsBySequence(self, sCurrentUsername, nSequenceID):
+    """Gets all reagents in the sequence"""
+    # Log the access and get the reagents
+    self.__LogDBAccess(sCurrentUsername, "GetReagentsBySequence(%i)" % (nSequenceID, ))
+    pReagentsRaw = self.__CallStoredProcedure("GetReagentsBySequence", (nSequenceID, ))
+
+    # Create and return the reagent array
+    pReagents = []
+    for pReagentRaw in pReagentsRaw:
+        pReagents.append(self.__CreateReagent(pReagentRaw))
+    return pReagents
 
   def GetReagentsByName(self, sCurrentUsername, nSequenceID, sName):
     """Gets all reagents in the sequence that match the given name"""
@@ -308,9 +320,7 @@ class DBComm:
 
   def __LogDBAccess(self, sUsername, sMessage):
     """Logs that the given user has accessed the database"""
-    with open("/var/www/wsgi/dblog.txt", "a") as myfile:
-        now = datetime.datetime.now()
-        myfile.write(now.strftime("%H:%M:%S") + "  " + sUsername + " called " + sMessage + "\n")
+    pass
 
   def __CallStoredProcedure(self, sProcedureName, pArguments, bCommit = False):
     """Calls the given SQL stored procedure"""

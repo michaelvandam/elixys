@@ -986,7 +986,7 @@ class Initialize(UnitOperation):
     
     #Set pressures
     self.setPressureRegulator(2,5)
-    self.setPressureRegulator(1,59)
+    self.setPressureRegulator(1,60)
     
     #Home robots
     for self.ReactorID in self.ReactorTuple:

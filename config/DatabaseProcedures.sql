@@ -386,6 +386,16 @@ CREATE PROCEDURE GetReagent(IN iReagentID INT UNSIGNED)
         SELECT * FROM Reagents WHERE ReagentID = iReagentID;
     END //
 
+/* Gets all reagents in the given sequence:
+ *   IN SequenceID - ID of the sequence
+ */
+DROP PROCEDURE IF EXISTS GetReagentsBySequence;
+CREATE PROCEDURE GetReagentsBySequence(IN iSequenceID INT UNSIGNED)
+    BEGIN
+        -- Look up the reagents
+        SELECT * FROM Reagents WHERE SequenceID = iSequenceID;
+    END //
+
 /* Gets all reagents in the sequence that match the given name:
  *   IN SequenceID - ID of the sequence
  *   IN Name - Reagent name
@@ -393,7 +403,7 @@ CREATE PROCEDURE GetReagent(IN iReagentID INT UNSIGNED)
 DROP PROCEDURE IF EXISTS GetReagentsByName;
 CREATE PROCEDURE GetReagentsByName(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64))
     BEGIN
-        -- Look up the reagent
+        -- Look up the reagents
         SELECT * FROM Reagents WHERE SequenceID = iSequenceID AND Name = iName;
     END //
 

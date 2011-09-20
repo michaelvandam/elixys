@@ -13,7 +13,7 @@ import PostHandler
 
 # Change the python egg cache directory to a place where Apache has write permission
 import os
-os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi"
+os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi/eggs"
 
 # Import and create the database connection
 import DBComm

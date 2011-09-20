@@ -96,6 +96,16 @@ class SequenceManager:
     # Process each component
     for pComponent in pSequence["components"]:
       if (pComponent["type"] != ""):
+        # Add the component
+        self.database.CreateComponent("System", nSequenceID, pComponent["componenttype"], "", json.dumps(pComponent))
+      else:
+        raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
+
+  def ExportSequence(self, nSequenceID, sFilename):
+    print "Implement ExportSequence()"
+
+"""
+
         # Convert any reagent entries to IDs
         if pComponent.has_key("reagent"):
           # Remove the reagent from our local list
@@ -114,7 +124,7 @@ class SequenceManager:
             raise Exception("Database missing reagent " + pComponent["reagent"])
 
           # Look up the desired reagent and update the component
-          pComponent["reagent"] = pDatabaseReagents[len(pDatabaseReagents) - len(pLocalReagents)][0]
+          pComponent["reagent"] = pDatabaseReagents[len(pDatabaseReagents) - len(pLocalReagents)]
 
         # Convert any targets to IDs
         if pComponent.has_key("target"):
@@ -132,17 +142,11 @@ class SequenceManager:
           else:
             # Targets always go with the current reactor
             for pReagent in pDatabaseReagents:
-              if pReagent[2] == pComponent["reactor"]:
+              if pReagent["componentid"] == pComponent["reactor"]:
                 # Update the component
-                pComponent["target"] = pReagent[0]
-
-        # Add the component
-        self.database.CreateComponent("System", nSequenceID, pComponent["componenttype"], "", json.dumps(pComponent))
-      else:
-        raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
-
-  def ExportSequence(self, nSequenceID, sFilename):
-    print "Implement ExportSequence()"
+                print "Updating component with reagent " + str(pReagent)
+                pComponent["target"] = pReagent["reagentid"]
+"""
 
 def test():
   seq1 = Sequence()
