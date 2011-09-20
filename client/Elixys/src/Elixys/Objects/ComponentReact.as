@@ -22,6 +22,25 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("reactor"));
+		}
+		public function set Reactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("reactor", value);
+		}
+		
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+
 		public function get Position():String
 		{
 			return super.flash_proxy::getProperty("position");
@@ -35,25 +54,17 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("positiondescription");
 		}
-		public function set PositionDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("positiondescription", value);
-		}
 		
 		public function get PositionValidation():String
 		{
 			return super.flash_proxy::getProperty("positionvalidation");
 		}
-		public function set PositionValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("positionvalidation", value);
-		}
 
-		public function get Duration():String
+		public function get Duration():uint
 		{
 			return super.flash_proxy::getProperty("duration");
 		}
-		public function set Duration(value:String):void
+		public function set Duration(value:uint):void
 		{
 			super.flash_proxy::setProperty("duration", value);
 		}
@@ -62,25 +73,17 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("durationdescription");
 		}
-		public function set DurationDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("durationdescription", value);
-		}
 
 		public function get DurationValidation():String
 		{
 			return super.flash_proxy::getProperty("durationvalidation");
 		}
-		public function set DurationValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("durationvalidation", value);
-		}
-	
-		public function get ReactionTemperature():String
+
+		public function get ReactionTemperature():Number
 		{
 			return super.flash_proxy::getProperty("reactiontemperature");
 		}
-		public function set ReactionTemperature(value:String):void
+		public function set ReactionTemperature(value:Number):void
 		{
 			super.flash_proxy::setProperty("reactiontemperature", value);
 		}
@@ -89,25 +92,17 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("reactiontemperaturedescription");
 		}
-		public function set ReactionTemperatureDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("reactiontemperaturedescription", value);
-		}
 	
 		public function get ReactionTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("reactiontemperaturevalidation");
 		}
-		public function set ReactionTemperatureValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("reactiontemperaturevalidation", value);
-		}
 	
-		public function get FinalTemperature():String
+		public function get FinalTemperature():Number
 		{
 			return super.flash_proxy::getProperty("finaltemperature");
 		}
-		public function set FinalTemperature(value:String):void
+		public function set FinalTemperature(value:Number):void
 		{
 			super.flash_proxy::setProperty("finaltemperature", value);
 		}
@@ -116,67 +111,57 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("finaltemperaturedescription");
 		}
-		public function set FinalTemperatureDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("finaltemperaturedescription", value);
-		}
 	
 		public function get FinalTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
 		}
-		public function set FinalTemperatureValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("finaltemperaturevalidation", value);
-		}
 	
 		public function get StirSpeed():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("stirspeed"));
+			return super.flash_proxy::getProperty("stirspeed");
 		}
 		public function set StirSpeed(value:uint):void
 		{
-			super.flash_proxy::setProperty("stirspeed", value.toString());
+			super.flash_proxy::setProperty("stirspeed", value);
 		}
 	
 		public function get StirSpeedDescription():String
 		{
 			return super.flash_proxy::getProperty("stirspeeddescription");
 		}
-		public function set StirSpeedDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("stirspeeddescription", value);
-		}
 	
 		public function get StirSpeedValidation():String
 		{
 			return super.flash_proxy::getProperty("stirespeedvalidation");
 		}
-		public function set StirSpeedValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("stirespeedvalidation", value);
-		}
 
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sJSON:String = JSONDataString("position", Position);
-			sJSON += JSONDataString("duration", Duration);
-			sJSON += JSONDataString("reactiontemperature", ReactionTemperature);
-			sJSON += JSONDataString("finaltemperature", FinalTemperature);
-			sJSON += JSONDataInteger("stirspeed", StirSpeed, false);
-			return sJSON;
+			var sReactDetails:String = JSONDataObject("reactor", Reactor);
+			sReactDetails += JSONDataObject("position", Position);
+			sReactDetails += JSONDataObject("duration", Duration);
+			sReactDetails += JSONDataObject("reactiontemperature", ReactionTemperature);
+			sReactDetails += JSONDataObject("finaltemperature", FinalTemperature);
+			sReactDetails += JSONDataObject("stirspeed", StirSpeed, false);
+			return sReactDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "REACT";
 
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"REACT\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"position\":\"\", " +
-			"\"positiondescription\":\"\", 	\"positionvalidation\":\"\", \"duration\":\"\", \"durationdescription\":\"\", " +
-			"\"durationvalidation\":\"\", \"reactiontemperature\":\"\", \"reactiontemperaturedescription\":\"\", " +
-			"\"reactiontemperaturevalidation\":\"\", \"finaltemperature\":\"\", \"finaltemperaturedescription\":\"\", " +
-			"\"finaltemperaturevalidation\":\"\", \"stirspeed\":\"\", \"stirspeeddescription\":\"\", \"stirespeedvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"REACT\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"position\":0," +
+			"\"duration\":0," +
+			"\"reactiontemperature\":0," +
+			"\"finaltemperature\":0," +
+			"\"stirspeed\":0}";
 	}
 }

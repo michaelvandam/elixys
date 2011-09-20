@@ -18,6 +18,21 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("reactor"));
+		}
+		
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+		
 		public function get Available():Boolean
 		{
 			return super.flash_proxy::getProperty("available");
@@ -46,7 +61,9 @@ package Elixys.Objects
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataBoolean("available", Available, false);
+			var sCassetteDetails:String = JSONDataObject("reactor", Reactor);
+			sCassetteDetails += JSONDataObject("available", Available, false);
+			return sCassetteDetails;
 		}
 
 		// Type

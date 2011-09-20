@@ -22,45 +22,70 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Target():uint
+		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("target"));
+			return parseInt(super.flash_proxy::getProperty("reactor"));
 		}
-		public function set Target(value:uint):void
+		public function set Reactor(value:uint):void
 		{
-			super.flash_proxy::setProperty("target", value);
+			super.flash_proxy::setProperty("reactor", value);
 		}
-
-		public function get TargetDescription():String
+		
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+		
+		public function get TransferTarget():Reagent
+		{
+			if (m_pTarget == null)
+			{
+				m_pTarget = new Reagent(null, super.flash_proxy::getProperty("target"));
+			}
+			return m_pTarget;
+		}
+		public function set TransferTarget(value:Reagent):void
+		{
+			super.flash_proxy::setProperty("reagent", value);
+			m_pTarget = null;
+		}
+		
+		public function get TransferTargetDescription():String
 		{
 			return super.flash_proxy::getProperty("targetdescription");
 		}
-		public function set TargetDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("targetdescription", value);
-		}
-
-		public function get TargetValidation():String
+		
+		public function get TransferTargetValidation():String
 		{
 			return super.flash_proxy::getProperty("targetvalidation");
-		}
-		public function set TargetValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("targetvalidation", value);
 		}
 
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataInteger("target", Target, false);
+			var sTransferDetails:String = JSONDataObject("reactor", Reactor);
+			sTransferDetails += JSONDataObject("target", TransferTarget.ReagentID, false);
+			return sTransferDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "TRANSFER";
 
+		// State components
+		private var m_pTarget:Reagent;
+
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"TRANSFER\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"target\":\"\", " +
-			"\"targetdescription\":\"\", \"targetvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"TRANFER\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"target\":0}";
 	}
 }

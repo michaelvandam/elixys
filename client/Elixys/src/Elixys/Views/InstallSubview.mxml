@@ -35,7 +35,7 @@
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Fill the reactor combo box
-					UpdateEnumLiteralComboBox(m_pComponentInstall.ReactorValidation, _editReactorCombo, m_pComponentInstall.Reactor.toString());
+					UpdateEnumNumberComboBox(m_pComponentInstall.ReactorValidation, _editReactorCombo, m_pComponentInstall.Reactor.toString());
 
 					// Set the message unless the user is editing it
 					if (m_pKeyboardFocusTextArea != _editMessage)
@@ -50,11 +50,6 @@
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Moving reactor " + m_pComponentInstall.Reactor + " to the install position.";
 					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
-					var sActivity:String = pReactor.Activity();
-					if (sActivity != "")
-					{
-						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
-					}
 				}
 			}
 			

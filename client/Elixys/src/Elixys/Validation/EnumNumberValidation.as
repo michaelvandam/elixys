@@ -1,13 +1,13 @@
 package Elixys.Validation
 {
-	public class EnumLiteralValidation extends ValidationBase
+	public class EnumNumberValidation extends ValidationBase
 	{
 		/***
 		 * Member functions
 		 **/
 		
 		// Constructor
-		public function EnumLiteralValidation(sValidation:String)
+		public function EnumNumberValidation(sValidation:String)
 		{
 			// Call our base constructor
 			super(sValidation);
@@ -25,8 +25,8 @@ package Elixys.Validation
 			return "";
 		}
 		
-		// Returns the array of literal values
-		public function LiteralValues():Array
+		// Returns the array of number values
+		public function NumberValues():Array
 		{
 			return GetValueArray(ValidationBase.VALUEKEY);
 		}
@@ -36,6 +36,6 @@ package Elixys.Validation
 		 **/
 		
 		// Validation type
-		public static var TYPE:String = "enum-literal";
+		public static var TYPE:String = "enum-number";
 	}
 }

@@ -71,7 +71,7 @@ package Elixys.Views
 		public function UpdateComponent(pComponent:Component):void
 		{
 		}
-		public function UpdateReagent(pReagent:Reagent):void
+		public function UpdateReagents(pReagents:Array):void
 		{
 		}
 		protected function OnTextValueChanged(pFocusTarget:TextArea):void
@@ -98,19 +98,40 @@ package Elixys.Views
 			dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
 		
-		// Request a sequence reagent from the server
-		protected function RequestSequenceReagent(nReagentID:uint, nSequenceID:uint = 0):void
+		// Request the sequence reagent from the server
+		protected function RequestSequenceReagents(pReagentIDs:Array, nSequenceID:uint = 0):void
 		{
 			// Look up our sequence ID if one was not provided
 			if (!nSequenceID)
 			{
 				nSequenceID = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
 			}
+
+			// Format the reagent IDs
+			var sReagentIDs:String = "";
+			for (var i:uint = 0; i < pReagentIDs.length; ++i)
+			{
+				if (pReagentIDs[i] == 0)
+				{
+					continue;
+				}
+				if (i != 0)
+				{
+					sReagentIDs += ".";					
+				}
+				sReagentIDs += pReagentIDs[i];
+			}
 			
+			// Return if we have no reagents to get
+			if (sReagentIDs == "")
+			{
+				return;
+			}
+
 			// Create and send a GET request to the server
 			var pHTTPRequest:HTTPRequest = new HTTPRequest();
 			pHTTPRequest.m_sMethod = "GET";
-			pHTTPRequest.m_sResource = "/Elixys/sequence/" + nSequenceID + "/reagent/" + nReagentID;
+			pHTTPRequest.m_sResource = "/Elixys/sequence/" + nSequenceID + "/reagent/" + sReagentIDs;
 			m_pElixysMain.GetActiveSequenceView().dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
 		
@@ -446,12 +467,12 @@ package Elixys.Views
 			pGrid.dataProvider = pGridData;
 		}
 
-		// Update the given combo box with the specified enum-literal validation string
-		protected function UpdateEnumLiteralComboBox(sEnumLiteralValidation:String, pComboBox:ComboBox, sCurrentValue:String):void
+		// Update the given combo box with the specified enum-number validation string
+		protected function UpdateEnumNumberComboBox(sEnumNumberValidation:String, pComboBox:ComboBox, sCurrentValue:String):void
 		{
-			// Get the array of literal values
-			var pEnumLiteralValidation:EnumLiteralValidation = new EnumLiteralValidation(sEnumLiteralValidation);
-			var pLiteralValues:Array = pEnumLiteralValidation.LiteralValues();
+			// Get the array of number values
+			var pEnumNumberValidation:EnumNumberValidation = new EnumNumberValidation(sEnumNumberValidation);
+			var pNumberValues:Array = pEnumNumberValidation.NumberValues();
 
 			// Get a pointer to the data provider
 			var pData:ArrayList;
@@ -469,18 +490,18 @@ package Elixys.Views
 			
 			// Loop through the server and client arrays
 			var nValue:uint;
-			for (nValue = 0; nValue < pLiteralValues.length; ++nValue)
+			for (nValue = 0; nValue < pNumberValues.length; ++nValue)
 			{
-				// Either set the existing component or create a new one
+				// Either set the existing item or create a new one
 				if (nValue < pData.length)
 				{
-					// Update the existing component
-					pData.setItemAt(pLiteralValues[nValue], nValue);
+					// Update the existing item
+					pData.setItemAt(pNumberValues[nValue], nValue);
 				}
 				else
 				{
-					// Create a new component
-					pData.addItem(pLiteralValues[nValue]);
+					// Create a new item
+					pData.addItem(pNumberValues[nValue]);
 				}
 				
 				// Make sure the currently selected value is reselected
@@ -501,25 +522,25 @@ package Elixys.Views
 		}
 		
 		// Update the given combo box with the specified enum-reagent validation string
-		protected function UpdateEnumReagentComboBox(sEnumReagentValidation:String, pComboBox:ComboBox, nCurrentReagentID:uint):void
+		protected function UpdateEnumReagentComboBox(sEnumReagentValidation:String, pComboBox:ComboBox, pCurrentReagent:Reagent):void
 		{
 			// Get the array of reagent IDs
 			var pEnumReagentValidation:EnumReagentValidation = new EnumReagentValidation(sEnumReagentValidation);
 			var pReagentIDs:Array = pEnumReagentValidation.ReagentIDs();
 
 			// Call the shared implementation
-			UpdateEnumComboBox(pReagentIDs, pComboBox, nCurrentReagentID);
+			UpdateEnumComboBox(pReagentIDs, pComboBox, pCurrentReagent.ReagentID);
 		}
 
 		// Update the given combo box with the specified enum-target validation string
-		protected function UpdateEnumTargetComboBox(sEnumTargetValidation:String, pComboBox:ComboBox, nCurrentTargetID:uint):void
+		protected function UpdateEnumTargetComboBox(sEnumTargetValidation:String, pComboBox:ComboBox, pCurrentTarget:Reagent):void
 		{
 			// Get the array of target IDs
 			var pEnumTargetValidation:EnumTargetValidation = new EnumTargetValidation(sEnumTargetValidation);
 			var pTargetIDs:Array = pEnumTargetValidation.TargetIDs();
 			
 			// Call the shared implementation
-			UpdateEnumComboBox(pTargetIDs, pComboBox, nCurrentTargetID);
+			UpdateEnumComboBox(pTargetIDs, pComboBox, pCurrentTarget.ReagentID);
 		}
 
 		// Shared combo box update function
@@ -541,6 +562,7 @@ package Elixys.Views
 
 			// Loop through the server and client arrays
 			var nReagent:uint, pReagentClient:Reagent;
+			var pReagentIDs:Array = new Array();
 			for (nReagent = 0; nReagent < pIDs.length; ++nReagent)
 			{
 				// Get a pointer to an existing reagent or create a new one
@@ -556,9 +578,9 @@ package Elixys.Views
 					pData.addItem(pReagentClient);
 				}
 				
-				// Update the reagent ID and send a request to the server
+				// Update the reagent ID
 				pReagentClient.ReagentID = pIDs[nReagent];
-				RequestSequenceReagent(pReagentClient.ReagentID);
+				pReagentIDs.push(pReagentClient.ReagentID);
 
 				// Make sure the currently selected reagent is reselected
 				if (pReagentClient.ReagentID == nCurrentReagentID)
@@ -575,27 +597,32 @@ package Elixys.Views
 			
 			// Update the data provider
 			pComboBox.dataProvider = pData;
+
+			// Request the reagents from the server
+			RequestSequenceReagents(pReagentIDs);
 		}
 		
 		// Update the reagent item in the given combo box
-		protected function UpdateEnumReagentComboBoxItem(pReagent:Reagent, pComboBox:ComboBox):Boolean
+		protected function UpdateEnumReagentComboBoxItems(pReagents:Array, pComboBox:ComboBox):void
 		{
-			// Look up the reagent in the combo box data
+			// Loop through each reagent we got from the server
+			var nServerReagent:uint, nClientReagent:uint, pClientReagent:Reagent, pServerReagent:Reagent;
 			var pData:ArrayList = pComboBox.dataProvider as ArrayList;
-			var nReagent:uint, pClientReagent:Reagent;
-			for (nReagent = 0; nReagent < pData.length; ++nReagent)
+			for (nServerReagent = 0; nServerReagent < pReagents.length; ++nServerReagent)
 			{
-				pClientReagent = pData.getItemAt(nReagent) as Reagent;
-				if (pClientReagent.ReagentID == pReagent.ReagentID)
+				// Look up the reagent in the combo box data
+				pServerReagent = pReagents[nServerReagent];
+				for (nClientReagent = 0; nClientReagent < pData.length; ++nClientReagent)
 				{
-					// Found it.  Update the return
-					pClientReagent.Copy(pReagent);
-					return true;
+					pClientReagent = pData.getItemAt(nClientReagent) as Reagent;
+					if (pClientReagent.ReagentID == pServerReagent.ReagentID)
+					{
+						// Found it.  Update and break out of the inner loop
+						pClientReagent.Copy(pServerReagent);
+						nClientReagent = pData.length;
+					}
 				}
 			}
-			
-			// Failed to locate reagent
-			return false;
 		}
 		
 		/***

@@ -22,75 +22,97 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Reagent():uint
+		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("reagent"));
+			return parseInt(super.flash_proxy::getProperty("reactor"));
 		}
-		public function set Reagent(value:uint):void
+		public function set Reactor(value:uint):void
 		{
-			super.flash_proxy::setProperty("reagent", value);
+			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReagentDescription():String
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+
+		public function get EluteReagent():Reagent
+		{
+			if (m_pReagent == null)
+			{
+				m_pReagent = new Reagent(null, super.flash_proxy::getProperty("reagent"));
+			}
+			return m_pReagent;
+		}
+		public function set EluteReagent(value:Reagent):void
+		{
+			super.flash_proxy::setProperty("reagent", value);
+			m_pReagent = null;
+		}
+		
+		public function get EluteReagentDescription():String
 		{
 			return super.flash_proxy::getProperty("reagentdescription");
 		}
-		public function set ReagentDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("reagentdescription", value);
-		}
-
-		public function get ReagentValidation():String
+		
+		public function get EluteReagentValidation():String
 		{
 			return super.flash_proxy::getProperty("reagentvalidation");
 		}
-		public function set ReagentValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("reagentvalidation", value);
-		}
 
-		public function get Target():uint
+		public function get EluteTarget():Reagent
 		{
-			return parseInt(super.flash_proxy::getProperty("target"));
+			if (m_pTarget == null)
+			{
+				m_pTarget = new Reagent(null, super.flash_proxy::getProperty("target"));
+			}
+			return m_pTarget;
 		}
-		public function set Target(value:uint):void
+		public function set EluteTarget(value:Reagent):void
 		{
 			super.flash_proxy::setProperty("target", value);
+			m_pTarget = null;
 		}
 		
-		public function get TargetDescription():String
+		public function get EluteTargetDescription():String
 		{
 			return super.flash_proxy::getProperty("targetdescription");
 		}
-		public function set TargetDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("targetdescription", value);
-		}
 		
-		public function get TargetValidation():String
+		public function get EluteTargetValidation():String
 		{
 			return super.flash_proxy::getProperty("targetvalidation");
-		}
-		public function set TargetValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("targetvalidation", value);
 		}
 
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sJSON:String = JSONDataInteger("reagent", Reagent);
-			sJSON += JSONDataInteger("target", Target, false);
-			return sJSON;
+			var sEluteDetails:String = JSONDataObject("reactor", Reactor);
+			sEluteDetails += JSONDataObject("reagent", EluteReagent.ReagentID);
+			sEluteDetails += JSONDataObject("target", EluteTarget.ReagentID, false);
+			return sEluteDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "ELUTE";
 
+		// State components
+		private var m_pReagent:Reagent;
+		private var m_pTarget:Reagent;
+
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"ELUTE\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"reagent\":\"\", " +
-			"\"reagentdescription\":\"\", \"reagentvalidation\":\"\", \"target\":\"\", \"targetdescription\":\"\", " +
-			"\"targetvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"ELUTE\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"reagent\":0," +
+			"\"target\":0}";
 	}
 }

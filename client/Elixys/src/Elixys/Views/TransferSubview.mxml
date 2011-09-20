@@ -27,54 +27,40 @@
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
-					// Look up the target
-					RequestSequenceReagent(m_pComponentTransfer.Target);
+					// Format the output text
+					_outputText.text = "Transfer the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
+						m_pComponentTransfer.TransferTarget.Description + ".";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Fill the reactor combo box
-					UpdateEnumLiteralComboBox(m_pComponentTransfer.ReactorValidation, _editReactorCombo, m_pComponentTransfer.Reactor.toString());
+					UpdateEnumNumberComboBox(m_pComponentTransfer.ReactorValidation, _editReactorCombo, m_pComponentTransfer.Reactor.toString());
 					
 					// Initialize the target combo box
-					UpdateEnumTargetComboBox(m_pComponentTransfer.TargetValidation, _editTargetCombo, m_pComponentTransfer.Target);
-				}
-				else if (m_sViewMode == SubviewBase.RUNMODE)
-				{
-					// Look up the target
-					RequestSequenceReagent(m_pComponentTransfer.Target);
-				}
-			}
-
-			// Called when reagent details arrive from the server
-			public override function UpdateReagent(pReagent:Reagent):void
-			{
-				// Handle according to our view mode
-				if (m_sViewMode == SubviewBase.VIEWMODE)
-				{
-					// Format the output text
-					_outputText.text = "Transfer the contents of reactor " + m_pComponentTransfer.Reactor + " to the " + pReagent.Description + ".";
-				}
-				else if (m_sViewMode == SubviewBase.EDITMODE)
-				{
-					// Update the target combo box item
-					UpdateEnumReagentComboBoxItem(pReagent, _editTargetCombo);
+					UpdateEnumTargetComboBox(m_pComponentTransfer.TransferTargetValidation, _editTargetCombo, m_pComponentTransfer.TransferTarget);
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
 					// Removing the following line causes a compile error for reasons I don't understand
 					var pElixysMain:ElixysMain = null;
-
+					
 					// Format the output text
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
 					_runOutputText1.text = "Transferring the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
-						pReagent.Description + ".";
+						m_pComponentTransfer.TransferTarget.Description + ".";
 					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
-					var sActivity:String = pReactor.Activity();
-					if (sActivity != "")
-					{
-						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
-					}
 					_runReactorText2.text = "Reactor " + m_pComponentTransfer.Reactor;
+				}
+			}
+
+			// Called when reagent details arrive from the server
+			public override function UpdateReagents(pReagents:Array):void
+			{
+				// Handle according to our view mode
+				if (m_sViewMode == SubviewBase.EDITMODE)
+				{
+					// Update the target combo box item
+					UpdateEnumReagentComboBoxItems(pReagents, _editTargetCombo);
 				}
 			}
 			
@@ -110,7 +96,7 @@
 			protected function OnTargetChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				m_pComponentTransfer.Target = (_editTargetCombo.selectedItem as Reagent).ReagentID;
+				m_pComponentTransfer.TransferTarget = _editTargetCombo.selectedItem as Reagent;
 				
 				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();

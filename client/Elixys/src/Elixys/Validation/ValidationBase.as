@@ -11,9 +11,9 @@ package Elixys.Validation
 		{
 			// Look up the validation type
 			var sType:String = GetValueStringImpl(sValidation, TYPEKEY);
-			if (sType == EnumLiteralValidation.TYPE)
+			if (sType == EnumNumberValidation.TYPE)
 			{
-				return new EnumLiteralValidation(sValidation);
+				return new EnumNumberValidation(sValidation);
 			}
 			return null;
 		}

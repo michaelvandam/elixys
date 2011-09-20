@@ -122,12 +122,12 @@ package Elixys.Objects
 			// Create a JSON response string that will be recognized by the server
 			var sJSON:String = "{";
 			sJSON += JSONDataString("type", Type);
-			sJSON += JSONDataBoolean("available", Available);
-			sJSON += JSONDataInteger("componentid", ComponentID);
+			sJSON += JSONDataObject("available", Available);
+			sJSON += JSONDataObject("componentid", ComponentID);
 			sJSON += JSONDataString("position", Position);
 			sJSON += JSONDataString("name", Name);
 			sJSON += JSONDataString("description", Description);			
-			sJSON += JSONDataInteger("reagentid", ReagentID, false);
+			sJSON += JSONDataObject("reagentid", ReagentID, false);
 			sJSON += "}";
 			return sJSON;
 		}

@@ -244,10 +244,6 @@
 						pSubview = m_pCommentSubview;
 						break;
 					
-					case ComponentActivity.TYPE:
-						pSubview = m_pActivitySubview;
-						break;
-					
 					case MessageSubview.TYPE:
 						pSubview = m_pMessageSubview;
 						break;
@@ -428,13 +424,6 @@
 					addChild(m_pCommentSubview);
 					m_pCommentSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
-				else if (m_pActivitySubview == null)
-				{
-					m_pActivitySubview = new ActivitySubview();
-					m_pActivitySubview.SetElixysMain(this);
-					addChild(m_pActivitySubview);
-					m_pActivitySubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-				}
 				else if (m_pMessageSubview == null)
 				{
 					m_pMessageSubview = new MessageSubview();
@@ -514,10 +503,10 @@
 						(_viewStack.selectedChild as ViewBase).UpdateComponent(pComponent);
 						break;
 					
-					case (Reagent.TYPE):
+					case (Reagents.TYPE):
 						// Update the active view
-						var pReagent:Reagent = new Reagent(sJSON);
-						(_viewStack.selectedChild as ViewBase).UpdateReagent(pReagent);
+						var pReagents:Reagents = new Reagents(sJSON);
+						(_viewStack.selectedChild as ViewBase).UpdateReagents(pReagents.ReagentArray());
 						break;
 						
 					case (ServerError.TYPE):
@@ -620,7 +609,6 @@
 			private var m_pPromptSubview:PromptSubview = null;
 			private var m_pInstallSubview:InstallSubview = null;
 			private var m_pCommentSubview:CommentSubview = null;
-			private var m_pActivitySubview:ActivitySubview = null;
 			private var m_pActiveSubview:SubviewBase = null;
 			private var m_pMessageSubview:SubviewBase = null;
 			

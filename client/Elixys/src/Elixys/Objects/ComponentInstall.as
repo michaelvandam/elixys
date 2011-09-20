@@ -22,6 +22,25 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("reactor"));
+		}
+		public function set Reactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("reactor", value);
+		}
+		
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+
 		public function get Message():String
 		{
 			return super.flash_proxy::getProperty("message");
@@ -35,32 +54,30 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("messagedescription");
 		}
-		public function set MessageDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("messagedescription", value);
-		}
 		
 		public function get MessageValidation():String
 		{
 			return super.flash_proxy::getProperty("messagevalidation");
 		}
-		public function set MessageValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("messagevalidation", value);
-		}
 
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataString("message", Message, false);
+			var sInstallDetails:String = JSONDataObject("reactor", Reactor);
+			sInstallDetails += JSONDataString("message", Message, false);
+			return sInstallDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "INSTALL";
 
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"INSTALL\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"message\":\"\", " +
-			"\"messagedescription\":\"\", \"messagevalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"INSTALL\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"message\":\"\"}";
 	}
 }

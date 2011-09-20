@@ -36,6 +36,15 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("componenttype", value);
 		}
 
+		public function get ID():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("id"));
+		}
+		public function set ID(value:uint):void
+		{
+			super.flash_proxy::setProperty("id", value);
+		}
+		
 		public function get Name():String
 		{
 			return super.flash_proxy::getProperty("name");
@@ -45,42 +54,15 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("name", value);
 		}
 
-		public function get ID():uint
+		public function get ValidationError():Boolean
 		{
-			return parseInt(super.flash_proxy::getProperty("id"));
+			return super.flash_proxy::getProperty("validationerror");
 		}
-		public function set ID(value:uint):void
+		public function set ValidationError(value:Boolean):void
 		{
-			super.flash_proxy::setProperty("id", value);
+			super.flash_proxy::setProperty("validationerror", value);
 		}
-
-		public function get Reactor():uint
-		{
-			return parseInt(super.flash_proxy::getProperty("reactor"));
-		}
-		public function set Reactor(value:uint):void
-		{
-			super.flash_proxy::setProperty("reactor", value);
-		}
-
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		public function set ReactorDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("reactordescription", value);
-		}
-
-		public function get ReactorValidation():String
-		{
-			return super.flash_proxy::getProperty("reactorvalidation");
-		}
-		public function set ReactorValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("reactorvalidation", value);
-		}
-
+		
 		// Overridden by derived classes to format additional component details
 		protected function FormatComponentDetails():String
 		{
@@ -98,14 +80,9 @@ package Elixys.Objects
 			sJSON += JSONDataString("type", Type);
 			sJSON += JSONDataString("componenttype", ComponentType);
 			sJSON += JSONDataString("name", Name);
-			sJSON += JSONDataInteger("id", ID);
-			if (sAdditionalDetails == "")
+			sJSON += JSONDataObject("id", ID, sAdditionalDetails != "");
+			if (sAdditionalDetails != "")
 			{
-				sJSON += JSONDataInteger("reactor", Reactor, false);
-			}
-			else
-			{
-				sJSON += JSONDataInteger("reactor", Reactor);
 				sJSON += sAdditionalDetails;
 			}
 			sJSON += "}";

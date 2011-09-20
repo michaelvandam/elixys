@@ -41,10 +41,10 @@
 			}
 			
 			// Update reagent
-			public override function UpdateReagent(pReagent:Reagent):void
+			public override function UpdateReagents(pReagents:Array):void
 			{
 				// Update the sequence reagent
-				UpdateSequenceReagent(pReagent);
+				UpdateSequenceReagents(pReagents);
 			}
 
 			/***

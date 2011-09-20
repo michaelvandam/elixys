@@ -26,7 +26,7 @@
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Format the output text
-					_outputText.text = m_pComponentComment.Comment;
+					_outputText.text = unescape(m_pComponentComment.Comment);
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{

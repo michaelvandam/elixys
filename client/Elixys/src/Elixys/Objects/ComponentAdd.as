@@ -22,45 +22,133 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Reagent():uint
+		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("reagent"));
+			return parseInt(super.flash_proxy::getProperty("reactor"));
 		}
-		public function set Reagent(value:uint):void
+		public function set Reactor(value:uint):void
 		{
-			super.flash_proxy::setProperty("reagent", value);
+			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReagentDescription():String
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+
+		public function get AddReagent():Reagent
+		{
+			if (m_pReagent == null)
+			{
+				m_pReagent = new Reagent(null, super.flash_proxy::getProperty("reagent"));
+			}
+			return m_pReagent;
+		}
+		public function set AddReagent(value:Reagent):void
+		{
+			super.flash_proxy::setProperty("reagent", value);
+			m_pReagent = null;
+		}
+		
+		public function get AddReagentDescription():String
 		{
 			return super.flash_proxy::getProperty("reagentdescription");
 		}
-		public function set ReagentDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("reagentdescription", value);
-		}
 
-		public function get ReagentValidation():String
+		public function get AddReagentValidation():String
 		{
 			return super.flash_proxy::getProperty("reagentvalidation");
 		}
-		public function set ReagentValidation(value:String):void
+
+		public function get DeliveryPosition():uint
 		{
-			super.flash_proxy::setProperty("reagentvalidation", value);
+			return parseInt(super.flash_proxy::getProperty("deliveryposition"));
+		}
+		public function set DeliveryPosition(value:uint):void
+		{
+			super.flash_proxy::setProperty("deliveryposition", value);
+		}
+		
+		public function get DeliveryPositionDescription():String
+		{
+			return super.flash_proxy::getProperty("deliverypositiondescription");
+		}
+		
+		public function get DeliveryPositionValidation():String
+		{
+			return super.flash_proxy::getProperty("deliverypositionvalidation");
 		}
 
+		public function get DeliveryTime():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("deliverytime"));
+		}
+		public function set DeliveryTime(value:uint):void
+		{
+			super.flash_proxy::setProperty("deliverytime", value);
+		}
+		
+		public function get DeliveryTimeDescription():String
+		{
+			return super.flash_proxy::getProperty("deliverytimedescription");
+		}
+		
+		public function get DeliveryTimeValidation():String
+		{
+			return super.flash_proxy::getProperty("deliverytimevalidation");
+		}
+		
+		public function get DeliveryPressure():uint
+		{
+			return parseInt(super.flash_proxy::getProperty("deliverypressure"));
+		}
+		public function set DeliveryPressure(value:uint):void
+		{
+			super.flash_proxy::setProperty("deliverypressure", value);
+		}
+		
+		public function get DeliveryPressureDescription():String
+		{
+			return super.flash_proxy::getProperty("deliverypressuredescription");
+		}
+		
+		public function get DeliveryPressureValidation():String
+		{
+			return super.flash_proxy::getProperty("deliverypressurevalidation");
+		}
+		
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataInteger("reagent", Reagent, false);
+			var sAddDetails:String = JSONDataObject("reactor", Reactor);
+			sAddDetails += JSONDataObject("reagent", AddReagent.ReagentID);
+			sAddDetails += JSONDataObject("deliveryposition", DeliveryPosition);
+			sAddDetails += JSONDataObject("deliverytime", DeliveryTime);
+			sAddDetails += JSONDataObject("deliverypressure", DeliveryPressure, false);
+			return sAddDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "ADD";
 		
+		// State components
+		private var m_pReagent:Reagent;
+		
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"ADD\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"reagent\":\"\", " +
-			"\"reagentdescription\":\"\", \"reagentvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"ADD\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"reagent\":0," +
+			"\"deliveryposition\":0," +
+			"\"deliverytime\":0," +
+			"\"deliverypressure\":0}";
 	}
 }

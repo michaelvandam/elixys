@@ -35,18 +35,10 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("messagedescription");
 		}
-		public function set MessageDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("messagedescription", value);
-		}
 
 		public function get MessageValidation():String
 		{
 			return super.flash_proxy::getProperty("messagevalidation");
-		}
-		public function set MessageValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("messagevalidation", value);
 		}
 
 		// Format additional component details
@@ -59,8 +51,11 @@ package Elixys.Objects
 		static public var TYPE:String = "PROMPT";
 
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"PROMPT\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"message\":\"\", " +
-			"\"messagedescription\":\"\", \"messagevalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"PROMPT\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"message\":\"\"}";
 	}
 }

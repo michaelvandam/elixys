@@ -37,21 +37,21 @@
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Fill the reactor and position combo boxes
-					UpdateEnumLiteralComboBox(m_pComponentReact.ReactorValidation, _editReactorCombo, m_pComponentReact.Reactor.toString());
-					UpdateEnumLiteralComboBox(m_pComponentReact.PositionValidation, _editPositionCombo, m_pComponentReact.Position);
+					UpdateEnumNumberComboBox(m_pComponentReact.ReactorValidation, _editReactorCombo, m_pComponentReact.Reactor.toString());
+					UpdateEnumNumberComboBox(m_pComponentReact.PositionValidation, _editPositionCombo, m_pComponentReact.Position);
 					
 					// Set all evaporation variables except the one the user is editing
 					if (m_pKeyboardFocusTextArea != _editDuration)
 					{
-						_editDuration.text = m_pComponentReact.Duration;
+						_editDuration.text = m_pComponentReact.Duration.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editReactionTemperature)
 					{
-						_editReactionTemperature.text = m_pComponentReact.ReactionTemperature;
+						_editReactionTemperature.text = m_pComponentReact.ReactionTemperature.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editFinalTemperature)
 					{
-						_editFinalTemperature.text = m_pComponentReact.FinalTemperature;
+						_editFinalTemperature.text = m_pComponentReact.FinalTemperature.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editStirSpeed)
 					{
@@ -72,11 +72,6 @@
 						m_pComponentReact.StirSpeed + " rpm.";
 					_runOutputText2.text = "Status: " + pStateSequence.ServerState().Status() + "\nTemperature: " +
 						pReactor.ActualTemperature() + " C";
-					var sActivity:String = pReactor.Activity();
-					if (sActivity != "")
-					{
-						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
-					}
 					_runReactorText2.text = "Reactor " + m_pComponentReact.Reactor;
 				}
 			}
@@ -126,15 +121,15 @@
 				// Update our component
 				if (m_pKeyboardFocusTextArea == _editDuration)
 				{
-					m_pComponentReact.Duration = _editDuration.text;
+					m_pComponentReact.Duration = parseInt(_editDuration.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editReactionTemperature)
 				{
-					m_pComponentReact.ReactionTemperature = _editReactionTemperature.text;
+					m_pComponentReact.ReactionTemperature = parseFloat(_editReactionTemperature.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editFinalTemperature)
 				{
-					m_pComponentReact.FinalTemperature = _editFinalTemperature.text;
+					m_pComponentReact.FinalTemperature = parseFloat(_editFinalTemperature.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editStirSpeed)
 				{

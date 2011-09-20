@@ -146,13 +146,13 @@ package Elixys.Views
 		}
 		
 		// Update sequence reagent
-		public function UpdateSequenceReagent(pReagent:Reagent):void
+		public function UpdateSequenceReagents(pReagents:Array):void
 		{
 			// Update the subview component
 			var pSubview:SubviewBase = m_pElixysMain.GetActiveSubview();
 			if (pSubview != null)
 			{
-				pSubview.UpdateReagent(pReagent);
+				pSubview.UpdateReagents(pReagents);
 			}
 		}
 		
@@ -234,10 +234,6 @@ package Elixys.Views
 			var pComponent:Component;
 			switch (sUnitOperation.toUpperCase())
 			{
-				case ComponentActivity.TYPE:
-					pComponent = new ComponentActivity();
-					break;
-				
 				case ComponentAdd.TYPE:
 					pComponent = new ComponentAdd();
 					break;

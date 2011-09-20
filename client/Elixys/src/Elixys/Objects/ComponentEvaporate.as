@@ -22,6 +22,25 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return super.flash_proxy::getProperty("reactor");
+		}
+		public function set Reactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("reactor", value);
+		}
+		
+		public function get ReactorDescription():String
+		{
+			return super.flash_proxy::getProperty("reactordescription");
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+		
 		public function get Duration():String
 		{
 			return super.flash_proxy::getProperty("duration");
@@ -35,25 +54,17 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("durationdescription");
 		}
-		public function set DurationDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("durationdescription", value);
-		}
 
 		public function get DurationValidation():String
 		{
 			return super.flash_proxy::getProperty("durationvalidation");
 		}
-		public function set DurationValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("durationvalidation", value);
-		}
 	
-		public function get EvaporationTemperature():String
+		public function get EvaporationTemperature():Number
 		{
 			return super.flash_proxy::getProperty("evaporationtemperature");
 		}
-		public function set EvaporationTemperature(value:String):void
+		public function set EvaporationTemperature(value:Number):void
 		{
 			super.flash_proxy::setProperty("evaporationtemperature", value);
 		}
@@ -62,25 +73,17 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("evaporationtemperaturedescription");
 		}
-		public function set EvaporationTemperatureDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("evaporationtemperaturedescription", value);
-		}
 	
 		public function get EvaporationTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("evaporationtemperaturevalidation");
 		}
-		public function set EvaporationTemperatureValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("evaporationtemperaturevalidation", value);
-		}
 	
-		public function get FinalTemperature():String
+		public function get FinalTemperature():Number
 		{
 			return super.flash_proxy::getProperty("finaltemperature");
 		}
-		public function set FinalTemperature(value:String):void
+		public function set FinalTemperature(value:Number):void
 		{
 			super.flash_proxy::setProperty("finaltemperature", value);
 		}
@@ -89,66 +92,76 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("finaltemperaturedescription");
 		}
-		public function set FinalTemperatureDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("finaltemperaturedescription", value);
-		}
 	
 		public function get FinalTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
 		}
-		public function set FinalTemperatureValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("finaltemperaturevalidation", value);
-		}
 	
 		public function get StirSpeed():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("stirspeed"));
+			return super.flash_proxy::getProperty("stirspeed");
 		}
 		public function set StirSpeed(value:uint):void
 		{
-			super.flash_proxy::setProperty("stirspeed", value.toString());
+			super.flash_proxy::setProperty("stirspeed", value);
 		}
 	
 		public function get StirSpeedDescription():String
 		{
 			return super.flash_proxy::getProperty("stirspeeddescription");
 		}
-		public function set StirSpeedDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("stirspeeddescription", value);
-		}
 	
 		public function get StirSpeedValidation():String
 		{
 			return super.flash_proxy::getProperty("stirespeedvalidation");
 		}
-		public function set StirSpeedValidation(value:String):void
+
+		public function get EvaporationPressure():Number
 		{
-			super.flash_proxy::setProperty("stirespeedvalidation", value);
+			return super.flash_proxy::getProperty("evaporationpressure");
+		}
+		public function set EvaporationPressure(value:Number):void
+		{
+			super.flash_proxy::setProperty("evaporationpressure", value);
+		}
+		
+		public function get EvaporationPressureDescription():String
+		{
+			return super.flash_proxy::getProperty("evaporationpressuredescription");
+		}
+		
+		public function get EvaporationPressureValidation():String
+		{
+			return super.flash_proxy::getProperty("evaporationpressurevalidation");
 		}
 
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sJSON:String = JSONDataString("duration", Duration);
-			sJSON += JSONDataString("evaporationtemperature", EvaporationTemperature);
-			sJSON += JSONDataString("finaltemperature", FinalTemperature);
-			sJSON += JSONDataInteger("stirspeed", StirSpeed, false);
-			return sJSON;
+			var sEvaporateDetails:String = JSONDataObject("reactor", Reactor);
+			sEvaporateDetails += JSONDataObject("duration", Duration);
+			sEvaporateDetails += JSONDataObject("evaporationtemperature", EvaporationTemperature);
+			sEvaporateDetails += JSONDataObject("finaltemperature", FinalTemperature);
+			sEvaporateDetails += JSONDataObject("stirspeed", StirSpeed);
+			sEvaporateDetails += JSONDataObject("evaporationpressure", EvaporationPressure, false);
+			return sEvaporateDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "EVAPORATE";
 
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"EVAPORATE\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"duration\":\"\", " +
-			"\"durationdescription\":\"\", \"durationvalidation\":\"\", \"evaporationtemperature\":\"\", " +
-			"\"evaporationtemperaturedescription\":\"\", \"evaporationtemperaturevalidation\":\"\", \"finaltemperature\":\"\", " +
-			"\"finaltemperaturedescription\":\"\", \"finaltemperaturevalidation\":\"\", \"stirspeed\":\"\", " +
-			"\"stirspeeddescription\":\"\", \"stirespeedvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"EVAPORATE\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"reactor\":0," +
+			"\"duration\":\"00:00.00\"," +
+			"\"evaporationtemperature\":0," +
+			"\"finaltemperature\":0," +
+			"\"stirspeed\":0," + 
+			"\"evaporationpressure\":0}";
 	}
 }

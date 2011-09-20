@@ -35,18 +35,10 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("commentdescription");
 		}
-		public function set CommentDescription(value:String):void
-		{
-			super.flash_proxy::setProperty("commentdescription", value);
-		}
 		
 		public function get CommentValidation():String
 		{
 			return super.flash_proxy::getProperty("commentvalidation");
-		}
-		public function set CommentValidation(value:String):void
-		{
-			super.flash_proxy::setProperty("commentvalidation", value);
 		}
 
 		// Format additional component details
@@ -59,8 +51,11 @@ package Elixys.Objects
 		static public var TYPE:String = "COMMENT";
 
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"component\", \"componenttype\":\"COMMENT\", \"name\":\"\", \"componentid\":\"\", " +
-			"\"sequenceid\":\"\", \"reactor\":\"\", \"reactordescription\":\"\", \"reactorvalidation\":\"\", \"comment\":\"\", " +
-			"\"commentdescription\":\"\", \"commentvalidation\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"type\":\"component\"," +
+			"\"componenttype\":\"COMMENT\"," +
+			"\"id\":0," +
+			"\"name\":\"\"," +
+			"\"comment\":\"\"}";
 	}
 }

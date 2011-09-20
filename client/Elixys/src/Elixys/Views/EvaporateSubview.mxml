@@ -32,12 +32,13 @@
 					// Format the output text
 					_outputText.text = "Evaporate reactor " + m_pComponentEvaporate.Reactor + " at " + m_pComponentEvaporate.EvaporationTemperature +
 						" C for " + m_pComponentEvaporate.Duration + " seconds and cool to " + m_pComponentEvaporate.FinalTemperature + 
-						" C.  Stir at " + m_pComponentEvaporate.StirSpeed + " rpm.";
+						" C.  Flow nitrogen at " + m_pComponentEvaporate.EvaporationPressure + " PSI and stir at " + 
+						m_pComponentEvaporate.StirSpeed + " arbitrary units.";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Fill the reactor combo box
-					UpdateEnumLiteralComboBox(m_pComponentEvaporate.ReactorValidation, _editReactorCombo, m_pComponentEvaporate.Reactor.toString());
+					UpdateEnumNumberComboBox(m_pComponentEvaporate.ReactorValidation, _editReactorCombo, m_pComponentEvaporate.Reactor.toString());
 					
 					// Set all evaporation variables except the one the user is editing
 					if (m_pKeyboardFocusTextArea != _editDuration)
@@ -46,15 +47,19 @@
 					}
 					if (m_pKeyboardFocusTextArea != _editEvaporationTemperature)
 					{
-						_editEvaporationTemperature.text = m_pComponentEvaporate.EvaporationTemperature;
+						_editEvaporationTemperature.text = m_pComponentEvaporate.EvaporationTemperature.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editFinalTemperature)
 					{
-						_editFinalTemperature.text = m_pComponentEvaporate.FinalTemperature;
+						_editFinalTemperature.text = m_pComponentEvaporate.FinalTemperature.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editStirSpeed)
 					{
 						_editStirSpeed.text = m_pComponentEvaporate.StirSpeed.toString();
+					}
+					if (m_pKeyboardFocusTextArea != _editEvaporationPressure)
+					{
+						_editEvaporationPressure.text = m_pComponentEvaporate.EvaporationPressure.toString();
 					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
@@ -62,10 +67,10 @@
 					// Format the output text
 					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
-					_runOutputText1.text = "Evaporating reactor " + m_pComponentEvaporate.Reactor + " at " + 
-						m_pComponentEvaporate.EvaporationTemperature + " C for " + m_pComponentEvaporate.Duration +
-						" seconds and cooling to " + m_pComponentEvaporate.FinalTemperature + " C.  Stirring at " +
-						m_pComponentEvaporate.StirSpeed + " rpm.";
+					//_runOutputText1.text = "Evaporating reactor " + m_pComponentEvaporate.Reactor + " at " + 
+					//	m_pComponentEvaporate.EvaporationTemperature + " C for " + m_pComponentEvaporate.Duration +
+					//	" seconds and cooling to " + m_pComponentEvaporate.FinalTemperature + " C.  Stirring at " +
+					//	m_pComponentEvaporate.StirSpeed + " rpm.";
 					_runOutputText2.text = "Status: " + pStateSequence.ServerState().Status() + "\nTemperature: " +
 						pReactor.ActualTemperature() + " C";
 					var sActivity:String = pReactor.Activity();
@@ -73,7 +78,7 @@
 					{
 						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
 					}
-					_runReactorText2.text = "Reactor " + m_pComponentEvaporate.Reactor;
+					//_runReactorText2.text = "Reactor " + m_pComponentEvaporate.Reactor;
 				}
 			}
 
@@ -120,15 +125,19 @@
 				}
 				if (m_pKeyboardFocusTextArea == _editEvaporationTemperature)
 				{
-					m_pComponentEvaporate.EvaporationTemperature = _editEvaporationTemperature.text;
+					m_pComponentEvaporate.EvaporationTemperature = parseFloat(_editEvaporationTemperature.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editFinalTemperature)
 				{
-					m_pComponentEvaporate.FinalTemperature = _editFinalTemperature.text;
+					m_pComponentEvaporate.FinalTemperature = parseFloat(_editFinalTemperature.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editStirSpeed)
 				{
 					m_pComponentEvaporate.StirSpeed = parseInt(_editStirSpeed.text);
+				}
+				if (m_pKeyboardFocusTextArea == _editEvaporationPressure)
+				{
+					m_pComponentEvaporate.EvaporationPressure = parseFloat(_editEvaporationPressure.text);
 				}
 				
 				// Save the component to the server
@@ -200,7 +209,17 @@
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
 						<Renderers:AutoTextArea id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 							focusOut="OnTextFocusOut(event)" />
-						<s:Label text="rpm" styleName="TextMedium" />
+						<s:Label text="arbitrary units" styleName="TextMedium" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="50%">
+						<s:Label text="Evaporation pressure" styleName="TextMedium" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<Renderers:AutoTextArea id="_editEvaporationPressure" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
+						<s:Label text="PSI" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />
