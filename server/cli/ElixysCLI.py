@@ -14,10 +14,9 @@ sys.path.append("../core/")
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
 from UnitOperationsWrapper import UnitOperationsWrapper
-from SequenceManager import SequenceManager
 
 # Parses and executes the given command
-def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm):
+def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm):
     try:
         # Ignore empty commands
         if sCommand == "":
@@ -32,10 +31,6 @@ def ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemMo
             bUnitOperationsWrapper = True
             Object = UnitOperationsWrapper
             pObject = pUnitOperationsWrapper
-        elif hasattr(SequenceManager, sFunctionName):
-            bUnitOperationsWrapper = False
-            Object = SequenceManager
-            pObject = pSequenceManager
         elif hasattr(HardwareComm, sFunctionName):
             bUnitOperationsWrapper = False
             Object = HardwareComm
@@ -145,9 +140,6 @@ if __name__ == "__main__":
     pSystemModel = SystemModel(pHardwareComm, "../core/")
     pSystemModel.StartUp()
     
-    # Create the sequence manager
-    pSequenceManager = SequenceManager()
-    
     # Create an RPC connection to the state monitoring window
     try:
         pStateMonitor = rpyc.connect("localhost", 18861)
@@ -207,19 +199,12 @@ if __name__ == "__main__":
             break
         elif sCommand == "help":
             print "Recognized commands:"
-            print "  help sequences         Lists available sequence functions"
             print "  help unit operations   Lists available unit operation functions"
             print "  help hardware          Lists available hardware functions"
             print "  help script            List available script functions"
             print "  help send              Display a brief description of the PLC command format" 
             print "  get state              Displays the current state of the system"
             print "  send [command]         Send the raw command to the PLC"
-        elif sCommand == "help sequences":
-            # List the recognized sequence functions
-            print "Recognized sequence functions:"
-            print "  ListSequences()"
-            print "  ImportSequence(sFilename)"
-            print "  ExportSequence(nSequenceID, sFilename)"
         elif sCommand == "help unit operations":
             # List the recognized unit operations
             print "Recognized unit operations:"
@@ -407,13 +392,13 @@ if __name__ == "__main__":
                     sNextCommand = CleanCommand(sNextCommand)
                     if sNextCommand != "":
                         print "  " + sNextCommand
-                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
+                        ExecuteCommand(sNextCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
 
                 # Update our step number
                 nScriptStep += len(pScriptCommands)
             else:
                 # No, so attempt to execute the command
-                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSequenceManager, pSystemModel, pHardwareComm)
+                ExecuteCommand(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm)
 
                 # Sleep a bit to give the PLC a chance to response before we display the input prompt
                 time.sleep(0.1)
