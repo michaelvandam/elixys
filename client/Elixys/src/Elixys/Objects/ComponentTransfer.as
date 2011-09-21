@@ -10,7 +10,7 @@ package Elixys.Objects
 			// Call the base constructor
 			if ((data == null) && (existingcontent == null))
 			{
-				data = m_sDefault;
+				data = DEFAULT;
 			}
 			super(data, existingcontent);
 			
@@ -24,7 +24,7 @@ package Elixys.Objects
 		// Data wrappers
 		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("reactor"));
+			return super.flash_proxy::getProperty("reactor");
 		}
 		public function set Reactor(value:uint):void
 		{
@@ -51,7 +51,7 @@ package Elixys.Objects
 		}
 		public function set TransferTarget(value:Reagent):void
 		{
-			super.flash_proxy::setProperty("reagent", value);
+			super.flash_proxy::setProperty("target", value);
 			m_pTarget = null;
 		}
 		
@@ -80,12 +80,12 @@ package Elixys.Objects
 		private var m_pTarget:Reagent;
 
 		// Default format
-		private var m_sDefault:String = "{" +
+		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
-			"\"componenttype\":\"TRANFER\"," +
+			"\"componenttype\":\"TRANSFER\"," +
 			"\"id\":0," +
 			"\"name\":\"\"," +
 			"\"reactor\":0," +
-			"\"target\":0}";
+			"\"target\":" + Reagent.DEFAULT + "}";
 	}
 }

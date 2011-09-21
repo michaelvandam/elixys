@@ -20,7 +20,7 @@ package Elixys.Objects
 		// Data wrappers
 		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("reactor"));
+			return super.flash_proxy::getProperty("reactor");
 		}
 		
 		public function get ReactorDescription():String

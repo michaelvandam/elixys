@@ -334,7 +334,7 @@ class HardwareComm():
             nPressurePLC = 0
         if nPressurePLC > 4200:
             nPressurePLC = 4200
-        self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
+        self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
 
     # Reagent robot
     def MoveRobotToReagent(self, nReactor, nReagent):
@@ -436,7 +436,7 @@ class HardwareComm():
 
     # Stir motor
     def SetMotorSpeed(self, nReactor, nMotorSpeed):
-        self.__SetAnalogValue("Reactor" + str(nReactor) + "_StirMotor", nMotorSpeed)
+        self.__SetIntegerValue("Reactor" + str(nReactor) + "_StirMotor", nMotorSpeed)
 
     # Home all robots
     def HomeRobots(self):
@@ -514,10 +514,10 @@ class HardwareComm():
     # Used by the fake PLC to change the state of the system
     def FakePLC_SetVacuumPressure(self, nPressure):
         nPressurePLC = (nPressure - self.__nVacuumGaugeIntercept) / self.__nVacuumGaugeSlope
-        self.__SetAnalogValue("VacuumPressure", nPressurePLC)
+        self.__SetIntegerValue("VacuumPressure", nPressurePLC)
     def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
         nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
-        self.__SetAnalogValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
+        self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
@@ -591,20 +591,12 @@ class HardwareComm():
         # Look up the hardware component by name
         pHardware = self.__LookUpHardwareName(sHardwareName)
 
-        # Call the raw function
-        self.__SetIntegerValueRaw(int(pHardware["location"]), nValue)
-
-    # Set analog value
-    def __SetAnalogValue(self, sHardwareName, nValue):
-        # Look up the hardware component by name
-        pHardware = self.__LookUpHardwareName(sHardwareName)
-
         # Calculate the absolute address of the target word
         nAbsoluteWordOffset = self.__DetermineHardwareOffset(pHardware) + int(pHardware["location"])
         
         # Set the integer value
         self.__SetIntegerValueRaw(nAbsoluteWordOffset, int(nValue))
-        
+
     # Set integer value raw
     def __SetIntegerValueRaw(self, nAddress, nValue):
         # What mode are we in?

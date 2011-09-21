@@ -2,19 +2,20 @@
 
 # Imports
 import json
-import Utilities
 import GetHandler
+import sys
+sys.path.append("/opt/elixys/core")
+import SequenceManager
 
 class PostHandler:
     # Constructor
-    def __init__(self, pCoreServer, pDatabase, pLog):
+    def __init__(self, pCoreServer, pDatabase):
         # Remember the input references
         self.__pCoreServer = pCoreServer
         self.__pDatabase = pDatabase
-        self.__pLog = pLog
 
-        # Create the utilities object
-        self.__pUtilities = Utilities.Utilities(pCoreServer, pDatabase, pLog)
+        # Create the sequence manager
+        self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
     # Main entry point for handling all POST requests
     def HandleRequest(self, sClientState, sRemoteUser, sPath, pBody, nBodyLength):
@@ -268,10 +269,10 @@ class PostHandler:
             if sActionType == "BUTTONCLICK":
                 if sActionTargetID == "BACK":
                     # Delete the unit operation
-                    self.__pUtilities.DeleteComponent(self.__sRemoteUser, nComponentID)
+                    self.__pSequenceManager.DeleteComponent(self.__sRemoteUser, nComponentID)
 
                     # Return to the SELECT step
-                    nComponentID = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)["components"][0]["id"]
+                    nComponentID = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)["components"][0]["id"]
                     self.__sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
                     self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
                     return self.__UpdateClientState(self.__sClientState)
@@ -301,7 +302,7 @@ class PostHandler:
             elif sActionTargetID == "PREVIOUS":
                 # Move to the previous component ID
                 nPreviousComponentID = -1
-                pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+                pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
                 for pComponent in pSequence["components"]:
                     if pComponent["id"] == nComponentID:
                         if nPreviousComponentID != -1:
@@ -314,7 +315,7 @@ class PostHandler:
             elif sActionTargetID == "NEXT":
                 # Move to the next component ID
                 bComponentIDFound = False
-                pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+                pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
                 for pComponent in pSequence["components"]:
                     if bComponentIDFound:
                         self.__sClientState = sType + "." + str(nSequenceID) + "." + str(pComponent["id"])
@@ -327,7 +328,7 @@ class PostHandler:
                 raise Exception("Component ID not found in sequence" + str(nComponentID))
             else:
                 # Check if the target ID corresponds to one of our sequence components
-                pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+                pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
                 for pComponent in pSequence["components"]:
                     if str(pComponent["id"]) == sActionTargetID:
                         # Update the current component and return the latest state to the client
@@ -380,7 +381,7 @@ class PostHandler:
 
                 # Duplicate the sequence in the database
                 nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
-                nSequenceID = self.__pUtilities.CopySequence(self.__sRemoteUser, nSequenceID, sEdit1, sEdit2, "Saved", 3, 10, 2)
+                nSequenceID = self.__pSequenceManager.CopySequence(self.__sRemoteUser, nSequenceID, sEdit1, sEdit2, "Saved", 3, 10, 2)
 
                 # Move the client to the editing the new sequence
                 self.__UpdateClientState("EDIT." + str(nSequenceID))
@@ -489,10 +490,10 @@ class PostHandler:
         # Are we working with an existing component?
         if nComponentID != 0:
             # Yes, so update the existing component
-            self.__pUtilities.UpdateComponent(self.__sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent)
+            self.__pSequenceManager.UpdateComponent(self.__sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent)
         else:
             # No, so add a new component
-            nComponentID = self.__pUtilities.AddComponent(self.__sRemoteUser, nSequenceID, nInsertionID, pComponent)
+            nComponentID = self.__pSequenceManager.AddComponent(self.__sRemoteUser, nSequenceID, nInsertionID, pComponent)
 
             # Update the client to show the new component
             pClientStateComponents = self.__sClientState.split(".")
@@ -526,6 +527,6 @@ class PostHandler:
     def __UpdateClientState(self, sClientState):
         self.__sClientState = sClientState
         self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__sClientState)
-        pGetHandler = GetHandler.GetHandler(self.__pCoreServer, self.__pDatabase, self.__pLog)
+        pGetHandler = GetHandler.GetHandler(self.__pCoreServer, self.__pDatabase)
         return pGetHandler.HandleRequest(self.__sClientState, self.__sRemoteUser, "/state", None, 0)
 

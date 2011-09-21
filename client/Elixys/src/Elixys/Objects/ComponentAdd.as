@@ -10,7 +10,7 @@ package Elixys.Objects
 			// Call the base constructor
 			if ((data == null) && (existingcontent == null))
 			{
-				data = m_sDefault;
+				data = DEFAULT;
 			}
 			super(data, existingcontent);
 			
@@ -24,7 +24,7 @@ package Elixys.Objects
 		// Data wrappers
 		public function get Reactor():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("reactor"));
+			return super.flash_proxy::getProperty("reactor");
 		}
 		public function set Reactor(value:uint):void
 		{
@@ -67,7 +67,7 @@ package Elixys.Objects
 
 		public function get DeliveryPosition():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("deliveryposition"));
+			return super.flash_proxy::getProperty("deliveryposition");
 		}
 		public function set DeliveryPosition(value:uint):void
 		{
@@ -86,7 +86,7 @@ package Elixys.Objects
 
 		public function get DeliveryTime():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("deliverytime"));
+			return super.flash_proxy::getProperty("deliverytime");
 		}
 		public function set DeliveryTime(value:uint):void
 		{
@@ -103,11 +103,11 @@ package Elixys.Objects
 			return super.flash_proxy::getProperty("deliverytimevalidation");
 		}
 		
-		public function get DeliveryPressure():uint
+		public function get DeliveryPressure():Number
 		{
-			return parseInt(super.flash_proxy::getProperty("deliverypressure"));
+			return super.flash_proxy::getProperty("deliverypressure");
 		}
-		public function set DeliveryPressure(value:uint):void
+		public function set DeliveryPressure(value:Number):void
 		{
 			super.flash_proxy::setProperty("deliverypressure", value);
 		}
@@ -140,13 +140,13 @@ package Elixys.Objects
 		private var m_pReagent:Reagent;
 		
 		// Default format
-		private var m_sDefault:String = "{" +
+		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"ADD\"," +
 			"\"id\":0," +
 			"\"name\":\"\"," +
 			"\"reactor\":0," +
-			"\"reagent\":0," +
+			"\"reagent\":" + Reagent.DEFAULT + "," +
 			"\"deliveryposition\":0," +
 			"\"deliverytime\":0," +
 			"\"deliverypressure\":0}";

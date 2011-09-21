@@ -38,7 +38,7 @@ package Elixys.Objects
 
 		public function get ID():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("id"));
+			return super.flash_proxy::getProperty("id");
 		}
 		public function set ID(value:uint):void
 		{
