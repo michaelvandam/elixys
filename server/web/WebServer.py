@@ -24,13 +24,8 @@ from DummyElixys import Elixys
 gElixys = Elixys()
 gElixys.SetDatabase(gDatabase)
 
-# Log to Apache's error log file
-def Log(sMessage):
-    # Log to Apache's error log file
-    print >> sys.stderr, sMessage
-
 def application(pEnvironment, fStartResponse):
-    # Connnect to the database.  It is important that we do this at the start of every request or two things happen:
+    # Connect to the database.  It is important that we do this at the start of every request or two things happen:
     #  1. We start receiving stale data from MySQLdb depending on which thread handles this request
     #  2. MySQL will run out of available database connections under heavy loads
     global gElixys
@@ -47,7 +42,7 @@ def application(pEnvironment, fStartResponse):
     sSystemState = gElixys.GetSystemState(sRemoteUser)
 
     # Log the request
-    Log("Received " + sRequestMethod + " request for " + sPath + " (client = " + sRemoteUser + ", client state = " + sClientState + ", system state = " + sSystemState + ")");
+    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ", system state = " + sSystemState + ")")
 
     # Handle the request
     try:
@@ -55,21 +50,22 @@ def application(pEnvironment, fStartResponse):
         pBody = None
         nBodyLength = 0
         if sRequestMethod == "GET":
-            pHandler = GetHandler.GetHandler(gElixys, gDatabase, Log)
+            pHandler = GetHandler.GetHandler(gElixys, gDatabase)
         elif sRequestMethod == "POST":
             nBodyLength = int(pEnvironment["CONTENT_LENGTH"])
             pBody = pEnvironment["wsgi.input"].read(nBodyLength)
-            pHandler = PostHandler.PostHandler(gElixys, gDatabase, Log)
+            pHandler = PostHandler.PostHandler(gElixys, gDatabase)
         elif sRequestMethod == "DELETE":
-            pHandler = DeleteHandler.DeleteHandler(gElixys, gDatabase, Log)
+            pHandler = DeleteHandler.DeleteHandler(gElixys, gDatabase)
         else:
             raise Exception("Unknown request method: " + sRequestMethod)
 
         # Handle the request
         sResponse = pHandler.HandleRequest(sClientState, sRemoteUser, sPath, pBody, nBodyLength)
     except Exception as ex:
-        # Send an error message back to the client
-        sResponse = {"type":"error","description":str(ex)}
+        # Log the actual error and send the client a generic error
+        gDatabase.Log(sRemoteUser, "Web server encountered an error: " + str(ex))
+        sResponse = {"type":"error","description":"An internal server error occurred"}
 
     # Initialize the return status and headers
     sStatus = "200 OK"

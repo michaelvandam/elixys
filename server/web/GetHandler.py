@@ -1,18 +1,19 @@
 #!/usr/bin/python
 
 # Imports
-import Utilities
+import sys
+sys.path.append("/opt/elixys/core")
+import SequenceManager
 
 class GetHandler:
     # Constructor
-    def __init__(self, pCoreServer, pDatabase, pLog):
+    def __init__(self, pCoreServer, pDatabase):
         # Remember the input references
         self.__pCoreServer = pCoreServer
         self.__pDatabase = pDatabase
-        self.__pLog = pLog
 
-        # Create the utilities object
-        self.__pUtilities = Utilities.Utilities(pCoreServer, pDatabase, pLog)
+        # Create the sequence manager
+        self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
     # Main entry point for handling all GET requests
     def HandleRequest(self, sClientState, sRemoteUser, sPath, pBody, nBodyLength):
@@ -238,7 +239,7 @@ class GetHandler:
             nComponentID = int(pClientStateComponents[2])
         else:
             # No, the component ID is missing.  Get the sequence and the ID of the first component
-            pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
             nComponentID = pSequence["components"][0]["id"]
 
             # Update our state
@@ -274,7 +275,7 @@ class GetHandler:
             nComponentID = int(pClientStateComponents[2])
         else:
             # No, the component ID is missing.  Get the sequence and the ID of the first component
-            pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
             nComponentID = pSequence["components"][0]["id"]
 
             # Update our state
@@ -391,7 +392,7 @@ class GetHandler:
     def __HandleGetStateSelectPromptCopySequence(pPromptState):
         # Look up the sequence
         nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
-        pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
 
         # Create the prompt state
         pPromptState["show"] = True
@@ -416,7 +417,7 @@ class GetHandler:
     def __HandleGetStateSelectPromptDeleteSequence(self, pPromptState):
         # Look up the sequence
         nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
-        pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
 
         # Create the prompt state
         pPromptState["show"] = True
@@ -476,7 +477,7 @@ class GetHandler:
         pRunStateComponents = sRunState.split(".")
         nSequenceID = int(pRunStateComponents[1])
         nComponentID = int(pRunStateComponents[2])
-        pComponent = self.__pUtilities.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
+        pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
 
         # Make sure this component requires a prompt
         if (pComponent["componenttype"] != "PROMPT") and (pComponent["componenttype"] != "INSTALL"):
@@ -554,7 +555,7 @@ class GetHandler:
         nSequenceID = int(pPathComponents[2])
 
         # Load the entire sequence
-        pSequence = self.__pUtilities.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
 
         # Remove excess sequence data
         pNewComponents = []
@@ -578,7 +579,7 @@ class GetHandler:
         nComponentID = int(pPathComponents[4])
 
         # Return the desired component
-        return self.__pUtilities.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
+        return self.__pSequenceManager.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
 
     # Handle GET /sequence/[sequenceid]/reagent/[reagentid1].[reagentID2]...[reagentIDN]
     def __HandleGetReagent(self):
@@ -592,6 +593,6 @@ class GetHandler:
         pReagents["type"] = "reagents"
         pReagents["reagents"] = []
         for nReagentID in pReagentIDs:
-            pReagents["reagents"].append(self.__pUtilities.GetReagent(self.__sRemoteUser, int(nReagentID)))
+            pReagents["reagents"].append(self.__pSequenceManager.GetReagent(self.__sRemoteUser, int(nReagentID)))
         return pReagents
 

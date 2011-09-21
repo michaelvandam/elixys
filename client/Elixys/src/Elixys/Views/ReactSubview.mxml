@@ -212,7 +212,7 @@
 					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
 						<Renderers:AutoTextArea id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 							focusOut="OnTextFocusOut(event)" />
-						<s:Label text="rpm" styleName="TextMedium" />
+						<s:Label text="arbitrary units" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />

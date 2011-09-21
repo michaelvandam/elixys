@@ -10,7 +10,7 @@ package Elixys.Objects
 			// Call the base constructor
 			if ((data == null) && (existingcontent == null))
 			{
-				data = m_sDefault;
+				data = DEFAULT;
 			}
 			super(data, existingcontent);
 			
@@ -21,27 +21,21 @@ package Elixys.Objects
 			}
 		}
 		
-		/// Copy
+		// Copy
 		public function Copy(pSourceReagent:Reagent):void
 		{
 			Available = pSourceReagent.Available;
+			ReagentID = pSourceReagent.ReagentID;
 			ComponentID = pSourceReagent.ComponentID;
 			Position = pSourceReagent.Position;
 			Name = pSourceReagent.Name;
-			NameError = pSourceReagent.NameError;
 			Description = pSourceReagent.Description;
-			DescriptionError = pSourceReagent.DescriptionError;
-			ReagentID = pSourceReagent.ReagentID;
 		}
 		
 		// Data wrappers
 		public function get Type():String
 		{
 			return super.flash_proxy::getProperty("type");
-		}
-		public function set Type(value:String):void
-		{
-			super.flash_proxy::setProperty("type", value);
 		}
 		
 		public function get Available():Boolean
@@ -51,6 +45,15 @@ package Elixys.Objects
 		public function set Available(value:Boolean):void
 		{
 			super.flash_proxy::setProperty("available", value);
+		}
+
+		public function get ReagentID():uint
+		{
+			return super.flash_proxy::getProperty("reagentid");
+		}
+		public function set ReagentID(value:uint):void
+		{
+			super.flash_proxy::setProperty("reagentid", value);
 		}
 
 		public function get ComponentID():uint
@@ -80,13 +83,14 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("name", value);
 		}
 
-		public function get NameError():String
+		public function get NameDescription():String
 		{
-			return super.flash_proxy::getProperty("nameerror");
+			return super.flash_proxy::getProperty("namedescription");
 		}
-		public function set NameError(value:String):void
+
+		public function get NameValidation():String
 		{
-			super.flash_proxy::setProperty("nameerror", value);
+			return super.flash_proxy::getProperty("namevalidation");
 		}
 
 		public function get Description():String
@@ -98,45 +102,43 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("description", value);
 		}
 
-		public function get DescriptionError():String
+		public function get DescriptionDescription():String
 		{
-			return super.flash_proxy::getProperty("descriptionerror");
+			return super.flash_proxy::getProperty("descriptiondescription");
 		}
-		public function set DescriptionError(value:String):void
+		
+		public function get DescriptionValidation():String
 		{
-			super.flash_proxy::setProperty("descriptionerror", value);
-		}
-
-		public function get ReagentID():uint
-		{
-			return super.flash_proxy::getProperty("reagentid");
-		}
-		public function set ReagentID(value:uint):void
-		{
-			super.flash_proxy::setProperty("reagentid", value);
+			return super.flash_proxy::getProperty("descriptionvalidation");
 		}
 
 		// Convert to a JSON string
 		public override function toString():String
 		{
 			// Create a JSON response string that will be recognized by the server
-			var sJSON:String = "{";
-			sJSON += JSONDataString("type", Type);
-			sJSON += JSONDataObject("available", Available);
-			sJSON += JSONDataObject("componentid", ComponentID);
-			sJSON += JSONDataString("position", Position);
-			sJSON += JSONDataString("name", Name);
-			sJSON += JSONDataString("description", Description);			
-			sJSON += JSONDataObject("reagentid", ReagentID, false);
-			sJSON += "}";
-			return sJSON;
+			var sReagentJSON:String = "{";
+			sReagentJSON += JSONDataString("type", Type);
+			sReagentJSON += JSONDataObject("available", Available);
+			sReagentJSON += JSONDataObject("reagentid", ReagentID);
+			sReagentJSON += JSONDataObject("componentid", ComponentID);
+			sReagentJSON += JSONDataString("position", Position);
+			sReagentJSON += JSONDataString("name", Name);
+			sReagentJSON += JSONDataString("description", Description, false);
+			sReagentJSON += "}";
+			return sReagentJSON;
 		}
 
 		// Type
 		static public var TYPE:String = "reagent";
 		
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"reagent\", \"available\":false, \"componentid\":0, \"position\":\"\", " +
-			"\"name\":\"\", \"nameerror\":\"\", \"description\":\"\", \"descriptionerror\":\"\", \"reagentid\":0 }";
+		static public var DEFAULT:String = "{" +
+			"\"type\":\"reagent\"," +
+			"\"available\":false," +
+			"\"reagentid\":0," +
+			"\"componentid\":0," +
+			"\"position\":\"\"," +
+			"\"name\":\"\"," +
+			"\"description\":\"\"}";
 	}
 }

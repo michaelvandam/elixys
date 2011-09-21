@@ -10,7 +10,7 @@ package Elixys.Objects
 			// Call the base constructor
 			if ((data == null) && (existingcontent == null))
 			{
-				data = m_sDefault;
+				data = DEFAULT;
 			}
 			super(data, existingcontent);
 			
@@ -51,7 +51,7 @@ package Elixys.Objects
 		static public var TYPE:String = "COMMENT";
 
 		// Default format
-		private var m_sDefault:String = "{" +
+		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"COMMENT\"," +
 			"\"id\":0," +

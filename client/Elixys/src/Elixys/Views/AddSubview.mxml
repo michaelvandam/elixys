@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" xmlns:Renderers="Elixys.Views.Renderers.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -10,6 +10,7 @@
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
 			
+			import mx.controls.TextArea;
 			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
@@ -28,7 +29,9 @@
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Format the output text
-					_viewOutputText.text = "Add " + m_pComponentAdd.AddReagent.Description + " to reactor " + m_pComponentAdd.Reactor + ".";
+					_viewOutputText.text = "Add " + m_pComponentAdd.AddReagent.Description + " to reactor " + m_pComponentAdd.Reactor + " position " +
+						m_pComponentAdd.DeliveryPosition + " for " + m_pComponentAdd.DeliveryTime + " seconds at " + m_pComponentAdd.DeliveryPressure +
+						" PSI.";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
@@ -37,12 +40,27 @@
 					
 					// Initialize the reagent combo box
 					UpdateEnumReagentComboBox(m_pComponentAdd.AddReagentValidation, _editReagentCombo, m_pComponentAdd.AddReagent);
+					
+					// Fill the position combo box
+					UpdateEnumNumberComboBox(m_pComponentAdd.DeliveryPositionValidation, _editPositionCombo, m_pComponentAdd.DeliveryPosition.toString());
+
+					// Set the delivery time and pressure unless the user is editing one
+					if (m_pKeyboardFocusTextArea != _editDeliveryTime)
+					{
+						_editDeliveryTime.text = m_pComponentAdd.DeliveryTime.toString();
+					}
+					if (m_pKeyboardFocusTextArea != _editDeliveryPressure)
+					{
+						_editDeliveryPressure.text = m_pComponentAdd.DeliveryPressure.toString();
+					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
 					// Format the output text
 					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
-					_runOutputText1.text = "Adding " + m_pComponentAdd.AddReagent.Description + " to reactor " + m_pComponentAdd.Reactor + ".";
+					_runOutputText1.text = "Adding " + m_pComponentAdd.AddReagent.Description + " to reactor " + m_pComponentAdd.Reactor + " position " +
+						m_pComponentAdd.DeliveryPosition + " for " + m_pComponentAdd.DeliveryTime + " seconds at " + m_pComponentAdd.DeliveryPressure +
+						" PSI.";
 					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
 					_runReactorText2.text = "Reactor " + m_pComponentAdd.Reactor;
 				}
@@ -84,7 +102,7 @@
 				// Update our component
 				m_pComponentAdd.Reactor = parseInt(_editReactorCombo.selectedItem as String);
 
-				// Pass the request to the server
+				// Save the component to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
 				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentAdd, "sequence/" + nSequenceID + "/component/" + m_pComponentAdd.ID);
 			}
@@ -93,7 +111,34 @@
 				// Update our component
 				m_pComponentAdd.AddReagent = _editReagentCombo.selectedItem as Reagent;
 				
-				// Pass the request to the server
+				// Save the component to the server
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentAdd, "sequence/" + nSequenceID + "/component/" + m_pComponentAdd.ID);
+			}
+			protected function OnPositionChange(event:IndexChangeEvent):void
+			{
+				// Update our component
+				m_pComponentAdd.DeliveryPosition = parseInt(_editPositionCombo.selectedItem as String);
+				
+				// Save the component to the server
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentAdd, "sequence/" + nSequenceID + "/component/" + m_pComponentAdd.ID);
+			}
+			
+			// Called when the user changes the text in one of our input fields
+			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
+			{
+				// Update our component
+				if (m_pKeyboardFocusTextArea == _editDeliveryTime)
+				{
+					m_pComponentAdd.DeliveryTime = parseInt(_editDeliveryTime.text);
+				}
+				if (m_pKeyboardFocusTextArea == _editDeliveryPressure)
+				{
+					m_pComponentAdd.DeliveryPressure = parseFloat(_editDeliveryPressure.text);
+				}
+				
+				// Save the component to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
 				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentAdd, "sequence/" + nSequenceID + "/component/" + m_pComponentAdd.ID);
 			}
@@ -130,6 +175,34 @@
 					</s:HGroup>
 					<s:HGroup horizontalAlign="left" width="70%">
 						<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="TextMedium" width="75%" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="30%">
+						<s:Label text="at position" styleName="TextMedium" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" width="70%">
+						<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="TextMedium" width="75%" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="30%">
+						<s:Label text="for" styleName="TextMedium" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<Renderers:AutoTextArea id="_editDeliveryTime" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
+						<s:Label text="seconds" styleName="TextMedium" />
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup verticalAlign="middle" gap="15" width="100%">
+					<s:HGroup horizontalAlign="right" width="30%">
+						<s:Label text="using" styleName="TextMedium" />
+					</s:HGroup>
+					<s:HGroup horizontalAlign="left" verticalAlign="middle" gap="10" width="50%">
+						<Renderers:AutoTextArea id="_editDeliveryPressure" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+							focusOut="OnTextFocusOut(event)" />
+						<s:Label text="PSI" styleName="TextMedium" />
 					</s:HGroup>
 				</s:HGroup>
 				<s:Spacer height="100%" />

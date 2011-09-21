@@ -10,7 +10,7 @@ package Elixys.Objects
 			// Call the base constructor
 			if ((data == null) && (existingcontent == null))
 			{
-				data = m_sDefault;
+				data = DEFAULT;
 			}
 			super(data, existingcontent);
 			
@@ -152,13 +152,13 @@ package Elixys.Objects
 		static public var TYPE:String = "EVAPORATE";
 
 		// Default format
-		private var m_sDefault:String = "{" +
+		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"EVAPORATE\"," +
 			"\"id\":0," +
 			"\"name\":\"\"," +
 			"\"reactor\":0," +
-			"\"duration\":\"00:00.00\"," +
+			"\"duration\":0," +
 			"\"evaporationtemperature\":0," +
 			"\"finaltemperature\":0," +
 			"\"stirspeed\":0," + 
