@@ -19,12 +19,8 @@ ADDREAGENT = 'Add'
 ENABLED    = 'Enabled'
 DISABLED   = 'Disabled'
 HOME = (3,3)
-F18TRAP = (2,1,0)
-#Set Stopcock 1 to Position 2
-#Set Stopcock 2 to Position 1
-F18ELUTE = (1,2,0)
-#Set Stopcock 1 to Position 1
-#Set Stopcock 2 to Position 2
+F18TRAP = (2,1,0)  #Set Stopcock 1 to Position 2, Stopcock 2 to Position 1
+F18ELUTE = (1,2,0) #Set Stopcock 1 to Position 1, Stopcock 2 to Position 2
 
 ON = True
 OFF = False
@@ -447,7 +443,7 @@ class UnitOperation(threading.Thread):
     elif (str(regulator) == '2') or (str(regulator) == 'PressureRegulator2'):
       self.pressureRegulator = 'PressureRegulator2'
     if rampTime:
-      nRefreshFrequency = 8  # Update pressure this number of times per second
+      nRefreshFrequency = 5  # Update pressure this number of times per second
       currentPressure = float(self.systemModel[self.pressureRegulator].getSetPressure())
       rampRate = (float(pressureSetPoint) - float(currentPressure)) / float(rampTime) / float(nRefreshFrequency)
       nElapsedTime = 0
@@ -553,18 +549,18 @@ class AddReagent(UnitOperation):
     try:
       self.beginNextStep("Starting Add Reagent Operation")
       self.beginNextStep("Moving to position")
-      self.setPressureRegulator(2,5)
-      self.setReactorPosition(ADDREAGENT)
+      self.setPressureRegulator(2,5)      #Set delivery pressure to 5psi
+      self.setReactorPosition(ADDREAGENT) #Move reactor to position
       self.beginNextStep("Moving vial to addition position")
-      self.setReagentTransferValves(ON)# Turn on valves
-      self.setGripperPlace()#Move reagent from it's home position to the addition position.
+      self.setReagentTransferValves(ON)   #Turn on transfer valve
+      self.setGripperPlace()              #Move reagent to the addition position.
       self.setDescription("Adding reagent")
-      time.sleep(10)#Dispense reagent
+      time.sleep(10)                      #Wait for Dispense reagent
       self.beginNextStep("Removing vial from addition position")
-      self.setPressureRegulator(2,0)
-      self.setGripperRemove()
-      self.setReagentTransferValves(OFF)#Turn off valves
-      self.setPressureRegulator(2,5)
+      #self.setPressureRegulator(2,0)     #Turns off the regulator (to prevent spillage)
+      self.setGripperRemove()             #Return vial to its starting location
+      self.setReagentTransferValves(OFF)  #Turn off valves
+      #self.setPressureRegulator(2,5)
       self.beginNextStep("Add Reagent Operation Complete")
     except Exception as e:
       print type(e)
@@ -659,13 +655,14 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.beginNextStep("Starting Evaporate Operation")
-      self.setPressureRegulator(2,15)
+      self.setPressureRegulator(2,0)
       self.beginNextStep("Moving to position")
       self.setReactorPosition(EVAPORATE)
       self.beginNextStep("Setting evaporation Temperature")
       self.setTemp()
       self.setDescription("Starting vacuum and nitrogen")
       self.setEvapValves(ON)
+      self.setPressureRegulator(2,15,5) #Ramp pressure for 5 seconds -> 0.6psi every 200ms
       self.setDescription("Starting stir motor")    
       self.setStirSpeed(self.stirSpeed)
       self.setDescription("Starting heaters")
@@ -915,7 +912,7 @@ class DeliverF18(UnitOperation):
   def F18Trap(self,time,pressure):
     self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
     self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
-    self.setPressureRegulator(2,pressure) #Set pressure after valve is opened
+    self.setPressureRegulator(2,pressure,5) #Set pressure after valve is opened
     self.startTimer(time)
     self.beginNextStep("Stopping F18 trapping")
     self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
@@ -924,7 +921,7 @@ class DeliverF18(UnitOperation):
   def F18Elute(self,time,pressure):
     self.systemModel['ExternalSystems'].setF18EluteValveOpen(ON)
     self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,ON,EQUAL,5)
-    self.setPressureRegulator(2,pressure)
+    self.setPressureRegulator(2,pressure,5)
     self.startTimer(time)
     self.beginNextStep("Stopping F18 elution")
     self.systemModel['ExternalSystems'].setF18EluteValveOpen(OFF)
