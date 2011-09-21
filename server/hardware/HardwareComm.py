@@ -821,27 +821,38 @@ class HardwareComm():
                    sLogFile = "temp_profile.txt"
                 else:
                    sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
-                nMeasureReactor = 2
-                nLiquidReactor = 3
-                nLiquidThermocouple = 1
                 try:
                     self.__startTime
                 except Exception, e:
                     self.__startTime = time.time()
                     f = open(sLogFile, "w")
-                    f.write("Time,Heater1Set,Heater2Set,Heater3Set,Heater1Actual,Heater2Actual,Heater3Actual,Liquid\n")
+                    f.write("Time,")
+                    f.write("H1C1Set,H1C2Set,H1C3Set,H1C1Actual,H1C2Actual,H1C3Actual,")
+                    f.write("H2C1Set,H2C2Set,H2C3Set,H2C1Actual,H2C2Actual,H2C3Actual,")
+                    f.write("H3C1Set,H3C2Set,H3C3Set,H3C1Actual,H3C2Actual,H3C3Actual\n")
                     f.flush()
                     f.close()
                 currentTime = time.time()
                 f = open(sLogFile, "a")
-                f.write("%.1f"%(currentTime - self.__startTime) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController1")) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController2")) + "," + \
-                    str(self.__GetThermocontrollerSetValue("Reactor" + str(nMeasureReactor) + "_TemperatureController3")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController1")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController2")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nMeasureReactor) + "_TemperatureController3")) + "," + \
-                    str(self.__GetThermocontrollerActualValue("Reactor" + str(nLiquidReactor) + "_TemperatureController" + str(nLiquidThermocouple))) + "," + "\n")
+                f.write("%.1f," % (currentTime - self.__startTime))
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2")) + ",")
+                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3")) + "\n")
                 f.flush()
                 f.close()
             
