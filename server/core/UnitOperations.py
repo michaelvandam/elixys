@@ -557,10 +557,11 @@ class AddReagent(UnitOperation):
       self.setDescription("Adding reagent")
       time.sleep(10)                      #Wait for Dispense reagent
       self.beginNextStep("Removing vial from addition position")
-      #self.setPressureRegulator(2,0)     #Turns off the regulator (to prevent spillage)
+      self.setPressureRegulator(2,0)      #Turn pressure off (To fight issue with crappy septa)
       self.setGripperRemove()             #Return vial to its starting location
+      self.setPressureRegulator(2,5)
+      time.sleep(0.125)                   #Purge N2 line (To fight issue with crappy septa)
       self.setReagentTransferValves(OFF)  #Turn off valves
-      #self.setPressureRegulator(2,5)
       self.beginNextStep("Add Reagent Operation Complete")
     except Exception as e:
       print type(e)
