@@ -4,21 +4,21 @@
 Move(Reactor2,Install)
 
 // Add DCE
-Add(Reactor2,Reactor2,1,2)
+Add(Reactor2,Reactor2,1,1)
 
 // Bromination
-React(Reactor2,80,600,40,React1,450)
+React(Reactor2,80,600,30,React1,450)
 
 // Partially evaporate the contents of reactor 2
-Evaporate(Reactor2,60,90,40,450)
+Evaporate(Reactor2,60,120,30,450)
 
 // Add toluene and mix
-Add(Reactor2,Reactor2,2,2)
+Add(Reactor2,Reactor2,2,1)
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Evaporate
-Evaporate(Reactor2,80,180,40,450)
+Evaporate(Reactor2,80,90,30,450)
 
 // Add Precursor2 and mix
 Add(Reactor2,Reactor2,3,2)
@@ -26,7 +26,7 @@ SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Cytosine coupling reaction
-React(Reactor2,163,1800,40,React2,450)
+React(Reactor2,163,1800,30,React2,450)
 
 // Take TLC sample of the contents of reactor 2 and continue with FAC4_Transfer.txt
 DisableReactorRobot(1)

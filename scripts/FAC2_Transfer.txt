@@ -8,7 +8,7 @@ ReactorTransferStart(1)
 ReactorTransferStop(1)
 
 // Add EtOAc to reactor 1 and mix
-Add(Reactor1,Reactor1,7,2)
+Add(Reactor1,Reactor1,7,1)
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
 
@@ -23,10 +23,10 @@ ReactorTransferStop(1)
 // Mix and evaporate reactor 2 contents
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
-Evaporate(Reactor2,80,180,40,450)
+Evaporate(Reactor2,80,180,30,450)
 
 // Add EtOAc to reactor 1 and mix
-Add(Reactor1,Reactor1,8,2)
+Add(Reactor1,Reactor1,8,1)
 SetMotorSpeed(1,450)
 SetMotorSpeed(1,0)
 
@@ -40,7 +40,7 @@ ReactorTransferStop(1)
 // Mix and evaporate reactor 2 contents
 SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
-Evaporate(Reactor2,80,180,40,450)
+Evaporate(Reactor2,80,180,30,450)
 
 // Take Activity Measurements for:
 //   Vial in reactor 1

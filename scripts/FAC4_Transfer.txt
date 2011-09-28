@@ -13,16 +13,15 @@ SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Transfer contents of reactor 2 through the silica Sep-pak and back to reactor 1
-Move(Reactor1,Add)
 Move(Reactor2,Transfer)
+Move(Reactor3,Add)
 ReactorStopcockPosition(2,1,1)
 SetPressureRegulator(2,3)
 ReactorTransferStart(2)
-RampPressure(2,20,90)
 ReactorTransferStop(2)
 
 // Evaporate #1
-Evaporate(Reactor1,80,60,40,450)
+Evaporate(Reactor3,80,60,30,450)
 
 // Add dichloromethane to reactor 2 and mix
 Add(Reactor2,Reactor2,5,2)
@@ -30,16 +29,16 @@ SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Transfer contents of reactor 2 through the silica Sep-pak and back to reactor 1
-Move(Reactor1,Add)
 Move(Reactor2,Transfer)
+Move(Reactor3,Add)
 SetPressureRegulator(2,3)
 ReactorTransferStart(2)
 ReactorTransferStop(2)
 
 // Mix and evaporate #2
-SetMotorSpeed(1,450)
-SetMotorSpeed(1,0)
-Evaporate(Reactor1,80,60,40,450)
+SetMotorSpeed(3,450)
+SetMotorSpeed(3,0)
+Evaporate(Reactor3,80,60,30,450)
 
 // Add dichloromethane to reactor 2 and mix
 Add(Reactor2,Reactor2,6,2)
@@ -47,13 +46,13 @@ SetMotorSpeed(2,450)
 SetMotorSpeed(2,0)
 
 // Transfer contents of reactor 2 through the silica Sep-pak and back to reactor 1
-Move(Reactor1,Add)
 Move(Reactor2,Transfer)
+Move(Reactor3,Add)
 SetPressureRegulator(2,3)
 ReactorTransferStart(2)
 ReactorTransferStop(2)
 
 // Mix and evaporate #3
-SetMotorSpeed(1,450)
-SetMotorSpeed(1,0)
-Evaporate(Reactor1,80,120,40,450)
+SetMotorSpeed(3,450)
+SetMotorSpeed(3,0)
+Evaporate(Reactor3,80,120,30,450)

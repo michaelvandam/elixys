@@ -661,15 +661,15 @@ class Evaporate(UnitOperation):
       self.setReactorPosition(EVAPORATE)
       self.beginNextStep("Setting evaporation Temperature")
       self.setTemp()
-      self.setDescription("Starting vacuum and nitrogen")
-      self.setEvapValves(ON)
-      self.setPressureRegulator(2,15,5) #Ramp pressure for 5 seconds -> 0.6psi every 200ms
       self.setDescription("Starting stir motor")    
       self.setStirSpeed(self.stirSpeed)
       self.setDescription("Starting heaters")
       self.setHeater(ON)
+      self.setDescription("Starting vacuum and nitrogen")
+      self.setEvapValves(ON)
+      self.setPressureRegulator(2,15,self.evapTime/2) #Ramp pressure over the first half of the evaporation
       self.setDescription("Starting evaporation timer")
-      self.startTimer(self.evapTime)
+      self.startTimer(self.evapTime/2) #Now wait for the second half of the evaporation
       self.beginNextStep("Starting cooling")
       self.setHeater(OFF)
       self.setCool()
