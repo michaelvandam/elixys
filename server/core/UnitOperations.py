@@ -251,6 +251,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            self.abortOperation(function.__name__)
             break
     elif comparator == NOTEQUAL:
       while (function() == condition):
@@ -259,6 +260,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            self.abortOperation(function.__name__)
             break
     elif comparator == GREATER:
       while not(function() >= condition):
@@ -267,6 +269,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            self.abortOperation(function.__name__)
             break            
     elif comparator == LESS:
       while not(function() <=condition):
@@ -275,9 +278,11 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            self.abortOperation(function.__name__)
             break
     else:
       print ("Error: Invalid comparator.")
+      self.abortOperation(function.__name__)
     #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
     
   def checkForCondition(self,function,condition,comparator):
