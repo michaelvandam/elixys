@@ -251,6 +251,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
             self.abortOperation(function.__name__)
             break
     elif comparator == NOTEQUAL:
@@ -260,6 +261,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
             self.abortOperation(function.__name__)
             break
     elif comparator == GREATER:
@@ -269,6 +271,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
             self.abortOperation(function.__name__)
             break            
     elif comparator == LESS:
@@ -278,6 +281,7 @@ class UnitOperation(threading.Thread):
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
             print ("ERROR: waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+            print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
             self.abortOperation(function.__name__)
             break
     else:
@@ -1010,8 +1014,12 @@ class Initialize(UnitOperation):
     for self.ReactorID in self.ReactorTuple:
       if not(self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
         self.robotsHomed=False
+      else:
+        print str(self.ReactorID)+" robot homed correctly."
     if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
       self.robotsHomed=False
+    else:
+      print "Reagent robot failed to home."
     return self.robotsHomed
 
     
