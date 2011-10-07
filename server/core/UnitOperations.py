@@ -1011,7 +1011,7 @@ class Initialize(UnitOperation):
     print "System Initialized.\n"
   
   def areRobotsHomed(self):
-  print str(self.systemModel['ReagentDelivery'].getRobotStatus())
+    print str(self.systemModel['ReagentDelivery'].getRobotStatus())
     self.robotsHomed=True
     for self.ReactorID in self.ReactorTuple:
       if not(self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
