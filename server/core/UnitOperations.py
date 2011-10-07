@@ -1018,6 +1018,7 @@ class Initialize(UnitOperation):
         print str(self.ReactorID)+" robot homed correctly."
     if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
       self.robotsHomed=False
+      print str(self.systemModel['ReagentDelivery'].getRobotStatus())
     else:
       print "Reagent robot failed to home."
     return self.robotsHomed
