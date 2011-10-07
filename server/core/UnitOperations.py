@@ -18,6 +18,7 @@ EVAPORATE  = 'Evaporate'
 ADDREAGENT = 'Add'
 ENABLED    = 'Enabled'
 DISABLED   = 'Disabled'
+SHANE_RANDOM_VARIABLE = 'On'
 HOME = (3,3)
 F18TRAP = (2,1,0)  #Set Stopcock 1 to Position 2, Stopcock 2 to Position 1
 F18ELUTE = (1,2,0) #Set Stopcock 1 to Position 1, Stopcock 2 to Position 2
@@ -996,7 +997,6 @@ class Initialize(UnitOperation):
     self.setPressureRegulator(1,60)
     
     #Home robots
-    print str(self.systemModel['ReagentDelivery'].getRobotStatus())
     for self.ReactorID in self.ReactorTuple:
       self.systemModel[self.ReactorID]['Motion'].setEnableReactorRobot()
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
@@ -1011,19 +1011,12 @@ class Initialize(UnitOperation):
     print "System Initialized.\n"
   
   def areRobotsHomed(self):
-    print str(self.systemModel['ReagentDelivery'].getRobotStatus())
     self.robotsHomed=True
     for self.ReactorID in self.ReactorTuple:
       if not(self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
         self.robotsHomed=False
-      else:
-        print str(self.ReactorID)+" robot homed correctly."
-    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
+    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(SHANE_RANDOM_VARIABLE,SHANE_RANDOM_VARIABLE),EQUAL)):
       self.robotsHomed=False
-      print str(self.systemModel['ReagentDelivery'].getRobotStatus())
-    else:
-      print "Reagent robot failed to home."
-      print str(self.systemModel['ReagentDelivery'].getRobotStatus())
     return self.robotsHomed
 
     
