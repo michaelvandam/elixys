@@ -116,9 +116,9 @@ class SequenceManager:
     pReagent = self.database.GetReagent(sRemoteUser, nReagentID)
 
     # Add details to the reagent and return
-    pReagent["namedescription"] = "Short name of this reagent"
+    pReagent["namedescription"] = "Brief name of this reagent"
     pReagent["namevalidation"] = "type=string; required=true"
-    pReagent["descriptiondescription"] = "Long name of this reagent"
+    pReagent["descriptiondescription"] = "Long description of this reagent"
     pReagent["descriptionvalidation"] = "type=string"
     return pReagent
 
@@ -230,11 +230,11 @@ class SequenceManager:
       pComponent.update({"reactorvalidation":"type=enum-number; values=1,2,3; required=true"})
       pComponent.update({"reagentdescription":"Reagent to add to the reactor"})
       pComponent.update({"reagentvalidation":"type=enum-reagent; values=" + self.__ListReagents(pReagents) + "; required=true"})
-      pComponent.update({"deliverypositiondescription":"Delivery position where the reagent will be added"})
+      pComponent.update({"deliverypositiondescription":"Position where the reagent will be added"})
       pComponent.update({"deliverypositionvalidation":"type=enum-number; values=1,2; required=true"})
       pComponent.update({"deliverytimedescription":"Number of seconds to deliver the reagent"})
       pComponent.update({"deliverytimevalidation":"type=number; min=0; max=10"})
-      pComponent.update({"deliverypressuredescription":"Pressure in PSI to use when delivering the reagent"})
+      pComponent.update({"deliverypressuredescription":"Pressure to use when delivering the reagent"})
       pComponent.update({"deliverypressurevalidation":"type=number; min=0; max=15"})
 
       # Look up the reagent we are adding

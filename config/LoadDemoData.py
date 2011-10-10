@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # Create the database layer and sequence manager
     pDBComm = DBComm()
     pDBComm.Connect()
-    pSequenceManager = SequenceManager()
+    pSequenceManager = SequenceManager(pDBComm)
 
     # Create the user roles
     print "Creating user roles"

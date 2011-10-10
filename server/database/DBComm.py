@@ -36,10 +36,33 @@ class DBComm:
 
   ### Logging functions ###
 
-  def Log(self, sUsername, sMessage):
+  def Log(self, sCurrentUsername, sMessage):
     """Logs a message to the database"""
     # Log to stderr for now
-    print >> sys.stderr, sUsername + ": " + sMessage
+    print >> sys.stderr, sCurrentUsername + ": " + sMessage
+
+  ### Configuration functions ###
+
+  def GetConfiguration(self, sCurrentUsername):
+    """Returns the system configuration"""
+    self.Log(sCurrentUsername, "DBComm.GetConfiguration()")
+    # Return hardcoded values for now but this should really come from the database
+    return {"name":"Mini cell 3",
+      "version":"2.0",
+      "debug":"false"}
+
+  def GetSupportedOperations(self, sCurrentUsername):
+    """Returns the supported operations"""
+    self.Log(sCurrentUsername, "DBComm.GetSupportedOperations()")
+    # Return hardcoded values for now but this should really come from the database
+    return ["Add",
+      "Evaporate",
+      "Transfer",
+      "Elute",
+      "React",
+      "Prompt",
+      "Install",
+      "Comment"]
 
   ### Role functions ###
 
@@ -82,7 +105,7 @@ class DBComm:
     pUserRaw = self.__CallStoredProcedure("GetUser", (sUsername, ))
 
     # Create the user object
-    pUser = {}
+    pUser = {"type":"user"}
     pUser["username"] = pUserRaw[0][0]
     pUser["firstname"] = pUserRaw[0][1]
     pUser["lastname"] = pUserRaw[0][2]

@@ -80,6 +80,10 @@ mkdir /var/www/wsgi/eggs
 chmod 777 /var/www/wsgi/eggs
 chown apache:apache /var/www/wsgi/eggs
 
+# Install SELinux management tools and open the RPC port
+yum -y install policycoreutils-python
+semanage port -a -t http_port_t -p tcp 18862
+
 # Install the Adobe policy module and file
 cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so

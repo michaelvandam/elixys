@@ -10,6 +10,7 @@ sys.path.append("/opt/elixys/database")
 sys.path.append("/var/www/wsgi")
 import GetHandler
 import PostHandler
+import CoreServerProxy
 
 # Change the python egg cache directory to a place where Apache has write permission
 import os
@@ -19,16 +20,14 @@ os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi/eggs"
 import DBComm
 gDatabase = DBComm.DBComm()
 
-# Import and create the core Elixys server
-from DummyElixys import Elixys 
-gElixys = Elixys()
-gElixys.SetDatabase(gDatabase)
+# Create a proxy connection to the core server
+gCoreServer = CoreServerProxy.CoreServerProxy()
 
 def application(pEnvironment, fStartResponse):
     # Connect to the database.  It is important that we do this at the start of every request or two things happen:
     #  1. We start receiving stale data from MySQLdb depending on which thread handles this request
     #  2. MySQL will run out of available database connections under heavy loads
-    global gElixys
+    global gCoreServer
     global gDatabase
     gDatabase.Connect()
 
@@ -37,12 +36,9 @@ def application(pEnvironment, fStartResponse):
     sRequestMethod = pEnvironment["REQUEST_METHOD"]
     sPath = pEnvironment["PATH_INFO"]
 
-    # Load the client and system state
+    # Load the client state and log the request
     sClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
-    sSystemState = gElixys.GetSystemState(sRemoteUser)
-
-    # Log the request
-    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ", system state = " + sSystemState + ")")
+    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ")")
 
     # Handle the request
     try:
@@ -50,13 +46,13 @@ def application(pEnvironment, fStartResponse):
         pBody = None
         nBodyLength = 0
         if sRequestMethod == "GET":
-            pHandler = GetHandler.GetHandler(gElixys, gDatabase)
+            pHandler = GetHandler.GetHandler(gCoreServer, gDatabase)
         elif sRequestMethod == "POST":
             nBodyLength = int(pEnvironment["CONTENT_LENGTH"])
             pBody = pEnvironment["wsgi.input"].read(nBodyLength)
-            pHandler = PostHandler.PostHandler(gElixys, gDatabase)
+            pHandler = PostHandler.PostHandler(gCoreServer, gDatabase)
         elif sRequestMethod == "DELETE":
-            pHandler = DeleteHandler.DeleteHandler(gElixys, gDatabase)
+            pHandler = DeleteHandler.DeleteHandler(gCoreServer, gDatabase)
         else:
             raise Exception("Unknown request method: " + sRequestMethod)
 

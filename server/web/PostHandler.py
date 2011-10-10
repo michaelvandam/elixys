@@ -37,8 +37,6 @@ class PostHandler:
             return self.__HandlePostEdit()
         elif self.__sPath == "/RUNSEQUENCE":
             return self.__HandlePostRunSequence()
-        elif self.__sPath == "/MANUALRUN":
-            return self.__HandlePostManualRun()
         elif self.__sPath == "/PROMPT":
             return self.__HandlePostPrompt()
         elif self.__sPath.startswith("/sequence/"):
@@ -67,9 +65,6 @@ class PostHandler:
             if sActionTargetID == "CREATE":
                 # Switch states to Select Sequence
                 return self.__UpdateClientState("SELECT_SAVEDSEQUENCES")
-            elif sActionTargetID == "MANUAL":
-                # Switch states to Prompt (Manual Run)
-                return self.__UpdateClientState("PROMPT_MANUALRUN;" + self.__sClientState)
             elif sActionTargetID == "OBSERVE":
                 # Swtich to Run Sequence
                 return self.__UpdateClientState(self.__pCoreServer.GetRunState(self.__sRemoteUser))
@@ -116,9 +111,9 @@ class PostHandler:
             if sActionTargetID == "SAVEDSEQUENCES":
                 # Switch states to the Saved Sequences tab
                 return self.__UpdateClientState("SELECT_SAVEDSEQUENCES")
-            elif sActionTargetID == "MANUALRUNS":
-                # Switch states to the Manual Runs tab
-                return self.__UpdateClientState("SELECT_MANUALRUNS")
+            elif sActionTargetID == "RUNHISTORY":
+                # Switch states to the Run History tab
+                return self.__UpdateClientState("SELECT_RUNHISTORY")
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -216,82 +211,6 @@ class PostHandler:
         # Unhandled use case
         raise Exception("State misalignment")
 
-    # Handle POST /MANUALRUN
-    def __HandlePostManualRun(self):
-        # Make sure we are on Manual Run
-        if self.__sClientState.startswith("MANUALRUN") == False:
-            raise Exception("State misalignment")
-
-        # Determine our sequence and component IDs and manual run step
-        pClientStateComponents = self.__sClientState.split(".")
-        nSequenceID = int(pClientStateComponents[1])
-        nComponentID = int(pClientStateComponents[2])
-        sManualRunStep = pClientStateComponents[3]
-
-        # Parse the JSON string in the body and extract the action type and target
-        pJSON = json.loads(self.__pBody)
-        sActionType = str(pJSON["action"]["type"])
-        sActionTargetID = str(pJSON["action"]["targetid"])
-
-        # Are we observing another user's manual run?
-        if sRemoteUser != self.__pCoreServer.GetRunUser(self.__sRemoteUser):
-            # Yes, so the only thing we can do is go back to home
-            if sActionType == "BUTTONCLICK":
-                if sActionTargetID == "BACK":
-                    # Switch states to home
-                    return self.__UpdateClientState("HOME")
-
-            # State misalignment in the observing client
-            raise Exception("State misalignment")
-
-        # Interpret the post event
-        if sManualRunStep == "CASSETTE":
-            if sActionType == "BUTTONCLICK":
-                if sActionTargetID == "ABORT":
-                    # Switch states to Prompt (Abort manual run)
-                    return self.__UpdateClientState("PROMPT_ABORTMANUALRUN;" + sClientState)
-                elif sActionTargetID == "START":
-                    # Advance to the SELECT step
-                    self.__sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
-                    self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
-                    return self.__UpdateClientState(self.__sClientState)
-                else:
-                    # Change the selected cassette
-                    self.__sClientState = "MANUALRUN." + str(nSequenceID) + "." + sActionTargetID + ".CASSETTE"
-                    self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
-                    return self.__UpdateClientState(self.__sClientState)
-        elif sManualRunStep == "SELECT":
-            if sActionType == "BUTTONCLICK":
-                if sActionTargetID == "COMPLETE":
-                    # Switch states to Prompt (Complete manual run)
-                    return self.__UpdateClientState("PROMPT_COMPLETEMANUALRUN;" + self.__sClientState)
-        elif sManualRunStep == "CONFIGURE":
-            if sActionType == "BUTTONCLICK":
-                if sActionTargetID == "BACK":
-                    # Delete the unit operation
-                    self.__pSequenceManager.DeleteComponent(self.__sRemoteUser, nComponentID)
-
-                    # Return to the SELECT step
-                    nComponentID = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)["components"][0]["id"]
-                    self.__sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(nComponentID) + ".SELECT"
-                    self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
-                    return self.__UpdateClientState(self.__sClientState)
-                elif sActionTargetID == "RUN":
-                    # Perform the unit operation
-                    self.__pCoreServer.PerformOperation(self.__sRemoteUser, nComponentID, nSequenceID)
-
-                    # Update the client state
-                    self.__sClientState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
-                    return self.__UpdateClientState(self.__sClientState)
-        elif sManualRunStep == "RUN":
-            if sActionType == "BUTTONCLICK":
-                if sActionTargetID == "ABORT":
-                    # Switch states to Prompt (Abort manual operation)
-                    return self.__UpdateClientState("PROMPT_ABORTMANUALOPERATION;" + sClientState)
-
-        # Unhandled use case
-        raise Exception("State misalignment")
-
     # Handle sequence POST requests
     def __HandlePostBaseSequence(self, sType, nSequenceID, nComponentID, sActionType, sActionTargetID):
         # Check which option the user selected
@@ -373,7 +292,7 @@ class PostHandler:
             if sActionTargetID == "CANCEL":
                 # Switch to the previous state
                 return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_COPYSEQUENCE"):
+        elif self.__sClientState.startswith("PROMPT_COPYSEQUENCE"):
             if sActionTargetID == "COPY":
                 # Sequence name is required
                 if sEdit1 == "":
@@ -388,7 +307,7 @@ class PostHandler:
             if sActionTargetID == "CANCEL":
                 # Switch to the previous state
                 return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_DELETESEQUENCE"):
+        elif self.__sClientState.startswith("PROMPT_DELETESEQUENCE"):
             if sActionTargetID == "DELETE":
                 # Delete the sequence from the database
                 nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
@@ -399,7 +318,7 @@ class PostHandler:
             if sActionTargetID == "CANCEL":
                 # Switch to the previous state
                 return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_ABORTSEQUENCERUN"):
+        elif self.__sClientState.startswith("PROMPT_ABORTSEQUENCERUN"):
             if sActionTargetID == "ABORT":
                 # Abort the run and return to the home page
                 self.__pCoreServer.AbortRun(self.__sRemoteUser)
@@ -407,7 +326,7 @@ class PostHandler:
             if sActionTargetID == "CANCEL":
                 # Switch to the previous state
                 return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_RUNSEQUENCE"):
+        elif self.__sClientState.startswith("PROMPT_RUNSEQUENCE"):
             if sActionTargetID == "OK":
                 # Run the sequence
                 self.__pCoreServer.RunSequence(self.__sRemoteUser, int(self.__sClientState.split(";")[1]))
@@ -415,54 +334,17 @@ class PostHandler:
             if sActionTargetID == "CANCEL":
                 # Switch to the previous state
                 return self.__UpdateClientState(self.__sClientState.split(";")[2])
-        elif sClientState.startswith("PROMPT_UNITOPERATION"):
+        elif self.__sClientState.startswith("PROMPT_UNITOPERATION"):
             if sActionTargetID == "OK":
                 # Are we in the middle of a sequence or manual run?
                 sRunState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
                 if sRunState.split(".")[0] == "RUNSEQUENCE":
                     # Continue the sequence run
                     self.__pCoreServer.ContinueRun(self.__sRemoteUser)
-                else:
-                    # Continue the manual run
-                    self.__pCoreServer.ContinueOperation(self.__sRemoteUser)
                 return self.__UpdateClientState(self.__pCoreServer.GetRunState(self.sRemoteUser))
             if sActionTargetID == "BACK":
                 # Return to the home page
                 return self.__UpdateClientState("HOME")
-        elif sClientState.startswith("PROMPT_MANUALRUN"):
-            if sActionTargetID == "OK":
-                # Start the manual run
-                self.__pCoreServer.StartManualRun(self.__sRemoteUser)
-                return self.__UpdateClientState(self.__pCoreServer.GetRunState(self.__sRemoteUser))
-            if sActionTargetID == "CANCEL":
-                # Switch to the previous state
-                return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_ABORTMANUALRUN"):
-            if sActionTargetID == "ABORT":
-                # Set the client and system states
-                return self.__UpdateClientState("HOME")
-            if sActionTargetID == "CANCEL":
-                # Switch to the previous state
-                return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_ABORTMANUALOPERATION"):
-            if sActionTargetID == "ABORT":
-                # Return to the selection step
-                sRunState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
-                pRunStateComponents = sRunState.split(".")
-                self.__sClientState = "MANUALRUN." + pRunStateComponents[1] + "." + pRunStateComponents[2] + ".SELECT"
-                self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
-                return self.__UpdateClientState(self.__sClientState)
-            if sActionTargetID == "CANCEL":
-                # Switch to the previous state
-                return self.__UpdateClientState(self.__sClientState.split(";")[1])
-        elif sClientState.startswith("PROMPT_COMPLETEMANUALRUN"):
-            if sActionTargetID == "SAVE":
-                # Finish the manual run
-                self.__pCoreServer.FinishManualRun(self.__sRemoteUser)
-                return self.__UpdateClientState("HOME")
-            if sActionTargetID == "CANCEL":
-                # Switch to the previous state
-                return self.__UpdateClientState(self.__sClientState.split(";")[1])
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -498,13 +380,6 @@ class PostHandler:
             # Update the client to show the new component
             pClientStateComponents = self.__sClientState.split(".")
             self.__sClientState = pClientStateComponents[0] + "." + str(nSequenceID) + "." + str(nComponentID)
-
-            # Is the remote user the one that is currently running the system?
-            if self.__sRemoteUser == self.__pCoreServer.GetRunUser(self.__sRemoteUser):
-                # Yes, so advance to the configuration step after adding a new component
-                if nComponentID == 0:
-                    self.__sClientState = "MANUALRUN." + str(nSequenceID) + "." + str(pComponent["id"]) + ".CONFIGURE"
-                    self.__pCoreServer.SaveRunState(self.__sRemoteUser, self.__sClientState)
 
         # Return the new state
         return self.__UpdateClientState(self.__sClientState)
