@@ -18,7 +18,6 @@ EVAPORATE  = 'Evaporate'
 ADDREAGENT = 'Add'
 ENABLED    = 'Enabled'
 DISABLED   = 'Disabled'
-SHANE_RANDOM_VARIABLE = 'On'
 HOME = (3,3)
 F18TRAP = (2,1,0)  #Set Stopcock 1 to Position 2, Stopcock 2 to Position 1
 F18ELUTE = (1,2,0) #Set Stopcock 1 to Position 1, Stopcock 2 to Position 2
@@ -221,11 +220,17 @@ class UnitOperation(threading.Thread):
       self.setDescription("Moving Reactor%s to position %s." % (ReactorID,reactorPosition))
       self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
       self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
-      if not(reactorPosition==INSTALL):
+      if (reactorPosition == REACT_A) or (reactorPosition == REACT_B):
+        self.setPressureRegulator(1,60)
+      elif (reactorPosition == INSTALL):
+        self.setPressureRegulator(1,3)
+      else:
+        self.setPressureRegulator(1,30)
+      if not reactorPosition == INSTALL:  #This if statement will go away once there are clips to lock the reactor into the install position
         self.setDescription("Moving Reactor%s up." % ReactorID)
         self.systemModel[ReactorID]['Motion'].moveReactorUp()
         self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-      #Removed 'else' with duplicated code, this will work because we want it to disable regardless of position.
+
       self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
       self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
 
@@ -464,7 +469,12 @@ class UnitOperation(threading.Thread):
         self.systemModel[self.pressureRegulator].setRegulatorPressure(currentPressure) #Set analog value on PLC
         #self.waitForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,rampPressure,GREATER,3) #Read value from sensor... should be greater or equal   
     self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
-    #self.waitForCondition(self.systemModel[self.pressureRegulator].getSetPressure,pressureSetPoint,GREATER,3)
+    self.pressureSetPoint = pressureSetPoint
+    self.waitForCondition(self.pressureSet,True,EQUAL,3)
+
+  def pressureSet(self):
+    return (self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint - 1,GREATER) and
+      self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint + 1,LESS))
    
 class React(UnitOperation):
   def __init__(self,systemModel,params):
@@ -984,7 +994,9 @@ class Initialize(UnitOperation):
     
   def run(self):
     self.stepDescription = "Starting Initialize Operation"
+    
     #Close all valves (set state)
+    self.beginNextStep("Initializing valves and pressures")
     for self.ReactorID in self.ReactorTuple:
       self.setEvapValves(OFF)
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
@@ -995,27 +1007,28 @@ class Initialize(UnitOperation):
     #Set pressures
     self.setPressureRegulator(2,5)
     self.setPressureRegulator(1,60)
-    
-    #Home robots
-    for self.ReactorID in self.ReactorTuple:
-      self.systemModel[self.ReactorID]['Motion'].setEnableReactorRobot()
+
+    #Raise and open gripper    
+    self.beginNextStep("Initializing robots")
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperUp,True,EQUAL,2)
     self.systemModel['ReagentDelivery'].setMoveGripperOpen()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getSetGripperOpen,True,EQUAL,2) 
+
+    #Home robots
     self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
-    time.sleep(5)
+    time.sleep(2)
     self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
     for self.ReactorID in self.ReactorTuple:
       self.setReactorPosition(INSTALL)
-    print "System Initialized.\n"
+    self.beginNextStep("System initialized")
   
   def areRobotsHomed(self):
     self.robotsHomed=True
     for self.ReactorID in self.ReactorTuple:
       if not(self.checkForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
         self.robotsHomed=False
-    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(SHANE_RANDOM_VARIABLE,SHANE_RANDOM_VARIABLE),EQUAL)):
+    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
       self.robotsHomed=False
     return self.robotsHomed
 

@@ -8,6 +8,10 @@ import threading
 import select
 import Queue
 
+# This exception will be thrown in a runaway heater is detected
+class RunawayHeaterException(Exception):
+    pass
+
 class SocketThread(threading.Thread):
     ### Functions ###
 
@@ -38,7 +42,12 @@ class SocketThread(threading.Thread):
         pSockets = [pSocket]
 
         # Loop until the terminate event is set
+        bRunawayHeater = False
         while not self.__pTerminateEvent.is_set():
+            # Raise an exception if a runaway heater was detected and we've sent all our outgoing packets
+            if bRunawayHeater and self.__pOutgoingPackets.empty():
+                raise Exception(sRunawayHeaterError)
+
             # Call select() to wait until the socket is ready
             if self.__pOutgoingPackets.empty():
                 pReadySockets = select.select(pSockets, [], [], 0.05)
@@ -48,7 +57,12 @@ class SocketThread(threading.Thread):
                 # The socket has data available to be read.  Pass the data to the HardwareComm for processing
                 pBinaryResponse = pSocket.recv(10240)
                 sResponse = pBinaryResponse.encode("hex")
-                self.__pHardwareComm._HardwareComm__ProcessRawResponse(sResponse)
+                try:
+                    self.__pHardwareComm._HardwareComm__ProcessRawResponse(sResponse)
+                except RunawayHeaterException, ex:
+                    # A runaway heater has been detected.  We need to run the message pump a bit longer so the queued heater stop commands can be sent
+                    bRunawayHeater = True
+                    sRunawayHeaterError = "Runaway heater in reactor " + str(ex.args[0])
             elif len(pReadySockets[1]) > 0:
                 # The socket is available for writing.  Do we have any packets in our outgoing queue?
                 if not self.__pOutgoingPackets.empty():

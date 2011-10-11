@@ -5,6 +5,7 @@ Implements the HardwareComm interface for the Elixys hardware """
 ### Imports ###
 from configobj import ConfigObj
 from SocketThread import SocketThread
+from SocketThread import RunawayHeaterException
 import threading
 import time
 import os.path
@@ -228,7 +229,7 @@ class HardwareComm():
         self.__pSocketThread.start()
         
         # Enable analog out
-        self.__SetIntegerValueRaw(2000, 255);
+        self.__SetIntegerValueRaw(2000, 0xFF);
         
         # Enable RoboNet control for all axes
         self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
@@ -338,10 +339,16 @@ class HardwareComm():
 
     # Reagent robot
     def MoveRobotToReagent(self, nReactor, nReagent):
+        if self.__pSystemModel != None:
+            if self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False:
+                raise Exception("Cannot move robot unless gripper is up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentZAxis, self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"]))
     def MoveRobotToDelivery(self, nReactor, nPosition):
+        if self.__pSystemModel != None:
+            if self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False:
+                raise Exception("Cannot move robot unless gripper is up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentZAxis, self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"]))
@@ -379,6 +386,9 @@ class HardwareComm():
 
     # Reactor
     def MoveReactor(self, nReactor, sPositionName):
+        if self.__pSystemModel != None:
+            if self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorUp() == True:
+                raise Exception("Cannot move reactor when it is up")
         nReactorOffset = self.__LookUpReactorOffset(nReactor)
         pPosition = self.__LookUpRobotPosition("Reactors_" + sPositionName)
         self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["z"]))
@@ -440,38 +450,28 @@ class HardwareComm():
 
     # Home all robots
     def HomeRobots(self):
-        print "Homing all axes"
         for nAxis in range(0, 5):
-            # Turn on servo axis
+            # Turn on each axis
             self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)
-        time.sleep(0.1)
+            time.sleep(0.1)
         for nAxis in range(0, 5):
-            # Home axis
+            # Home each axis
             self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x12)
+            time.sleep(0.1)
 
     # Disable all robots
     def DisableRobots(self):
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 0, 0x08)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 4, 0x08)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 8, 0x08)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 12, 0x08)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 16, 0x08)
+        for nAxis in range(0, 5):
+            # Disable each axis
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x08)
+            time.sleep(0.1)
         
     # Enable all robots
     def EnableRobots(self):
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 0, 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 4, 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 8, 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 12, 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + 16, 0x10)
+        for nAxis in range(0, 5):
+            # Enable each axis
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)
+            time.sleep(0.1)
 
     # Disable reactor robot
     def DisableReactorRobot(self, nReactor):
@@ -735,7 +735,12 @@ class HardwareComm():
         pModel = self.__pSystemModel.LockSystemModel()
 
         # Perform the state update in a try/except/finally block to make sure we release our lock on the system model
-        try:        
+        try:
+            # Check for runaway reactor temperatures
+            for nReactor in range(1, 4):
+                for nTemperatureController in range(1, 4):
+                    self.__CheckForRunawayTemp(nReactor, nTemperatureController)
+            
             # Look up our reagent robot positions
             nReagentRobotSetX = self.__GetReagentRobotSetX()
             nReagentRobotSetZ = self.__GetReagentRobotSetZ()
@@ -1218,7 +1223,7 @@ class HardwareComm():
             # Hit test each reactor position
             nReactorOffset = self.__LookUpReactorOffset(nReactor)
             for sPositionName in self.__pRobotPositions["Reactors"]:
-                if self.__HitTest(nPositionZ, int(self.__pRobotPositions["Reactors"][sPositionName])):
+                if self.__HitTest(nPositionZ - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
                   # We're over a know position
                   return sPositionName
                   
@@ -1241,3 +1246,21 @@ class HardwareComm():
 
         # Return the signed integer
         return nSignedInt
+
+    # Checks for runaway temperatures
+    def __CheckForRunawayTemp(self, nReactor, nTemperatureController):
+        # Skip if we aren't heating
+        fSetTemperature = self.__GetThermocontrollerSetValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nTemperatureController))
+        if not self.__GetHeaterOn(nReactor, nTemperatureController) or (fSetTemperature == 0):
+            return
+
+        # Calculate the temperature of the entire reactor
+        fAverageTemp = (self.__GetThermocontrollerActualValue("Reactor" + str(nReactor) + "_TemperatureController1") +
+            self.__GetThermocontrollerActualValue("Reactor" + str(nReactor) + "_TemperatureController2") +
+            self.__GetThermocontrollerActualValue("Reactor" + str(nReactor) + "_TemperatureController3")) / 3
+
+        # Raise an alarm if this heater is 20 degrees over the average
+        if self.__GetThermocontrollerActualValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nTemperatureController)) > (fAverageTemp + 20):
+            for nReactor in range(1, 4):
+                self.HeaterOff(nReactor)
+            raise RunawayHeaterException(nReactor)
