@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("message", value);
 		}
 		
-		public function get MessageDescription():String
-		{
-			return super.flash_proxy::getProperty("messagedescription");
-		}
-
 		public function get MessageValidation():String
 		{
 			return super.flash_proxy::getProperty("messagevalidation");
@@ -55,7 +50,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"PROMPT\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Prompt\"," +
 			"\"message\":\"\"}";
 	}
 }

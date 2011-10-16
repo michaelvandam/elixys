@@ -4,7 +4,7 @@ A proxy to the Python service that communicates with the PLC"""
 
 # Imports
 import rpyc
-import copy
+import json
 
 # Core server proxy
 class CoreServerProxy():
@@ -12,29 +12,29 @@ class CoreServerProxy():
         self.__pCoreServer = rpyc.connect("localhost", 18862)
 
     def GetServerState(self, sUsername):
-        return copy.deepcopy(self.__pCoreServer.root.GetServerState(sUsername))
+        return json.loads(self.__pCoreServer.root.GetServerState(sUsername))
 
-    def exposed_RunSequence(self, sUsername, nSequenceID):
+    def RunSequence(self, sUsername, nSequenceID):
         return self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)
 
-    def exposed_Abort(self, sUsername):
+    def Abort(self, sUsername):
         return self.__pCoreServer.root.Abort(sUsername)
 
-    def exposed_EmergencyStop(self, sUsername):
+    def EmergencyStop(self, sUsername):
         return self.__pCoreServer.root.EmergencyStop(sUsername)
 
-    def exposed_Pause(self, sUsername):
+    def Pause(self, sUsername):
         return self.__pCoreServer.root.Pause(sUsername)
 
-    def exposed_Continue(self, sUsername):
+    def Continue(self, sUsername):
         return self.__pCoreServer.root.Continue(sUsername)
 
-    def exposed_PauseTimer(self, sUsername):
+    def PauseTimer(self, sUsername):
         return self.__pCoreServer.root.PauseTimer(sUsername)
 
-    def exposed_ContinueTimer(self, sUsername):
+    def ContinueTimer(self, sUsername):
         return self.__pCoreServer.root.ContinueTimer(sUsername)
 
-    def exposed_StopTimer(self, sUsername):
+    def StopTimer(self, sUsername):
         return self.__pCoreServer.root.StopTimer(sUsername)
 

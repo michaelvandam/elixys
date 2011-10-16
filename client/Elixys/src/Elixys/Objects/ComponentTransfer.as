@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -53,11 +48,6 @@ package Elixys.Objects
 		{
 			super.flash_proxy::setProperty("target", value);
 			m_pTarget = null;
-		}
-		
-		public function get TransferTargetDescription():String
-		{
-			return super.flash_proxy::getProperty("targetdescription");
 		}
 		
 		public function get TransferTargetValidation():String
@@ -84,7 +74,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"TRANSFER\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Transfer\"," +
 			"\"reactor\":0," +
 			"\"target\":" + Reagent.DEFAULT + "}";
 	}

@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# Change the python egg cache directory to a place where Apache has write permission
+import os
+os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi/eggs"
+
 # Imports
 from wsgiref.simple_server import make_server
 import json
@@ -12,10 +16,6 @@ import GetHandler
 import PostHandler
 import CoreServerProxy
 
-# Change the python egg cache directory to a place where Apache has write permission
-import os
-os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi/eggs"
-
 # Import and create the database connection
 import DBComm
 gDatabase = DBComm.DBComm()
@@ -23,12 +23,16 @@ gDatabase = DBComm.DBComm()
 # Create a proxy connection to the core server
 gCoreServer = CoreServerProxy.CoreServerProxy()
 
+# Temp
+from time import time
+
 def application(pEnvironment, fStartResponse):
     # Connect to the database.  It is important that we do this at the start of every request or two things happen:
     #  1. We start receiving stale data from MySQLdb depending on which thread handles this request
     #  2. MySQL will run out of available database connections under heavy loads
     global gCoreServer
     global gDatabase
+    nStart = time()
     gDatabase.Connect()
 
     # Extract input variables
@@ -73,5 +77,7 @@ def application(pEnvironment, fStartResponse):
 
     # Send the response
     fStartResponse(sStatus, pHeaders)
+    nElapsed = time() - nStart
+    gDatabase.Log("timestamp", sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
     return [sResponseJSON]
 

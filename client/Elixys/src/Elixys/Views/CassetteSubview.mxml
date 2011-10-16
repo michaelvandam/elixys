@@ -438,7 +438,7 @@
 																			 styleName="TextMedium"
 																			 text="Name"/>
 																</s:HGroup>
-																<s:HGroup width="70%"
+																<s:VGroup width="70%"
 																		  horizontalAlign="left"
 																		  verticalAlign="middle">
 																	<Renderers:AutoTextArea id="_editName"
@@ -446,7 +446,8 @@
 																							focusIn="outerDocument.OnTextFocusIn(event)"
 																							focusOut="outerDocument.OnTextFocusOut(event)"
 																							styleName="TextMedium"/>
-																</s:HGroup>
+																	<s:Label styleName="FieldDescription" text="Brief name of this reagent"/>
+																</s:VGroup>
 															</s:HGroup>
 															<s:HGroup width="100%"
 																	  verticalAlign="top">
@@ -458,7 +459,7 @@
 																			 styleName="TextMedium"
 																			 text="Description"/>
 																</s:HGroup>
-																<s:HGroup width="70%"
+																<s:VGroup width="70%"
 																		  horizontalAlign="left"
 																		  verticalAlign="middle">
 																	<Renderers:AutoTextArea id="_editDescription"
@@ -467,7 +468,8 @@
 																							focusIn="outerDocument.OnTextFocusIn(event)"
 																							focusOut="outerDocument.OnTextFocusOut(event)"
 																							styleName="TextMedium"/>
-																</s:HGroup>
+																	<s:Label styleName="FieldDescription" text="Long description of this reagent"/>
+																</s:VGroup>
 															</s:HGroup>
 														</s:VGroup>
 													</s:VGroup>

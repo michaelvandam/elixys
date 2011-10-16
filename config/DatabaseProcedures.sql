@@ -234,14 +234,14 @@ CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState
  ***************************************************************************************************************************************************************/
 
 /* Get a list of sequences:
- *   IN Type - Type of sequence to return (either "Saved" or "Manual")
+ *   IN Type - Type of sequence to return (either "Saved" or "History")
  */
 DROP PROCEDURE IF EXISTS GetAllSequences;
 CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
     BEGIN
         -- Filter the sequences based on type and replace the user IDs with names
-        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID, Sequences.ComponentCount
-            FROM Sequences, Users WHERE Sequences.Type = iType AND Sequences.UserID = Users.UserID;
+        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+            Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.Type = iType AND Sequences.UserID = Users.UserID;
     END //
 
 /* Get a sequence:
@@ -251,8 +251,8 @@ DROP PROCEDURE IF EXISTS GetSequence;
 CREATE PROCEDURE GetSequence(IN iSequenceID INT UNSIGNED)
     BEGIN
         -- Filter the sequences based on type and replace the user IDs with names
-        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID, Sequences.ComponentCount
-            FROM Sequences, Users WHERE Sequences.SequenceID = iSequenceID AND Sequences.UserID = Users.UserID;
+        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+            Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.SequenceID = iSequenceID AND Sequences.UserID = Users.UserID;
     END //
 
 /* Create a new sequence:
@@ -282,7 +282,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
 
         -- Create the entry in the sequences table
-        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0, 0);
+        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0, 0, False, True);
         SET lSequenceID = LAST_INSERT_ID();
 
         -- Create each cassette
@@ -342,6 +342,29 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
 
         -- Return the sequence ID
         SET oSequenceID = lSequenceID;
+    END //
+
+/* Updates an existing sequence:
+ *   IN SequenceID - ID of the sequence to update
+ *   IN Name - Name of the sequence
+ *   IN Comment - Comment associated with the sequence *   IN Valid - Flag indicating if this sequence is valid
+ */
+DROP PROCEDURE IF EXISTS UpdateSequence;
+CREATE PROCEDURE UpdateSequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64), IN iComment VARCHAR(255), IN iValid BOOL)
+    BEGIN
+        -- Update the sequence
+        UPDATE Sequences SET Name = iName, Comment = iComment, Valid = iValid WHERE SequenceID = iSequenceID;
+    END //
+
+/* Updates the dirty flag on an existing sequence:
+ *   IN SequenceID - ID of the sequence to update
+ *   IN Dirty - Flag indicating if the sequence validation is dirty
+ */
+DROP PROCEDURE IF EXISTS UpdateSequenceDirtyFlag;
+CREATE PROCEDURE UpdateSequenceDirtyFlag(IN iSequenceID INT UNSIGNED, IN iDirty BOOL)
+    BEGIN
+        -- Update the sequence
+        UPDATE Sequences SET Dirty = iDirty WHERE SequenceID = iSequenceID;
     END //
 
 /* Creates a copy of an existing sequence:
@@ -512,6 +535,54 @@ CREATE PROCEDURE GetCassette(IN iSequenceID INT UNSIGNED, IN iCassetteOffset INT
 
         -- Return the cassette
         SELECT * FROM Components WHERE ComponentID = lCassetteID;
+    END //
+
+/* Gets all of the components associated with the given sequence ID: *   IN SequenceID - ID of the sequence
+ */
+DROP PROCEDURE IF EXISTS GetComponentsBySequence;
+CREATE PROCEDURE GetComponentsBySequence(IN iSequenceID INT UNSIGNED)
+    BEGIN
+        DECLARE lComponentID INT UNSIGNED;
+        DECLARE lPreviousComponentID INT UNSIGNED;
+        DECLARE lNextComponentID INT UNSIGNED;
+        DECLARE lType VARCHAR(20);
+        DECLARE lName VARCHAR(20);
+        DECLARE lDetails VARCHAR(2048);
+
+        -- Create a temporary table to hold the component data
+        DROP TEMPORARY TABLE IF EXISTS tmp_Components;
+        CREATE TEMPORARY TABLE tmp_Components
+        (
+            ComponentID INT UNSIGNED NOT NULL,
+            SequenceID INT UNSIGNED NOT NULL,
+            PreviousComponentID INT UNSIGNED NOT NULL,
+            NextComponentID INT UNSIGNED NOT NULL,
+            Type VARCHAR(20) NOT NULL,
+            Name VARCHAR(20),
+            Details VARCHAR(2048) NOT NULL
+        ) ENGINE=Memory COMMENT="Temporary component data";
+
+        -- Get the first component ID in the sequence
+        CALL Internal_GetFirstComponent(iSequenceID, lComponentID);
+
+        -- Load the components in order
+        WHILE lComponentID > 0 DO
+            -- Load the component data from the Components table
+            SELECT PreviousComponentID FROM Components WHERE ComponentID = lComponentID INTO lPreviousComponentID;
+            SELECT NextComponentID FROM Components WHERE ComponentID = lComponentID INTO lNextComponentID;
+            SELECT Type FROM Components WHERE ComponentID = lComponentID INTO lType;
+            SELECT Name FROM Components WHERE ComponentID = lComponentID INTO lName;
+            SELECT Details FROM Components WHERE ComponentID = lComponentID INTO lDetails;
+
+            -- Save the component in our temporary table
+            INSERT INTO tmp_Components VALUES (lComponentID, iSequenceID, lPreviousComponentID, lNextComponentID, lType, lName, lDetails);
+
+            -- Get the next component ID
+            CALL Internal_GetNextComponent(lComponentID, lComponentID);
+        END WHILE;
+
+        -- Return the temporary components
+        SELECT * FROM tmp_Components;
     END //
 
 /* Creates a new component and inserts it at the end of a sequence:

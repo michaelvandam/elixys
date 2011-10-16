@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -50,11 +45,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("position", value);
 		}
 
-		public function get PositionDescription():String
-		{
-			return super.flash_proxy::getProperty("positiondescription");
-		}
-		
 		public function get PositionValidation():String
 		{
 			return super.flash_proxy::getProperty("positionvalidation");
@@ -67,11 +57,6 @@ package Elixys.Objects
 		public function set Duration(value:uint):void
 		{
 			super.flash_proxy::setProperty("duration", value);
-		}
-
-		public function get DurationDescription():String
-		{
-			return super.flash_proxy::getProperty("durationdescription");
 		}
 
 		public function get DurationValidation():String
@@ -88,11 +73,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactiontemperature", value);
 		}
 	
-		public function get ReactionTemperatureDescription():String
-		{
-			return super.flash_proxy::getProperty("reactiontemperaturedescription");
-		}
-	
 		public function get ReactionTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("reactiontemperaturevalidation");
@@ -107,11 +87,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("finaltemperature", value);
 		}
 	
-		public function get FinalTemperatureDescription():String
-		{
-			return super.flash_proxy::getProperty("finaltemperaturedescription");
-		}
-	
 		public function get FinalTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
@@ -124,11 +99,6 @@ package Elixys.Objects
 		public function set StirSpeed(value:uint):void
 		{
 			super.flash_proxy::setProperty("stirspeed", value);
-		}
-	
-		public function get StirSpeedDescription():String
-		{
-			return super.flash_proxy::getProperty("stirspeeddescription");
 		}
 	
 		public function get StirSpeedValidation():String
@@ -156,7 +126,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"REACT\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"React\"," +
 			"\"reactor\":0," +
 			"\"position\":0," +
 			"\"duration\":0," +

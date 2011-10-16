@@ -9,7 +9,6 @@ import select
 import sys
 sys.path.append("../../hardware/")
 sys.path.append("../../core/")
-sys.path.append("../../cli/")
 import HardwareComm
 from SystemModel import SystemModel
 import Utilities

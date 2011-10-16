@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -55,11 +50,6 @@ package Elixys.Objects
 			m_pReagent = null;
 		}
 		
-		public function get EluteReagentDescription():String
-		{
-			return super.flash_proxy::getProperty("reagentdescription");
-		}
-		
 		public function get EluteReagentValidation():String
 		{
 			return super.flash_proxy::getProperty("reagentvalidation");
@@ -77,11 +67,6 @@ package Elixys.Objects
 		{
 			super.flash_proxy::setProperty("target", value);
 			m_pTarget = null;
-		}
-		
-		public function get EluteTargetDescription():String
-		{
-			return super.flash_proxy::getProperty("targetdescription");
 		}
 		
 		public function get EluteTargetValidation():String
@@ -110,7 +95,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"ELUTE\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Elute\"," +
 			"\"reactor\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "," +
 			"\"target\":" + Reagent.DEFAULT + "}";

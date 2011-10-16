@@ -6,10 +6,11 @@ Elixys state monitoring """
 import time
 import rpyc
 from rpyc.utils.server import ThreadedServer
-import Utilities
 import StateMonitorThread
 from datetime import datetime
 import sys
+sys.path.append("../core/")
+import Utilities
 
 # The console package we import depends on the OS
 gConsole = None

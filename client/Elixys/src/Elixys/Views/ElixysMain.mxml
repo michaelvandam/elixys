@@ -101,7 +101,10 @@
 				m_pStateTimer.start();
 				
 				// Hide the splash screen and make the view stack visible
-				removeChild(m_pSplashScreen);
+				if (m_pSplashScreen != null)
+				{
+					removeChild(m_pSplashScreen);
+				}
 				m_pSplashScreen = null;
 				_viewStack.visible = true;
 				_viewStack.includeInLayout = true;

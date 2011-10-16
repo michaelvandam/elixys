@@ -15,6 +15,9 @@ class GetHandler:
         # Create the sequence manager
         self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
+        # Initialize server state
+        self.__pServerState = None
+
     # Main entry point for handling all GET requests
     def HandleRequest(self, sClientState, sRemoteUser, sPath, pBody, nBodyLength):
         # Remember the request variables
@@ -47,7 +50,7 @@ class GetHandler:
     # Handle GET /state request
     def __HandleGetState(self):
         # Is the remote user the one that is currently running the system?
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
             # Yes, so make sure the user is in the appropriate run state
             raise Exception("User is running system, make sure they are in the right place")
@@ -143,7 +146,7 @@ class GetHandler:
             "id":"CREATE"}]}
 
         # Is someone running the system?
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] != "":
             # Yes, so add the observe button
             pState["buttons"].append({"type":"button",
@@ -178,7 +181,7 @@ class GetHandler:
                 "id":"BACK"}]}
 
         # Add the run button if no one is running the system
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
             pState["optionbuttons"].insert(1, {"type":"button",
                 "text":"Run",
@@ -217,7 +220,7 @@ class GetHandler:
             nComponentID = int(pClientStateComponents[2])
         else:
             # No, the component ID is missing.  Get the sequence and the ID of the first component
-            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
+            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
             nComponentID = pSequence["components"][0]["id"]
 
             # Update our state
@@ -235,7 +238,7 @@ class GetHandler:
             "componentid":nComponentID}
 
         # Add the run button if no one is running the system
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
             pState["navigationbuttons"].insert(1, {"type":"button",
                 "text":"Run",
@@ -254,7 +257,7 @@ class GetHandler:
             nComponentID = int(pClientStateComponents[2])
         else:
             # No, the component ID is missing.  Get the sequence and the ID of the first component
-            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
+            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
             nComponentID = pSequence["components"][0]["id"]
 
             # Update our state
@@ -269,7 +272,7 @@ class GetHandler:
             "componentid":nComponentID}
 
         # Add the run button if no one is running the system
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
             pState["navigationbuttons"].insert(0, {"type":"button",
                 "text":"Run",
@@ -279,7 +282,7 @@ class GetHandler:
     # Handle GET /state for Run Sequence
     def __HandleGetStateRunSequence(self):
         # Get the server state
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
 
         # Create the return object
         pState = {"navigationbuttons":[],
@@ -321,7 +324,7 @@ class GetHandler:
     def __HandleGetStateSelectPromptCopySequence(self, pPromptState):
         # Look up the sequence
         nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
-        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
 
         # Create the prompt state
         pPromptState["show"] = True
@@ -346,7 +349,7 @@ class GetHandler:
     def __HandleGetStateSelectPromptDeleteSequence(self, pPromptState):
         # Look up the sequence
         nSequenceID = int(self.__sClientState.split(";")[0].split("_")[2])
-        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
 
         # Create the prompt state
         pPromptState["show"] = True
@@ -389,7 +392,7 @@ class GetHandler:
     # Handle GET /state for Run Sequence (Prompt/install unit operations)
     def __HandleGetStateRunSequencePromptUnitOperation(self, pPromptState):
         # Look up the current sequence component
-        pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        pServerState = self.__GetServerState()
         pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, pServerState["runstate"]["componentid"], pServerState["runstate"]["sequenceid"])
 
         # Make sure this component requires a prompt
@@ -425,9 +428,9 @@ class GetHandler:
         nSequenceID = int(pPathComponents[2])
 
         # Load the entire sequence
-        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID)
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
 
-        # Remove excess sequence data
+        # Copy a subset of the sequence data
         pNewComponents = []
         for pOldComponent in pSequence["components"]:
             pNewComponent = {"type":"sequencecomponent",
@@ -465,4 +468,10 @@ class GetHandler:
         for nReagentID in pReagentIDs:
             pReagents["reagents"].append(self.__pSequenceManager.GetReagent(self.__sRemoteUser, int(nReagentID)))
         return pReagents
+
+    # Initializes and/or returns the cached server state
+    def __GetServerState(self):
+        if self.__pServerState == None:
+            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        return self.__pServerState
 

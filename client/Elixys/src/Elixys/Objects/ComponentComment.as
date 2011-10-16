@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("comment", value);
 		}
 		
-		public function get CommentDescription():String
-		{
-			return super.flash_proxy::getProperty("commentdescription");
-		}
-		
 		public function get CommentValidation():String
 		{
 			return super.flash_proxy::getProperty("commentvalidation");
@@ -55,7 +50,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"COMMENT\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Comment\"," +
 			"\"comment\":\"\"}";
 	}
 }

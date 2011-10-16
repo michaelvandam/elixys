@@ -23,16 +23,6 @@ package Elixys.Objects
 			return super.flash_proxy::getProperty("reactor");
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
-		public function get ReactorValidation():String
-		{
-			return super.flash_proxy::getProperty("reactorvalidation");
-		}
-		
 		public function get Available():Boolean
 		{
 			return super.flash_proxy::getProperty("available");

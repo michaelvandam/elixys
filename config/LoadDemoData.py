@@ -42,7 +42,7 @@ if __name__ == '__main__':
     pDBComm.CreateReservedReagent("System", "HPLC", "External HPLC instrument")
 
     # Import the FAC synthesis sequence
-    pSequenceManager.ImportSequence("FACSynthesis.seq")
+    pSequenceManager.ImportSequence("System", "FACSynthesis.seq")
 
     # Complete
     pDBComm.Disconnect()

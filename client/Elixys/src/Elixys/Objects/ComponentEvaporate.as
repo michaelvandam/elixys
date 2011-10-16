@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -156,7 +151,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"EVAPORATE\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Evaporate\"," +
 			"\"reactor\":0," +
 			"\"duration\":0," +
 			"\"evaporationtemperature\":0," +

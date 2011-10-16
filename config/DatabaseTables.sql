@@ -41,6 +41,8 @@ CREATE TABLE Sequences
     UserID INT UNSIGNED NOT NULL,
     FirstComponentID INT UNSIGNED NOT NULL,
     ComponentCount INT UNSIGNED NOT NULL,
+    Valid BOOL NOT NULL,
+    Dirty BOOL NOT NULL,
     PRIMARY KEY (SequenceID)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

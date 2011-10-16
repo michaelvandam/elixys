@@ -31,11 +31,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("reactor", value);
 		}
 		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -48,11 +43,6 @@ package Elixys.Objects
 		public function set Message(value:String):void
 		{
 			super.flash_proxy::setProperty("message", value);
-		}
-		
-		public function get MessageDescription():String
-		{
-			return super.flash_proxy::getProperty("messagedescription");
 		}
 		
 		public function get MessageValidation():String
@@ -76,7 +66,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"INSTALL\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Install\"," +
 			"\"reactor\":0," +
 			"\"message\":\"\"}";
 	}

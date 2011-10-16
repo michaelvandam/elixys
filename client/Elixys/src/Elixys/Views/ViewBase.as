@@ -470,10 +470,6 @@ package Elixys.Views
 		// Update the given combo box with the specified enum-number validation string
 		protected function UpdateEnumNumberComboBox(sEnumNumberValidation:String, pComboBox:ComboBox, sCurrentValue:String):void
 		{
-			// Get the array of number values
-			var pEnumNumberValidation:EnumNumberValidation = new EnumNumberValidation(sEnumNumberValidation);
-			var pNumberValues:Array = pEnumNumberValidation.NumberValues();
-
 			// Get a pointer to the data provider
 			var pData:ArrayList;
 			if (pComboBox.dataProvider != null)
@@ -487,30 +483,40 @@ package Elixys.Views
 			
 			// Reset the selected index
 			pComboBox.selectedIndex = -1;
-			
-			// Loop through the server and client arrays
-			var nValue:uint;
-			for (nValue = 0; nValue < pNumberValues.length; ++nValue)
+		
+			// Make sure we have a validation string
+			var nValue:uint = 0;
+			if (sEnumNumberValidation != null)
 			{
-				// Either set the existing item or create a new one
-				if (nValue < pData.length)
+				// Get the array of number values
+				var pEnumNumberValidation:EnumNumberValidation = new EnumNumberValidation(sEnumNumberValidation);
+				var pNumberValues:Array = pEnumNumberValidation.NumberValues();
+	
+				// Loop through the server and client arrays
+				while (nValue < pNumberValues.length)
 				{
-					// Update the existing item
-					pData.setItemAt(pNumberValues[nValue], nValue);
+					// Either set the existing item or create a new one
+					if (nValue < pData.length)
+					{
+						// Update the existing item
+						pData.setItemAt(pNumberValues[nValue], nValue);
+					}
+					else
+					{
+						// Create a new item
+						pData.addItem(pNumberValues[nValue]);
+					}
+					
+					// Make sure the currently selected value is reselected
+					if (pData.getItemAt(nValue) == sCurrentValue)
+					{
+						pComboBox.selectedIndex = nValue;
+					}
+					
+					// Increment our counter
+					++nValue;
 				}
-				else
-				{
-					// Create a new item
-					pData.addItem(pNumberValues[nValue]);
-				}
-				
-				// Make sure the currently selected value is reselected
-				if (pData.getItemAt(nValue) == sCurrentValue)
-				{
-					pComboBox.selectedIndex = nValue;
-				}
-			}
-			
+			}			
 			// Remove any extra values
 			while (nValue < pData.length)
 			{
@@ -524,10 +530,14 @@ package Elixys.Views
 		// Update the given combo box with the specified enum-reagent validation string
 		protected function UpdateEnumReagentComboBox(sEnumReagentValidation:String, pComboBox:ComboBox, pCurrentReagent:Reagent):void
 		{
-			// Get the array of reagent IDs
-			var pEnumReagentValidation:EnumReagentValidation = new EnumReagentValidation(sEnumReagentValidation);
-			var pReagentIDs:Array = pEnumReagentValidation.ReagentIDs();
-
+			// Get the array of reagent IDs if we have a validation string
+			var pReagentIDs:Array = null;
+			if (sEnumReagentValidation != null)
+			{
+				var pEnumReagentValidation:EnumReagentValidation = new EnumReagentValidation(sEnumReagentValidation);
+				pReagentIDs = pEnumReagentValidation.ReagentIDs();
+			}
+			
 			// Call the shared implementation
 			UpdateEnumComboBox(pReagentIDs, pComboBox, pCurrentReagent.ReagentID);
 		}
@@ -535,9 +545,13 @@ package Elixys.Views
 		// Update the given combo box with the specified enum-target validation string
 		protected function UpdateEnumTargetComboBox(sEnumTargetValidation:String, pComboBox:ComboBox, pCurrentTarget:Reagent):void
 		{
-			// Get the array of target IDs
-			var pEnumTargetValidation:EnumTargetValidation = new EnumTargetValidation(sEnumTargetValidation);
-			var pTargetIDs:Array = pEnumTargetValidation.TargetIDs();
+			// Get the array of target IDs if we have a validation string
+			var pTargetIDs:Array = null;
+			if (sEnumTargetValidation != null)
+			{
+				var pEnumTargetValidation:EnumTargetValidation = new EnumTargetValidation(sEnumTargetValidation);
+				pTargetIDs = pEnumTargetValidation.TargetIDs();
+			}
 			
 			// Call the shared implementation
 			UpdateEnumComboBox(pTargetIDs, pComboBox, pCurrentTarget.ReagentID);
@@ -561,31 +575,35 @@ package Elixys.Views
 			pComboBox.selectedIndex = -1;
 
 			// Loop through the server and client arrays
-			var nReagent:uint, pReagentClient:Reagent;
+			var nReagent:uint = 0;
 			var pReagentIDs:Array = new Array();
-			for (nReagent = 0; nReagent < pIDs.length; ++nReagent)
+			if (pIDs != null)
 			{
-				// Get a pointer to an existing reagent or create a new one
-				if (nReagent < pData.length)
+				var pReagentClient:Reagent;
+				for (nReagent = 0; nReagent < pIDs.length; ++nReagent)
 				{
-					// Use the existing reagent
-					pReagentClient = pData.getItemAt(nReagent) as Reagent;
-				}
-				else
-				{
-					// Create a new reagent
-					pReagentClient = new Reagent();
-					pData.addItem(pReagentClient);
-				}
-				
-				// Update the reagent ID
-				pReagentClient.ReagentID = pIDs[nReagent];
-				pReagentIDs.push(pReagentClient.ReagentID);
-
-				// Make sure the currently selected reagent is reselected
-				if (pReagentClient.ReagentID == nCurrentReagentID)
-				{
-					pComboBox.selectedIndex = nReagent;
+					// Get a pointer to an existing reagent or create a new one
+					if (nReagent < pData.length)
+					{
+						// Use the existing reagent
+						pReagentClient = pData.getItemAt(nReagent) as Reagent;
+					}
+					else
+					{
+						// Create a new reagent
+						pReagentClient = new Reagent();
+						pData.addItem(pReagentClient);
+					}
+					
+					// Update the reagent ID
+					pReagentClient.ReagentID = pIDs[nReagent];
+					pReagentIDs.push(pReagentClient.ReagentID);
+	
+					// Make sure the currently selected reagent is reselected
+					if (pReagentClient.ReagentID == nCurrentReagentID)
+					{
+						pComboBox.selectedIndex = nReagent;
+					}
 				}
 			}
 			

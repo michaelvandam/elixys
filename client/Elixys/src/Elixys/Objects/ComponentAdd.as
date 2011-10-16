@@ -30,12 +30,7 @@ package Elixys.Objects
 		{
 			super.flash_proxy::setProperty("reactor", value);
 		}
-		
-		public function get ReactorDescription():String
-		{
-			return super.flash_proxy::getProperty("reactordescription");
-		}
-		
+				
 		public function get ReactorValidation():String
 		{
 			return super.flash_proxy::getProperty("reactorvalidation");
@@ -55,11 +50,6 @@ package Elixys.Objects
 			m_pReagent = null;
 		}
 		
-		public function get AddReagentDescription():String
-		{
-			return super.flash_proxy::getProperty("reagentdescription");
-		}
-
 		public function get AddReagentValidation():String
 		{
 			return super.flash_proxy::getProperty("reagentvalidation");
@@ -72,11 +62,6 @@ package Elixys.Objects
 		public function set DeliveryPosition(value:uint):void
 		{
 			super.flash_proxy::setProperty("deliveryposition", value);
-		}
-		
-		public function get DeliveryPositionDescription():String
-		{
-			return super.flash_proxy::getProperty("deliverypositiondescription");
 		}
 		
 		public function get DeliveryPositionValidation():String
@@ -93,11 +78,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("deliverytime", value);
 		}
 		
-		public function get DeliveryTimeDescription():String
-		{
-			return super.flash_proxy::getProperty("deliverytimedescription");
-		}
-		
 		public function get DeliveryTimeValidation():String
 		{
 			return super.flash_proxy::getProperty("deliverytimevalidation");
@@ -110,11 +90,6 @@ package Elixys.Objects
 		public function set DeliveryPressure(value:Number):void
 		{
 			super.flash_proxy::setProperty("deliverypressure", value);
-		}
-		
-		public function get DeliveryPressureDescription():String
-		{
-			return super.flash_proxy::getProperty("deliverypressuredescription");
 		}
 		
 		public function get DeliveryPressureValidation():String
@@ -144,7 +119,7 @@ package Elixys.Objects
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"ADD\"," +
 			"\"id\":0," +
-			"\"name\":\"\"," +
+			"\"name\":\"Add\"," +
 			"\"reactor\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "," +
 			"\"deliveryposition\":0," +

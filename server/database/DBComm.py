@@ -7,7 +7,8 @@ Elixys MySQL Database Comminication
 import json
 import datetime
 import sys
-import MySQLdb as SQL
+import MySQLdb
+import threading
 
 # Suppress MySQLdb's annoying warnings
 import warnings
@@ -24,8 +25,8 @@ class DBComm:
   def Connect(self):
     """Connects to the database"""
     try:
-      # Create the database connection
-      self.__pDatabase = SQL.connect(host="localhost", user="Elixys", passwd="devel", db="Elixys");
+      self.__pDatabase = MySQLdb.connect(host="localhost", user="Elixys", passwd="devel", db="Elixys")
+      self.__pDatabase.autocommit(True)
     except:
       raise Exception("Unable to connect to SQL database")
 
@@ -39,7 +40,7 @@ class DBComm:
   def Log(self, sCurrentUsername, sMessage):
     """Logs a message to the database"""
     # Log to stderr for now
-    print >> sys.stderr, sCurrentUsername + ": " + sMessage
+    print >> sys.stderr, sCurrentUsername + ": " + sMessage + " [0x" + hex(threading.current_thread().ident) + "]"
 
   ### Configuration functions ###
 
@@ -162,6 +163,8 @@ class DBComm:
       pSequence["time"] = pSequenceRaw[4].strftime("%H:%M.%S")
       pSequence["creator"] = pSequenceRaw[5]
       pSequence["components"] = int(pSequenceRaw[7])
+      pSequence["valid"] = bool(pSequenceRaw[8])
+      pSequence["dirty"] = bool(pSequenceRaw[9])
       pSequences.append(pSequence)
 
     # Return
@@ -172,6 +175,8 @@ class DBComm:
     # Log the function call and get the sequence data
     self.Log(sCurrentUsername, "DBComm.GetSequence(%i)" % (nSequenceID, ))
     pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
+    if len(pSequenceRaw) == 0:
+        raise Exception("Sequence " + str(nSequenceID) + " not found")
 
     # Fill in the sequence metadata
     pSequence = {"type":"sequence"}
@@ -183,15 +188,11 @@ class DBComm:
     pSequence["metadata"]["timestamp"] = pSequenceRaw[0][4].strftime("%Y-%m-%d %H:%M:%S")
     pSequence["metadata"]["creator"] = pSequenceRaw[0][5]
     pSequence["metadata"]["components"] = int(pSequenceRaw[0][7])
+    pSequence["metadata"]["valid"] = bool(pSequenceRaw[0][8])
+    pSequence["metadata"]["dirty"] = bool(pSequenceRaw[0][9])
 
-    # Load the components in order
-    nComponentID = int(pSequenceRaw[0][6])
-    pSequence["components"] = []
-    while nComponentID != 0:
-        # Get the component
-        pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
-        pSequence["components"].append(pComponent)
-        nComponentID = nNextComponentID
+    # Load the components
+    pSequence["components"] = self.GetComponentsBySequence(sCurrentUsername, nSequenceID)
 
     # Return
     return pSequence
@@ -203,10 +204,15 @@ class DBComm:
     self.__CallStoredProcedure("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns, nSequenceID), True)
     return self.__ExecuteQuery("SELECT @_CreateSequence_7")[0][0]
 
-  def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment):
+  def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment, bValid):
     """Update a sequence"""
-    self.Log(sCurrentUsername, "DBComm.UpdateSequence(%i, %s, %s)" % (nSequenceID, sName, sComment))
-    return self.__CallStoredProcedure("UpdateSequence", (nSequenceID, sName, sComment), True)
+    self.Log(sCurrentUsername, "DBComm.UpdateSequence(%i, %s, %s, %i)" % (nSequenceID, sName, sComment, bValid))
+    return self.__CallStoredProcedure("UpdateSequence", (nSequenceID, sName, sComment, bValid), True)
+
+  def UpdateSequenceDirtyFlag(self, sCurrentUsername, nSequenceID, bDirty):
+    """Updates the sequence dirty flag"""
+    self.Log(sCurrentUsername, "DBComm.UpdateSequenceDirtyFlag(%i, %i)" % (nSequenceID, bDirty))
+    self.__CallStoredProcedure("UpdateSequenceDirtyFlag", (nSequenceID, bDirty), True)
 
   def DeleteSequence(self, sCurrentUsername, nSequenceID):
     """Delete a sequence"""
@@ -299,9 +305,19 @@ class DBComm:
   def GetCassette(self, sCurrentUsername, nSequenceID, nCassetteOffset):
     """Gets the cassette specified by the offset"""
     self.Log(sCurrentUsername, "DBComm.GetCassette(%i, %i)" % (nSequenceID, nCassetteOffset))
-    pComponentRaw = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassetteOffset))
-    pComponent, nPreviousComponentID, nNextComponentID = self.__CreateComponent(pComponentRaw)
+    pComponentsRaw = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassetteOffset))
+    pComponent, nPreviousComponentID, nNextComponentID = self.__CreateComponent(pComponentsRaw[0])
     return pComponent
+
+  def GetComponentsBySequence(self, sCurrentUsername, nSequenceID):
+    """Gets all of the components associated with the given sequence ID"""
+    self.Log(sCurrentUsername, "DBComm.GetComponentsBySequence(%i)" % (nSequenceID, ))
+    pComponentsRaw = self.__CallStoredProcedure("GetComponentsBySequence", (nSequenceID, ))
+    pComponents = []
+    for pComponentRaw in pComponentsRaw:
+        pComponent, nPreviousComponentID, nNextComponentID = self.__CreateComponent(pComponentRaw)
+        pComponents.append(pComponent)
+    return pComponents
 
   def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
@@ -360,9 +376,10 @@ class DBComm:
 
       # Commit the transaction and return the result
       if bCommit:
-          self.__pDatabase.commit()
+          pass
+          #self.__pDatabase.commit()
       return pRows
-    except SQL.Error, e:
+    except MySQLdb.Error, e:
       raise Exception("SQL Error %d: %s" % (e.args[0],e.args[1]))
 
   def __ExecuteQuery(self, sQuery):
@@ -371,27 +388,27 @@ class DBComm:
       # Execute the query
       pCursor = self.__pDatabase.cursor()
       pCursor.execute(sQuery)
-      self.__pDatabase.commit()
+      #self.__pDatabase.commit()
 
       # Fetch and return all rows
       pRows = pCursor.fetchall()
       pCursor.close()
       return pRows
-    except SQL.Error, e:
+    except MySQLdb.Error, e:
       raise Exception("SQL Error %d: %s" % (e.args[0],e.args[1]))
 
   def __GetComponent(self, nComponentID):
     """Fetches and packages a component"""
     pComponentRaw = self.__CallStoredProcedure("GetComponent", (nComponentID, ))
-    return self.__CreateComponent(pComponentRaw)
+    return self.__CreateComponent(pComponentRaw[0])
 
   def __CreateComponent(self, pComponentRaw):
     """Packages a component"""
-    pComponent = json.loads(pComponentRaw[0][6])
-    pComponent["id"] = int(pComponentRaw[0][0])
-    pComponent["name"] = pComponentRaw[0][5]
-    nPreviousComponentID = int(pComponentRaw[0][2])
-    nNextComponentID = int(pComponentRaw[0][3])
+    pComponent = json.loads(pComponentRaw[6])
+    pComponent["id"] = int(pComponentRaw[0])
+    pComponent["name"] = pComponentRaw[5]
+    nPreviousComponentID = int(pComponentRaw[2])
+    nNextComponentID = int(pComponentRaw[3])
     return pComponent, nPreviousComponentID, nNextComponentID
 
   def __CreateReagent(self, pReagentRaw):
@@ -403,6 +420,8 @@ class DBComm:
     pReagent["position"] = pReagentRaw[3]
     pReagent["available"] = bool(pReagentRaw[4])
     pReagent["name"] = pReagentRaw[5]
+    pReagent["namevalidation"] = "type=string; required=true"
     pReagent["description"] = pReagentRaw[6] 
+    pReagent["descriptionvalidation"] = "type=string"
     return pReagent
 
