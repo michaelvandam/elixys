@@ -16,9 +16,8 @@ mv -f elixys/config/httpd.conf /etc/httpd/conf
 chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Update the static web content
-rm -rf /var/www/http/*.py
 mv -f elixys/bin/WebContent/* /var/www/http/
-chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*.py
+chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*
 
 # Update the web server
 rm -rf /var/www/wsgi/*

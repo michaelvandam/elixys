@@ -66,19 +66,18 @@
 				{
 					// Format the output text
 					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
-					//_runOutputText1.text = "Evaporating reactor " + m_pComponentEvaporate.Reactor + " at " + 
-					//	m_pComponentEvaporate.EvaporationTemperature + " C for " + m_pComponentEvaporate.Duration +
-					//	" seconds and cooling to " + m_pComponentEvaporate.FinalTemperature + " C.  Stirring at " +
-					//	m_pComponentEvaporate.StirSpeed + " rpm.";
-					_runOutputText2.text = "Status: " + pStateSequence.ServerState().Status() + "\nTemperature: " +
-						pReactor.ActualTemperature() + " C";
-					var sActivity:String = pReactor.Activity();
-					if (sActivity != "")
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentEvaporate.Reactor);
+					_runOutputText1.text = "Evaporating reactor " + m_pComponentEvaporate.Reactor + " at " + 
+						m_pComponentEvaporate.EvaporationTemperature + " C for " + m_pComponentEvaporate.Duration +
+						" seconds and cooling to " + m_pComponentEvaporate.FinalTemperature + " C.  Stirring at " +
+						m_pComponentEvaporate.StirSpeed + " rpm.";
+					_runOutputText2.text = "Status: " + pStateSequence.ServerState().RunState().Status() + "\nTemperature: " +
+						pReactor.Temperature() + " C";
+					if (pReactor.Activity() != 0)
 					{
-						_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
+						_runOutputText2.text += "\nActivity: " + pReactor.Activity() + " mCi at " + pReactor.ActivityTime();
 					}
-					//_runReactorText2.text = "Reactor " + m_pComponentEvaporate.Reactor;
+					_runReactorText2.text = "Reactor " + m_pComponentEvaporate.Reactor;
 				}
 			}
 

@@ -57,11 +57,11 @@
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
 					// Format the output text
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentAdd.Reactor);
 					_runOutputText1.text = "Adding " + m_pComponentAdd.AddReagent.Description + " to reactor " + m_pComponentAdd.Reactor + " position " +
 						m_pComponentAdd.DeliveryPosition + " for " + m_pComponentAdd.DeliveryTime + " seconds at " + m_pComponentAdd.DeliveryPressure +
 						" PSI.";
-					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
+					_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
 					_runReactorText2.text = "Reactor " + m_pComponentAdd.Reactor;
 				}
 			}

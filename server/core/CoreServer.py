@@ -51,7 +51,7 @@ if __name__ == "__main__":
         # Stop the background thread but not the server or it will crash
         gDatabase.Log("System", "CoreServer received quit signal")
         pSequenceValidationThreadEvent.set()
-        pSequenceValidationThread.join()
+        time.sleep(1)
         gDatabase.Log("System", "CoreServer stopped")
     except Exception as ex:
         # Log the error

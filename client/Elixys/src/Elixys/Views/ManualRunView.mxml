@@ -29,8 +29,8 @@
 				m_sManualRunStep = pStateManualRun.ManualRunStep();
 
 				// Check if we are the user running the system
-				var sRunUsername:String = pStateManualRun.ServerState().Username();
-				var sCurrentUsername:String = pStateManualRun.User().Name();
+				var sRunUsername:String = pStateManualRun.ServerState().RunState().Username();
+				var sCurrentUsername:String = pStateManualRun.User().Username();
 				m_bRunningSystem = (sRunUsername == sCurrentUsername);
 				
 				// Set the view mode

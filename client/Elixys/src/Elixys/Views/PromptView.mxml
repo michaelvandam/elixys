@@ -19,7 +19,7 @@
 			public override function UpdateState(pState:State):void
 			{
 				// Set the prompt title
-				var pPromptState:PromptState = pState.PromptState();
+				var pPromptState:PromptState = pState.ClientState().PromptState();
 				_title.text = pPromptState.Title();
 				var nTitleHeight:uint = _title.measureText(_title.text).height + _titleGroup.paddingTop + _titleGroup.paddingBottom;
 				_titleGroup.height = nTitleHeight;

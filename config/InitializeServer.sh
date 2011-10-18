@@ -76,9 +76,9 @@ mkdir /var/www/http
 mkdir /var/www/wsgi
 
 # Create a directory where Apache has write permissions for Python Eggs 
-mkdir /var/www/wsgi/eggs
-chmod 777 /var/www/wsgi/eggs
-chown apache:apache /var/www/wsgi/eggs
+mkdir /var/www/eggs
+chmod 777 /var/www/eggs
+chown apache:apache /var/www/eggs
 
 # Install SELinux management tools and open the RPC port
 yum -y install policycoreutils-python

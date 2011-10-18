@@ -22,28 +22,28 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Position():String
+		public function Gripper():String
 		{
-			return super.flash_proxy::getProperty("position");
-		}
-		public function RawX():String
-		{
-			return super.flash_proxy::getProperty("rawx");
-		}
-		public function RawY():String
-		{
-			return super.flash_proxy::getProperty("rawy");
+			return super.flash_proxy::getProperty("gripper");
 		}
 		public function Actuator():String
 		{
 			return super.flash_proxy::getProperty("actuator");
 		}
-		public function Gripper():String
+		public function Position():ReagentRobotPosition
 		{
-			return super.flash_proxy::getProperty("gripper");
+			// Parse the reagent robot position
+			if (m_pReagentRobotPosition == null)
+			{
+				m_pReagentRobotPosition = new ReagentRobotPosition(null, super.flash_proxy::getProperty("position"));
+			}
+			return m_pReagentRobotPosition;
 		}
 		
 		// Type
 		static public var TYPE:String = "reagentrobotstate";
+
+		// State components
+		private var m_pReagentRobotPosition:ReagentRobotPosition = null;
 	}
 }

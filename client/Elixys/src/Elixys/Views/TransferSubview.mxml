@@ -45,10 +45,10 @@
 					var pElixysMain:ElixysMain = null;
 					
 					// Format the output text
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentTransfer.Reactor);
 					_runOutputText1.text = "Transferring the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
 						m_pComponentTransfer.TransferTarget.Description + ".";
-					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
+					_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
 					_runReactorText2.text = "Reactor " + m_pComponentTransfer.Reactor;
 				}
 			}

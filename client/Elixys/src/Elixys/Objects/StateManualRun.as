@@ -11,7 +11,7 @@ package Elixys.Objects
 			super(StateSequence.MANUALRUNTYPE, data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState() != null) && !CheckState(m_sType, ClientState()))
+			if ((ClientState() != null) && (m_sType != ClientState().Screen()))
 			{
 				throw new Error("State object mismatch");
 			}

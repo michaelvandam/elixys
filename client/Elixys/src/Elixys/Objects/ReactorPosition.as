@@ -2,10 +2,10 @@ package Elixys.Objects
 {
 	import flash.utils.flash_proxy;
 	
-	public class PressureRegulatorState extends JSONObject
+	public class ReactorPosition extends JSONObject
 	{
 		// Constructor
-		public function PressureRegulatorState(data:String, existingcontent:Object = null)
+		public function ReactorPosition(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -16,22 +16,22 @@ package Elixys.Objects
 				throw new Error("Object type mismatch");
 			}
 		}
-		
+
 		// Data wrappers
 		public function Type():String
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Name():String
+		public function Horizontal():String
 		{
-			return super.flash_proxy::getProperty("name");
+			return super.flash_proxy::getProperty("horizontal");
 		}
-		public function Pressure():Number
+		public function Vertical():String
 		{
-			return super.flash_proxy::getProperty("pressure");
+			return super.flash_proxy::getProperty("vertical");
 		}
-
+		
 		// Type
-		static public var TYPE:String = "pressureregulatorstate";
+		static public var TYPE:String = "reactorposition";
 	}
 }

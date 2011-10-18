@@ -154,8 +154,8 @@ class SequenceManager:
     nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pComponent["componenttype"], pComponent["name"], 
       json.dumps(pDBComponent), nInsertionID)
 
-    # Do a quick validation of the component and return
-    self.validation.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
+    # Initialize the new component's validation fields and return
+    self.validation.InitializeComponent(sRemoteUser, nSequenceID, nComponentID)
     return nComponentID
 
   def UpdateComponent(self, sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent):
@@ -176,37 +176,8 @@ class SequenceManager:
     if nInsertionID != None:
       self.database.MoveComponent(sRemoteUser, nComponentID, nInsertionID)
 
-  def DeleteComponent(self, sRemoteUser, nComponentID):
-    """ Deletes a component
-
-    This logic should go in the web server
-
-    # Check if the user is currently viewing this component
-    sClientState = self.database.GetUserClientState(sRemoteUser, sRemoteUser)
-    pClientStateComponents = sClientState.split(".")
-    nClientComponentID = int(pClientStateComponents[2])
-    if nClientComponentID == nComponentID:
-      # Yes, so move the user to the next component in the sequence
-      pComponent = self.database.GetNextComponent(sRemoteUser, nComponentID)
-      if pComponent == None:
-        # This is the last component in the sequence.  Move to the previous component
-        pComponent = self.database.GetPreviousComponent(sRemoteUser, nComponentID)
-        if pComponent == None:
-          raise Exception("Failed to find previous or next components")
-
-      # Update the client state
-      sClientState = ""
-      nIndex = 0
-      for sItem in pClientStateComponents:
-        if sClientState != "":
-          sClientState += "."
-        if nIndex == 2:
-          sClientState += str(pComponent["id"])
-        else:
-          sClientState += sItem
-        nIndex += 1
-      self.database.UpdateUserClientState(sRemoteUser, sRemoteUser, sClientState)"""
-
+  def DeleteComponent(self, sRemoteUser, nSequenceID, nComponentID):
+    """ Deletes a component """
     # Delete the component from the database
     self.database.DeleteComponent(sRemoteUser, nComponentID)
 
@@ -308,7 +279,7 @@ class SequenceManager:
       pTargetComponent["target"] = pSourceComponent["target"]
       if pTargetComponent["target"] != 0:
         pTarget = self.GetReagent(sRemoteUser, pTargetComponent["target"])
-        pTargetComponent.update({"name":"Transfer to " + ppTargetagent["name"]})
+        pTargetComponent.update({"name":"Transfer to " + pTargetComponent["name"]})
       else:
         pTargetComponent.update({"name":"Transfer"})
     elif pTargetComponent["componenttype"] == "ELUTE":

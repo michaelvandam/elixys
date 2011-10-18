@@ -65,13 +65,13 @@
 
 					// Format the output text
 					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentReact.Reactor);
 					_runOutputText1.text = "Reacting reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position +
 						" at " + m_pComponentReact.ReactionTemperature + " C for " + m_pComponentReact.Duration +
 						" seconds and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
 						m_pComponentReact.StirSpeed + " rpm.";
-					_runOutputText2.text = "Status: " + pStateSequence.ServerState().Status() + "\nTemperature: " +
-						pReactor.ActualTemperature() + " C";
+					_runOutputText2.text = "Status: " + pStateSequence.ServerState().RunState().Status() + "\nTemperature: " +
+						pReactor.Temperature() + " C";
 					_runReactorText2.text = "Reactor " + m_pComponentReact.Reactor;
 				}
 			}

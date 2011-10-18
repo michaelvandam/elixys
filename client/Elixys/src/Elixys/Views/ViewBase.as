@@ -300,10 +300,10 @@ package Elixys.Views
 			}
 		
 			// Get the ID of the currently selected sequence
-			var pSelectedID:String = "";
+			var nSelectedID:uint = 0;
 			if (pDataGrid.selectedItem)
 			{
-				pSelectedID = (pDataGrid.selectedItem as SequenceMetadata).ID;
+				nSelectedID = (pDataGrid.selectedItem as SequenceMetadata).ID;
 			}
 
 			// Loop through the server and client sequence arrays
@@ -327,7 +327,7 @@ package Elixys.Views
 				pClientSequence.Copy(pServerSequences[nSequence]);
 				
 				// Make sure the currently selected sequence is reselected
-				if (pClientSequence.ID == pSelectedID)
+				if (pClientSequence.ID == nSelectedID)
 				{
 					pDataGrid.selectedItem = pClientSequence;
 				}
@@ -486,7 +486,7 @@ package Elixys.Views
 		
 			// Make sure we have a validation string
 			var nValue:uint = 0;
-			if (sEnumNumberValidation != null)
+			if ((sEnumNumberValidation != null) && (sEnumNumberValidation != ""))
 			{
 				// Get the array of number values
 				var pEnumNumberValidation:EnumNumberValidation = new EnumNumberValidation(sEnumNumberValidation);
@@ -532,7 +532,7 @@ package Elixys.Views
 		{
 			// Get the array of reagent IDs if we have a validation string
 			var pReagentIDs:Array = null;
-			if (sEnumReagentValidation != null)
+			if ((sEnumReagentValidation != null) && (sEnumReagentValidation != ""))
 			{
 				var pEnumReagentValidation:EnumReagentValidation = new EnumReagentValidation(sEnumReagentValidation);
 				pReagentIDs = pEnumReagentValidation.ReagentIDs();
@@ -547,7 +547,7 @@ package Elixys.Views
 		{
 			// Get the array of target IDs if we have a validation string
 			var pTargetIDs:Array = null;
-			if (sEnumTargetValidation != null)
+			if ((sEnumTargetValidation != null) && (sEnumTargetValidation != ""))
 			{
 				var pEnumTargetValidation:EnumTargetValidation = new EnumTargetValidation(sEnumTargetValidation);
 				pTargetIDs = pEnumTargetValidation.TargetIDs();

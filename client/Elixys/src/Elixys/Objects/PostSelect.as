@@ -21,12 +21,18 @@ package Elixys.Objects
 		{
 			super.flash_proxy::getProperty("action").targetid = targetID;
 		}
-		public function SequenceID(sequenceID:String):void
+		public function SequenceID(sequenceID:uint):void
 		{
 			super.flash_proxy::setProperty("sequenceid", sequenceID);
 		}
 		
 		// Default format
-		private var m_sDefault:String = "{ \"action\": { \"type\":\"\", \"targetid\":\"\" }, \"sequenceid\":\"\" }";
+		private var m_sDefault:String = "{" +
+			"\"action\":" +
+			"{" +
+				"\"type\":\"\"," +
+				"\"targetid\":\"\"" + 
+			"}," +
+			"\"sequenceid\":0}";
 	}
 }

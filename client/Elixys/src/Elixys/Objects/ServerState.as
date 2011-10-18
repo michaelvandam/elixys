@@ -1,6 +1,5 @@
 package Elixys.Objects
 {
-	
 	import flash.utils.flash_proxy;
 	
 	public class ServerState extends JSONObject
@@ -23,84 +22,30 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function RunMode():String
+		public function RunState():Elixys.Objects.RunState
 		{
-			return super.flash_proxy::getProperty("runmode");
-		}
-		public function Status():String
-		{
-			return super.flash_proxy::getProperty("status");
-		}
-		public function SequenceID():String
-		{
-			return super.flash_proxy::getProperty("sequenceid");
-		}
-		public function ActiveReactor():uint
-		{
-			return parseInt(super.flash_proxy::getProperty("activereactor"));
-		}
-		public function Username():String
-		{
-			return super.flash_proxy::getProperty("username");
-		}
-		public function Cooling():String
-		{
-			return super.flash_proxy::getProperty("cooling");
-		}
-		public function Vacuum():String
-		{
-			return super.flash_proxy::getProperty("vacuum");
-		}
-		public function Door():String
-		{
-			return super.flash_proxy::getProperty("door");
-		}
-		public function PressureRegulators():Array
-		{
-			// Parse the pressure regulators
-			if (m_pPressureRegulators == null)
+			// Parse the run state
+			if (m_pRunState == null)
 			{
-				m_pPressureRegulators = new Array();
-				var pPressureRegulators:Array = super.flash_proxy::getProperty("pressureregulators");
-				for each (var pPressureRegulatorObject:Object in pPressureRegulators)
-				{
-					var pPressureRegulator:PressureRegulatorState = new PressureRegulatorState(null, pPressureRegulatorObject);
-					m_pPressureRegulators.push(pPressureRegulator);
-				}
+				m_pRunState = new Elixys.Objects.RunState(null, super.flash_proxy::getProperty("runstate"));
 			}
-			return m_pPressureRegulators;
+			return m_pRunState;
 		}
-		public function ReagentRobot():ReagentRobotState
+		public function HardwareState():Elixys.Objects.HardwareState
 		{
-			// Parse the robot state
-			if (m_pReagentRobot == null)
+			// Parse the hardware state
+			if (m_pHardwareState == null)
 			{
-				m_pReagentRobot = new ReagentRobotState(null, super.flash_proxy::getProperty("reagentrobot"));
+				m_pHardwareState = new Elixys.Objects.HardwareState(null, super.flash_proxy::getProperty("hardwarestate"));
 			}
-			return m_pReagentRobot;
+			return m_pHardwareState;
 		}
-		public function Reactors():Array
-		{
-			// Parse the reactors
-			if (m_pReactors == null)
-			{
-				m_pReactors = new Array();
-				var pReactors:Array = super.flash_proxy::getProperty("reactors");
-				for each (var pReactorObject:Object in pReactors)
-				{
-					var pReactor:ReactorState = new ReactorState(null, pReactorObject);
-					m_pReactors.push(pReactor);
-				}
-			}
-			return m_pReactors;
-		}
-		
+
 		// Type
 		static public var TYPE:String = "serverstate";
-
+		
 		// State components
-		private var m_pPressureRegulators:Array = null;
-		private var m_pReagentRobot:ReagentRobotState = null;
-		private var m_pReactors:Array = null;
+		private var m_pRunState:Elixys.Objects.RunState = null;
+		private var m_pHardwareState:Elixys.Objects.HardwareState = null;
 	}
 }

@@ -139,7 +139,7 @@
 			private function UpdateState(pState:State):void
 			{
 				// Handle the pop up window first
-				if (pState.PromptState().Show())
+				if (pState.ClientState().PromptState().Show())
 				{
 					// Create and display the pop up window
 					if (_viewPrompt == null)
@@ -162,33 +162,33 @@
 				
 				// Show and update the appropriate state
 				var pView:ViewBase = null;
-				if (StateHome.CheckState(pState.ClientState()))
+				if (pState.ClientState().Screen() == StateHome.TYPE)
 				{
 					pView = m_pHomeView;
 				}
-				else if (StateSelect.CheckState(pState.ClientState()))
+				else if (StateSelect.CheckState(pState.ClientState().Screen()))
 				{
 					pView = m_pSelectView;
 				}
-				else if (StateSequence.CheckState(StateSequence.VIEWTYPE, pState.ClientState()))
+				else if (pState.ClientState().Screen() == StateSequence.VIEWTYPE)
 				{
 					pView = m_pViewView;
 				}
-				else if (StateSequence.CheckState(StateSequence.EDITTYPE, pState.ClientState()))
+				else if (pState.ClientState().Screen() == StateSequence.EDITTYPE)
 				{
 					pView = m_pEditView;
 				}
-				else if (StateSequence.CheckState(StateSequence.RUNSEQUENCETYPE, pState.ClientState()))
+				else if (pState.ClientState().Screen() == StateSequence.RUNSEQUENCETYPE)
 				{
 					pView = m_pRunSequenceView;
 				}
-				else if (StateSequence.CheckState(StateSequence.MANUALRUNTYPE, pState.ClientState()))
+				else if (pState.ClientState().Screen() == StateSequence.MANUALRUNTYPE)
 				{
 					pView = m_pManualRunView;
 				}
 				else
 				{
-					Alert.show("Unknown client state received from server: " + pState.ClientState());
+					Alert.show("Unknown client state received from server: " + pState.ClientState().Screen());
 				}
 
 				// Did the view change?

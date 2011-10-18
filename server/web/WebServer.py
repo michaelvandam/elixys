@@ -2,7 +2,7 @@
 
 # Change the python egg cache directory to a place where Apache has write permission
 import os
-os.environ["PYTHON_EGG_CACHE"] = "/var/www/wsgi/eggs"
+os.environ["PYTHON_EGG_CACHE"] = "/var/www/eggs"
 
 # Imports
 from wsgiref.simple_server import make_server
@@ -14,7 +14,10 @@ sys.path.append("/opt/elixys/database")
 sys.path.append("/var/www/wsgi")
 import GetHandler
 import PostHandler
+import DeleteHandler
+import ExceptionHandler
 import CoreServerProxy
+import Exceptions
 
 # Import and create the database connection
 import DBComm
@@ -41,8 +44,8 @@ def application(pEnvironment, fStartResponse):
     sPath = pEnvironment["PATH_INFO"]
 
     # Load the client state and log the request
-    sClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
-    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + sClientState + ")")
+    pClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
+    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + str(pClientState) + ")")
 
     # Handle the request
     try:
@@ -61,7 +64,13 @@ def application(pEnvironment, fStartResponse):
             raise Exception("Unknown request method: " + sRequestMethod)
 
         # Handle the request
-        sResponse = pHandler.HandleRequest(sClientState, sRemoteUser, sPath, pBody, nBodyLength)
+        sResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
+    except Exceptions.SequenceNotFoundException as ex:
+        sResponse = ExceptionHandler.HandleSequenceNotFound(gCoreServer, gDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
+    except Exceptions.ComponentNotFoundException as ex:
+        sResponse = ExceptionHandler.HandleComponentNotFound(gCoreServer, gDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
+    except Exceptions.ReagentNotFoundException as ex:
+        sResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, gDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID, )
     except Exception as ex:
         # Log the actual error and send the client a generic error
         gDatabase.Log(sRemoteUser, "Web server encountered an error: " + str(ex))

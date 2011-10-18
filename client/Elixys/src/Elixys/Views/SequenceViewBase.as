@@ -49,17 +49,17 @@ package Elixys.Views
 		}
 		
 		// Returns the active reactor from the server state
-		public function GetReactor():ReactorState
+		public function GetReactor(nReactor:uint):ReactorState
 		{
 			// Locate the reactor
 			if (m_pStateSequence != null)
 			{
 				var pServeState:ServerState = m_pStateSequence.ServerState();
-				var pReactors:Array = pServeState.Reactors();
+				var pReactors:Array = pServeState.HardwareState().Reactors();
 				for (var nReactor:uint = 0; nReactor < pReactors.length; ++nReactor)
 				{
 					var pReactor:ReactorState = pReactors[nReactor] as ReactorState;
-					if (pReactor.Number() == pServeState.ActiveReactor())
+					if (pReactor.ReactorNumber() == nReactor)
 					{
 						// Found it
 						return pReactor;

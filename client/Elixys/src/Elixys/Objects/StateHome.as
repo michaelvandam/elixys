@@ -11,18 +11,12 @@ package Elixys.Objects
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState() != null) && !CheckState(ClientState()))
+			if ((ClientState() != null) && (ClientState().Screen() != TYPE))
 			{
 				throw new Error("State object mismatch");
 			}
 		}
-		
-		// Checks for a state match
-		static public function CheckState(sState:String):Boolean
-		{
-			return (sState == TYPE);
-		}
-		
+				
 		// Data wrappers
 		public function Buttons():Array
 		{

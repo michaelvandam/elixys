@@ -156,9 +156,11 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
  *   IN FirstName - User's first name
  *   IN LastName - User's last name
  *   IN RoleName - User's role
+ *   IN ClientState - Initial user state
  */
 DROP PROCEDURE IF EXISTS CreateUser;
-CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), IN iRoleName VARCHAR(20))
+CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), 
+      IN iRoleName VARCHAR(20), IN iClientState VARCHAR(2048))
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -166,7 +168,7 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
         CALL Internal_GetRoleID(iRoleName, lRoleID);
 
         -- Create the user
-        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, "HOME");
+        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, iClientState);
     END //
 
 /* Updates an existing user:
@@ -223,7 +225,7 @@ CREATE PROCEDURE GetUserClientState(IN iUsername VARCHAR(30))
  *   IN ClientState - String describing the state of the client
  */
 DROP PROCEDURE IF EXISTS UpdateUserClientState;
-CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState VARCHAR(64))
+CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState VARCHAR(2048))
     BEGIN
         -- Save the user's client state
         UPDATE Users SET ClientState = iClientState WHERE Username = iUsername;

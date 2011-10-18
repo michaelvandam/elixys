@@ -79,11 +79,11 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("comment", value);
 		}
 
-		public function get ID():String
+		public function get ID():uint
 		{
 			return super.flash_proxy::getProperty("id");
 		}
-		public function set ID(value:String):void
+		public function set ID(value:uint):void
 		{
 			super.flash_proxy::setProperty("id", value);
 		}

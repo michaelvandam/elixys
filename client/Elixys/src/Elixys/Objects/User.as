@@ -23,16 +23,25 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Name():String
+		public function Username():String
 		{
 			return super.flash_proxy::getProperty("username");
 		}
+		public function FirstName():String
+		{
+			return super.flash_proxy::getProperty("firstname");
+		}
+		public function LastName():String
+		{
+			return super.flash_proxy::getProperty("lastname");
+		}
 		public function AccessLevel():String
 		{
-			return super.flash_proxy::getProperty("useraccesslevel");
+			return super.flash_proxy::getProperty("accesslevel");
 		}
 
 		// Type
 		static public var TYPE:String = "user";
 	}
 }
+

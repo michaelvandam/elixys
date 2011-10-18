@@ -47,9 +47,9 @@
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
 					// Format the output text
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentInstall.Reactor);
 					_runOutputText1.text = "Moving reactor " + m_pComponentInstall.Reactor + " to the install position.";
-					_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
+					_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
 				}
 			}
 			

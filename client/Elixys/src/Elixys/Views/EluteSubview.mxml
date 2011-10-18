@@ -48,16 +48,15 @@
 					// Format the output text
 					if ((m_pReagent != null) && (m_pTarget != null))
 					{
-						var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor();
-						//_runOutputText1.text = "Eluting the " + m_pTarget.Description + " with " + m_pReagent.Description + 
-						//	" into reactor " + m_pComponentElute.Reactor + ".";
-						_runOutputText2.text = "Temperature: " + pReactor.ActualTemperature() + " C";
-						var sActivity:String = pReactor.Activity();
-						if (sActivity != "")
+						var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentElute.Reactor);
+						_runOutputText1.text = "Eluting the " + m_pTarget.Description + " with " + m_pReagent.Description + 
+							" into reactor " + m_pComponentElute.Reactor + ".";
+						_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
+						if (pReactor.Activity() == 0)
 						{
-							_runOutputText2.text += "\nActivity: " + sActivity + " mCi at " + pReactor.ActivityTime();
+							_runOutputText2.text += "\nActivity: " + pReactor.Activity() + " mCi at " + pReactor.ActivityTime();
 						}
-						//_runReactorText2.text = "Reactor " + m_pComponentElute.Reactor;
+						_runReactorText2.text = "Reactor " + m_pComponentElute.Reactor;
 					}
 				}
 			}

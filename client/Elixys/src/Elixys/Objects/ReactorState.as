@@ -22,27 +22,24 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("type");
 		}
-		public function Number():uint
+		public function ReactorNumber():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("number"));
+			return super.flash_proxy::getProperty("number");
 		}
-		public function SetTemperature():String
+		public function Temperature():Number
 		{
-			return super.flash_proxy::getProperty("settemperature");
+			return super.flash_proxy::getProperty("temperature");
 		}
-		public function ActualTemperature():String
+		public function Position():ReactorPosition
 		{
-			return super.flash_proxy::getProperty("actualtemperature");
+			// Parse the reactor position
+			if (m_pReactorPosition == null)
+			{
+				m_pReactorPosition = new ReactorPosition(null, super.flash_proxy::getProperty("position"));
+			}
+			return m_pReactorPosition;
 		}
-		public function Position():uint
-		{
-			return parseInt(super.flash_proxy::getProperty("position"));
-		}
-		public function Vial():String
-		{
-			return super.flash_proxy::getProperty("vial");
-		}
-		public function Activity():String
+		public function Activity():Number
 		{
 			return super.flash_proxy::getProperty("activity");
 		}
@@ -50,44 +47,51 @@ package Elixys.Objects
 		{
 			return super.flash_proxy::getProperty("activitytime");
 		}
+		public function Evaporation():Boolean
+		{
+			return super.flash_proxy::getProperty("evaporation");
+		}
+		public function Transfer():Boolean
+		{
+			return super.flash_proxy::getProperty("transfer");
+		}
+		public function TransferPosition():String
+		{
+			return super.flash_proxy::getProperty("transferposition");
+		}
+		public function Reagent1Transfer():Boolean
+		{
+			return super.flash_proxy::getProperty("reagent1transfer");
+		}
+		public function Reagent2Transfer():Boolean
+		{
+			return super.flash_proxy::getProperty("reagent2transfer");
+		}
 		public function StirSpeed():uint
 		{
-			return parseInt(super.flash_proxy::getProperty("stirspeed"));
+			return super.flash_proxy::getProperty("stirspeed");
 		}
 		public function Video():String
 		{
 			return super.flash_proxy::getProperty("video");
 		}
-		public function EvaporationValue():String
+		public function ColumnPosition():String
 		{
-			return super.flash_proxy::getProperty("evaporationvalves");
+			return super.flash_proxy::getProperty("columnposition");
 		}
-		public function TransferValve():String
+		public function F18Transfer():Boolean
 		{
-			return super.flash_proxy::getProperty("transfervalve");
+			return super.flash_proxy::getProperty("f18transfer");
 		}
-		public function Reagent1TransferValve():String
+		public function EluentTransfer():Boolean
 		{
-			return super.flash_proxy::getProperty("reagent1transfervalve");
-		}
-		public function Reagent2TransferValve():String
-		{
-			return super.flash_proxy::getProperty("reagent2transfervalve");
-		}
-		public function Stopcock1Valve():String
-		{
-			return super.flash_proxy::getProperty("stopcock1valve");
-		}
-		public function Stopcock2Valve():String
-		{
-			return super.flash_proxy::getProperty("stopcock2valve");
-		}
-		public function Stopcock3Valve():String
-		{
-			return super.flash_proxy::getProperty("stopcock3valve");
+			return super.flash_proxy::getProperty("eluenttransfer");
 		}
 		
 		// Type
 		static public var TYPE:String = "reactorstate";
+		
+		// State components
+		private var m_pReactorPosition:ReactorPosition = null;
 	}
 }

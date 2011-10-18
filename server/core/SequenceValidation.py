@@ -41,10 +41,21 @@ class SequenceValidation:
     self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, False)
     return bValid
 
+  def InitializeComponent(self, sRemoteUser, nSequenceID, nComponentID):
+    """Initializes the validation fields of a newly added component"""
+    # Initialize the validation fields of the raw component
+    pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
+    self.__ValidateComponentInit(sRemoteUser, pComponent, nSequenceID)
+    self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pComponent["name"], json.dumps(pComponent))
+
+    # Flag the sequence validation as dirty
+    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
+
   def ValidateComponent(self, sRemoteUser, nSequenceID, nComponentID):
     """Performs a quick validation of the given component"""
-    # Load the component
+    # Load the component and do a quick validation
     pComponent = self.sequenceManager.GetComponent(sRemoteUser, nComponentID, nSequenceID)
+    self.__ValidateComponentQuick(sRemoteUser, pComponent, nSequenceID)
 
     # Initialize the component and do a quick validation
     self.__ValidateComponentInit(sRemoteUser, pComponent, nSequenceID)
@@ -206,6 +217,9 @@ class SequenceValidation:
     elif pComponent["componenttype"] == "COMMENT":
       if not pComponent.has_key("commentvalidation"):
         pComponent.update({"commentvalidation":""})
+
+    if not pComponent.has_key("validationerror"):
+      pComponent.update({"validationerror":False})
 
   def __ValidateComponentQuick(self, sRemoteUser, pComponent, nSequenceID):
     """Performs a quick validation of the component"""
@@ -406,8 +420,12 @@ class SequenceValidation:
 
   def __GetTarget(self, sRemoteUser, pComponent, nSequenceID, pReagents):
     """ Gets the target ID """
+    # Skip if reactor is zero
+    if pComponent["reactor"] == 0:
+      return 0
+
     # Look up the second column on the cassette associated with the reactor
-    pColumn = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, int(pComponent["reactor"]), "B")
+    pColumn = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, pComponent["reactor"], "B")
 
     # Check if the column is available
     if pColumn["available"]:
