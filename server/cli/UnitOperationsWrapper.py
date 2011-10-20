@@ -107,21 +107,13 @@ class UnitOperationsWrapper:
         pTransfer.start()
         return pTransfer
 
-    def TransferElute(self, nReactor, nStopcockPosition):
-        """Performs a transfer elute unit operation"""
+    def Transfer(self, nReactor, nTransferReactor, nTransferType, nTransferTimer, nTransferPressure):
+        """Performs a transfer unit operation"""
         pParams = {"ReactorID":nReactor,
-                   "stopcockPosition":nStopcockPosition}
-        print "Starting Transfer Elute unit operation"
-        pTransfer = UnitOperations.TransferElute(self.__pSystemModel, pParams)
-        pTransfer.setDaemon(True)
-        pTransfer.start()
-        return pTransfer
-      
-    def Transfer(self, nReactor, nStopcockPosition, nTransferReactorID):
-        """Performs a transfer elute unit operation"""
-        pParams = {"ReactorID":nReactor,
-                   "stopcockPosition":nStopcockPosition,
-                   "transferReactorID":nTransferReactorID}
+                   "transferReactorID":nTransferReactor,
+                   "transferType":nTransferType,
+                   "transferTimer":nTransferTimer,
+                   "transferPressure":nTransferPressure}
         print "Starting Transfer unit operation"
         pTransfer = UnitOperations.Transfer(self.__pSystemModel, pParams)
         pTransfer.setDaemon(True)

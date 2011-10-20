@@ -134,6 +134,15 @@ class UnitOperation(threading.Thread):
         self.pressure = params['pressure']
       if paramname=="duration":
         self.duration = params['duration']
+      if paramname=="cyclotronFlag":
+        self.cyclotronFlag = params['coclotronFlag']
+      if paramname=="transferPressure":
+        self.transferPressure = params['transferPressure']
+      if paramname=="transferTimer":
+        self.transferTimer = params['transferTimer']
+      if paramname=="transferPressure":
+        self.transferPressure = params['transferPressure']      
+
   
   """def validateParams(self,currentParams,expectedParams):
     errorMessage = ""
@@ -406,7 +415,11 @@ class UnitOperation(threading.Thread):
       if (stopcockPositions[stopcock-1]==1) or (stopcockPositions[stopcock-1]==2):
         self.systemModel[self.ReactorID]['Stopcock'+str(stopcock)].setPosition(stopcockPositions[stopcock-1])       
         self.waitForCondition(self.systemModel[self.ReactorID]['Stopcock'+str(stopcock)].getPosition,stopcockPositions[stopcock-1],EQUAL,3) 
-
+ 
+ def startTransfer(self,state):
+    self.systemModel[self.ReactorID]['Valves'].setTransferValveOpen(state)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getTransferValveOpen,state,EQUAL,3)
+ 
   def setHeater(self,heaterState):
     if heaterState == ON:
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn()
@@ -775,51 +788,9 @@ class TransferToHPLC(UnitOperation):
         #Log Error
       self.paramsValidated = True"""
       
-  def setTransfer(self):
-    self.systemModel[self.ReactorID]['transfer'].setTransfer(HPLC)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),HPLC,EQUAL,3)
-    
   def setHPLCValve(self):
     self.systemModel[self.ReactorID]['transfer'].setHPLC(INJECT)       
     self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getHPLC(),INJECT,EQUAL,3) 
-  
-class TransferElute(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
-    self.setParams(params)
-		#Should have parameters listed below:
-    #self.ReactorID
-    #self.stopcockPosition
-    
-  def run(self):
-    try:
-      self.beginNextStep("Starting Transfer Elution Operation")
-      self.abortOperation()
-      self.beginNextStep("Moving to transfer position")
-      self.setReactorPosition(TRANSFER)
-      self.beginNextStep("Moving receiving reactor to position")
-      self.setTransferReactorPosition(ADDREAGENT)
-      self.beginNextStep("Moving stopcocks to position")
-      self.setStopcock()
-      self.beginNextStep("Beginning elution")
-      self.setTransfer()
-      self.beginNextStep("Transfer Elution Operation Complete")
-    except Exception as e:
-      print type(e)
-      print e
-      
-  """def setParams(self,currentParams):
-    expectedParams = ['ReactorID','stopcockPosition']
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        #Log Error
-      self.paramsValidated = True"""
-  
-  def setTransfer(self):
-    self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer(),self.transferPosition,EQUAL,3)
    
 class Transfer(UnitOperation):
   def __init__(self,systemModel,params):
@@ -827,37 +798,31 @@ class Transfer(UnitOperation):
     self.setParams(params) 
     #Should have parameters listed below:
     #self.ReactorID
-    #self.stopcockPosition
     #self.transferReactorID
-    
+    #self.transfeType
+    #self.transferTimer
+    #self.transferPressure
   def run(self):
     try:
       self.beginNextStep("Starting Transfer Operation")
-      self.abortOperation()
       self.beginNextStep("Moving to position")
       self.setReactorPosition(TRANSFER)
       self.beginNextStep("Moving recieving reactor to position")
       self.setReactorPosition(ADDREAGENT,self.transferReactorID)
+      if (self.transferType == "Elute"):
+        self.setStopcock(self.ReactorID[-1],1,2)
+      else:
+        self.setStopcock(self.ReactorID[-1],1,1)
       self.beginNextStep("Starting transfer")
-      self.startTransfer()
+      self.startTransfer(ON)
+      self.startTimer(self.transferTimer)
+      self.startTransfer(OFF)
       self.beginNextStep("Transfer Operation Complete")
     except Exception as e:
       print type(e)
       print e
-      
-  """def setParams(self,currentParams):
-    expectedParams = ['ReactorID','transferReactorID','stopcockPosition']
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        #Log Error
-      self.paramsValidated = True"""
+       
   
-  def startTransfer(self):
-    self.systemModel[self.ReactorID]['transfer'].setTransfer(self.transferPosition)
-    self.waitForCondition(self.systemModel[self.ReactorID]['transfer'].getTransfer,self.transferPosition,EQUAL,3)
- 
 class UserInput(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
@@ -879,14 +844,6 @@ class UserInput(UnitOperation):
       print type(e)
       print e
       
-  """def setParams(self,currentParams):
-    expectedParams = ['userMessage','isCheckbox','description']
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        #Log Error
-      self.paramsValidated = True"""
   
   def setMessageBox(self):
     self.setDescription("Waiting for user input")
@@ -907,6 +864,7 @@ class DeliverF18(UnitOperation):
     #self.trapPressure
     #self.eluteTime
     #self.elutePressure
+    self.cyclotronFlag = False##Edit when user input possible
     
   def run(self):
     try:
@@ -934,7 +892,10 @@ class DeliverF18(UnitOperation):
     self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
     self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
     self.setPressureRegulator(2,pressure,5) #Set pressure after valve is opened
-    self.startTimer(time)
+    if (self.cyclotronFlag):
+      ##Wait for user to click OK
+    else:
+      self.startTimer(time)
     self.beginNextStep("Stopping F18 trapping")
     self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
     self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,OFF,EQUAL,5)
