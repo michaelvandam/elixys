@@ -142,6 +142,10 @@ class ReagentDeliveryModel(ComponentModel):
     """Moves the reagent robot to the given delivery position"""
     self.hardwareComm.MoveRobotToDelivery(nReactor, nDeliveryPosition)
 
+  def moveToHome(self):
+    """Moves the reagent robot to the home position"""
+    self.hardwareComm.MoveRobotToHome()
+
   def setMoveGripperUp(self):
     """Raise the gripper"""
     self.hardwareComm.GripperUp()

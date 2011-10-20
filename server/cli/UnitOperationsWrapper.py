@@ -20,6 +20,7 @@ class UnitOperationsWrapper:
         pInit.start()
         return pInit
 
+    ###
     def TempProfile(self, nReactor, nReactionTemperature):
         """Performs a react unit operation, with a 15 minute heating cycle"""
         pParams = {"ReactorID":nReactor,
@@ -37,7 +38,6 @@ class UnitOperationsWrapper:
                    "coolTemp":nFinalTemperature,
                    "reactPosition":nReactPosition,
                    "stirSpeed":nStirSpeed}
-        print "Starting React unit operation"
         pReact = UnitOperations.React(self.__pSystemModel, pParams)
         pReact.setDaemon(True)
         pReact.start()
@@ -47,7 +47,6 @@ class UnitOperationsWrapper:
         """Performs a move unit operation"""
         pParams = {"ReactorID":nReactor,
                    "reactPosition":nReactPosition}
-        print "Starting Move unit operation"
         pMove = UnitOperations.Move(self.__pSystemModel, pParams)
         pMove.setDaemon(True)
         pMove.start()
@@ -59,8 +58,7 @@ class UnitOperationsWrapper:
                    "ReagentReactorID":nReagentReactor,
                    "ReagentPosition":nReagentPosition,
                    "reagentLoadPosition":nReagentDeliveryPosition}
-        print "Starting Add unit operation"
-        pAdd = UnitOperations.AddReagent(self.__pSystemModel, pParams)
+        pAdd = UnitOperations.Add(self.__pSystemModel, pParams)
         pAdd.setDaemon(True)
         pAdd.start()
         return pAdd
@@ -73,7 +71,6 @@ class UnitOperationsWrapper:
                    "evapTime":nEvaporationTime,
                    "coolTemp":nFinalTemperature,
                    "stirSpeed":nStirSpeed}
-        print "Starting Evaporate unit operation"
         pEvaporate = UnitOperations.Evaporate(self.__pSystemModel, pParams)
         pEvaporate.setDaemon(True)
         pEvaporate.start()
@@ -82,79 +79,88 @@ class UnitOperationsWrapper:
     def Install(self, nReactor):
         """Performs an install unit operation"""
         pParams = {"ReactorID":nReactor}
-        print "Starting Install unit operation"
-        pInstall = UnitOperations.InstallVial(self.__pSystemModel, pParams)
+        pInstall = UnitOperations.Install(self.__pSystemModel, pParams)
         pInstall.setDaemon(True)
         pInstall.start()
         return pInstall
         
+    ###
     def DeliverF18(self, nTrapTime, nTrapPressure, nEluteTime, nElutePressure):
         """Performs a Deliver F18 unit operation"""
         pParams = {"trapTime":nTrapTime,"trapPressure":nTrapPressure,"eluteTime":nEluteTime,"elutePressure":nElutePressure}
-        print "Starting DeliverF18 unit operation"
         pDeliverF18 = UnitOperations.DeliverF18(self.__pSystemModel, pParams)
         pDeliverF18.setDaemon(True)
         pDeliverF18.start()
         return pDeliverF18
 
+    ###
     def TransferToHPLC(self, nReactor, nStopcockPosition):
         """Performs a transfer to HPLC unit operation"""
         pParams = {"ReactorID":nReactor,
                    "stopcockPosition":nStopcockPosition}
-        print "Starting Transfer to HPLC unit operation"
         pTransfer = UnitOperations.TransferToHPLC(self.__pSystemModel, pParams)
         pTransfer.setDaemon(True)
         pTransfer.start()
         return pTransfer
 
+    ###
     def TransferElute(self, nReactor, nStopcockPosition):
         """Performs a transfer elute unit operation"""
         pParams = {"ReactorID":nReactor,
                    "stopcockPosition":nStopcockPosition}
-        print "Starting Transfer Elute unit operation"
         pTransfer = UnitOperations.TransferElute(self.__pSystemModel, pParams)
         pTransfer.setDaemon(True)
         pTransfer.start()
         return pTransfer
       
+    ###
     def Transfer(self, nReactor, nStopcockPosition, nTransferReactorID):
         """Performs a transfer elute unit operation"""
         pParams = {"ReactorID":nReactor,
                    "stopcockPosition":nStopcockPosition,
                    "transferReactorID":nTransferReactorID}
-        print "Starting Transfer unit operation"
         pTransfer = UnitOperations.Transfer(self.__pSystemModel, pParams)
         pTransfer.setDaemon(True)
         pTransfer.start()
         return pTransfer
 
+    ###
     def UserInput(self, sUserMessage, bIsCheckBox, sDescription):
         """Performs a user input unit operation"""
         pParams = {"userMessage":sUserMessage,
                    "isCheckbox":bIsCheckBox,
                    "description":sDescription}
-        print "Starting User Input unit operation"
         pUserInput = UnitOperations.UserInput(self.__pSystemModel, pParams)
         pUserInput.setDaemon(True)
         pUserInput.start()
         return pUserInput
 
+    ###
     def DetectRadiation(self):
         """Performs a radiation detection unit operation"""
         pParams = {}
-        print "Starting Detect Radiation unit operation"
         pDetectRadiation = UnitOperations.DetectRadiation(self.__pSystemModel, pParams)
         pDetectRadiation.setDaemon(True)
         pDetectRadiation.start()
         return pDetectRadiation
 
+    ###
     def RampPressure(self, nPressureRegulator, fTargetPressure, nDuration):
         """Performs a ramp pressure unit operation"""
         pParams = {"pressureRegulator":nPressureRegulator,
                    "pressure":fTargetPressure,
                    "duration":nDuration}
-        print "Starting ramp pressure unit operation"
         pRampPressure = UnitOperations.RampPressure(self.__pSystemModel, pParams)
         pRampPressure.setDaemon(True)
         pRampPressure.start()
         return pRampPressure
+
+    def Mix(self, nReactor, nStirSpeed, nDuration):
+        """Performs a mix unit operation"""
+        pParams = {"ReactorID":nReactor,
+                   "stirSpeed":nStirSpeed,
+                   "duration":nDuration}
+        pMix = UnitOperations.Mix(self.__pSystemModel, pParams)
+        pMix.setDaemon(True)
+        pMix.start()
+        return pMix

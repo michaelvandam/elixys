@@ -214,6 +214,7 @@ class HardwareComm():
         self.__pSystemModel = None
         self.__nStateOffset = 0
         self.__sState = ""
+        self.__pThermocontrollerDecimalPointFlags = {}
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
         self.__FakePLC_nMemoryUpper = 0
@@ -617,10 +618,12 @@ class HardwareComm():
             self.__FakePLC_pMemory[nAddress] = nValue
 
     # Set thermocontroller value
-    def __SetThermocontrollerSetValue(self, sHardwareName, nValue):
+    def __SetThermocontrollerSetValue(self, sHardwareName, fValue):
         # Look up the temperature set offset and set the value
         nOffset = self.__LookUpThermocontrollerSetOffset(sHardwareName)
-        self.__SetIntegerValueRaw(nOffset, nValue)
+        if self.__GetThermocontrollerDecimalPoint(sHardwareName):
+            fValue *= 10
+        self.__SetIntegerValueRaw(nOffset, int(fValue))
 
     # Move robot to position
     def __SetRobotPosition(self, nAxis, nPosition):
@@ -939,12 +942,32 @@ class HardwareComm():
         # Look up the temperature set offset and return the value
         nOffset = self.__LookUpThermocontrollerSetOffset(sHardwareName)
         sWord = self.__sState[((nOffset - self.__nMemoryLower) * 4):((nOffset - self.__nMemoryLower + 1) * 4)]
-        return int(sWord, 0x10)
+        fWord = float(int(sWord, 0x10))
+        if self.__GetThermocontrollerDecimalPoint(sHardwareName):
+            fWord /= 10
+        return fWord
     def __GetThermocontrollerActualValue(self, sHardwareName):
         # Look up the temperature actual offset and return the value
         nOffset = self.__LookUpThermocontrollerActualOffset(sHardwareName)
         sWord = self.__sState[((nOffset - self.__nMemoryLower) * 4):((nOffset - self.__nMemoryLower + 1) * 4)]
-        return int(sWord, 0x10)
+        fWord = float(int(sWord, 0x10))
+        if self.__GetThermocontrollerDecimalPoint(sHardwareName):
+            fWord /= 10
+        return fWord
+    def __GetThermocontrollerDecimalPoint(self, sHardwareName):
+        # Check if this thermocontroller is in our dictionary
+        if self.__pThermocontrollerDecimalPointFlags.has_key(sHardwareName):
+            return self.__pThermocontrollerDecimalPointFlags[sHardwareName]
+
+        # Look up the decimal point flag
+        nWordOffset, nBitOffset = self.__LookUpThermocontrollerDecimalOffset(sHardwareName)
+        sWord = self.__sState[((nWordOffset - self.__nMemoryLower) * 4):((nWordOffset - self.__nMemoryLower + 1) * 4)]
+        nWord = int(sWord, 0x10)
+        bDecimalPointFlag = bool((nWord >> nBitOffset) & 0x1)
+
+        # Remember and return the flag
+        self.__pThermocontrollerDecimalPointFlags[sHardwareName] = bDecimalPointFlag
+        return bDecimalPointFlag
 
     # Get vacuum pressure
     def __GetVacuumPressure(self):
@@ -1188,6 +1211,24 @@ class HardwareComm():
             return (nOffset + 0xd)
         elif pHardware["loop"] == "4":
            return (nOffset + 0xe)
+        else:
+            raise Exception("Invalid thermocontroller loop")
+
+    # Look up the temperature decimal offsets
+    def __LookUpThermocontrollerDecimalOffset(self, sHardwareName):
+        # Look up the hardware component by name
+        pHardware = self.__LookUpHardwareName(sHardwareName)
+
+        # Calculate the absolute address of the target word and bit
+        nOffset = self.__DetermineHardwareOffset(pHardware)
+        if pHardware["loop"] == "1":
+            return (nOffset + 0x7), 0x8
+        elif pHardware["loop"] == "2":
+            return (nOffset + 0x7), 0xc
+        elif pHardware["loop"] == "3":
+            return (nOffset + 0x11), 0x8
+        elif pHardware["loop"] == "4":
+           return (nOffset + 0x11), 0xc
         else:
             raise Exception("Invalid thermocontroller loop")
 

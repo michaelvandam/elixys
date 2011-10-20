@@ -317,14 +317,14 @@ class SystemModel:
             
         sState += self.__PadString("Temp controller (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            str(self.model["Reactor1"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getSetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            str(self.model["Reactor2"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getSetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            str(self.model["Reactor3"]["Thermocouple"].getSetTemperature(False)) + "/" + \
-            str(self.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)), STATEREACTORCOLUMN2WIDTH)
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getSetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
             
         sState += self.__PadString("Stir motor", STATEREACTORCOLUMN1WIDTH)
@@ -341,7 +341,7 @@ class SystemModel:
 
         if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():
             sState += "\n"
-            sState += "Current unit operation: (" + str(self.__pUnitOperation.currentStepNumber) + ") " + self.__pUnitOperation.currentStepDescription
+            sState += "Unit operation status: " + self.__pUnitOperation.status
             sState += "\n"
 
     finally:
