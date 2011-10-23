@@ -1,10 +1,59 @@
-// This will take the FAC synthesis through fluorination.  Make sure you've done everything in FAC0_Setup.txt before starting
+// FAC synthesis
+// 1. Make sure cold trap is ready
+// 2. Make sure gaskets are in place
+// 3. Make sure cassettes are filled with reagents:
+//     (Cassette.Position = Reagent)
+//     1.01 = O-18 Waste - Empty
+//     1.02 = K2CO3/H2O - 0.4mL of 2.5mg/mL - 590681-5G
+//     1.03 = Sep-Pak Waste - Empty
+//     1.1 = K222/MeCN - 1mL of 10mg/mL - 291110-1G
+//     1.2 = MeCN - 1.5mL - 271004-12X100ML
+//     1.3 = MeCN - 1.5mL - 271004-12X100ML
+//     1.4 = MeCN - 1.5mL - 271004-12X100ML
+//     1.5 = MeCN - 1.5mL - 271004-12X100ML
+//     1.6 = Precursor 1 - 1mL MeCN - 
+//     1.7 = EtOAc - 2mL - 270989-100ML
+//     1.8 = EtOAc - 2mL - 270989-100ML
+//     1.9 = 
+//     1.10 = 
+//     1.A = QMA - 10mL 1M KHCO3 then 10mL H2O - WAT023525
+//     1.B = Silica Sep-pak Plus - 5mL Hexane - WAT020520
+//     2.01 = 
+//     2.02 = 
+//     2.03 = Sep-Pak Waste - Empty
+//     2.1 = DCE - 0.6mL - 284505-100ML
+//     2.2 = Toluene - 1mL - 244511-100ML
+//     2.3 = Precursor 2 - 1mL DCE - 
+//     2.4 = Dichloromethane - 2mL - 270997-100ML
+//     2.5 = Dichloromethane - 2mL - 270997-100ML
+//     2.6 = Dichloromethane - 2mL - 270997-100ML
+//     2.7 = 
+//     2.8 = 
+//     2.9 = 
+//     2.10 = 
+//     2.B = Silica Sep-pak Vacuum 500g - 10mL Hexane (put tubing further into tube) - WAT043400
+//     3.01 = 
+//     3.02 = 
+//     3.03 = 
+//     3.1 = NaOMe - 0.6mL - 403067-100ML
+//     3.2 = HCl - 0.5mL - 
+//     3.3 = HPLCMP - 2mL - 
+//     3.4 = HPLCMP - 1mL - 
+//     3.5 = 
+//     3.6 = 
+//     3.7 = 
+//     3.8 = 
+//     3.9 = 
+//     3.10 = 
+// 4. The following will be added manually and should be prepared when needed:
+//     0.1mL HBr (33% in HOAc, 248630-5ML) then chase with 0.4mL DCE
+// 5. Make sure the vials with stir bars are in place
+// 6. Make sure the dip tubes for transfer in cassettes 1 and 2 are in place
+// 7. Draw fluoride and measure the starting activity
+// 8. Make sure F-18 vial is install and ready for delivery (or connect Beam Line from Cyclotron)
 
 // Initialize System
 Init()
-
-// Move reactor 1 to Add position
-Move(Reactor1,Add)
 
 // Deliver F-18 from the cyclotron to Vial or have PETnet vial connected
 // Trap and elute from vial
@@ -12,10 +61,7 @@ DeliverF18(60,5,180,5)
 
 // Manually swap the eluent vial with a K222/MeCN solution from position 1.1
 // Elute again to flush the lines and get any remaining activity into reactor 1
-SetPressureRegulator(2,1)
-EluteF18Start()
-RampPressure(2,5,60)
-EluteF18Stop()
+DeliverF18(60,5,180,5)
 
 // Take activity measurement
 Move(Reactor1,Install)
@@ -48,17 +94,15 @@ React(Reactor1,160,900,25,React1,450)
 //   Source F-18 vial
 //   18O waste
 //   QMA column
-// Take TLC sample of the contents of reactor 1 and continue with FAC2_Transfer.txt
+// Take TLC sample of the contents of reactor 1
 Move(Reactor1,Install)
-
 
 // Transfer contents of reactor 1 through to the silica Sep-pak to waste
 Transfer(Reactor1,Reactor2,Trap,30,3)
 
 // Add EtOAc to reactor 1 and mix
 Add(Reactor1,Reactor1,7,1)
-SetMotorSpeed(1,450)
-SetMotorSpeed(1,0)
+Mix(Reactor1,450,20)
 
 // Transfer from reactor 1 to reactor 2 through the silica Sep-pak and evaporate
 Transfer(Reactor1,Reactor2,Elute,30,3)
@@ -66,11 +110,15 @@ Evaporate(Reactor2,80,180,30,450)
 
 // Add EtOAc to reactor 1 and mix
 Add(Reactor1,Reactor1,8,1)
-SetMotorSpeed(1,450)
-SetMotorSpeed(1,0)
+Mix(Reactor1,450,20)
 
-// Transfer from reactor 1 to reactor 2 through the silica Sep-pak and evaporate
+// Transfer from reactor 1 to reactor 2 through the silica Sep-pak
 Transfer(Reactor1,Reactor2,Elute,30,3)
+
+// Take TLC measurement
+Move(Reactor2,Install)
+
+// Evaporate
 Evaporate(Reactor2,80,180,30,450)
 
 // Take Activity Measurements for:
@@ -78,21 +126,17 @@ Evaporate(Reactor2,80,180,30,450)
 //   Vial in reactor 2
 //   Silica Sep-pak in cassette 1
 //   Cassette 1 waste
-// Continue with FAC3_Bromination.txt
-DisableReactorRobot(1)
-
-
-// Add HBr manually
+Move(Reactor1,Install)
 Move(Reactor2,Install)
 
-// Add DCE
-Add(Reactor2,Reactor2,1,1)
+// Add HBr and DCE via the external line
+Move(Reactor2,Add)
 
 // Bromination
 React(Reactor2,80,600,30,React1,450)
 
 // Partially evaporate the contents of reactor 2
-Evaporate(Reactor2,60,120,30,450)
+Evaporate(Reactor2,60,90,30,450)
 
 // Add toluene and evaporate
 Add(Reactor2,Reactor2,2,1)
@@ -102,55 +146,48 @@ Evaporate(Reactor2,80,90,30,450)
 Add(Reactor2,Reactor2,3,2)
 React(Reactor2,163,1800,30,React2,450)
 
-// Take TLC sample of the contents of reactor 2 and continue with FAC4_Transfer.txt
-Move(Reactor1,Install)
-
+// Take TLC sample of the contents of reactor 2
+Move(Reactor2,Install)
 
 // Transfer contents of reactor 2 throught the silica Sep-pak to waste
 Transfer(Reactor2,Reactor3,Trap,30,3)
 
 // Add dichloromethane to reactor 2 and mix
 Add(Reactor2,Reactor2,4,2)
-SetMotorSpeed(2,450)
-SetMotorSpeed(2,0)
+Mix(Reactor2,450,20)
 
-// Transfer contents of reactor 2 through the silica Sep-pak and evaporate in reactor 3
+// Transfer from reactor 2 to reactor 3 through the silica Sep-pak and evaporate
 Transfer(Reactor2,Reactor3,Elute,30,3)
 Evaporate(Reactor3,80,60,30,450)
 
 // Add dichloromethane to reactor 2 and mix
 Add(Reactor2,Reactor2,5,2)
-SetMotorSpeed(2,450)
-SetMotorSpeed(2,0)
+Mix(Reactor2,450,20)
 
-// Transfer contents of reactor 2 through the silica Sep-pak and evaporate in reactor 3
+// Transfer from reactor 2 to reactor 3 through the silica Sep-pak and evaporate
 Transfer(Reactor2,Reactor3,Elute,30,3)
 Evaporate(Reactor3,80,60,30,450)
 
 // Add dichloromethane to reactor 2 and mix
 Add(Reactor2,Reactor2,6,2)
-SetMotorSpeed(2,450)
-SetMotorSpeed(2,0)
+Mix(Reactor2,450,20)
 
-// Transfer contents of reactor 2 through the silica Sep-pak and evaporate in reactor 3
+// Transfer from reactor 2 to reactor 3 through the silica Sep-pak and evaporate
 Transfer(Reactor2,Reactor3,Elute,30,3)
 Evaporate(Reactor3,80,60,30,450)
 
-
 // Add sodium methoxide and begin deprotection
-Add(Reactor3,Reactor3,1,1)
+Add(Reactor3,Reactor3,1,2)
 React(Reactor3,105,300,30,React2,450)
 
 // Add hydrochloric acid and partially evaporate
-Add(Reactor3,Reactor3,2,1)
+Add(Reactor3,Reactor3,2,2)
 Evaporate(Reactor3,80,60,30,450)
 
 // Add HPLC mobile phase and mix
 Add(Reactor3,Reactor3,3,2)
 Add(Reactor3,Reactor3,4,2)
-SetMotorSpeed(3,450)
-SetMotorSpeed(3,0)
+Mix(Reactor3,450,20)
 
 // Manually remove the contents of reactor 3 and inject into the HPLC of hot cell 4
-Move(Reactor3,Install)
-
+Transfer(Reactor3,Reactor2,Elute,45,5)
