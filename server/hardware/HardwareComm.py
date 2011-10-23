@@ -462,17 +462,29 @@ class HardwareComm():
 
     # Disable all robots
     def DisableRobots(self):
-        for nAxis in range(0, 5):
+        self.DisableReagentRobots()
+        for nReactor in range(1, 4):
             # Disable each axis
-            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x08)
+            self.DisableReactorRobot(nReactor)
             time.sleep(0.1)
         
     # Enable all robots
     def EnableRobots(self):
-        for nAxis in range(0, 5):
+        self.EnableReagentRobots()
+        for nReactor in range(1, 4):
             # Enable each axis
-            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)
+            self.EnableReactorRobot(nReactor)
             time.sleep(0.1)
+
+    # Disable reagent robots
+    def DisableReagentRobots(self):
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x08)
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentZAxis * 4), 0x08)
+
+    # Enable reagent robots
+    def EnableReagentRobots(self):
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentZAxis * 4), 0x10)
 
     # Disable reactor robot
     def DisableReactorRobot(self, nReactor):

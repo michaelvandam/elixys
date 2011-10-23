@@ -146,6 +146,14 @@ class ReagentDeliveryModel(ComponentModel):
     """Moves the reagent robot to the home position"""
     self.hardwareComm.MoveRobotToHome()
 
+  def setDisableRobots(self):
+    """Disables the reagent robots"""
+    self.hardwareComm.DisableReagentRobots()
+
+  def setEnableRobots(self):
+    """Enables the reagent robots"""
+    self.hardwareComm.EnableReagentRobots()
+
   def setMoveGripperUp(self):
     """Raise the gripper"""
     self.hardwareComm.GripperUp()

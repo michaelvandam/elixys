@@ -113,7 +113,7 @@ class MotionModel(ComponentModel):
     self.hardwareComm.DisableReactorRobot(self.reactor)
 
   def setEnableReactorRobot(self):
-    """Disables the reactor robot"""
+    """Enables the reactor robot"""
     self.hardwareComm.EnableReactorRobot(self.reactor)
 
   def moveReactorDown(self):

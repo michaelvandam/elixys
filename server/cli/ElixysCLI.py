@@ -213,14 +213,15 @@ if __name__ == "__main__":
             print "  Move"
             print "  Add"
             print "  Evaporate"
-            print "  Not implemented: Install"
+            print "  Install"
+            print "  DeliverF18"
+            print "  Transfer"
             print "  Not implemented: TransferToHPLC"
-            print "  Not implemented: TransferElute"
-            print "  Not implemented: Transfer"
-            print "  Not implemented: UserInput"
-            print "  Not implemented: DetectRadiation"
             print "  TempProfile"
             print "  RampPressure"
+            print "  Mix"
+            print "  Not implemented: UserInput"
+            print "  Not implemented: DetectRadiation"
             print "For additional information on each operation:"
             print "  help [unit operation name]"
             print "To abort the currently unit operation:"
@@ -230,55 +231,49 @@ if __name__ == "__main__":
             print "Initialize the Elixys hardware for use."
             print ""
             print "  Init()"
-        elif sCommand == "help TempProfile":
-            # React unit operation
-            print "Performs a react unit operation, with a 15 minute heating cycle."
-            print ""
-            print " TempProfile(nReactor,           'Reactor1','Reactor2','Reactor3'"
-            print "             reactTemp           Celsius"
         elif sCommand == "help React":
             # React unit operation
             print "Heat the given reactor to a specific temperature, holds for a set length of"
             print "time, cools the reactor to the final temperature, stirs throughout."
             print ""
-            print "  React(nReactor,                 'Reactor1','Reactor2','Reactor3'"
+            print "  React(sReactor,                 'Reactor1','Reactor2','Reactor3'"
             print "        nReactionTemperature,     Celsius"
             print "        nReactionTime,            Seconds"
             print "        nFinalTemperature,        Celsius"
-            print "        nReactPosition,           'React1','React2'"
+            print "        sReactPosition,           'React1','React2'"
             print "        nStirSpeed)               Suggested 500"
         elif sCommand == "help Move":
             # React unit operation
             print "Move the reactor to position specified."
             print ""
-            print "  Move(nReactor,                 'Reactor1','Reactor2','Reactor3'"
-            print "        nPosition)                'Add','Install','Evaporate','React1',"
-            print "                                  'React2','Transfer'"
+            print "  Move(sReactor,                 'Reactor1','Reactor2','Reactor3'"
+            print "       sPosition)                'Add','Install','Evaporate','React1',"
+            print "                                 'React2','Transfer'"
         elif sCommand == "help Add":
             # Add unit operation
             print "Adds the specified reagent to the reactor"
             print ""
-            print "  Add(nReactor,                   Reactor where the reagent will be"
+            print "  Add(sReactor,                   Reactor where the reagent will be"
             print "                                  added ('Reactor1','Reactor2','Reactor3')"
             print "      nReagentReactor,            Reactor of the cassette where the reagent"
             print "                                  resides ('Reactor1','Reactor2','Reactor3')"
-            print "      nReagentPosition,           1-10 (?)"
-            print "      nReagentDeliveryPosition    1-2 (?)"
+            print "      nReagentPosition,           1-10"
+            print "      nReagentDeliveryPosition)   1 or 2"
         elif sCommand == "help Evaporate":
             # Evaporate unit operation
             print "Evaporates the contents of a reactor using a combination of heating, "
             print "stirring, nitrogen flow and vacuum."
             print ""
-            print "  Evaporate(nReactor,             'Reactor1','Reactor2','Reactor3'"
+            print "  Evaporate(sReactor,                 'Reactor1','Reactor2','Reactor3'"
             print "            nEvaporationTemperature,  Celsius"
-            print "            nEvaporationTime,     Seconds"
-            print "            nFinalTemperature,    Celsius"
-            print "            nStirSpeed)           Suggested 500"
+            print "            nEvaporationTime,         Seconds"
+            print "            nFinalTemperature,        Celsius"
+            print "            nStirSpeed)               Suggested 500"
         elif sCommand == "help Install":
             # Install unit operation
-            print "Moves a reactor to the installation position for easier access"
+            print "Moves a reactor to the install position"
             print ""
-            print "  Install(nReactor)               'Reactor1','Reactor2','Reactor3'"
+            print "  Install(sReactor)               'Reactor1','Reactor2','Reactor3'"
         elif sCommand == "help DeliverF18":
             # Install unit operation
             print "Delivers F18 to Reactor 1 through a cartridge"
@@ -287,28 +282,46 @@ if __name__ == "__main__":
             print "             nTrapPressure,     PSI"
             print "             nEluteTime,        Seconds"
             print "             nElutePressure)    PSI"
+        elif sCommand == "help Transfer":
+            # Transfer unit operation
+            print "Transfer the contents of one reactor to another through a cartridge"
+            print ""
+            print "  Transfer(sSourceReactor,      'Reactor1','Reactor2','Reactor3'"
+            print "           sTargetReactor,      'Reactor1','Reactor2','Reactor3'"
+            print "           sTransferType,       'Trap' or 'Elute'"
+            print "           nTransferTime,       Seconds"
+            print "           nTransferPressure)   PSI"
         elif sCommand == "help TransferToHPLC":
             # TransferToHPLC unit operation
             print "Todo:  TransferToHPLC(nReactor, nStopcockPosition)"
-        elif sCommand == "help TransferElute":
-            # TransferElute unit operation
-            print "Todo: TransferElute(self, nReactor, nStopcockPosition)"
-        elif sCommand == "help Transfer":
-            # Transfer unit operation
-            print "Todo:  Transfer(nReactor, nStopcockPosition, nTransferReactorID)"
+        elif sCommand == "help TempProfile":
+            # React unit operation
+            print "Heats the reactor in the transfer position for temperature profiling."
+            print ""
+            print " TempProfile(sReactor,           'Reactor1','Reactor2','Reactor3'"
+            print "             nProfileTemp,       Celsius"
+            print "             nProfileTime,       Seconds"
+            print "             nFinalTemperature)  Celsius"
+        elif sCommand == "help RampPressure":
+            # Ramp pressure unit operation
+            print "Ramps the pressure of one of the pressure regulators over a period of time"
+            print ""
+            print "  RampPressure(nPressureRegulator,      1 or 2"
+            print "               nTargetPressure,         PSI"
+            print "               nDuration)               Seconds"
+        elif sCommand == "help Mix":
+            # Mix unit operation
+            print "Mixes the contents of the given reactor"
+            print ""
+            print "  Mix(sReactor,             'Reactor1','Reactor2','Reactor3'"
+            print "      nStirSpeed,           Suggested 500"
+            print "      nDuration)            Seconds"
         elif sCommand == "help UserInput":
             # UserInput unit operation
             print "Todo: UserInput(sUserMessage, bIsCheckBox, sDescription)"
         elif sCommand == "help DetectRadiation":
             # Detect radiation unit operation
             print "Todo: DetectRadiation()"
-        elif sCommand == "help RampPressure":
-            # Ramp pressure unit operation
-            print "Ramps the pressure of one of the pressure regulators over a period of time"
-            print ""
-            print "  RampPressure(nPressureRegulator,      1 or 2"
-            print "               fTargetPressure,         PSI"
-            print "               nDuration)               Seconds"
         elif sCommand == "AbortUnitOperation()":
             # Get the current unit operation
             pCurrentUnitOperation = pSystemModel.GetUnitOperation()
@@ -338,6 +351,7 @@ if __name__ == "__main__":
             print "  * HeaterOn(nReactor)   * HeaterOff(nReactor)"
             print "  * SetHeater(nReactor, fSetPoint)   * SetMotorSpeed(nReactor, nMotorSpeed)"
             print "  * HomeRobots()   * DisableRobots()   * EnableRobots()"
+            print "  * DisableReagentRobots()   * EnableReagentRobots()"
             print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
             print "All values are numbers except sPositionName which is one of the following:"
             print "      Install, Transfer, React1, Add, React2, Evaporate, Radiation"
