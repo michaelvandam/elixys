@@ -109,14 +109,6 @@ class SequenceManager:
         if pComponent["componenttype"] == "ADD":
           pReagent = self.__PopReagent(pComponent["reagent"], pAvailableReagents)
           pComponent["reagent"] = pReagent["reagentid"]
-        elif pComponent["componenttype"] == "TRANSFER":
-          pTarget = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, pComponent["reactor"], "B")
-          pComponent["target"] = pTarget["reagentid"]
-        elif pComponent["componenttype"] == "ELUTE":
-          pReagent = self.__PopReagent(pComponent["reagent"], pAvailableReagents)
-          pComponent["reagent"] = pReagent["reagentid"]
-          pTarget = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, pComponent["reactor"], "B")
-          pComponent["target"] = pTarget["reagentid"]
 
         # Add the component
         self.database.CreateComponent(sRemoteUser, nSequenceID, pComponent["componenttype"], "", json.dumps(pComponent))
@@ -216,31 +208,6 @@ class SequenceManager:
       # Set the default evaporation pressure if the value is zero
       if pComponent["evaporationpressure"] == 0:
         pComponent["evaporationpressure"] = DEFAULT_EVAPORATE_PRESSURE
-    elif pComponent["componenttype"] == "TRANSFER":
-      # Look up the target to which we are transferring
-      pEluteTarget = {}
-      if pComponent["target"] != 0:
-        pEluteTarget = self.GetReagent(sRemoteUser, pComponent["target"])
-
-      # Replace the target
-      del pComponent["target"]
-      pComponent["target"] = pEluteTarget
-    elif pComponent["componenttype"] == "ELUTE":
-      # Look up the reagent we are using to elute
-      pEluteReagent = {}
-      if pComponent["reagent"] != 0:
-        pEluteReagent = self.GetReagent(sRemoteUser, pComponent["reagent"])
-
-      # Look up the target from which we are eluting
-      pEluteTarget = {}
-      if pComponent["target"] != 0:
-        pEluteTarget = self.GetReagent(sRemoteUser, pComponent["target"])
-
-      # Replace the reagent and target
-      del pComponent["reagent"]
-      del pComponent["target"]
-      pComponent["reagent"] = pEluteReagent
-      pComponent["target"] = pEluteTarget
 
   def __UpdateComponentDetails(self, sRemoteUser, pTargetComponent, pSourceComponent):
     """ Strips a component down to only the details we want to save in the database """
@@ -249,12 +216,10 @@ class SequenceManager:
       pTargetComponent["type"] = pSourceComponent["type"]
       pTargetComponent["componenttype"] = pSourceComponent["componenttype"]
 
-    # Handle the details depending on the component type
+    # Update the component fieldds depending on the type
     if pTargetComponent["componenttype"] == "CASSETTE":
-      # Update the component fields
       pTargetComponent["available"] = pSourceComponent["available"]
     elif pTargetComponent["componenttype"] == "ADD":
-      # Update the component fields
       pTargetComponent["reactor"] = pSourceComponent["reactor"]
       pTargetComponent["deliveryposition"] = pSourceComponent["deliveryposition"]
       pTargetComponent["deliverytime"] = pSourceComponent["deliverytime"]
@@ -266,7 +231,6 @@ class SequenceManager:
       else:
         pTargetComponent.update({"name":"Add"})
     elif pTargetComponent["componenttype"] == "EVAPORATE":
-      # Update the component fields
       pTargetComponent["reactor"] = pSourceComponent["reactor"]
       pTargetComponent["duration"] = pSourceComponent["duration"]
       pTargetComponent["evaporationtemperature"] = pSourceComponent["evaporationtemperature"]
@@ -274,26 +238,9 @@ class SequenceManager:
       pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
       pTargetComponent["evaporationpressure"] = pSourceComponent["evaporationpressure"]
     elif pTargetComponent["componenttype"] == "TRANSFER":
-      # Update the component fields
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["target"] = pSourceComponent["target"]
-      if pTargetComponent["target"] != 0:
-        pTarget = self.GetReagent(sRemoteUser, pTargetComponent["target"])
-        pTargetComponent.update({"name":"Transfer to " + pTargetComponent["name"]})
-      else:
-        pTargetComponent.update({"name":"Transfer"})
-    elif pTargetComponent["componenttype"] == "ELUTE":
-      # Update the component fields
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["reagent"] = pSourceComponent["reagent"]
-      pTargetComponent["target"] = pSourceComponent["target"]
-      if pTargetComponent["reagent"] != 0:
-        pReagent = self.GetReagent(sRemoteUser, pTargetComponent["reagent"])
-        pTargetComponent.update({"name":"Elute with " + pReagent["name"]})
-      else:
-        pTargetComponent.update({"name":"Elute"})
+      pTargetComponent["sourcereactor"] = pSourceComponent["sourcereactor"]
+      pTargetComponent["targetreactor"] = pSourceComponent["targetreactor"]
     elif pTargetComponent["componenttype"] == "REACT":
-      # Update the component fields
       pTargetComponent["reactor"] = pSourceComponent["reactor"]
       pTargetComponent["position"] = pSourceComponent["position"]
       pTargetComponent["duration"] = pSourceComponent["duration"]
@@ -301,15 +248,25 @@ class SequenceManager:
       pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
       pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
     elif pTargetComponent["componenttype"] == "PROMPT":
-      # Update the component fields
       pTargetComponent["message"] = pSourceComponent["message"]
     elif pTargetComponent["componenttype"] == "INSTALL":
-      # Update the component fields
       pTargetComponent["reactor"] = pSourceComponent["reactor"]
       pTargetComponent["message"] = pSourceComponent["message"]
     elif pTargetComponent["componenttype"] == "COMMENT":
-      # Update the component fields
       pTargetComponent["comment"] = pSourceComponent["comment"]
+    elif pTargetComponent["componenttype"] == "DELIVERF18":
+      pTargetComponent["reactor"] = pSourceComponent["reactor"]
+      pTargetComponent["traptime"] = pSourceComponent["traptime"]
+      pTargetComponent["trappressure"] = pSourceComponent["trappressure"]
+      pTargetComponent["elutetime"] = pSourceComponent["elutetime"]
+      pTargetComponent["elutepressure"] = pSourceComponent["elutepressure"]
+    elif pTargetComponent["componenttype"] == "MIX":
+      pTargetComponent["reactor"] = pSourceComponent["reactor"]
+      pTargetComponent["mixtime"] = pSourceComponent["mixtime"]
+      pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
+    elif pTargetComponent["componenttype"] == "MOVE":
+      pTargetComponent["reactor"] = pSourceComponent["reactor"]
+      pTargetComponent["position"] = pSourceComponent["position"]
 
   def __PopReagent(self, sReagentName, pReagents):
     """ Locates the next reagent that matches the name and pops it off the list """

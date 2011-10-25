@@ -38,9 +38,6 @@ if __name__ == '__main__':
     pDBComm.CreateUser("System", "graciela", "6E3kYsJnM9p2Y", "Graciela", "Flores", "Researcher")
     pDBComm.CreateUser("System", "patrick", "6E3kYsJnM9p2Y", "Patrick", "Phelps", "Researcher")
 
-    # Create reserved reagents
-    pDBComm.CreateReservedReagent("System", "HPLC", "External HPLC instrument")
-
     # Import the FAC synthesis sequence
     pSequenceManager.ImportSequence("System", "FACSynthesis.seq")
 

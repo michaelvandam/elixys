@@ -76,9 +76,8 @@ class SequenceValidation:
     # Initialize the validation fields
     self.__ValidateComponentInit(sRemoteUser, pComponent, nSequenceID)
 
-    # Fill in the validation fields based on component type
+    # Set the name and validation strings based on component type
     if pComponent["componenttype"] == "ADD":
-      # Set the name and validation strings
       pComponent["name"] = "Add"
       pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
       pComponent["reagentvalidation"] = "type=enum-reagent; values=" + self.__ListReagents(pAvailableReagents) + "; required=true"
@@ -93,7 +92,6 @@ class SequenceValidation:
           # Set the component name
           pComponent["name"] = "Add " + pReagent["name"]
     elif pComponent["componenttype"] == "EVAPORATE":
-      # Set the name and validation strings
       pComponent["name"] = "Evaporate"
       pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
       pComponent["durationvalidation"] = "type=number; min=0; max=7200; required=true"
@@ -102,34 +100,13 @@ class SequenceValidation:
       pComponent["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
       pComponent["evaporationpressurevalidation"] = "type=number; min=0; max=25"
     elif pComponent["componenttype"] == "TRANSFER":
-      # Set the name and validation strings
       pComponent["name"] = "Transfer"
-      pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
-      nTransferTargetID = self.__GetTarget(sRemoteUser, pComponent, nSequenceID, pAvailableReagents)
-      pComponent["targetvalidation"] = "type=enum-target; values=" + str(nTransferTargetID) + "; required=true"
-
-      # Look up the target we are transferring to
-      if pComponent["target"].has_key("reagentid"):
-        pTarget = self.__GetReagentByID(pComponent["target"]["reagentid"], pAvailableReagents, False)
-        if (pTarget != None) and (pTarget["name"] == pComponent["target"]):
-          # Set the component name
-          pComponent["name"] = "Transfer to " + pTarget["name"]
-    elif pComponent["componenttype"] == "ELUTE":
-      # Set the name and validation strings
-      pComponent["name"] = "Elute"
-      pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
-      pComponent["reagentvalidation"] = "type=enum-reagent; values=" + self.__ListReagents(pAvailableReagents) + "; required=true"
-      nEluteTargetID = self.__GetTarget(sRemoteUser, pComponent, nSequenceID, pAvailableReagents)
-      pComponent["targetvalidation"] = "type=enum-target; values=" + str(nEluteTargetID) + "; required=true"
-
-      # Look up the reagent we are eluting with
-      if pComponent["reagent"].has_key("reagentid"):
-        pReagent = self.__GetReagentByID(pComponent["reagent"]["reagentid"], pAvailableReagents, True)
-        if pReagent != None:
-          # Set the component name
-          pComponent["name"] = "Elute with " + pReagent["name"]
+      pComponent["sourcereactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+      pComponent["targetreactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+      pComponent["pressurevalidation"] = "type=number; min=0; max=25"
+      pComponent["modevalidation"] = "type=enum-string; values=Trap,Elute; required=true"
+      pComponent["durationvalidation"] = "type=number; min=0; max=7200; required=true"
     elif pComponent["componenttype"] == "REACT":
-      # Set the name and validation strings
       pComponent["name"] = "React"
       pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
       pComponent["positionvalidation"] = "type=enum-number; values=1,2; required=true"
@@ -138,21 +115,36 @@ class SequenceValidation:
       pComponent["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
       pComponent["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
     elif pComponent["componenttype"] == "PROMPT":
-      # Set the name and validation strings
       pComponent["name"] = "Prompt"
       pComponent["messagevalidation"] = "type=string; required=true"
     elif pComponent["componenttype"] == "INSTALL":
-      # Set the name and validation strings
       pComponent["name"] = "Install"
       pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
       pComponent["messagevalidation"] = "type=string; required=true"
     elif pComponent["componenttype"] == "COMMENT":
-      # Set the name and validation strings
       pComponent["name"] = "Comment"
       pComponent["commentvalidation"] = "type=string"
+    elif pComponent["componenttype"] == "DELIVERF18":
+      pComponent["name"] = "Deliver F18"
+      pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+      pComponent["traptimevalidation"] = "type=number; min=0; max=7200; required=true"
+      pComponent["trappressurevalidation"] = "type=number; min=0; max=25"
+      pComponent["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
+      pComponent["elutepressurevalidation"] = "type=number; min=0; max=25"
+    elif pComponent["componenttype"] == "INITIALIZE":
+      pComponent["name"] = "Initialize"
+    elif pComponent["componenttype"] == "MIX":
+      pComponent["name"] = "Mix"
+      pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+      pComponent["mixtimevalidation"] = "type=number; min=0; max=7200; required=true"
+      pComponent["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+    elif pComponent["componenttype"] == "MOVE":
+      pComponent["name"] = "Move"
+      pComponent["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+      pComponent["positionvalidation"] = "type=enum-string; values=" + (",").join(self.database.GetReactorPositions(sRemoteUser)) + "; required=true"
 
-    # Do a quick validation of the component fields
-    self.__ValidateComponentQuick(sRemoteUser, pComponent, nSequenceID)
+    # Do a quick validation of the component fields and return if the component is valid
+    return self.__ValidateComponentQuick(sRemoteUser, pComponent, nSequenceID)
 
   def __ValidateComponentInit(self, sRemoteUser, pComponent, nSequenceID):
     """Initializes the component validation fields"""
@@ -182,17 +174,10 @@ class SequenceValidation:
       if not pComponent.has_key("evaporationpressurevalidation"):
         pComponent.update({"evaporationpressurevalidation":""})
     elif pComponent["componenttype"] == "TRANSFER":
-      if not pComponent.has_key("reactorvalidation"):
-        pComponent.update({"reactorvalidation":""})
-      if not pComponent.has_key("targetvalidation"):
-        pComponent.update({"targetvalidation":""})
-    elif pComponent["componenttype"] == "ELUTE":
-      if not pComponent.has_key("reactorvalidation"):
-        pComponent.update({"reactorvalidation":""})
-      if not pComponent.has_key("reagentvalidation"):
-        pComponent.update({"reagentvalidation":""})
-      if not pComponent.has_key("targetvalidation"):
-        pComponent.update({"targetvalidation":""})
+      if not pComponent.has_key("sourcereactorvalidation"):
+        pComponent.update({"sourcereactorvalidation":""})
+      if not pComponent.has_key("targetreactorvalidation"):
+        pComponent.update({"targetreactorvalidation":""})
     elif pComponent["componenttype"] == "REACT":
       if not pComponent.has_key("reactorvalidation"):
         pComponent.update({"reactorvalidation":""})
@@ -217,7 +202,29 @@ class SequenceValidation:
     elif pComponent["componenttype"] == "COMMENT":
       if not pComponent.has_key("commentvalidation"):
         pComponent.update({"commentvalidation":""})
-
+    elif pComponent["componenttype"] == "DELIVERF18":
+      if not pComponent.has_key("reactorvalidation"):
+        pComponent.update({"reactorvalidation":""})
+      if not pComponent.has_key("traptimevalidation"):
+        pComponent.update({"traptimevalidation":""})
+      if not pComponent.has_key("trappressurevalidation"):
+        pComponent.update({"trappressurevalidation":""})
+      if not pComponent.has_key("elutepressurevalidation"):
+        pComponent.update({"elutepressurevalidation":""})
+      if not pComponent.has_key("elutetimevalidation"):
+        pComponent.update({"elutetimevalidation":""})
+    elif pComponent["componenttype"] == "MIX":
+      if not pComponent.has_key("reactorvalidation"):
+        pComponent.update({"reactorvalidation":""})
+      if not pComponent.has_key("mixtimevalidation"):
+        pComponent.update({"mixtimevalidation":""})
+      if not pComponent.has_key("stirspeedvalidation"):
+        pComponent.update({"stirspeedvalidation":""})
+    elif pComponent["componenttype"] == "MOVE":
+      if not pComponent.has_key("reactorvalidation"):
+        pComponent.update({"reactorvalidationvalidation":""})
+      if not pComponent.has_key("positionvalidation"):
+        pComponent.update({"positionvalidation":""})
     if not pComponent.has_key("validationerror"):
       pComponent.update({"validationerror":False})
 
@@ -257,16 +264,9 @@ class SequenceValidation:
       elif not self.__ValidateComponentField(pComponent["evaporationpressure"], pComponent["evaporationpressurevalidation"]):
         bValidationError = True
     elif pComponent["componenttype"] == "TRANSFER":
-      if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
+      if not self.__ValidateComponentField(pComponent["sourcereactor"], pComponent["sourcereactorvalidation"]):
         bValidationError = True
-      elif not self.__ValidateComponentField(pComponent["target"], pComponent["targetvalidation"]):
-        bValidationError = True
-    elif pComponent["componenttype"] == "ELUTE":
-      if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
-        bValidationError = True
-      elif not self.__ValidateComponentField(pComponent["reagent"], pComponent["reagentvalidation"]):
-        bValidationError = True
-      elif not self.__ValidateComponentField(pComponent["target"], pComponent["targetvalidation"]):
+      elif not self.__ValidateComponentField(pComponent["targetreactor"], pComponent["targetreactorvalidation"]):
         bValidationError = True
     elif pComponent["componenttype"] == "REACT":
       if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
@@ -289,9 +289,33 @@ class SequenceValidation:
         bValidationError = True
       elif not self.__ValidateComponentField(pComponent["message"], pComponent["messagevalidation"]):
         bValidationError = True
+    elif pComponent["componenttype"] == "DELIVERF18":
+      if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["traptime"], pComponent["traptimevalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["trappressure"], pComponent["trappressurevalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["elutetime"], pComponent["elutetimevalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["elutepressure"], pComponent["elutepressurevalidation"]):
+        bValidationError = True
+    elif pComponent["componenttype"] == "MIX":
+      if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["mixtime"], pComponent["mixtimevalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["stirspeed"], pComponent["stirspeedvalidation"]):
+        bValidationError = True
+    elif pComponent["componenttype"] == "MOVE":
+      if not self.__ValidateComponentField(pComponent["reactor"], pComponent["reactorvalidation"]):
+        bValidationError = True
+      elif not self.__ValidateComponentField(pComponent["position"], pComponent["positionvalidation"]):
+        bValidationError = True
 
-    # Set the validation error field
+    # Set the validation error field and return if the component is valid
     pComponent.update({"validationerror":bValidationError})
+    return not bValidationError
 
   def __ValidateComponentField(self, pValue, sValidation):
     """ Validates the field using the validation string """
@@ -309,8 +333,10 @@ class SequenceValidation:
     # Call the appropriate validation function
     if pValidation["type"] == "enum-number":
       return self.__ValidateEnumNumber(pValue, pValidation)
-    elif (pValidation["type"] == "enum-reagent") or (pValidation["type"] == "enum-target"):
+    elif pValidation["type"] == "enum-reagent":
       return self.__ValidateEnumReagent(pValue, pValidation)
+    elif pValidation["type"] == "enum-string":
+      return self.__ValidateEnumString(pValue, pValidation)
     elif pValidation["type"] == "number":
       return self.__ValidateNumber(pValue, pValidation)
     elif pValidation["type"] == "string":
@@ -354,6 +380,28 @@ class SequenceValidation:
     else:
       # Yes, so validate the reagent ID
       return self.__ValidateEnumNumber(pReagent["reagentid"], pValidation)
+
+  def __ValidateEnumString(self, sValue, pValidation):
+    """ Validates an enumeration of strings"""
+    # Is the value set?
+    if sValue == "":
+      # No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+      # Valid
+      return True
+    else:
+      # Yes, so make sure it is set to one of the allowed values
+      pValues = pValidation["values"].split(",")
+      for sValidValue in pValues:
+        if sValue == sValidValue:
+          # Found it
+          return True
+
+      # Invalid
+      return False
 
   def __ValidateNumber(self, nValue, pValidation):
     """ Validates a number """
@@ -418,21 +466,6 @@ class SequenceValidation:
       sReagentIDs += str(pReagent["reagentid"])
     return sReagentIDs
 
-  def __GetTarget(self, sRemoteUser, pComponent, nSequenceID, pReagents):
-    """ Gets the target ID """
-    # Skip if reactor is zero
-    if pComponent["reactor"] == 0:
-      return 0
-
-    # Look up the second column on the cassette associated with the reactor
-    pColumn = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, pComponent["reactor"], "B")
-
-    # Check if the column is available
-    if pColumn["available"]:
-      return pColumn["reagentid"]
-    else:
-      return 0
-
   def __IsNumber(self, sValue):
     """ Check if the string contains a number """
     try:
@@ -447,8 +480,8 @@ class SequenceValidation:
     pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
 
     # Copy the validation fields based on component type
+    pDBComponent["name"] = pComponent["name"]
     if pComponent["componenttype"] == "ADD":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
       pDBComponent["reagentvalidation"] = pComponent["reagentvalidation"]
       pDBComponent["deliverypositionvalidation"] = pComponent["deliverypositionvalidation"]
@@ -457,7 +490,6 @@ class SequenceValidation:
       pDBComponent["deliverytime"] = pComponent["deliverytime"]
       pDBComponent["deliverypressure"] = pComponent["deliverypressure"]
     elif pComponent["componenttype"] == "EVAPORATE":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
       pDBComponent["durationvalidation"] = pComponent["durationvalidation"]
       pDBComponent["evaporationtemperaturevalidation"] = pComponent["evaporationtemperaturevalidation"]
@@ -466,16 +498,12 @@ class SequenceValidation:
       pDBComponent["evaporationpressurevalidation"] = pComponent["evaporationpressurevalidation"]
       pDBComponent["evaporationpressure"] = pComponent["evaporationpressure"]
     elif pComponent["componenttype"] == "TRANSFER":
-      pDBComponent["name"] = pComponent["name"]
-      pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
-      pDBComponent["targetvalidation"] = pComponent["targetvalidation"]
-    elif pComponent["componenttype"] == "ELUTE":
-      pDBComponent["name"] = pComponent["name"]
-      pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
-      pDBComponent["reagentvalidation"] = pComponent["reagentvalidation"]
-      pDBComponent["targetvalidation"] = pComponent["targetvalidation"]
+      pDBComponent["sourcereactorvalidation"] = pComponent["sourcereactorvalidation"]
+      pDBComponent["targetreactorvalidation"] = pComponent["targetreactorvalidation"]
+      pDBComponent["pressurevalidation"] = pComponent["pressurevalidation"]
+      pDBComponent["modevalidation"] = pComponent["modevalidation"]
+      pDBComponent["durationvalidation"] = pComponent["durationvalidation"]
     elif pComponent["componenttype"] == "REACT":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
       pDBComponent["positionvalidation"] = pComponent["positionvalidation"]
       pDBComponent["durationvalidation"] = pComponent["durationvalidation"]
@@ -483,15 +511,25 @@ class SequenceValidation:
       pDBComponent["finaltemperaturevalidation"] = pComponent["finaltemperaturevalidation"]
       pDBComponent["stirspeedvalidation"] = pComponent["stirspeedvalidation"]
     elif pComponent["componenttype"] == "PROMPT":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["messagevalidation"] = pComponent["messagevalidation"]
     elif pComponent["componenttype"] == "INSTALL":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
       pDBComponent["messagevalidation"] = pComponent["messagevalidation"]
     elif pComponent["componenttype"] == "COMMENT":
-      pDBComponent["name"] = pComponent["name"]
       pDBComponent["commentvalidation"] = pComponent["commentvalidation"]
+    elif pComponent["componenttype"] == "DELIVERF18":
+      pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
+      pDBComponent["traptimevalidation"] = pComponent["traptimevalidation"]
+      pDBComponent["trappressurevalidation"] = pComponent["trappressurevalidation"]
+      pDBComponent["elutetimevalidation"] = pComponent["elutetimevalidation"]
+      pDBComponent["elutepressurevalidation"] = pComponent["elutepressurevalidation"]
+    elif pComponent["componenttype"] == "MIX":
+      pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
+      pDBComponent["mixtimevalidation"] = pComponent["mixtimevalidation"]
+      pDBComponent["stirspeedvalidation"] = pComponent["stirspeedvalidation"]
+    elif pComponent["componenttype"] == "MOVE":
+      pDBComponent["reactorvalidation"] = pComponent["reactorvalidation"]
+      pDBComponent["positionvalidation"] = pComponent["positionvalidation"]
 
     # Copy the validation error field
     pDBComponent["validationerror"] = pComponent["validationerror"]

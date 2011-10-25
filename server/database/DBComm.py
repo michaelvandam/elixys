@@ -64,7 +64,22 @@ class DBComm:
       "React",
       "Prompt",
       "Install",
-      "Comment"]
+      "Comment",
+      "DeliverF18",
+      "Initialize",
+      "Mix",
+      "Move"]
+
+  def GetReactorPositions(self, sCurrentUsername):
+    """Returns the reactor positions"""
+    self.Log(sCurrentUsername, "DBComm.GetReactorPositions()")
+    # Return hardcoded values for now but this should really come from the database
+    return ["Install",
+      "Transfer",
+      "React1",
+      "Add",
+      "React2",
+      "Evaporate"]
 
   ### Role functions ###
 
@@ -284,11 +299,6 @@ class DBComm:
         raise Exceptions.ReagentNotFoundException(0, nSequenceID, nCassette, sPosition)
     return self.__CreateReagent(pReagentRaw[0])
 
-  def GetReservedReagentsByName(self, sCurrentUsername, sName):
-    """Gets all reserved reagents in the database that match the given name"""
-    self.Log(sCurrentUsername, "DBComm.GetReservedReagentsByName(%s)" % (sName, ))
-    return self.__CallStoredProcedure("GetReservedReagentsByName", (sName, ))
-
   def UpdateReagent(self, sCurrentUsername, nReagentID, bAvailable, sName, sDescription):
     """Updates a existing reagent"""
     self.Log(sCurrentUsername, "DBComm.UpdateReagent(%i, %i, %s, %s)" % (nReagentID, bAvailable, sName, sDescription))
@@ -298,11 +308,6 @@ class DBComm:
     """Update an existing reagent by position"""
     self.Log(sCurrentUsername, "DBComm.UpdateReagentByPosition(%i, %i, %s, %i, %s, %s)" % (nSequenceID, nCassetteNumber, sPosition, bAvailable, sName, sDescription))
     return self.__CallStoredProcedure("UpdateReagentByPosition", (nSequenceID, nCassetteNumber, sPosition, bAvailable, sName, sDescription))
-
-  def CreateReservedReagent(self, sCurrentUsername, sName, sDescription):
-    """Creates a reserved reagent"""
-    self.Log(sCurrentUsername, "DBComm.CreateReservedReagent(%s, %s)" % (sName, sDescription))
-    return self.__CallStoredProcedure("CreateReservedReagent", (sName, sDescription))
 
   ### Component functions ###
 

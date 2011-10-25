@@ -450,16 +450,6 @@ CREATE PROCEDURE GetReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCassetteN
         SELECT * FROM Reagents WHERE SequenceID = iSequenceID AND ComponentID = lComponentID AND Position = iPosition;
     END //
 
-/* Gets all reserved reagents in the database that match the given name:
- *   IN Name - Reagent name
- */
-DROP PROCEDURE IF EXISTS GetReservedReagentsByName;
-CREATE PROCEDURE GetReservedReagentsByName(IN iName VARCHAR(64))
-    BEGIN
-        -- Look up the reagent
-        SELECT * FROM Reagents WHERE SequenceID = 0 AND Name = iName;
-    END //
-
 /* Update an existing reagent:
  *   IN ReagentID - ID of the reagent
  *   IN Available - True if a reagent is in this position, False otherwise
@@ -496,17 +486,6 @@ CREATE PROCEDURE UpdateReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCasset
 
         -- Update the reagent by position
         CALL UpdateReagent(lReagentID, iAvailable, iName, iDescription);
-    END //
-
-/* Creates a reserved reagent:
- *   IN Name - Reagent name
- *   IN Description - Reagent description
- */
-DROP PROCEDURE IF EXISTS CreateReservedReagent;
-CREATE PROCEDURE CreateReservedReagent(IN iName VARCHAR(64), IN iDescription VARCHAR(255))
-    BEGIN
-        -- Add the reagent
-        INSERT INTO Reagents VALUES (NULL, 0, 0, 0, False, iName, iDescription);
     END //
 
 /****************************************************************************************************************************************************************
