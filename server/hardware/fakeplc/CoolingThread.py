@@ -26,11 +26,7 @@ class CoolingThread(threading.Thread):
     def run(self):
         """Thread entry point"""
         # Elixys cooling rate in degrees Celsius per 100 ms
-        fCoolingRate1 = -0.471
-        fCoolingRate2 = -0.018
-        
-        # Cutoff temperature above which we use rate 1 and below which we use rate 2
-        nTemperatureCutoff = 58
+        fCoolingRate = -0.471
         
         # Lowest temperature
         nBottomTemp = 27
@@ -55,10 +51,7 @@ class CoolingThread(threading.Thread):
                     bCooling = True
 
                     # Adjust the temperature
-                    if nReactorTemperatures[nReactor - 1] > nTemperatureCutoff:
-                        nReactorTemperatures[nReactor - 1] += fCoolingRate1
-                    else:
-                        nReactorTemperatures[nReactor - 1] += fCoolingRate2
+                    nReactorTemperatures[nReactor - 1] += fCoolingRate
                     
                     # Update the temperature on the PLC
                     self.__pHardwareComm.FakePLC_SetReactorActualTemperature(nReactor, nReactorTemperatures[nReactor - 1])

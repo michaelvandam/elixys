@@ -93,16 +93,6 @@ class UnitOperationsWrapper:
         pTransfer.start()
         return pTransfer
 
-    ###
-    def TransferToHPLC(self, sReactor, nStopcockPosition):
-        """Performs a transfer to HPLC unit operation"""
-        pParams = {"ReactorID":sReactor,
-                   "stopcockPosition":nStopcockPosition}
-        pTransfer = UnitOperations.TransferToHPLC(self.__pSystemModel, pParams)
-        pTransfer.setDaemon(True)
-        pTransfer.start()
-        return pTransfer
-        
     def TempProfile(self, sReactor, nProfileTemperature, nProfileTime, nFinalTemperature):
         """Heats the reactor in the transfer position for temperature profiling"""
         pParams = {"ReactorID":sReactor,
