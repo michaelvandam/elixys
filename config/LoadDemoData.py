@@ -8,6 +8,7 @@ sys.path.append("../database/")
 sys.path.append("../core/")
 from DBComm import DBComm
 from SequenceManager import SequenceManager
+from SystemModel import SystemModel
 
 if __name__ == '__main__':
     # Create the database layer and sequence manager

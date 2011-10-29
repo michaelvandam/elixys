@@ -5,11 +5,7 @@ Elixys Sequence Manager
 
 import json
 import SequenceValidation
-
-# Default component values
-DEFAULT_ADD_DELIVERYTIME = 10
-DEFAULT_ADD_DELIVERYPRESSURE = 5
-DEFAULT_EVAPORATE_PRESSURE = 10
+import UnitOperations
 
 class SequenceManager:
 
@@ -27,12 +23,13 @@ class SequenceManager:
     # Add details to each component if we're doing a full load
     if bFullLoad:
         for pComponent in pSequence["components"]:
-          self.__AddComponentDetails(sRemoteUser, pComponent, nSequenceID)
+          pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+          pUnitOperation.addComponentDetails()
 
     # Return
     return pSequence
 
-  def CopySequence(sRemoteUser, nSequenceID, sName, sComment, sType, nCassettes, nReagents, nColumns):
+  def CopySequence(self, sRemoteUser, nSequenceID, sName, sComment, sType, nCassettes, nReagents, nColumns):
     """ Creates a copy of an existing sequence in the database """
     # Create the new sequence
     nNewSequenceID = self.database.CreateSequence(sRemoteUser, sName, sComment, sType, nCassettes, nReagents, nColumns)
@@ -58,13 +55,14 @@ class SequenceManager:
 
       # Yeah, this function isn't fully implemented yet
 
-    # Process each component of the sequence
-    pSequence = GetSequence(sRemoteUser, nSequenceID)
+    # Copy each component of the sequence
+    pSequence = self.GetSequence(sRemoteUser, nSequenceID)
     for pComponent in pSequence["components"]:
-      if pComponent["componenttype"] == "CASSETTE":
-        self.database.Log(sRemoteUser, "Update cassette: " + str(pComponent))
-      else:
-        self.database.Log(sRemoteUser, "Add component: " + str(pComponent))
+      pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+      pUnitOperation.copyComponent(nSequenceID)
+
+    # Validate the sequence
+    self.validation.ValidateSequenceFull(sRemoteUser, nNewSequenceID)
 
     # Return the ID of the new sequence
     return nNewSequenceID  
@@ -133,17 +131,19 @@ class SequenceManager:
     pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
 
     # Add details to the component and return
-    self.__AddComponentDetails(sRemoteUser, pComponent, nSequenceID)
-    return pComponent
+    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+    pUnitOperation.addComponentDetails()
+    return pUnitOperation.component
 
   def AddComponent(self, sRemoteUser, nSequenceID, nInsertionID, pComponent):
     """ Adds a new component to the database """
     # Update the component fields we want to save
+    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
     pDBComponent = {}
-    self.__UpdateComponentDetails(sRemoteUser, pDBComponent, pComponent)
+    pUnitOperation.updateComponentDetails(pDBComponent)
 
     # Insert the new component
-    nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pComponent["componenttype"], pComponent["name"], 
+    nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pDBComponent["componenttype"], pDBComponent["name"], 
       json.dumps(pDBComponent), nInsertionID)
 
     # Initialize the new component's validation fields and return
@@ -155,8 +155,9 @@ class SequenceManager:
     # Do we have an input component?
     if pComponent != None:
       # Yes, so pull the original from the database and update it with the fields we want to save
+      pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
       pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
-      self.__UpdateComponentDetails(sRemoteUser, pDBComponent, pComponent)
+      pUnitOperation.updateComponentDetails(pDBComponent)
 
       # Update the component
       self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
@@ -177,96 +178,6 @@ class SequenceManager:
     self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
 
   ### Internal functions ###
-
-  # Adds details to the component after retrieving it from the database and prior to sending it to the client
-  def __AddComponentDetails(self, sRemoteUser, pComponent, nSequenceID):
-    # Details we add depends on the component type
-    if pComponent["componenttype"] == "CASSETTE":
-      # Look up each reagent in this cassette
-      pReagentIDs = pComponent["reagentids"]
-      pReagents = []
-      for nReagentID in pReagentIDs:
-        pReagents.append(self.GetReagent(sRemoteUser, nReagentID))
-      del pComponent["reagentids"]
-      pComponent["reagents"] = pReagents
-    elif pComponent["componenttype"] == "ADD":
-      # Look up the reagent we are adding
-      pAddReagent = {}
-      if pComponent["reagent"] != 0:
-        pAddReagent = self.GetReagent(sRemoteUser, pComponent["reagent"])
-
-      # Replace the reagent
-      del pComponent["reagent"]
-      pComponent["reagent"] = pAddReagent
-
-      # Set the default delivery time and pressure
-      if pComponent["deliverytime"] == 0:
-        pComponent["deliverytime"] = DEFAULT_ADD_DELIVERYTIME
-      if pComponent["deliverypressure"] == 0:
-        pComponent["deliverypressure"]= DEFAULT_ADD_DELIVERYPRESSURE
-    elif pComponent["componenttype"] == "EVAPORATE":
-      # Set the default evaporation pressure if the value is zero
-      if pComponent["evaporationpressure"] == 0:
-        pComponent["evaporationpressure"] = DEFAULT_EVAPORATE_PRESSURE
-
-  def __UpdateComponentDetails(self, sRemoteUser, pTargetComponent, pSourceComponent):
-    """ Strips a component down to only the details we want to save in the database """
-    # Update the type and componenttype if they don't exist in the target component
-    if not pTargetComponent.has_key("type"):
-      pTargetComponent["type"] = pSourceComponent["type"]
-      pTargetComponent["componenttype"] = pSourceComponent["componenttype"]
-
-    # Update the component fieldds depending on the type
-    if pTargetComponent["componenttype"] == "CASSETTE":
-      pTargetComponent["available"] = pSourceComponent["available"]
-    elif pTargetComponent["componenttype"] == "ADD":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["deliveryposition"] = pSourceComponent["deliveryposition"]
-      pTargetComponent["deliverytime"] = pSourceComponent["deliverytime"]
-      pTargetComponent["deliverypressure"] = pSourceComponent["deliverypressure"]
-      pTargetComponent["reagent"] = pSourceComponent["reagent"]
-      if pTargetComponent["reagent"] != 0:
-        pReagent = self.GetReagent(sRemoteUser, pTargetComponent["reagent"])
-        pTargetComponent.update({"name":"Add " + pReagent["name"]})
-      else:
-        pTargetComponent.update({"name":"Add"})
-    elif pTargetComponent["componenttype"] == "EVAPORATE":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["duration"] = pSourceComponent["duration"]
-      pTargetComponent["evaporationtemperature"] = pSourceComponent["evaporationtemperature"]
-      pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
-      pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
-      pTargetComponent["evaporationpressure"] = pSourceComponent["evaporationpressure"]
-    elif pTargetComponent["componenttype"] == "TRANSFER":
-      pTargetComponent["sourcereactor"] = pSourceComponent["sourcereactor"]
-      pTargetComponent["targetreactor"] = pSourceComponent["targetreactor"]
-    elif pTargetComponent["componenttype"] == "REACT":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["position"] = pSourceComponent["position"]
-      pTargetComponent["duration"] = pSourceComponent["duration"]
-      pTargetComponent["reactiontemperature"] = pSourceComponent["reactiontemperature"]
-      pTargetComponent["finaltemperature"] = pSourceComponent["finaltemperature"]
-      pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
-    elif pTargetComponent["componenttype"] == "PROMPT":
-      pTargetComponent["message"] = pSourceComponent["message"]
-    elif pTargetComponent["componenttype"] == "INSTALL":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["message"] = pSourceComponent["message"]
-    elif pTargetComponent["componenttype"] == "COMMENT":
-      pTargetComponent["comment"] = pSourceComponent["comment"]
-    elif pTargetComponent["componenttype"] == "DELIVERF18":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["traptime"] = pSourceComponent["traptime"]
-      pTargetComponent["trappressure"] = pSourceComponent["trappressure"]
-      pTargetComponent["elutetime"] = pSourceComponent["elutetime"]
-      pTargetComponent["elutepressure"] = pSourceComponent["elutepressure"]
-    elif pTargetComponent["componenttype"] == "MIX":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["mixtime"] = pSourceComponent["mixtime"]
-      pTargetComponent["stirspeed"] = pSourceComponent["stirspeed"]
-    elif pTargetComponent["componenttype"] == "MOVE":
-      pTargetComponent["reactor"] = pSourceComponent["reactor"]
-      pTargetComponent["position"] = pSourceComponent["position"]
 
   def __PopReagent(self, sReagentName, pReagents):
     """ Locates the next reagent that matches the name and pops it off the list """

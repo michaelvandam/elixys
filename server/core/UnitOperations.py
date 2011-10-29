@@ -7,6 +7,8 @@ Elixys Unit Operations
 ##
 import time
 import threading
+import json
+import copy
 
 #Reactor X Positions
 REACT_A    = 'React1'
@@ -67,6 +69,111 @@ NOTEQUAL = "!="
 GREATER  = ">"
 LESS     = "<"
 
+# Default component values
+DEFAULT_ADD_DELIVERYTIME = 10
+DEFAULT_ADD_DELIVERYPRESSURE = 5
+DEFAULT_EVAPORATE_PRESSURE = 10
+
+#Create a unit operation from a component object
+def createFromComponent(pComponent, username, database, systemModel = None):
+  if pComponent["componenttype"] == "CASSETTE":
+    pCassette = Cassette(systemModel, {}, username, database)
+    pCassette.initializeComponent(pComponent)
+    return pCassette
+  elif pComponent["componenttype"] == "ADD":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+    pParams["ReagentReactorID"] = "Reactor" + str(pComponent["reagentreactor"])
+    pParams["ReagentPosition"] = 1  #We'll get the actual value once we initialize the component
+    pParams["reagentLoadPosition"] = pComponent["deliveryposition"]
+    pParams["duration"] = pComponent["deliverytime"]
+    pParams["pressure"] = pComponent["deliverypressure"]
+    pAdd = Add(systemModel, pParams, username, database)
+    pAdd.initializeComponent(pComponent)
+    pAdd.reagentPosition = pComponent["reagent"]["position"]
+    return pAdd
+  elif pComponent["componenttype"] == "EVAPORATE":
+    pParams = {}
+    pParams["ReactorID"] =  "Reactor" + str(pComponent["reactor"])
+    pParams["evapTemp"] = pComponent["evaporationtemperature"]
+    pParams["pressure"] = pComponent["evaporationpressure"]
+    pParams["evapTime"] = pComponent["duration"]
+    pParams["coolTemp"] = pComponent["finaltemperature"]
+    pParams["stirSpeed"] = pComponent["stirspeed"]
+    pEvaporate = Evaporate(systemModel, pParams, username, database)
+    pEvaporate.initializeComponent(pComponent)
+    return pEvaporate
+  elif pComponent["componenttype"] == "TRANSFER":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["sourcereactor"])
+    pParams["transferReactorID"] = "Reactor" + str(pComponent["targetreactor"])
+    pParams["transferType"] = str(pComponent["mode"])
+    pParams["transferTimer"] = pComponent["duration"]
+    pParams["transferPressure"] = pComponent["pressure"]
+    pTransfer = Transfer(systemModel, pParams, username, database)
+    pTransfer.initializeComponent(pComponent)
+    return pTransfer
+  elif pComponent["componenttype"] == "REACT":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+    pParams["reactTemp"] = pComponent["reactiontemperature"]
+    pParams["reactTime"] = pComponent["duration"]
+    pParams["coolTemp"] = pComponent["finaltemperature"]
+    pParams["reactPosition"] = "React" + str(pComponent["position"])
+    pParams["stirSpeed"] = pComponent["stirspeed"]
+    pReact = React(systemModel, pParams, username, database)
+    pReact.initializeComponent(pComponent)
+    return pReact
+  elif pComponent["componenttype"] == "PROMPT":
+    pParams = {}
+    pParams["userMessage"] = pComponent["message"]
+    pPrompt = Prompt(systemModel, pParams, username, database)
+    pPrompt.initializeComponent(pComponent)
+    return pPrompt
+  elif pComponent["componenttype"] == "INSTALL":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+    pParams["userMessage"] = pComponent["message"]
+    pInstall = Install(systemModel, pParams, username, database)
+    pInstall.initializeComponent(pComponent)
+    return pInstall
+  elif pComponent["componenttype"] == "COMMENT":
+    pParams = {}
+    pParams["userMessage"] = pComponent["comment"]
+    pComment = Comment(systemModel, pParams, username, database)
+    pComment.initializeComponent(pComponent)
+    return pComment
+  elif pComponent["componenttype"] == "DELIVERF18":
+    pParams = {}
+    pParams["trapTime"] = pComponent["traptime"]
+    pParams["trapPressure"] = pComponent["trappressure"]
+    pParams["eluteTime"] = pComponent["elutetime"]
+    pParams["elutePressure"] = pComponent["elutepressure"]
+    pDeliverF18 = DeliverF18(systemModel, pParams, username, database)
+    pDeliverF18.initializeComponent(pComponent)
+    return pDeliverF18
+  elif pComponent["componenttype"] == "INITIALIZE":
+    pInitialize = Initialize(systemModel, {}, username, database)
+    pInitialize.initializeComponent(pComponent)
+    return pInitialize
+  elif pComponent["componenttype"] == "MIX":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+    pParams["stirSpeed"] = pComponent["stirspeed"]
+    pParams["duration"] = pComponent["mixtime"]
+    pMix = Mix(systemModel, pParams, username, database)
+    pMix.initializeComponent(pComponent)
+    return pMix
+  elif pComponent["componenttype"] == "MOVE":
+    pParams = {}
+    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+    pParams["reactPosition"] = str(pComponent["position"])
+    pMove = Move(systemModel, pParams, username, database)
+    pMove.initializeComponent(pComponent)
+    return pMove
+  else:
+    raise Exception("Unknown component type: " + pComponent["componenttype"])
+
 class UnitOpError(Exception):
   def __init__(self, value):
     self.value = value
@@ -80,7 +187,10 @@ class UnitOperation(threading.Thread):
     self.params = {}
     self.paramsValidated = False
     self.paramsValid = False
-    self.systemModel = systemModel.model
+    if systemModel != None:
+      self.systemModel = systemModel.model
+    else:
+      self.systemModel = None
     self.username = username
     self.database = database
     self.status = ""
@@ -431,7 +541,6 @@ class UnitOperation(threading.Thread):
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
       
-
   def setTemp(self):
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(self.reactTemp)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getSetTemperature,self.reactTemp,EQUAL,3)
@@ -492,9 +601,197 @@ class UnitOperation(threading.Thread):
     return (self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint - 1,GREATER) and
       self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint + 1,LESS))
 
+  def validateComponentField(self, pValue, sValidation):
+    """ Validates the field using the validation string """
+    #Skip empty validation fields
+    if sValidation == "":
+      return True
+
+    #Create a dictionary from the validation string
+    pValidation = {}
+    pKeyValues = sValidation.split(";")
+    for sKeyValue in pKeyValues:
+      pComponents = sKeyValue.split("=")
+      pValidation[pComponents[0].strip()] = pComponents[1].strip()
+
+    #Call the appropriate validation function
+    if pValidation["type"] == "enum-number":
+      return self.validateEnumNumber(pValue, pValidation)
+    elif pValidation["type"] == "enum-reagent":
+      return self.validateEnumReagent(pValue, pValidation)
+    elif pValidation["type"] == "enum-string":
+      return self.validateEnumString(pValue, pValidation)
+    elif pValidation["type"] == "number":
+      return self.validateNumber(pValue, pValidation)
+    elif pValidation["type"] == "string":
+      return self.validateString(pValue, pValidation)
+    else:
+      raise Exception("Unknown validation type")
+
+  def validateEnumNumber(self, nValue, pValidation):
+    """ Validates an enumeration of numbers"""
+    #Is the value set?
+    if nValue == 0:
+      #No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+      #Valid
+      return True
+    else:
+      #Yes, so make sure it is set to one of the allowed values
+      pValues = pValidation["values"].split(",")
+      for nValidValue in pValues:
+        if float(nValue) == float(nValidValue):
+          #Found it
+          return True
+
+      #Invalid
+      return False
+
+  def validateEnumReagent(self, pReagent, pValidation):
+    """ Validates an enumeration of reagents """
+    #Is the value set?
+    if not pReagent.has_key("reagentid"):
+      #No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+      #Valid
+      return True
+    else:
+      #Yes, so validate the reagent ID
+      return self.validateEnumNumber(pReagent["reagentid"], pValidation)
+
+  def validateEnumString(self, sValue, pValidation):
+    """ Validates an enumeration of strings"""
+    #Is the value set?
+    if sValue == "":
+      #No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+      #Valid
+      return True
+    else:
+      #Yes, so make sure it is set to one of the allowed values
+      pValues = pValidation["values"].split(",")
+      for sValidValue in pValues:
+        if sValue == sValidValue:
+          #Found it
+          return True
+
+      #Invalid
+      return False
+
+  def validateNumber(self, nValue, pValidation):
+    """ Validates a number """
+    #Is the value set?
+    if nValue == 0:
+      #No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+      #Valid
+      return True
+    else:
+      #Yes, so make sure it within the acceptable range
+      if (float(nValue) >= float(pValidation["min"])) and (float(nValue) <= float(pValidation["max"])):
+        return True
+      else:
+        return False
+
+  def validateString(self, sValue, pValidation):
+    """ Validates a string """
+    #Is the value set?
+    if sValue == "":
+      #No, so check if it is required
+      if pValidation.has_key("required"):
+        if pValidation["required"]:
+          return False
+
+    #Valid
+    return True
+
+  def getReagentByID(self, nReagentID, pReagents, bPopReagent):
+    """ Locates the next reagent that matches the ID and returns it, optionally popping it off the list """
+    nIndex = 0
+    for pReagent in pReagents:
+      if pReagent["reagentid"] == nReagentID:
+        if bPopReagent:
+          return pReagents.pop(nIndex)
+        else:
+          return pReagents[nIndex]
+      nIndex += 1
+    return None
+
+  def listReagents(self, pReagents):
+    """ Formats a list of reagent IDs """
+    sReagentIDs = ""
+    pUsedNames = {}
+    for pReagent in pReagents:
+      #Skip columns
+      if not self.isNumber(pReagent["position"]):
+        continue
+
+      #Skip duplicate reagent names
+      if pUsedNames.has_key(pReagent["name"]):
+        continue
+      else:
+        pUsedNames[pReagent["name"]] = ""
+
+      #Append the reagent ID
+      if sReagentIDs != "":
+        sReagentIDs += ","
+      sReagentIDs += str(pReagent["reagentid"])
+    return sReagentIDs
+
+  def isNumber(self, sValue):
+    """ Check if the string contains a number """
+    try:
+      int(sValue)
+      return True
+    except ValueError:
+      return False
+
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Base handler does nothing
+    pass
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Base handler updates the type and componenttype if they don't exist in the target component
+    if not pTargetComponent.has_key("type"):
+      pTargetComponent["type"] = self.component["type"]
+      pTargetComponent["componenttype"] = self.component["componenttype"]
+
+  def copyComponent(self, nSequenceID):
+    """Creates a copy of the component in the database"""
+    # Pull the original component from the database and create a deep copy
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+    pComponentCopy = copy.deepcopy(pDBComponent)
+
+    # Allow the derived class a chance to alter the component copy
+    self.copyComponentImpl(nSequenceID, pComponentCopy)
+
+    # Add the component to the database and return the ID
+    nComponentCopyID = self.database.CreateComponent(self.username, nSequenceID, pComponentCopy["componenttype"], pComponentCopy["name"], 
+      json.dumps(pComponentCopy))
+    print "### Copied " + str(pComponentCopy) + " to " + str(nComponentCopyID)
+    return nComponentCopyID
+
+  def copyComponentImpl(self, nSequenceID, pComponentCopy):
+    """Performs unit-operation specific copying"""
+    pass
+
 class Initialize(UnitOperation):
-  def __init__(self,systemModel):
-    UnitOperation.__init__(self,systemModel)
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     self.ReactorTuple=('Reactor1','Reactor2','Reactor3')
     self.reagentLoadPositionTuple=(1,2)
     
@@ -542,10 +839,36 @@ class Initialize(UnitOperation):
       self.robotsHomed=False
     return self.robotsHomed
       
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Initialize"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    self.component.update({"validationerror":False})
+    return True
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
 class React(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
-    
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,REACTPOSITION:STR,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -579,11 +902,87 @@ class React(UnitOperation):
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)
+
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("positionvalidation"):
+      self.component.update({"positionvalidation":""})
+    if not self.component.has_key("durationvalidation"):
+      self.component.update({"durationvalidation":""})
+    if not self.component.has_key("reactiontemperaturevalidation"):
+      self.component.update({"reactiontemperaturevalidation":""})
+    if not self.component.has_key("finaltemperaturevalidation"):
+      self.component.update({"finaltemperaturevalidation":""})
+    if not self.component.has_key("stirspeedvalidation"):
+      self.component.update({"stirspeedvalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "React"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["positionvalidation"] = "type=enum-number; values=1,2; required=true"
+    self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
+    self.component["reactiontemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+
+    #Do a quick validation
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["position"], self.component["positionvalidation"]) or \
+       not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]) or \
+       not self.validateComponentField(self.component["reactiontemperature"], self.component["reactiontemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["positionvalidation"] = self.component["positionvalidation"]
+    pDBComponent["durationvalidation"] = self.component["durationvalidation"]
+    pDBComponent["reactiontemperaturevalidation"] = self.component["reactiontemperaturevalidation"]
+    pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
+    pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
       
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["position"] = self.component["position"]
+    pTargetComponent["duration"] = self.component["duration"]
+    pTargetComponent["reactiontemperature"] = self.component["reactiontemperature"]
+    pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
+    pTargetComponent["stirspeed"] = self.component["stirspeed"]
+
 class Move(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
-    
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     expectedParams = {REACTORID:STR,REACTPOSITION:STR}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -601,10 +1000,61 @@ class Move(UnitOperation):
     except Exception as e:
       self.abortOperation(e)
     
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidationvalidation":""})
+    if not self.component.has_key("positionvalidation"):
+      self.component.update({"positionvalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Move"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["positionvalidation"] = "type=enum-string; values=" + (",").join(self.database.GetReactorPositions(self.username)) + "; required=true"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["position"], self.component["positionvalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["positionvalidation"] = self.component["positionvalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["position"] = self.component["position"]
+
 class Add(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
-    expectedParams = {REACTORID:STR,REAGENTREACTORID:STR,REAGENTPOSITION:INT,REAGENTLOADPOSITION:INT}
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
+    expectedParams = {REACTORID:STR,REAGENTREACTORID:STR,REAGENTPOSITION:INT,REAGENTLOADPOSITION:INT,PRESSURE:FLOAT,DURATION:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
@@ -615,20 +1065,22 @@ class Add(UnitOperation):
     #self.ReagentReactorID
     #self.ReagentPosition
     #self.reagentLoadPosition
+    #self.duration
+    #self.pressure
 
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,5)      #Set delivery pressure to 5psi
+      self.setPressureRegulator(2,self.pressure)   #Set delivery pressure
       self.setStatus("Moving reactor")
-      self.setReactorPosition(ADDREAGENT) #Move reactor to position
+      self.setReactorPosition(ADDREAGENT)          #Move reactor to position
       self.setStatus("Picking up reagent")
-      self.setGripperPlace()              #Move reagent to the addition position.
+      self.setGripperPlace()                       #Move reagent to the addition position.
       self.setStatus("Delivering reagent")
-      self.startTimer(20,False)           #In seconds, don't show in status
-      self.waitForTimer()                 #Wait for Dispense reagent
+      self.startTimer(self.duration)               #In seconds
+      self.waitForTimer()                          #Wait for Dispense reagent
       self.setStatus("Returning reagent")
-      self.setGripperRemove()             #Return vial to its starting location
+      self.setGripperRemove()                      #Return vial to its starting location
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)
@@ -703,10 +1155,128 @@ class Add(UnitOperation):
     self.systemModel['ReagentDelivery'].moveToHome()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0),EQUAL,5)
 
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("reagentreactorvalidation"):
+      self.component.update({"reagentreactorvalidation":""})
+    if not self.component.has_key("reagentvalidation"):
+      self.component.update({"reagentvalidation":""})
+    if not self.component.has_key("deliverypositionvalidation"):
+      self.component.update({"deliverypositionvalidation":""})
+    if not self.component.has_key("deliverytimevalidation"):
+      self.component.update({"deliverytimevalidation":""})
+    if not self.component.has_key("deliverypressurevalidation"):
+      self.component.update({"deliverypressurevalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Add"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["reagentreactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
+    self.component["deliverypositionvalidation"] = "type=enum-number; values=1,2; required=true"
+    self.component["deliverytimevalidation"] = "type=number; min=0; max=10"
+    self.component["deliverypressurevalidation"] = "type=number; min=0; max=15"
+
+    #Look up the reagent we are adding and remove it from the list of available reagents
+    if self.component["reagent"].has_key("reagentid"):
+      pReagent = self.getReagentByID(self.component["reagent"]["reagentid"], pAvailableReagents, True)
+      if pReagent != None:
+        #Set the component name
+        self.component["name"] = "Add " + pReagent["name"]
+
+    #Do a quick validation
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["reagentreactor"], self.component["reagentreactorvalidation"]) or \
+       not self.validateComponentField(self.component["reagent"], self.component["reagentvalidation"]) or \
+       not self.validateComponentField(self.component["deliveryposition"], self.component["deliverypositionvalidation"]) or \
+       not self.validateComponentField(self.component["deliverytime"], self.component["deliverytimevalidation"]) or \
+       not self.validateComponentField(self.component["deliverypressure"], self.component["deliverypressurevalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["reagentreactorvalidation"] = self.component["reagentreactorvalidation"]
+    pDBComponent["reagentvalidation"] = self.component["reagentvalidation"]
+    pDBComponent["deliverypositionvalidation"] = self.component["deliverypositionvalidation"]
+    pDBComponent["deliverytimevalidation"] = self.component["deliverytimevalidation"]
+    pDBComponent["deliverypressurevalidation"] = self.component["deliverypressurevalidation"]
+    pDBComponent["deliverytime"] = self.component["deliverytime"]
+    pDBComponent["deliverypressure"] = self.component["deliverypressure"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Skip if we've already updated the reagent
+    try:
+      int(self.component["reagent"])
+    except TypeError:
+      return
+
+    # Look up the reagent we are adding
+    pAddReagent = {}
+    if self.component["reagent"] != 0:
+      pAddReagent = self.database.GetReagent(self.username, self.component["reagent"])
+
+    # Replace the reagent
+    del self.component["reagent"]
+    self.component["reagent"] = pAddReagent
+
+    # Set the default delivery time and pressure
+    if self.component["deliverytime"] == 0:
+      self.component["deliverytime"] = DEFAULT_ADD_DELIVERYTIME
+    if self.component["deliverypressure"] == 0:
+      self.component["deliverypressure"]= DEFAULT_ADD_DELIVERYPRESSURE
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["reagentreactor"] = self.component["reagentreactor"]
+    pTargetComponent["deliveryposition"] = self.component["deliveryposition"]
+    pTargetComponent["deliverytime"] = self.component["deliverytime"]
+    pTargetComponent["deliverypressure"] = self.component["deliverypressure"]
+    pTargetComponent["reagent"] = self.component["reagent"]
+    if pTargetComponent["reagent"] != 0:
+      pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
+      pTargetComponent.update({"name":"Add " + pReagent["name"]})
+    else:
+      pTargetComponent.update({"name":"Add"})
+
+  def copyComponentImpl(self, nSequenceID, pComponentCopy):
+    """Performs unit-operation specific copying"""
+    print "### Implement Add.copyComponent"
+
 class Evaporate(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
-    expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT}
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
+    expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,PRESSURE:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
@@ -724,7 +1294,7 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,5)
+      self.setPressureRegulator(2,self.pressure/3)
       self.setStatus("Moving reactor")
       self.setReactorPosition(EVAPORATE)
       self.setStatus("Starting motor")
@@ -735,7 +1305,7 @@ class Evaporate(UnitOperation):
       self.setHeater(ON)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
-      self.setPressureRegulator(2,15,self.evapTime/2) #Ramp pressure over the first half of the evaporation
+      self.setPressureRegulator(2,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
       self.waitForTimer() #Now wait until the rest of the time elapses
       self.setStatus("Cooling")
       self.setHeater(OFF)
@@ -756,12 +1326,95 @@ class Evaporate(UnitOperation):
         #Log Error
       self.paramsValidated = True"""
       
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("durationvalidation"):
+      self.component.update({"durationvalidation":""})
+    if not self.component.has_key("evaporationtemperaturevalidation"):
+      self.component.update({"evaporationtemperaturevalidation":""})
+    if not self.component.has_key("finaltemperaturevalidation"):
+      self.component.update({"finaltemperaturevalidation":""})
+    if not self.component.has_key("stirspeedvalidation"):
+      self.component.update({"stirspeedvalidation":""})
+    if not self.component.has_key("evaporationpressurevalidation"):
+      self.component.update({"evaporationpressurevalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Evaporate"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
+    self.component["evaporationtemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+    self.component["evaporationpressurevalidation"] = "type=number; min=0; max=25"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]) or \
+       not self.validateComponentField(self.component["evaporationtemperature"], self.component["evaporationtemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]) or \
+       not self.validateComponentField(self.component["evaporationpressure"], self.component["evaporationpressurevalidation"]):
+        bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["durationvalidation"] = self.component["durationvalidation"]
+    pDBComponent["evaporationtemperaturevalidation"] = self.component["evaporationtemperaturevalidation"]
+    pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
+    pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
+    pDBComponent["evaporationpressurevalidation"] = self.component["evaporationpressurevalidation"]
+    pDBComponent["evaporationpressure"] = self.component["evaporationpressure"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Set the default evaporation pressure if the value is zero
+    if self.component["evaporationpressure"] == 0:
+      self.component["evaporationpressure"] = DEFAULT_EVAPORATE_PRESSURE
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["duration"] = self.component["duration"]
+    pTargetComponent["evaporationtemperature"] = self.component["evaporationtemperature"]
+    pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
+    pTargetComponent["stirspeed"] = self.component["stirspeed"]
+    pTargetComponent["evaporationpressure"] = self.component["evaporationpressure"]
+
 class Install(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     self.setParams(params)
 		#Should have parameters listed below:
     #self.ReactorID
+    #self.userMessage
     
   def run(self):
     try:
@@ -771,9 +1424,60 @@ class Install(UnitOperation):
     except Exception as e:
       self.abortOperation(e)
       
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("messagevalidation"):
+      self.component.update({"messagevalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Install"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["messagevalidation"] = "type=string; required=true"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["message"], self.component["messagevalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["messagevalidation"] = self.component["messagevalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["message"] = self.omponent["message"]
+
 class DeliverF18(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     self.setParams(params)
     self.ReactorID='Reactor1'
     #Should have parameters listed below:
@@ -828,9 +1532,78 @@ class DeliverF18(UnitOperation):
     self.systemModel['ExternalSystems'].setF18EluteValveOpen(OFF)
     self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,OFF,EQUAL,5)
 
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("traptimevalidation"):
+      self.component.update({"traptimevalidation":""})
+    if not self.component.has_key("trappressurevalidation"):
+      self.component.update({"trappressurevalidation":""})
+    if not self.component.has_key("elutepressurevalidation"):
+      self.component.update({"elutepressurevalidation":""})
+    if not self.component.has_key("elutetimevalidation"):
+      self.component.update({"elutetimevalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Deliver F18"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["traptimevalidation"] = "type=number; min=0; max=7200; required=true"
+    self.component["trappressurevalidation"] = "type=number; min=0; max=25"
+    self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
+    self.component["elutepressurevalidation"] = "type=number; min=0; max=25"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["traptime"], self.component["traptimevalidation"]) or \
+       not self.validateComponentField(self.component["trappressure"], self.component["trappressurevalidation"]) or \
+       not self.validateComponentField(self.component["elutetime"], self.component["elutetimevalidation"]) or \
+       not self.validateComponentField(self.component["elutepressure"], self.component["elutepressurevalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["traptimevalidation"] = self.component["traptimevalidation"]
+    pDBComponent["trappressurevalidation"] = self.component["trappressurevalidation"]
+    pDBComponent["elutetimevalidation"] = self.component["elutetimevalidation"]
+    pDBComponent["elutepressurevalidation"] = self.component["elutepressurevalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["traptime"] = self.component["traptime"]
+    pTargetComponent["trappressure"] = self.component["trappressure"]
+    pTargetComponent["elutetime"] = self.component["elutetime"]
+    pTargetComponent["elutepressure"] = self.component["elutepressure"]
+
 class Transfer(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     self.setParams(params) 
     #Should have parameters listed below:
     #self.ReactorID
@@ -860,6 +1633,75 @@ class Transfer(UnitOperation):
     except Exception as e:
       self.abortOperation(e)
       
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("sourcereactorvalidation"):
+      self.component.update({"sourcereactorvalidation":""})
+    if not self.component.has_key("targetreactorvalidation"):
+      self.component.update({"targetreactorvalidation":""})
+    if not self.component.has_key("modevalidation"):
+      self.component.update({"modevalidation":""})
+    if not self.component.has_key("pressurevalidation"):
+      self.component.update({"pressurevalidation":""})
+    if not self.component.has_key("durationvalidation"):
+      self.component.update({"durationvalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Transfer"
+    self.component["sourcereactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["targetreactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["modevalidation"] = "type=enum-string; values=Trap,Elute; required=true"
+    self.component["pressurevalidation"] = "type=number; min=0; max=25"
+    self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["sourcereactor"], self.component["sourcereactorvalidation"]) or \
+       not self.validateComponentField(self.component["targetreactor"], self.component["targetreactorvalidation"]) or \
+       not self.validateComponentField(self.component["mode"], self.component["modevalidation"]) or \
+       not self.validateComponentField(self.component["pressure"], self.component["pressurevalidation"]) or \
+       not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]):
+        bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["sourcereactorvalidation"] = self.component["sourcereactorvalidation"]
+    pDBComponent["targetreactorvalidation"] = self.component["targetreactorvalidation"]
+    pDBComponent["pressurevalidation"] = self.component["pressurevalidation"]
+    pDBComponent["modevalidation"] = self.component["modevalidation"]
+    pDBComponent["durationvalidation"] = self.component["durationvalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["sourcereactor"] = self.component["sourcereactor"]
+    pTargetComponent["targetreactor"] = self.component["targetreactor"]
+    pTargetComponent["pressure"] = self.component["pressure"]
+    pTargetComponent["mode"] = self.component["mode"]
+    pTargetComponent["duration"] = self.component["duration"]
+
 class TransferToHPLC(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
@@ -949,8 +1791,8 @@ class RampPressure(UnitOperation):
       self.abortOperation(e)
       
 class Mix(UnitOperation):
-  def __init__(self,systemModel,params):
-    UnitOperation.__init__(self,systemModel)
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
     expectedParams = {REACTORID:STR,STIRSPEED:INT,DURATION:INT}
     self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -972,6 +1814,63 @@ class Mix(UnitOperation):
     except Exception as e:
       self.abortOperation(e)
   
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("mixtimevalidation"):
+      self.component.update({"mixtimevalidation":""})
+    if not self.component.has_key("stirspeedvalidation"):
+      self.component.update({"stirspeedvalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Mix"
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
+    self.component["mixtimevalidation"] = "type=number; min=0; max=7200; required=true"
+    self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = False
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["mixtime"], self.component["mixtimevalidation"]) or \
+       not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]):
+      bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["mixtimevalidation"] = self.component["mixtimevalidation"]
+    pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["mixtime"] = self.component["mixtime"]
+    pTargetComponent["stirspeed"] = self.component["stirspeed"]
+
 class UserInput(UnitOperation):
   def __init__(self,systemModel,params):
     raise Exception("Implement UserInput")
@@ -1028,6 +1927,180 @@ class DetectRadiation(UnitOperation):
     self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading()
     self.waitForCondition(self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading,self.calibrationCoefficient,GREATER,3)
 
+class Cassette(UnitOperation):
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
+
+  def run(self):
+    #This unit operation doesn't do anything when run
+    pass
+  
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all reagents
+    bValidationError = False
+    for pReagent in self.component["reagents"]:
+      if pReagent["available"]:
+        if not self.validateComponentField(pReagent["name"], pReagent["namevalidation"]) or \
+           not self.validateComponentField(pReagent["description"], pReagent["descriptionvalidation"]):
+          bValidationError = True
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Skip if we've already updated the reagents
+    if self.component.has_key("reagents"):
+      return
+
+    # Look up each reagent in this cassette
+    pReagentIDs = self.component["reagentids"]
+    pReagents = []
+    for nReagentID in pReagentIDs:
+      pReagents.append(self.database.GetReagent(self.username, nReagentID))
+
+    del self.component["reagentids"]
+    self.component["reagents"] = pReagents
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the field we want to save
+    pTargetComponent["available"] = self.component["available"]
+
+  def copyComponent(self, nSequenceID):
+    """Creates a copy of the component in the database"""
+    # Cassettes can only be copied by the database
+    print "### Skipping cassette"
+    pass
+
+class Prompt(UnitOperation):
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
+
+  def run(self):
+    #Need to implement this (combine with UserInput unit op)
+    #self.userMessage
+    pass
+  
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("messagevalidation"):
+      self.component.update({"messagevalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Prompt"
+    self.component["messagevalidation"] = "type=string; required=true"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = not self.validateComponentField(self.component["message"], self.component["messagevalidation"])
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["messagevalidation"] = self.component["messagevalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the field we want to save
+    pTargetComponent["message"] = self.component["message"]
+
+class Comment(UnitOperation):
+  def __init__(self,systemModel,params,username = "", database = None):
+    UnitOperation.__init__(self,systemModel,username,database)
+
+  def run(self):
+    #This unit operation doesn't do anything when run
+    pass
+  
+  def initializeComponent(self, pComponent):
+    """Initializes the component validation fields"""
+    self.component = pComponent
+    if not self.component.has_key("commentvalidation"):
+      self.component.update({"commentvalidation":""})
+    self.addComponentDetails()
+
+  def validateFull(self, pAvailableReagents):
+    """Performs a full validation on the component"""
+    self.component["name"] = "Comment"
+    self.component["commentvalidation"] = "type=string"
+    return self.validateQuick()
+
+  def validateQuick(self):
+    """Performs a quick validation on the component"""
+    #Validate all fields
+    bValidationError = not self.validateComponentField(self.component["comment"], self.component["commentvalidation"])
+
+    # Set the validation error field
+    self.component.update({"validationerror":bValidationError})
+    return not bValidationError
+
+  def saveValidation(self):
+    """Saves validation-specific fields back to the database"""
+    # Pull the original component from the database
+    pDBComponent = self.database.GetComponent(self.username, self.component["id"])
+
+    # Copy the validation fields
+    pDBComponent["name"] = self.component["name"]
+    pDBComponent["commentvalidation"] = self.component["commentvalidation"]
+    pDBComponent["validationerror"] = self.component["validationerror"]
+
+    # Save the component
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(pTargetComponent)
+
+    # Update the field we want to save
+    pTargetComponent["comment"] = self.component["comment"]
 
 """
   def setParams(self,currentParams):
