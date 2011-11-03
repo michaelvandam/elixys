@@ -4,8 +4,19 @@ Implements an wrapper around the unit operations class for use by the CLI interf
 
 ### Imports
 import sys
-sys.path.append("../core/")
-import UnitOperations
+sys.path.append("../core/unitoperations")
+from UnitOperation import *
+from Initialize import Initialize
+from React import React
+from Move import Move
+from Add import Add
+from Evaporate import Evaporate
+from Install import Install
+from DeliverF18 import DeliverF18
+from Transfer import Transfer
+from TempProfile import TempProfile
+from RampPressure import RampPressure
+from Mix import Mix
 
 class UnitOperationsWrapper:
     def __init__(self, pSystemModel):
@@ -15,7 +26,7 @@ class UnitOperationsWrapper:
     def Init(self):
         """Initializes Elixys hardware for use"""
         pParams = {}
-        pInit = UnitOperations.Initialize(self.__pSystemModel)
+        pInit = Initialize(self.__pSystemModel, pParams)
         pInit.setDaemon(True)
         pInit.start()
         return pInit
@@ -28,7 +39,7 @@ class UnitOperationsWrapper:
                    "coolTemp":nFinalTemperature,
                    "reactPosition":sReactPosition,
                    "stirSpeed":nStirSpeed}
-        pReact = UnitOperations.React(self.__pSystemModel, pParams)
+        pReact = React(self.__pSystemModel, pParams)
         pReact.setDaemon(True)
         pReact.start()
         return pReact
@@ -37,7 +48,7 @@ class UnitOperationsWrapper:
         """Performs a move unit operation"""
         pParams = {"ReactorID":sReactor,
                    "reactPosition":sReactPosition}
-        pMove = UnitOperations.Move(self.__pSystemModel, pParams)
+        pMove = Move(self.__pSystemModel, pParams)
         pMove.setDaemon(True)
         pMove.start()
         return pMove
@@ -47,8 +58,10 @@ class UnitOperationsWrapper:
         pParams = {"ReactorID":sReactor,
                    "ReagentReactorID":sReagentReactor,
                    "ReagentPosition":nReagentPosition,
-                   "reagentLoadPosition":nReagentDeliveryPosition}
-        pAdd = UnitOperations.Add(self.__pSystemModel, pParams)
+                   "reagentLoadPosition":nReagentDeliveryPosition,
+                   "duration":DEFAULT_ADD_DELIVERYTIME,
+                   "pressure":DEFAULT_ADD_DELIVERYPRESSURE}
+        pAdd = Add(self.__pSystemModel, pParams)
         pAdd.setDaemon(True)
         pAdd.start()
         return pAdd
@@ -59,8 +72,9 @@ class UnitOperationsWrapper:
                    "evapTemp":nEvaporationTemperature,
                    "evapTime":nEvaporationTime,
                    "coolTemp":nFinalTemperature,
-                   "stirSpeed":nStirSpeed}
-        pEvaporate = UnitOperations.Evaporate(self.__pSystemModel, pParams)
+                   "stirSpeed":nStirSpeed,
+                   "pressure":DEFAULT_EVAPORATE_PRESSURE}
+        pEvaporate = Evaporate(self.__pSystemModel, pParams)
         pEvaporate.setDaemon(True)
         pEvaporate.start()
         return pEvaporate
@@ -68,7 +82,7 @@ class UnitOperationsWrapper:
     def Install(self, sReactor):
         """Performs an install unit operation"""
         pParams = {"ReactorID":sReactor}
-        pInstall = UnitOperations.Install(self.__pSystemModel, pParams)
+        pInstall = Install(self.__pSystemModel, pParams)
         pInstall.setDaemon(True)
         pInstall.start()
         return pInstall
@@ -76,7 +90,7 @@ class UnitOperationsWrapper:
     def DeliverF18(self, nTrapTime, nTrapPressure, nEluteTime, nElutePressure):
         """Performs a Deliver F18 unit operation"""
         pParams = {"trapTime":nTrapTime,"trapPressure":nTrapPressure,"eluteTime":nEluteTime,"elutePressure":nElutePressure}
-        pDeliverF18 = UnitOperations.DeliverF18(self.__pSystemModel, pParams)
+        pDeliverF18 = DeliverF18(self.__pSystemModel, pParams)
         pDeliverF18.setDaemon(True)
         pDeliverF18.start()
         return pDeliverF18
@@ -88,7 +102,7 @@ class UnitOperationsWrapper:
                    "transferType":sTransferType,
                    "transferTimer":nTransferTimer,
                    "transferPressure":nTransferPressure}
-        pTransfer = UnitOperations.Transfer(self.__pSystemModel, pParams)
+        pTransfer = Transfer(self.__pSystemModel, pParams)
         pTransfer.setDaemon(True)
         pTransfer.start()
         return pTransfer
@@ -99,7 +113,7 @@ class UnitOperationsWrapper:
                    "reactTemp":nProfileTemperature,
                    "reactTime":nProfileTime,
                    "coolTemp":nFinalTemperature}
-        pTempProfile = UnitOperations.TempProfile(self.__pSystemModel, pParams)
+        pTempProfile = TempProfile(self.__pSystemModel, pParams)
         pTempProfile.setDaemon(True)
         pTempProfile.start()
         return pTempProfile
@@ -109,7 +123,7 @@ class UnitOperationsWrapper:
         pParams = {"pressureRegulator":nPressureRegulator,
                    "pressure":nTargetPressure,
                    "duration":nDuration}
-        pRampPressure = UnitOperations.RampPressure(self.__pSystemModel, pParams)
+        pRampPressure = RampPressure(self.__pSystemModel, pParams)
         pRampPressure.setDaemon(True)
         pRampPressure.start()
         return pRampPressure
@@ -119,27 +133,29 @@ class UnitOperationsWrapper:
         pParams = {"ReactorID":sReactor,
                    "stirSpeed":nStirSpeed,
                    "duration":nDuration}
-        pMix = UnitOperations.Mix(self.__pSystemModel, pParams)
+        pMix = Mix(self.__pSystemModel, pParams)
         pMix.setDaemon(True)
         pMix.start()
         return pMix
 
     def UserInput(self, sUserMessage, bIsCheckBox, sDescription):
-        """Performs a user input unit operation"""
+        """Performs a user input unit operation
         raise Exception("Implement UserInput unit operation")
         pParams = {"userMessage":sUserMessage,
                    "isCheckbox":bIsCheckBox,
                    "description":sDescription}
-        pUserInput = UnitOperations.UserInput(self.__pSystemModel, pParams)
+        pUserInput = UserInput(self.__pSystemModel, pParams)
         pUserInput.setDaemon(True)
         pUserInput.start()
-        return pUserInput
+        return pUserInput"""
+        return None
 
     def DetectRadiation(self):
-        """Performs a radiation detection unit operation"""
+        """Performs a radiation detection unit operation
         raise Exception("Implement DetectRadiation unit operation")
         pParams = {}
-        pDetectRadiation = UnitOperations.DetectRadiation(self.__pSystemModel, pParams)
+        pDetectRadiation = DetectRadiation(self.__pSystemModel, pParams)
         pDetectRadiation.setDaemon(True)
         pDetectRadiation.start()
-        return pDetectRadiation
+        return pDetectRadiation"""
+        return None

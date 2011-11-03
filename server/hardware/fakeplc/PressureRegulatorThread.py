@@ -23,12 +23,13 @@ class PressureRegulatorThread(threading.Thread):
         # Pressure adjust loop
         for nCount in range(1, 11):
             # Sleep
-            time.sleep(0.1)
+            time.sleep(0.1) 
             
             # Update the pressure
             nPressure += nStep
             self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, nPressure)
 
-        # Sleep an additional second to allow everything to settle
-        time.sleep(1)
+        # Set the pressure to the final value
+        self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, self.__nTargetPressure)
+        time.sleep(0.1)
         
