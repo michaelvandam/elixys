@@ -298,7 +298,9 @@ if __name__ == "__main__":
             print " TempProfile(sReactor,           'Reactor1','Reactor2','Reactor3'"
             print "             nProfileTemp,       Celsius"
             print "             nProfileTime,       Seconds"
-            print "             nFinalTemperature)  Celsius"
+            print "             nFinalTemperature,  Celsius"
+            print "             nLiquidTCReactor,   Reactor of the liquid thermocouple"
+            print "             nLiquidTCCollet)    Collet of the liquid thermocouple"
         elif sCommand == "help RampPressure":
             # Ramp pressure unit operation
             print "Ramps the pressure of one of the pressure regulators over a period of time"

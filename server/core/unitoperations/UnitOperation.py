@@ -42,6 +42,8 @@ REAGENTLOADPOSITION = 'reagentLoadPosition'
 PRESSUREREGULATOR = 'pressureRegulator'
 PRESSURE = 'pressure'
 DURATION = 'duration'
+LIQUIDTCREACTOR = 'liquidTCReactor'
+LIQUIDTCCOLLET = 'liquidTCCollet'
 
 STR   = 'str'
 INT   = 'int'
@@ -156,6 +158,10 @@ class UnitOperation(threading.Thread):
         self.transferTimer = params['transferTimer']
       if paramname=="transferPressure":
         self.transferPressure = params['transferPressure']      
+      if paramname=="liquidTCReactor":
+        self.liquidTCReactor = params['liquidTCReactor']      
+      if paramname=="liquidTCCollet":
+        self.liquidTCCollet = params['liquidTCCollet']      
 
   """def validateParams(self,currentParams,expectedParams):
     errorMessage = ""

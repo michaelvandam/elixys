@@ -107,12 +107,14 @@ class UnitOperationsWrapper:
         pTransfer.start()
         return pTransfer
 
-    def TempProfile(self, sReactor, nProfileTemperature, nProfileTime, nFinalTemperature):
+    def TempProfile(self, sReactor, nProfileTemperature, nProfileTime, nFinalTemperature, nLiquidTCReactor, nLiquidTCCollet):
         """Heats the reactor in the transfer position for temperature profiling"""
         pParams = {"ReactorID":sReactor,
                    "reactTemp":nProfileTemperature,
                    "reactTime":nProfileTime,
-                   "coolTemp":nFinalTemperature}
+                   "coolTemp":nFinalTemperature,
+                   "liquidTCReactor":nLiquidTCReactor,
+                   "liquidTCCollet":nLiquidTCCollet}
         pTempProfile = TempProfile(self.__pSystemModel, pParams)
         pTempProfile.setDaemon(True)
         pTempProfile.start()

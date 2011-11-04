@@ -37,7 +37,7 @@ class Initialize(UnitOperation):
       #Home robots
       self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
       time.sleep(2)
-      self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
+      self.waitForCondition(self.areRobotsHomed,True,EQUAL,20)
       for self.ReactorID in self.ReactorTuple:
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")
