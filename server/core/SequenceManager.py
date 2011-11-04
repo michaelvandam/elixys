@@ -5,6 +5,8 @@ Elixys Sequence Manager
 
 import json
 import SequenceValidation
+import sys
+sys.path.append("/opt/elixys/core/unitoperations")
 import UnitOperations
 
 class SequenceManager:
@@ -29,37 +31,18 @@ class SequenceManager:
     # Return
     return pSequence
 
-  def CopySequence(self, sRemoteUser, nSequenceID, sName, sComment, sType, nCassettes, nReagents, nColumns):
+  def CopySequence(self, sRemoteUser, nSequenceID, sName, sComment):
     """ Creates a copy of an existing sequence in the database """
-    # Create the new sequence
-    nNewSequenceID = self.database.CreateSequence(sRemoteUser, sName, sComment, sType, nCassettes, nReagents, nColumns)
-
-    # Cassette loop
-    for nCassette in range(1, nCassettes + 1):
-      # Copy reagents
-      for nReagent in range(1, nReagents + 1):
-        pReagent = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, nCassette, str(nReagent))
-        self.database.UpdateReagentByPosition(sRemoteUser, nNewSequenceID, nCassette, str(nReagent), pReagent["available"], 
-          pReagent["name"], pReagent["description"])
-
-      # Copy columns
-      for nColumn in range(0, nColumns):
-        sPosition = chr(ord("A") + nColumn)
-        pColumn = self.database.GetReagentByPosition(sRemoteUser, nSequenceID, nCassette, sPosition)
-        self.database.UpdateReagentByPosition(sRemoteUser, nNewSequenceID, nCassette, sPosition, pReagent["available"], 
-          pReagent["name"], pReagent["description"])
-
-      # Update the cassette settings
-      #pCassette = gDatabase.GetCassette()
-      #def UpdateComponentDetails(pTargetComponent, pSourceComponent):
-
-      # Yeah, this function isn't fully implemented yet
+    # Create the new saved sequence
+    pConfiguration = self.database.GetConfiguration(sRemoteUser)
+    nNewSequenceID = self.database.CreateSequence(sRemoteUser, sName, sComment, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"],
+      pConfiguration["columnsperreactor"])
 
     # Copy each component of the sequence
     pSequence = self.GetSequence(sRemoteUser, nSequenceID)
     for pComponent in pSequence["components"]:
       pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
-      pUnitOperation.copyComponent(nSequenceID)
+      pUnitOperation.copyComponent(nNewSequenceID)
 
     # Validate the sequence
     self.validation.ValidateSequenceFull(sRemoteUser, nNewSequenceID)
@@ -74,9 +57,15 @@ class SequenceManager:
     sSequence = pSequenceFile.read()
     pSequence = json.loads(sSequence)
 
+    # Make sure the sequence hardware requirements meet our current system
+    pConfiguration = self.database.GetConfiguration(sRemoteUser)
+    if (pSequence["reactors"] != pConfiguration["reactors"]) or (pSequence["reagentsperreactor"] != pConfiguration["reagentsperreactor"]) or \
+       (pSequence["columnsperreactor"] != pConfiguration["columnsperreactor"]):
+      raise Exception("This sequence you are trying to import does not match the system hardware")
+
     # Create the sequence
     if (pSequence["type"] == "sequence") and (pSequence["name"] != "") and (pSequence["reactors"] != 0) and (pSequence["reagentsperreactor"] != 0) and \
-        (pSequence["columnsperreactor"] != 0):
+       (pSequence["columnsperreactor"] != 0):
       nSequenceID = self.database.CreateSequence(sRemoteUser, pSequence["name"], pSequence["description"], "Saved", pSequence["reactors"], 
         pSequence["reagentsperreactor"], pSequence["columnsperreactor"])
     else:

@@ -678,9 +678,9 @@ class UnitOperation(threading.Thread):
     # Add the component to the database and return the ID
     nComponentCopyID = self.database.CreateComponent(self.username, nSequenceID, pComponentCopy["componenttype"], pComponentCopy["name"], 
       json.dumps(pComponentCopy))
-    print "### Copied " + str(pComponentCopy) + " to " + str(nComponentCopyID)
     return nComponentCopyID
 
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""
     pass
+

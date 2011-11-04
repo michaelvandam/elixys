@@ -1,7 +1,7 @@
 # DetectRadiation unit operation
 
 # Imports
-from UnitOperations import *
+from UnitOperation import *
 
 class DetectRadiation(UnitOperation):
   def __init__(self,systemModel,params):

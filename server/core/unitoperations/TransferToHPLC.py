@@ -1,7 +1,7 @@
 # TransferToHPLC unit operation
 
 # Imports
-from UnitOperations import *
+from UnitOperation import *
 
 class TransferToHPLC(UnitOperation):
   def __init__(self,systemModel,params):

@@ -400,7 +400,7 @@ package Elixys.HTTP
 		private var m_pHTTPResponseBody:ByteArray = new ByteArray();
 
 		// Response timer, outstanding HTTP request and retry count
-		private var m_pResponseTimer:Timer = new Timer(1000, 1);
+		private var m_pResponseTimer:Timer = new Timer(3000, 1);
 		private var m_pOutstandingRequest:HTTPRequest;
 		private var m_nRetryCount:uint;
 			

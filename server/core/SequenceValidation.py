@@ -4,6 +4,8 @@ Validates synthesis sequences
 """
 
 import json
+import sys
+sys.path.append("/opt/elixys/core/unitoperations")
 import UnitOperations
 
 class SequenceValidation:

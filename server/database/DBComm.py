@@ -51,7 +51,10 @@ class DBComm:
     # Return hardcoded values for now but this should really come from the database
     return {"name":"Mini cell 3",
       "version":"2.0",
-      "debug":"false"}
+      "debug":"false",
+      "reactors":3,
+      "reagentsperreactor":10,
+      "columnsperreactor":2}
 
   def GetSupportedOperations(self, sCurrentUsername):
     """Returns the supported operations"""

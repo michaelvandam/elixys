@@ -372,12 +372,10 @@ class PostHandler:
                     raise Exception("Sequence name is required")
 
                 # Create a copy of the sequence in the database
-                nNewSequenceID = self.__pSequenceManager.CopySequence(self.__sRemoteUser, self.__pClientState["sequenceid"], sEdit1, sEdit2, "Saved", 3, 10, 2)
+                nNewSequenceID = self.__pSequenceManager.CopySequence(self.__sRemoteUser, self.__pClientState["sequenceid"], sEdit1, sEdit2)
 
-                # Hide the prompt and move the client to the editing the new sequence
+                # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
-                self.__pClientState["screen"] = "EDIT"
-                self.__pClientState["sequenceid"] = nNewSequenceID
                 return self.__SaveClientStateAndReturn()
             if sActionTargetID == "CANCEL":
                 # Hide the prompt

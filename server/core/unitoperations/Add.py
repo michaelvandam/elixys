@@ -223,4 +223,10 @@ class Add(UnitOperation):
 
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""
-    print "### Implement Add.copyComponent"
+    if self.component["reagent"] != None:
+      pReagent = self.database.GetReagent(self.username, self.component["reagent"]["reagentid"])
+      pNewReagent = self.database.GetReagentByPosition(self.username, nSequenceID, self.component["reactor"], self.component["reagent"]["position"])
+      pComponentCopy["reagent"] = pNewReagent["reagentid"]
+    else:
+      pComponentCopy["reagent"] = 0
+
