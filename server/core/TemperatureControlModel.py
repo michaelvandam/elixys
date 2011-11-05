@@ -15,6 +15,9 @@ class TemperatureControlModel(ComponentModel):
     """Reactor temperature control model constructor"""
     ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
+    self.heater1On = False
+    self.heater2On = False
+    self.heater3On = False
     self.heaterOn = False
     self.heater1SetTemperature = 0
     self.heater2SetTemperature = 0
@@ -33,6 +36,27 @@ class TemperatureControlModel(ComponentModel):
     """Returns the maximum reactor temperature"""
     return 180
   
+  def getHeater1On(self, bLockModel = True):
+    """Returns the heater state"""
+    if bLockModel:
+      return self.protectedReturn1(self.getHeater1On)
+    else:
+      return self.heater1On
+
+  def getHeater2On(self, bLockModel = True):
+    """Returns the heater state"""
+    if bLockModel:
+      return self.protectedReturn1(self.getHeater2On)
+    else:
+      return self.heater2On
+
+  def getHeater3On(self, bLockModel = True):
+    """Returns the heater state"""
+    if bLockModel:
+      return self.protectedReturn1(self.getHeater3On)
+    else:
+      return self.heater3On
+
   def getHeaterOn(self, bLockModel = True):
     """Returns the heater state"""
     if bLockModel:
@@ -110,6 +134,9 @@ class TemperatureControlModel(ComponentModel):
   def updateState(self, nHeater1On, nHeater2On, nHeater3On, nHeater1SetTemperature, nHeater2SetTemperature, nHeater3SetTemperature, nHeater1CurrentTemperature,
                   nHeater2CurrentTemperature, nHeater3CurrentTemperature):
     """Updates the internal state"""
+    self.heater1On = nHeater1On
+    self.heater2On = nHeater2On
+    self.heater3On = nHeater3On
     self.heaterOn = nHeater1On or nHeater2On or nHeater3On
     self.heater1SetTemperature = nHeater1SetTemperature
     self.heater2SetTemperature = nHeater2SetTemperature

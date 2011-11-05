@@ -315,16 +315,40 @@ class SystemModel:
         sState += self.__PadString(str(self.model["Reactor3"]["Stopcock1"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
             
-        sState += self.__PadString("Temp controller (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            "%.1f" % self.model["Reactor1"]["Thermocouple"].getSetTemperature(False) + "/" + \
-            "%.1f" % self.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            "%.1f" % self.model["Reactor2"]["Thermocouple"].getSetTemperature(False) + "/" + \
-            "%.1f" % self.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeaterOn(False)) + "/" + \
-            "%.1f" % self.model["Reactor3"]["Thermocouple"].getSetTemperature(False) + "/" + \
-            "%.1f" % self.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString("Collet 1 Temp (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeater1On(False)) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater1SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater1CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeater1On(False)) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater1SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater1CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeater1On(False)) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater1SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater1CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Collet 2 Temp (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeater2On(False)) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater2SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater2CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeater2On(False)) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater2SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater2CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeater2On(False)) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater2SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater2CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+            
+        sState += self.__PadString("Collet 3 Temp (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeater3On(False)) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater3SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater3CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Thermocouple"].getHeater3On(False)) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater3SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor2"]["Thermocouple"].getHeater3CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Thermocouple"].getHeater3On(False)) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater3SetTemperature(False) + "/" + \
+            "%.1f" % self.model["Reactor3"]["Thermocouple"].getHeater3CurrentTemperature(False), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
             
         sState += self.__PadString("Stir motor", STATEREACTORCOLUMN1WIDTH)
