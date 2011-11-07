@@ -241,23 +241,25 @@ class UnitOperation(threading.Thread):
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
       self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
       self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
-    #if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL)):
-    self.systemModel[ReactorID]['Motion'].moveReactorDown()
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,motionTimeout)
-    self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
-    if not reactorPosition == INSTALL:
-      self.systemModel[ReactorID]['Motion'].moveReactorUp()
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-    self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
-    #else: #We're in the right position, check if we're sealed.
-    #  if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL)):
-    #    if not(reactorPosition==INSTALL):
-    #      self.systemModel[ReactorID]['Motion'].moveReactorUp()
-    #      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-    #      self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-    #      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
+    if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL)):
+      self.systemModel[ReactorID]['Motion'].moveReactorDown()
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,motionTimeout)
+      self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
+      if not reactorPosition == INSTALL:
+        self.systemModel[ReactorID]['Motion'].moveReactorUp()
+        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
+      self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
+    else: #We're in the right position, check if we're sealed.
+      #This is where we would ideally check if the reactor is up but our up sensors aren't working as desired due to the deformability of the
+      #gaskets.  What we'll do for now is only raise the reactor if we know for sure it is down
+      if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
+        if not(reactorPosition==INSTALL):
+          self.systemModel[ReactorID]['Motion'].moveReactorUp()
+          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
+          self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
     
   def waitForCondition(self,function,condition,comparator,timeout): #Timeout in seconds, default to 3.
     startTime = time.time()

@@ -46,7 +46,7 @@ ROBONET_MOVING = 0x7016
 ROBONET_ERROR3 = 0x700A
 
 # Robot position hit test limit
-ROBOT_POSITION_LIMIT = 20
+ROBOT_POSITION_LIMIT = 60
 
 # Constants for PLC command formatting
 MAX_PLC_READLENGTH = 0x350
@@ -769,16 +769,16 @@ class HardwareComm():
             # Look up our reactor robot positions
             nReactor1RobotSetPositionRaw = self.__GetReactorRobotSetPosition(1)
             nReactor1RobotActualPositionRaw = self.__GetReactorRobotActualPosition(1)
-            nReactor1RobotSetPosition = self.__LookUpReactorRobotPosition(nReactor1RobotSetPositionRaw)
-            nReactor1RobotActualPosition = self.__LookUpReactorRobotPosition(nReactor1RobotActualPositionRaw)
+            nReactor1RobotSetPosition = self.__LookUpReactorRobotPosition(1, nReactor1RobotSetPositionRaw)
+            nReactor1RobotActualPosition = self.__LookUpReactorRobotPosition(1, nReactor1RobotActualPositionRaw)
             nReactor2RobotSetPositionRaw = self.__GetReactorRobotSetPosition(2)
             nReactor2RobotActualPositionRaw = self.__GetReactorRobotActualPosition(2)
-            nReactor2RobotSetPosition = self.__LookUpReactorRobotPosition(nReactor2RobotSetPositionRaw)
-            nReactor2RobotActualPosition = self.__LookUpReactorRobotPosition(nReactor2RobotActualPositionRaw)
+            nReactor2RobotSetPosition = self.__LookUpReactorRobotPosition(2, nReactor2RobotSetPositionRaw)
+            nReactor2RobotActualPosition = self.__LookUpReactorRobotPosition(2, nReactor2RobotActualPositionRaw)
             nReactor3RobotSetPositionRaw = self.__GetReactorRobotSetPosition(3)
             nReactor3RobotActualPositionRaw = self.__GetReactorRobotActualPosition(3)
-            nReactor3RobotSetPosition = self.__LookUpReactorRobotPosition(nReactor3RobotSetPositionRaw)
-            nReactor3RobotActualPosition = self.__LookUpReactorRobotPosition(nReactor3RobotActualPositionRaw)
+            nReactor3RobotSetPosition = self.__LookUpReactorRobotPosition(3, nReactor3RobotSetPositionRaw)
+            nReactor3RobotActualPosition = self.__LookUpReactorRobotPosition(3, nReactor3RobotActualPositionRaw)
 
             # Update the system model
             pModel["CoolingSystem"].updateState(self.__GetBinaryValue("CoolingSystemOn"))
@@ -1270,15 +1270,13 @@ class HardwareComm():
         return 0, 0, 0
      
     # Look up the reactor robot position
-    def __LookUpReactorRobotPosition(self, nPositionZ):
-        # Hit test each reactor
-        for nReactor in range(1,4):
-            # Hit test each reactor position
-            nReactorOffset = self.__LookUpReactorOffset(nReactor)
-            for sPositionName in self.__pRobotPositions["Reactors"]:
-                if self.__HitTest(nPositionZ - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
-                  # We're over a know position
-                  return sPositionName
+    def __LookUpReactorRobotPosition(self, nReactor, nPositionZ):
+        # Hit test each reactor position
+        nReactorOffset = self.__LookUpReactorOffset(nReactor)
+        for sPositionName in self.__pRobotPositions["Reactors"]:
+            if self.__HitTest(nPositionZ - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
+                # We're over a know position
+                return sPositionName
                   
         # Failed to find a named position
         return "Indeterminate" 
