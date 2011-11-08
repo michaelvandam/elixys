@@ -228,12 +228,6 @@ class HardwareComm():
         self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
         self.__pSocketThread.setDaemon(True)
         self.__pSocketThread.start()
-        
-        # Enable analog out
-        self.__SetIntegerValueRaw(2000, 0xFF);
-        
-        # Enable RoboNet control for all axes
-        self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
 
     def ShutDown(self):
         # Stop the socket thread
@@ -738,6 +732,15 @@ class HardwareComm():
             # No, so request the next chunk and return
             self.__RequestNextStateChunk()
             return
+
+        # Enable analog out as needed
+        nAnalogOutOffset = self.__CalculateHardwareOffset(self.__nAnalogOutUnit);
+        if self.__GetIntegerValueRaw(nAnalogOutOffset) != 0xFF:
+            self.__SetIntegerValueRaw(nAnalogOutOffset, 0xFF);
+        
+        # Enable RoboNet control for all axes as needed
+        if self.__GetIntegerValueRaw(ROBONET_ENABLE) != 0x8000:
+            self.__SetIntegerValueRaw(ROBONET_ENABLE, 0x8000)
 
         # Make sure we have a system model
         if self.__pSystemModel == None:
