@@ -27,7 +27,7 @@ class Move(UnitOperation):
     """Initializes the component validation fields"""
     self.component = pComponent
     if not self.component.has_key("reactorvalidation"):
-      self.component.update({"reactorvalidationvalidation":""})
+      self.component.update({"reactorvalidation":""})
     if not self.component.has_key("positionvalidation"):
       self.component.update({"positionvalidation":""})
     self.addComponentDetails()
@@ -68,8 +68,9 @@ class Move(UnitOperation):
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["position"] = self.component["position"]

@@ -63,8 +63,6 @@ class DeliverF18(UnitOperation):
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent
-    if not self.component.has_key("reactorvalidation"):
-      self.component.update({"reactorvalidation":""})
     if not self.component.has_key("traptimevalidation"):
       self.component.update({"traptimevalidation":""})
     if not self.component.has_key("trappressurevalidation"):
@@ -78,7 +76,6 @@ class DeliverF18(UnitOperation):
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
     self.component["name"] = "Deliver F18"
-    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["traptimevalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["trappressurevalidation"] = "type=number; min=0; max=25"
     self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
@@ -89,8 +86,7 @@ class DeliverF18(UnitOperation):
     """Performs a quick validation on the component"""
     #Validate all fields
     bValidationError = False
-    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
-       not self.validateComponentField(self.component["traptime"], self.component["traptimevalidation"]) or \
+    if not self.validateComponentField(self.component["traptime"], self.component["traptimevalidation"]) or \
        not self.validateComponentField(self.component["trappressure"], self.component["trappressurevalidation"]) or \
        not self.validateComponentField(self.component["elutetime"], self.component["elutetimevalidation"]) or \
        not self.validateComponentField(self.component["elutepressure"], self.component["elutepressurevalidation"]):
@@ -107,7 +103,6 @@ class DeliverF18(UnitOperation):
 
     # Copy the validation fields
     pDBComponent["name"] = self.component["name"]
-    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
     pDBComponent["traptimevalidation"] = self.component["traptimevalidation"]
     pDBComponent["trappressurevalidation"] = self.component["trappressurevalidation"]
     pDBComponent["elutetimevalidation"] = self.component["elutetimevalidation"]
@@ -120,10 +115,10 @@ class DeliverF18(UnitOperation):
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
-    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["traptime"] = self.component["traptime"]
     pTargetComponent["trappressure"] = self.component["trappressure"]
     pTargetComponent["elutetime"] = self.component["elutetime"]

@@ -369,18 +369,6 @@ CREATE PROCEDURE UpdateSequenceDirtyFlag(IN iSequenceID INT UNSIGNED, IN iDirty 
         UPDATE Sequences SET Dirty = iDirty WHERE SequenceID = iSequenceID;
     END //
 
-/* Creates a copy of an existing sequence:
- *   IN SequenceID - ID of the sequence to copy
- *   IN Name - Name of the new sequence
- *   IN Comment - Comment associated with the new sequence
- *   IN Username - Username of the user creating the new sequence
- *   OUT SequenceID - ID of the new sequence
- */
-DROP PROCEDURE IF EXISTS CopySequence;
-CREATE PROCEDURE CopySequence(IN iSequenceID INT UNSIGNED, IN iName VARCHAR(64), IN iComment VARCHAR(255), IN iUsername VARCHAR(30), OUT oSequenceID INT UNSIGNED)
-    BEGIN
-    END //
-
 /* Deletes a sequence:
  *   IN SequenceID - ID of the sequence to delete
  */
@@ -448,6 +436,25 @@ CREATE PROCEDURE GetReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCassetteN
 
         -- Look up the reagent by position
         SELECT * FROM Reagents WHERE SequenceID = iSequenceID AND ComponentID = lComponentID AND Position = iPosition;
+    END //
+
+/* Get the cassette number that contains the given reagent:
+ *   IN SequenceID - Sequence ID of the reagent
+ *   IN ReagentID - ID of the reagent
+ *   OUT Cassette - Cassette that contains the reagent
+ */
+DROP PROCEDURE IF EXISTS GetReagentCassette;
+CREATE PROCEDURE GetReagentCassette(IN iSequenceID INT UNSIGNED, IN iReagentID INT UNSIGNED, OUT oCassette INT UNSIGNED)
+    BEGIN
+        DECLARE lComponentID INT UNSIGNED;
+        DECLARE lComponentOffset INT UNSIGNED;
+
+        -- Look up the offset of the reagent's component ID
+        SET lComponentID = (SELECT ComponentID FROM Reagents WHERE SequenceID = iSequenceID AND ReagentID = iReagentID);
+        CALL Internal_GetOffsetByComponent(iSequenceID, lComponentID, lComponentOffset);
+
+        -- Set the return value
+        SET oCassette = lComponentOffset + 1;
     END //
 
 /* Update an existing reagent:
@@ -820,6 +827,33 @@ CREATE PROCEDURE Internal_GetComponentByOffset(IN iSequenceID INT UNSIGNED, IN i
 
         -- Set the return value
         SET oComponentID = lComponentID;
+    END //
+
+/* Returns the offset of the given component in the sequence:
+ *   IN SequenceID - ID of the sequence
+ *   IN ComponentID - ID of the component
+ *   OUT ComponentOffset - Offset of the component
+ */
+DROP PROCEDURE IF EXISTS Internal_GetOffsetByComponent;
+CREATE PROCEDURE Internal_GetOffsetByComponent(IN iSequenceID INT UNSIGNED, IN iComponentID INT UNSIGNED, OUT oComponentOffset INT UNSIGNED)
+    BEGIN
+        DECLARE lComponentID INT UNSIGNED default 0;
+        DECLARE lComponentOffset INT UNSIGNED default 0;
+
+        -- Get the first component ID
+        CALL Internal_GetFirstComponent(iSequenceID, lComponentID);
+
+        -- Loop until we reach the desired offset
+        WHILE lComponentID != iComponentID DO
+            -- Increment the component counter
+            SET lComponentOffset = lComponentOffset + 1;
+
+            -- Get the next component ID
+            CALL Internal_GetNextComponent(lComponentID, lComponentID);
+        END WHILE;
+
+        -- Set the return value
+        SET oComponentOffset = lComponentOffset;
     END //
 
 -- Restore the delimiter

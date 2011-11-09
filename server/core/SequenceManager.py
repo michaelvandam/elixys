@@ -25,7 +25,7 @@ class SequenceManager:
     # Add details to each component if we're doing a full load
     if bFullLoad:
         for pComponent in pSequence["components"]:
-          pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+          pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
           pUnitOperation.addComponentDetails()
 
     # Return
@@ -41,7 +41,7 @@ class SequenceManager:
     # Copy each component of the sequence
     pSequence = self.GetSequence(sRemoteUser, nSequenceID)
     for pComponent in pSequence["components"]:
-      pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+      pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
       pUnitOperation.copyComponent(nNewSequenceID)
 
     # Validate the sequence
@@ -120,14 +120,14 @@ class SequenceManager:
     pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
 
     # Add details to the component and return
-    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
     pUnitOperation.addComponentDetails()
     return pUnitOperation.component
 
   def AddComponent(self, sRemoteUser, nSequenceID, nInsertionID, pComponent):
     """ Adds a new component to the database """
     # Update the component fields we want to save
-    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
     pDBComponent = {}
     pUnitOperation.updateComponentDetails(pDBComponent)
 
@@ -135,8 +135,9 @@ class SequenceManager:
     nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pDBComponent["componenttype"], pDBComponent["name"], 
       json.dumps(pDBComponent), nInsertionID)
 
-    # Initialize the new component's validation fields and return
+    # Initialize the new component's validation fields
     self.validation.InitializeComponent(sRemoteUser, nSequenceID, nComponentID)
+    self.validation.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
     return nComponentID
 
   def UpdateComponent(self, sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent):
@@ -144,7 +145,7 @@ class SequenceManager:
     # Do we have an input component?
     if pComponent != None:
       # Yes, so pull the original from the database and update it with the fields we want to save
-      pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+      pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
       pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
       pUnitOperation.updateComponentDetails(pDBComponent)
 

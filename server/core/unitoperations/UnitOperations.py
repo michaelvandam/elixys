@@ -17,7 +17,7 @@ from Mix import Mix
 from Move import Move
 
 #Create a unit operation from a component object
-def createFromComponent(pComponent, username, database, systemModel = None):
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel = None):
   if pComponent["componenttype"] == "CASSETTE":
     pCassette = Cassette(systemModel, {}, username, database)
     pCassette.initializeComponent(pComponent)
@@ -25,14 +25,17 @@ def createFromComponent(pComponent, username, database, systemModel = None):
   elif pComponent["componenttype"] == "ADD":
     pParams = {}
     pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["ReagentReactorID"] = "Reactor" + str(pComponent["reagentreactor"])
-    pParams["ReagentPosition"] = 1  #We'll get the actual value once we initialize the component
+    pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
+    pParams["ReagentPosition"] = 0             #Ditto
     pParams["reagentLoadPosition"] = pComponent["deliveryposition"]
     pParams["duration"] = pComponent["deliverytime"]
     pParams["pressure"] = pComponent["deliverypressure"]
     pAdd = Add(systemModel, pParams, username, database)
     pAdd.initializeComponent(pComponent)
-    pAdd.reagentPosition = pComponent["reagent"]["position"]
+    if pComponent["reagent"].has_key("position"):
+      pAdd.reagentPosition = pComponent["reagent"]["position"]
+    if pComponent["reagent"].has_key("reagentid"):
+      pAdd.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
     return pAdd
   elif pComponent["componenttype"] == "EVAPORATE":
     pParams = {}

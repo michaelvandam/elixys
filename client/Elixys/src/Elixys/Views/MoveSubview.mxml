@@ -6,9 +6,10 @@
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
-			import Elixys.Objects.ComponentInstall;
+			import Elixys.Objects.ComponentMove;
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
+			import Elixys.Objects.StateSequence;
 			
 			import mx.controls.TextArea;
 			import mx.events.FlexEvent;
@@ -23,40 +24,44 @@
 			public override function UpdateComponent(pComponent:Component):void
 			{
 				// Remember the component
-				m_pComponentInstall = new ComponentInstall(null, pComponent);
+				m_pComponentMove = new ComponentMove(null, pComponent);
 				
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Set the name and format the output text
-					_viewComponentName.text = m_pComponentInstall.Name;
-					_outputText.text = "Move reactor " + m_pComponentInstall.Reactor + " to the install position and prompt the user:\n\n\"" +
-						m_pComponentInstall.Message + "\"";
+					_viewComponentName.text = m_pComponentMove.Name;
+					_outputText.text = "Move reactor " + m_pComponentMove.Reactor + " to the " + m_pComponentMove.Position + " position.";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Set the name
-					_editComponentName.text = m_pComponentInstall.Name;
+					_editComponentName.text = m_pComponentMove.Name;
 					
-					// Fill the reactor combo box
-					UpdateEnumNumberComboBox(m_pComponentInstall.ReactorValidation, _editReactorCombo, m_pComponentInstall.Reactor.toString());
-
-					// Set the message unless the user is editing it
-					if (m_pKeyboardFocusTextArea != _editMessage)
-					{
-						// Unescape the multiline message
-						_editMessage.text = unescape(m_pComponentInstall.Message);
-					}
+					// Fill the reactor and position combo boxes
+					UpdateEnumNumberComboBox(m_pComponentMove.ReactorValidation, _editReactorCombo, m_pComponentMove.Reactor.toString());
+					UpdateEnumStringComboBox(m_pComponentMove.PositionValidation, _editPositionCombo, m_pComponentMove.Position);
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					/*
+					// Removing the following line causes a compile error for reasons I don't understand
+					var pElixysMain:ElixysMain;
+
 					// Format the output text
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentInstall.Reactor);
-					_runOutputText1.text = "Moving reactor " + m_pComponentInstall.Reactor + " to the install position.";
-					_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
+					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentReact.Reactor);
+					_runOutputText1.text = "Reacting reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position +
+						" at " + m_pComponentReact.ReactionTemperature + " C for " + m_pComponentReact.Duration +
+						" seconds and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
+						m_pComponentReact.StirSpeed + " rpm.";
+					_runOutputText2.text = "Status: " + pStateSequence.ServerState().RunState().Status() + "\nTemperature: " +
+						pReactor.Temperature() + " C";
+					_runReactorText2.text = "Reactor " + m_pComponentReact.Reactor;
+					*/
 				}
 			}
-			
+
 			/***
 			 * Message handlers
 			 **/
@@ -80,34 +85,28 @@
 			protected function OnReactorChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				m_pComponentInstall.Reactor = parseInt(_editReactorCombo.selectedItem as String);
+				m_pComponentMove.Reactor = parseInt(_editReactorCombo.selectedItem as String);
 				
 				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
-				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentMove, "sequence/" + nSequenceID + "/component/" + m_pComponentMove.ID);
 			}
-
-			// Called when the user changes the text in one of our input fields
-			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
+			protected function OnPositionChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				if (m_pKeyboardFocusTextArea == _editMessage)
-				{
-					// Escape the multiline message
-					m_pComponentInstall.Message = escape(_editMessage.text);
-				}
+				m_pComponentMove.Position = _editPositionCombo.selectedItem as String;
 				
-				// Save the component to the server
+				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
-				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentInstall, "sequence/" + nSequenceID + "/component/" + m_pComponentInstall.ID);
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentMove, "sequence/" + nSequenceID + "/component/" + m_pComponentMove.ID);
 			}
-
+			
 			/***
 			 * Member variables
 			 **/
 			
 			// Component
-			private var m_pComponentInstall:ComponentInstall;
+			private var m_pComponentMove:ComponentMove;
 		]]>
 	</fx:Script>
 	
@@ -131,34 +130,33 @@
 					<s:Spacer height="100%" />
 					<s:VGroup width="100%">
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:HGroup horizontalAlign="right" width="30%">
+							<s:HGroup horizontalAlign="right" width="50%">
 								<s:Label text="Reactor:" styleName="TextMedium" />
 							</s:HGroup>
-							<s:HGroup horizontalAlign="left" width="70%">
+							<s:HGroup horizontalAlign="left" width="50%">
 								<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="TextMedium" width="100%" />
 							</s:HGroup>
 						</s:HGroup>
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:Spacer width="30%" />
-							<s:HGroup horizontalAlign="left" width="70%">
-								<s:Label styleName="FieldDescription" text="Reactor to move to the install position"/>
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Reactor to move"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>
 					<s:VGroup width="100%">
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:HGroup horizontalAlign="right" width="30%">
-								<s:Label text="Prompt:" styleName="TextMedium" />
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Position:" styleName="TextMedium" />
 							</s:HGroup>
-							<s:HGroup horizontalAlign="left" width="70%">
-								<Renderers:AutoTextArea id="_editMessage" styleName="TextMedium" focusIn="OnTextFocusIn(event)" focusOut="OnTextFocusOut(event)"
-									fixedHeightInLines="5" multiline="true" width="100%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="TextMedium" width="100%" />
 							</s:HGroup>
 						</s:HGroup>
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:Spacer width="30%" />
-							<s:HGroup horizontalAlign="left" width="70%">
-								<s:Label styleName="FieldDescription" text="Prompt to display to the user"/>
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Position to move the reactor"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>
@@ -168,10 +166,16 @@
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
 				verticalCenter="0" width="100%" height="100%">
-			<s:VGroup horizontalAlign="left" verticalAlign="middle" gap="15" width="80%" height="100%">
-				<mx:Text id="_runOutputText1" styleName="TextMedium" width="100%" />
-				<mx:Text id="_runOutputText2" styleName="TextMedium" width="100%" />
-			</s:VGroup>
+			<s:HGroup paddingLeft="15" paddingRight="15" gap="15" width="100%" height="100%">
+				<s:VGroup horizontalAlign="left" verticalAlign="middle" gap="15" width="100%" height="100%">
+					<mx:Text id="_runOutputText1" styleName="TextMedium" width="100%" />
+					<mx:Text id="_runOutputText2" styleName="TextMedium" width="100%" />
+				</s:VGroup>
+				<s:VGroup horizontalAlign="center" verticalAlign="middle" height="100%">
+					<s:BorderContainer backgroundColor="0x777777" width="320" height="320" />
+					<mx:Text id="_runReactorText2" styleName="TextMedium" />
+				</s:VGroup>
+			</s:HGroup>
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

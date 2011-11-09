@@ -22,52 +22,89 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
-		public function get Reactor():uint
+		public function get SourceReactor():uint
 		{
-			return super.flash_proxy::getProperty("reactor");
+			return super.flash_proxy::getProperty("sourcereactor");
 		}
-		public function set Reactor(value:uint):void
+		public function set SourceReactor(value:uint):void
 		{
-			super.flash_proxy::setProperty("reactor", value);
-		}
-		
-		public function get ReactorValidation():String
-		{
-			return super.flash_proxy::getProperty("reactorvalidation");
-		}
-		
-		public function get TransferTarget():Reagent
-		{
-			if (m_pTarget == null)
-			{
-				m_pTarget = new Reagent(null, super.flash_proxy::getProperty("target"));
-			}
-			return m_pTarget;
-		}
-		public function set TransferTarget(value:Reagent):void
-		{
-			super.flash_proxy::setProperty("target", value);
-			m_pTarget = null;
-		}
-		
-		public function get TransferTargetValidation():String
-		{
-			return super.flash_proxy::getProperty("targetvalidation");
+			super.flash_proxy::setProperty("sourcereactor", value);
 		}
 
+		public function get SourceReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("sourcereactorvalidation");
+		}
+
+		public function get TargetReactor():uint
+		{
+			return super.flash_proxy::getProperty("targetreactor");
+		}
+		public function set TargetReactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("targetreactor", value);
+		}
+		
+		public function get TargetReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("targetreactorvalidation");
+		}
+
+		public function get Mode():String
+		{
+			return super.flash_proxy::getProperty("mode");
+		}
+		public function set Mode(value:String):void
+		{
+			super.flash_proxy::setProperty("mode", value);
+		}
+
+		public function get ModeValidation():String
+		{
+			return super.flash_proxy::getProperty("modevalidation");
+		}
+
+		public function get Pressure():Number
+		{
+			return super.flash_proxy::getProperty("pressure");
+		}
+		public function set Pressure(value:Number):void
+		{
+			super.flash_proxy::setProperty("pressure", value);
+		}
+		
+		public function get PressureValidation():String
+		{
+			return super.flash_proxy::getProperty("pressurevalidation");
+		}
+
+		public function get Duration():uint
+		{
+			return super.flash_proxy::getProperty("duration");
+		}
+		public function set Duration(value:uint):void
+		{
+			super.flash_proxy::setProperty("duration", value);
+		}
+		
+		public function get DurationValidation():String
+		{
+			return super.flash_proxy::getProperty("durationvalidation");
+		}
+		
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sTransferDetails:String = JSONDataObject("reactor", Reactor);
-			sTransferDetails += JSONDataObject("target", TransferTarget.ReagentID, false);
+			var sTransferDetails:String = JSONDataObject("sourcereactor", SourceReactor);
+			sTransferDetails += JSONDataObject("targetreactor", TargetReactor);
+			sTransferDetails += JSONDataString("mode", Mode);
+			sTransferDetails += JSONDataObject("pressure", Pressure);
+			sTransferDetails += JSONDataObject("duration", Duration, false);
 			return sTransferDetails;
 		}
 
 		// Type
 		static public var TYPE:String = "TRANSFER";
-
-		// State components
-		private var m_pTarget:Reagent;
 
 		// Default format
 		static public var DEFAULT:String = "{" +
@@ -75,7 +112,10 @@ package Elixys.Objects
 			"\"componenttype\":\"TRANSFER\"," +
 			"\"id\":0," +
 			"\"name\":\"Transfer\"," +
-			"\"reactor\":0," +
-			"\"target\":" + Reagent.DEFAULT + "}";
+			"\"sourcereactor\":0," +
+			"\"targetreactor\":0," +
+			"\"mode\":\"Trap\"," +
+			"\"pressure\":0," +
+			"\"duration\":0}";
 	}
 }

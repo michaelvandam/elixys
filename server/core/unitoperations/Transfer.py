@@ -92,14 +92,24 @@ class Transfer(UnitOperation):
     # Save the component
     self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
 
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Set the default transfer pressure and time
+    if self.component["pressure"] == 0:
+      self.component["pressure"] = DEFAULT_TRANSFER_PRESSURE
+    if self.component["duration"] == 0:
+      self.component["duration"] = DEFAULT_TRANSFER_DURATION
+
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["sourcereactor"] = self.component["sourcereactor"]
     pTargetComponent["targetreactor"] = self.component["targetreactor"]
     pTargetComponent["pressure"] = self.component["pressure"]
     pTargetComponent["mode"] = self.component["mode"]
     pTargetComponent["duration"] = self.component["duration"]
+

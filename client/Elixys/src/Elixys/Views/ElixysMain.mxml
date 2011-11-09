@@ -55,7 +55,7 @@
 			private function Init3_OnCreateChildrenTimer(event:TimerEvent):void
 			{
 				// Initialize the child creation variables
-				m_nTotalChildren = 17;
+				m_nTotalChildren = 20;
 				m_nChildrenLoaded = 0;
 				
 				// Create the first child view
@@ -227,10 +227,6 @@
 						pSubview = m_pTransferSubview;
 						break;
 					
-					case ComponentElute.TYPE:
-						pSubview = m_pEluteSubview;
-						break;
-					
 					case ComponentReact.TYPE:
 						pSubview = m_pReactSubview;
 						break;
@@ -249,6 +245,22 @@
 					
 					case MessageSubview.TYPE:
 						pSubview = m_pMessageSubview;
+						break;
+					
+					case ComponentInitialize.TYPE:
+						pSubview = m_pInitializeSubview;
+						break;
+					
+					case ComponentDeliverF18.TYPE:
+						pSubview = m_pDeliverF18Subview;
+						break;
+					
+					case ComponentMix.TYPE:
+						pSubview = m_pMixSubview;
+						break;
+					
+					case ComponentMove.TYPE:
+						pSubview = m_pMoveSubview;
 						break;
 					
 					default:
@@ -392,13 +404,6 @@
 					addChild(m_pTransferSubview);
 					m_pTransferSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
-				else if (m_pEluteSubview == null)
-				{
-					m_pEluteSubview = new EluteSubview();
-					m_pEluteSubview.SetElixysMain(this);
-					addChild(m_pEluteSubview);
-					m_pEluteSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-				}
 				else if (m_pReactSubview == null)
 				{
 					m_pReactSubview = new ReactSubview();
@@ -433,6 +438,34 @@
 					m_pMessageSubview.SetElixysMain(this);
 					addChild(m_pMessageSubview);
 					m_pMessageSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pInitializeSubview == null)
+				{
+					m_pInitializeSubview = new InitializeSubview();
+					m_pInitializeSubview.SetElixysMain(this);
+					addChild(m_pInitializeSubview);
+					m_pInitializeSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pDeliverF18Subview == null)
+				{
+					m_pDeliverF18Subview = new DeliverF18Subview();
+					m_pDeliverF18Subview.SetElixysMain(this);
+					addChild(m_pDeliverF18Subview);
+					m_pDeliverF18Subview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pMixSubview == null)
+				{
+					m_pMixSubview = new MixSubview();
+					m_pMixSubview.SetElixysMain(this);
+					addChild(m_pMixSubview);
+					m_pMixSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pMoveSubview == null)
+				{
+					m_pMoveSubview = new MoveSubview();
+					m_pMoveSubview.SetElixysMain(this);
+					addChild(m_pMoveSubview);
+					m_pMoveSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
 				else
 				{
@@ -607,13 +640,16 @@
 			private var m_pAddSubview:AddSubview = null;
 			private var m_pEvaporateSubview:EvaporateSubview = null;
 			private var m_pTransferSubview:TransferSubview = null;
-			private var m_pEluteSubview:EluteSubview = null;
 			private var m_pReactSubview:ReactSubview = null;
 			private var m_pPromptSubview:PromptSubview = null;
 			private var m_pInstallSubview:InstallSubview = null;
 			private var m_pCommentSubview:CommentSubview = null;
 			private var m_pActiveSubview:SubviewBase = null;
 			private var m_pMessageSubview:SubviewBase = null;
+			private var m_pInitializeSubview:SubviewBase = null;
+			private var m_pDeliverF18Subview:SubviewBase = null;
+			private var m_pMixSubview:SubviewBase = null;
+			private var m_pMoveSubview:SubviewBase = null;
 			
 			// State update timer
 			private var m_pStateTimer:Timer;

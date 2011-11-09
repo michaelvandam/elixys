@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" width="100%" height="100%">
+		xmlns:Views="Elixys.Views.*" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
@@ -10,6 +10,7 @@
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
 			
+			import mx.controls.TextArea;
 			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
@@ -27,17 +28,48 @@
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
+					// Set the name
+					_viewComponentName.text = m_pComponentTransfer.Name;
+
 					// Format the output text
-					_outputText.text = "Transfer the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
-						m_pComponentTransfer.TransferTarget.Description + ".";
+					if (m_pComponentTransfer.Mode == "Trap")
+					{
+						_outputText.text = "Trap the contents of reactor " + m_pComponentTransfer.SourceReactor + 
+							" and send the liquid to waste.\n\nTransfer using " + m_pComponentTransfer.Pressure + " psi nitrogen for " +
+							m_pComponentTransfer.Duration + " seconds.";
+					}
+					else if (m_pComponentTransfer.Mode == "Elute")
+					{
+						_outputText.text = "Elute from reactor " + m_pComponentTransfer.SourceReactor + " into reactor " + 
+							m_pComponentTransfer.TargetReactor + ".\n\nTransfer using " + m_pComponentTransfer.Pressure + 
+							" psi nitrogen for " + m_pComponentTransfer.Duration + " seconds.";
+					}
+					else
+					{
+						_outputText.text = "Unknown transfer mode.";
+					}
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
-					// Fill the reactor combo box
-					UpdateEnumNumberComboBox(m_pComponentTransfer.ReactorValidation, _editReactorCombo, m_pComponentTransfer.Reactor.toString());
+					// Set the name
+					_editComponentName.text = m_pComponentTransfer.Name;
 					
-					// Initialize the target combo box
-					UpdateEnumTargetComboBox(m_pComponentTransfer.TransferTargetValidation, _editTargetCombo, m_pComponentTransfer.TransferTarget);
+					// Fill the combo boxes
+					UpdateEnumNumberComboBox(m_pComponentTransfer.SourceReactorValidation, _editSourceReactorCombo, 
+						m_pComponentTransfer.SourceReactor.toString());
+					UpdateEnumNumberComboBox(m_pComponentTransfer.TargetReactorValidation, _editTargetReactorCombo, 
+						m_pComponentTransfer.TargetReactor.toString());
+					UpdateEnumStringComboBox(m_pComponentTransfer.ModeValidation, _editModeCombo, m_pComponentTransfer.Mode);
+					
+					// Set all transfer variables except the one the user is editing
+					if (m_pKeyboardFocusTextArea != _editDuration)
+					{
+						_editDuration.text = m_pComponentTransfer.Duration.toString();
+					}
+					if (m_pKeyboardFocusTextArea != _editTransferPressure)
+					{
+						_editTransferPressure.text = m_pComponentTransfer.Pressure.toString();
+					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
@@ -45,25 +77,14 @@
 					var pElixysMain:ElixysMain = null;
 					
 					// Format the output text
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentTransfer.Reactor);
+					/*var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentTransfer.Reactor);
 					_runOutputText1.text = "Transferring the contents of reactor " + m_pComponentTransfer.Reactor + " to the " +
 						m_pComponentTransfer.TransferTarget.Description + ".";
 					_runOutputText2.text = "Temperature: " + pReactor.Temperature() + " C";
-					_runReactorText2.text = "Reactor " + m_pComponentTransfer.Reactor;
+					_runReactorText2.text = "Reactor " + m_pComponentTransfer.Reactor;*/
 				}
 			}
 
-			// Called when reagent details arrive from the server
-			public override function UpdateReagents(pReagents:Array):void
-			{
-				// Handle according to our view mode
-				if (m_sViewMode == SubviewBase.EDITMODE)
-				{
-					// Update the target combo box item
-					UpdateEnumReagentComboBoxItems(pReagents, _editTargetCombo);
-				}
-			}
-			
 			/***
 			 * Message handlers
 			 **/
@@ -84,19 +105,46 @@
 			}
 
 			// Called when the user changes the selection in one of the combo boxes
-			protected function OnReactorChange(event:IndexChangeEvent):void
+			protected function OnSourceReactorChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				m_pComponentTransfer.Reactor = parseInt(_editReactorCombo.selectedItem as String);
+				m_pComponentTransfer.SourceReactor = parseInt(_editSourceReactorCombo.selectedItem as String);
 				
 				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
 				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentTransfer, "sequence/" + nSequenceID + "/component/" + m_pComponentTransfer.ID);
 			}
-			protected function OnTargetChange(event:IndexChangeEvent):void
+			protected function OnTargetReactorChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				m_pComponentTransfer.TransferTarget = _editTargetCombo.selectedItem as Reagent;
+				m_pComponentTransfer.TargetReactor = parseInt(_editTargetReactorCombo.selectedItem as String);
+				
+				// Pass the request to the server
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentTransfer, "sequence/" + nSequenceID + "/component/" + m_pComponentTransfer.ID);
+			}
+			protected function OnModeChange(event:IndexChangeEvent):void
+			{
+				// Update our component
+				m_pComponentTransfer.Mode = _editModeCombo.selectedItem as String;
+				
+				// Pass the request to the server
+				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentTransfer, "sequence/" + nSequenceID + "/component/" + m_pComponentTransfer.ID);
+			}
+
+			// Called when the user changes the text in one of our input fields
+			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
+			{
+				// Update our component
+				if (m_pKeyboardFocusTextArea == _editDuration)
+				{
+					m_pComponentTransfer.Duration = parseInt(_editDuration.text);
+				}
+				if (m_pKeyboardFocusTextArea == _editTransferPressure)
+				{
+					m_pComponentTransfer.Pressure = parseFloat(_editTransferPressure.text);
+				}
 				
 				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
@@ -113,47 +161,107 @@
 	</fx:Script>
 	
 	<s:VGroup width="100%" height="100%">
-		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle"
-				horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
-			<mx:Text id="_outputText" styleName="TextMedium" width="80%" />		
+		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_viewComponentName" styleName="TextLarge" />
+			</s:HGroup>
+			<s:Spacer height="10" />
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+				<mx:Text id="_outputText" styleName="TextMedium" width="80%" />		
+			</s:VGroup>
 		</s:VGroup>
-		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
-				verticalCenter="0" width="100%" height="100%">
-			<s:VGroup gap="15" width="100%" height="100%">
-				<s:Spacer height="100%" />
-				<s:VGroup width="100%">
-					<s:HGroup verticalAlign="middle" gap="15" width="100%">
-						<s:HGroup horizontalAlign="right" width="30%">
-							<s:Label text="Transfer the contents of reactor" styleName="TextMedium" />
+		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_editComponentName" styleName="TextLarge" />
+			</s:HGroup>
+			<s:Spacer height="10" />
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+				<s:VGroup gap="15" width="100%" height="100%">
+					<s:Spacer height="100%" />
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Source reactor:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:ComboBox id="_editSourceReactorCombo" change="OnSourceReactorChange(event)" styleName="TextMedium" width="100%" />
+							</s:HGroup>
 						</s:HGroup>
-						<s:HGroup horizontalAlign="left" width="70%">
-							<s:ComboBox id="_editReactorCombo" change="OnReactorChange(event)" styleName="TextMedium" width="75%" />
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Transfer source reactor"/>
+							</s:HGroup>
 						</s:HGroup>
-					</s:HGroup>
-					<s:HGroup verticalAlign="middle" gap="15" width="100%">
-						<s:Spacer width="30%" />
-						<s:HGroup horizontalAlign="left" width="70%">
-							<s:Label styleName="FieldDescription" text="Reactor where the source reagent resides"/>
+					</s:VGroup>
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Target reactor:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:ComboBox id="_editTargetReactorCombo" labelField="Name" change="OnTargetReactorChange(event)" styleName="TextMedium" width="100%" />
+							</s:HGroup>
 						</s:HGroup>
-					</s:HGroup>
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Transfer target reactor"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Mode:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:ComboBox id="_editModeCombo" labelField="Name" change="OnModeChange(event)" styleName="TextMedium" width="100%" />
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Transfer mode"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Time:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<Renderers:AutoTextArea id="_editDuration" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+														focusOut="OnTextFocusOut(event)" width="100%" />
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Evaporation duration in seconds"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Pressure:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<Renderers:AutoTextArea id="_editTransferPressure" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+														focusOut="OnTextFocusOut(event)" width="100%" />
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Transfer pressure in PSI"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:Spacer height="100%" />
 				</s:VGroup>
-				<s:VGroup width="100%">
-					<s:HGroup verticalAlign="middle" gap="15" width="100%">
-						<s:HGroup horizontalAlign="right" width="30%">
-							<s:Label text="to" styleName="TextMedium" />
-						</s:HGroup>
-						<s:HGroup horizontalAlign="left" width="70%">
-							<s:ComboBox id="_editTargetCombo" labelField="Name" change="OnTargetChange(event)" styleName="TextMedium" width="75%" />
-						</s:HGroup>
-					</s:HGroup>
-					<s:HGroup verticalAlign="middle" gap="15" width="100%">
-						<s:Spacer width="30%" />
-						<s:HGroup horizontalAlign="left" width="70%">
-							<s:Label styleName="FieldDescription" text="Target where the reactor contents will be transferred"/>
-						</s:HGroup>
-					</s:HGroup>
-				</s:VGroup>
-				<s:Spacer height="100%" />
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"

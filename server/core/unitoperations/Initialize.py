@@ -37,7 +37,7 @@ class Initialize(UnitOperation):
       #Home robots
       self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
       time.sleep(2)
-      self.waitForCondition(self.areRobotsHomed,True,EQUAL,20)
+      self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
       for self.ReactorID in self.ReactorTuple:
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")
@@ -79,3 +79,12 @@ class Initialize(UnitOperation):
 
     # Save the component
     self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+
+  def updateComponentDetails(self, pTargetComponent):
+    """Strips a component down to only the details we want to save in the database"""
+    # Call the base handler
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
+
+    # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
+

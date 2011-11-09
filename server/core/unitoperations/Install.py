@@ -64,9 +64,10 @@ class Install(UnitOperation):
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
-    pTargetComponent["message"] = self.omponent["message"]
+    pTargetComponent["message"] = self.component["message"]
 

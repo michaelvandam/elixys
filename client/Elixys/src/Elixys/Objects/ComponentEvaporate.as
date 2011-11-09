@@ -45,11 +45,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("duration", value);
 		}
 
-		public function get DurationDescription():String
-		{
-			return super.flash_proxy::getProperty("durationdescription");
-		}
-
 		public function get DurationValidation():String
 		{
 			return super.flash_proxy::getProperty("durationvalidation");
@@ -62,11 +57,6 @@ package Elixys.Objects
 		public function set EvaporationTemperature(value:Number):void
 		{
 			super.flash_proxy::setProperty("evaporationtemperature", value);
-		}
-	
-		public function get EvaporationTemperatureDescription():String
-		{
-			return super.flash_proxy::getProperty("evaporationtemperaturedescription");
 		}
 	
 		public function get EvaporationTemperatureValidation():String
@@ -83,11 +73,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("finaltemperature", value);
 		}
 	
-		public function get FinalTemperatureDescription():String
-		{
-			return super.flash_proxy::getProperty("finaltemperaturedescription");
-		}
-	
 		public function get FinalTemperatureValidation():String
 		{
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
@@ -102,11 +87,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("stirspeed", value);
 		}
 	
-		public function get StirSpeedDescription():String
-		{
-			return super.flash_proxy::getProperty("stirspeeddescription");
-		}
-	
 		public function get StirSpeedValidation():String
 		{
 			return super.flash_proxy::getProperty("stirespeedvalidation");
@@ -119,11 +99,6 @@ package Elixys.Objects
 		public function set EvaporationPressure(value:Number):void
 		{
 			super.flash_proxy::setProperty("evaporationpressure", value);
-		}
-		
-		public function get EvaporationPressureDescription():String
-		{
-			return super.flash_proxy::getProperty("evaporationpressuredescription");
 		}
 		
 		public function get EvaporationPressureValidation():String

@@ -83,11 +83,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("name", value);
 		}
 
-		public function get NameDescription():String
-		{
-			return super.flash_proxy::getProperty("namedescription");
-		}
-
 		public function get NameValidation():String
 		{
 			return super.flash_proxy::getProperty("namevalidation");
@@ -102,11 +97,6 @@ package Elixys.Objects
 			super.flash_proxy::setProperty("description", value);
 		}
 
-		public function get DescriptionDescription():String
-		{
-			return super.flash_proxy::getProperty("descriptiondescription");
-		}
-		
 		public function get DescriptionValidation():String
 		{
 			return super.flash_proxy::getProperty("descriptionvalidation");

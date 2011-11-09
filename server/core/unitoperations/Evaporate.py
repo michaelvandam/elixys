@@ -121,19 +121,23 @@ class Evaporate(UnitOperation):
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
-    # Set the default evaporation pressure if the value is zero
+    # Set the default evaporation pressure and stir speed
     if self.component["evaporationpressure"] == 0:
       self.component["evaporationpressure"] = DEFAULT_EVAPORATE_PRESSURE
+    if self.component["stirspeed"] == 0:
+      self.component["stirspeed"] = DEFAULT_STIRSPEED
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["duration"] = self.component["duration"]
     pTargetComponent["evaporationtemperature"] = self.component["evaporationtemperature"]
     pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]
     pTargetComponent["evaporationpressure"] = self.component["evaporationpressure"]
+

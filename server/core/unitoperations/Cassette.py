@@ -49,7 +49,7 @@ class Cassette(UnitOperation):
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
     # Skip if we've already updated the reagents
-    if self.component.has_key("reagents"):
+    if self.component.has_key("reagents") or not self.component.has_key("reagentids"):
       return
 
     # Look up each reagent in this cassette

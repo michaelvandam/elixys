@@ -242,10 +242,6 @@ package Elixys.Views
 					pComponent = new ComponentComment();
 					break;
 				
-				case ComponentElute.TYPE:
-					pComponent = new ComponentElute();
-					break;
-				
 				case ComponentEvaporate.TYPE:
 					pComponent = new ComponentEvaporate();
 					break;
@@ -265,6 +261,25 @@ package Elixys.Views
 				case ComponentTransfer.TYPE:
 					pComponent = new ComponentTransfer();
 					break;
+				
+				case ComponentInitialize.TYPE:
+					pComponent = new ComponentInitialize();
+					break;
+				
+				case ComponentDeliverF18.TYPE:
+					pComponent = new ComponentDeliverF18();
+					break;
+				
+				case ComponentMix.TYPE:
+					pComponent = new ComponentMix();
+					break;
+				
+				case ComponentMove.TYPE:
+					pComponent = new ComponentMove();
+					break;
+				
+				default:
+					throw Error("Unknown component type: " + sUnitOperation);
 			}
 			
 			// Post the new component to the server

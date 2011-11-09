@@ -112,8 +112,6 @@ class Add(UnitOperation):
     self.component = pComponent
     if not self.component.has_key("reactorvalidation"):
       self.component.update({"reactorvalidation":""})
-    if not self.component.has_key("reagentreactorvalidation"):
-      self.component.update({"reagentreactorvalidation":""})
     if not self.component.has_key("reagentvalidation"):
       self.component.update({"reagentvalidation":""})
     if not self.component.has_key("deliverypositionvalidation"):
@@ -128,7 +126,6 @@ class Add(UnitOperation):
     """Performs a full validation on the component"""
     self.component["name"] = "Add"
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
-    self.component["reagentreactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
     self.component["deliverypositionvalidation"] = "type=enum-number; values=1,2; required=true"
     self.component["deliverytimevalidation"] = "type=number; min=0; max=10"
@@ -149,7 +146,6 @@ class Add(UnitOperation):
     #Validate all fields
     bValidationError = False
     if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
-       not self.validateComponentField(self.component["reagentreactor"], self.component["reagentreactorvalidation"]) or \
        not self.validateComponentField(self.component["reagent"], self.component["reagentvalidation"]) or \
        not self.validateComponentField(self.component["deliveryposition"], self.component["deliverypositionvalidation"]) or \
        not self.validateComponentField(self.component["deliverytime"], self.component["deliverytimevalidation"]) or \
@@ -168,7 +164,6 @@ class Add(UnitOperation):
     # Copy the validation fields
     pDBComponent["name"] = self.component["name"]
     pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
-    pDBComponent["reagentreactorvalidation"] = self.component["reagentreactorvalidation"]
     pDBComponent["reagentvalidation"] = self.component["reagentvalidation"]
     pDBComponent["deliverypositionvalidation"] = self.component["deliverypositionvalidation"]
     pDBComponent["deliverytimevalidation"] = self.component["deliverytimevalidation"]
@@ -199,27 +194,32 @@ class Add(UnitOperation):
 
     # Set the default delivery time and pressure
     if self.component["deliverytime"] == 0:
-      self.component["deliverytime"] = DEFAULT_ADD_DELIVERYTIME
+      self.component["deliverytime"] = DEFAULT_ADD_DURATION
     if self.component["deliverypressure"] == 0:
-      self.component["deliverypressure"]= DEFAULT_ADD_DELIVERYPRESSURE
+      self.component["deliverypressure"]= DEFAULT_ADD_PRESSURE
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["reagent"] = self.component["reagent"]
+    if self.isNumber(pTargetComponent["reagent"]):
+      if pTargetComponent["reagent"] != 0:
+        pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
+        pTargetComponent.update({"name":"Add " + pReagent["name"]})
+      else:
+        pTargetComponent.update({"name":"Add"})
+    else:
+      if pTargetComponent["reagent"].has_key("name"):
+        pTargetComponent.update({"name":"Add " + pTargetComponent["reagent"]["name"]})
+      else:
+        pTargetComponent.update({"name":"Add"})
     pTargetComponent["reactor"] = self.component["reactor"]
-    pTargetComponent["reagentreactor"] = self.component["reagentreactor"]
     pTargetComponent["deliveryposition"] = self.component["deliveryposition"]
     pTargetComponent["deliverytime"] = self.component["deliverytime"]
     pTargetComponent["deliverypressure"] = self.component["deliverypressure"]
-    pTargetComponent["reagent"] = self.component["reagent"]
-    if pTargetComponent["reagent"] != 0:
-      pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
-      pTargetComponent.update({"name":"Add " + pReagent["name"]})
-    else:
-      pTargetComponent.update({"name":"Add"})
 
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""

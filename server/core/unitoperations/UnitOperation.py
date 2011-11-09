@@ -68,9 +68,12 @@ GREATER  = ">"
 LESS     = "<"
 
 # Default component values
-DEFAULT_ADD_DELIVERYTIME = 10
-DEFAULT_ADD_DELIVERYPRESSURE = 5
+DEFAULT_ADD_DURATION = 10
+DEFAULT_ADD_PRESSURE = 5
 DEFAULT_EVAPORATE_PRESSURE = 10
+DEFAULT_STIRSPEED = 500
+DEFAULT_TRANSFER_DURATION = 10
+DEFAULT_TRANSFER_PRESSURE = 5
 
 class UnitOpError(Exception):
   def __init__(self, value):
@@ -161,7 +164,7 @@ class UnitOperation(threading.Thread):
       if paramname=="liquidTCReactor":
         self.liquidTCReactor = params['liquidTCReactor']      
       if paramname=="liquidTCCollet":
-        self.liquidTCCollet = params['liquidTCCollet']      
+        self.liquidTCCollet = params['liquidTCCollet']
 
   """def validateParams(self,currentParams,expectedParams):
     errorMessage = ""
@@ -660,6 +663,8 @@ class UnitOperation(threading.Thread):
       int(sValue)
       return True
     except ValueError:
+      return False
+    except TypeError:
       return False
 
   def addComponentDetails(self):

@@ -74,12 +74,19 @@ class Mix(UnitOperation):
     # Save the component
     self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
 
+  def addComponentDetails(self):
+    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    # Set the default stir speed
+    if self.component["stirspeed"] == 0:
+      self.component["stirspeed"] = DEFAULT_STIRSPEED
+
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
-    UnitOperation.updateComponentDetails(pTargetComponent)
+    UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["mixtime"] = self.component["mixtime"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]

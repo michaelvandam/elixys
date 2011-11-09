@@ -46,6 +46,7 @@
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
+					_viewCassetteName.text = m_pComponentCassette.Name;
 					if (m_pComponentCassette.Available)
 					{
 						// Show the reagent table and hide the static text
@@ -68,7 +69,8 @@
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
-					// Enable or disable the cassette grid
+					// Set the name and enable or disable the cassette grid
+					_editCassetteName.text = m_pComponentCassette.Name;
 					_editCassetteGrid.enabled = m_pComponentCassette.Available;
 					_editCassetteUsedCheckBox.selected = m_pComponentCassette.Available;
 
@@ -203,7 +205,11 @@
 	</fx:Script>
 	
 	<s:VGroup width="100%" height="100%">
-		<s:VGroup id="_viewGroup" visible="false" width="100%" height="100%" includeInLayout="false">
+		<s:VGroup id="_viewGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_viewCassetteName" styleName="TextLarge" />
+			</s:HGroup>
+			<s:Spacer height="10" />
 			<s:VGroup id="_viewCassetteDisabled" visible="true" width="100%" height="100%"
 					  horizontalAlign="center" horizontalCenter="0" includeInLayout="true"
 					  verticalAlign="middle" verticalCenter="0">
@@ -265,224 +271,224 @@
 				</s:DataGrid>
 			</s:VGroup>
 		</s:VGroup>
-		<s:VGroup id="_editGroup" visible="false" width="100%" height="100%" gap="20"
-				  horizontalAlign="center" horizontalCenter="0" includeInLayout="false"
-				  verticalAlign="middle" verticalCenter="0">
-			<s:VGroup width="100%" horizontalAlign="center" horizontalCenter="0"
-					  verticalAlign="middle" verticalCenter="0">
+		<s:VGroup id="_editGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_editCassetteName" styleName="TextLarge" />
+			</s:HGroup>
+			<s:Spacer height="10" />
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
 				<s:HGroup width="100%" horizontalAlign="left">
-					<s:Spacer width="10"/>
 					<s:CheckBox id="_editCassetteUsedCheckBox"
 								label="Use this cassette in this sequence"
 								change="OnCassetteUsedCheckBox(event)" styleName="TextMedium"/>
 				</s:HGroup>
-			</s:VGroup>
-			<s:BorderContainer width="100%" height="100%">
-				<s:VGroup x="0" y="0" width="100%" height="100%" horizontalAlign="center"
-						  horizontalCenter="0" verticalAlign="top" verticalCenter="0">
-					<s:DataGrid id="_editCassetteGrid" width="100%" height="100%"
-								selectionMode="none" variableRowHeight="true">
-						<s:columns>
-							<s:ArrayList>
-								<s:GridColumn width="50" headerText="Edit">
-									<s:itemRenderer>
-										<fx:Component>
-											<s:GridItemRenderer>
-												<s:VGroup height="100%" paddingBottom="10"
-														  paddingLeft="10" paddingRight="10"
-														  paddingTop="10" verticalAlign="middle">
-													<s:Button width="30" height="100%" label="+"
-															  click="outerDocument.OnEditButtonClick(event, data)"
-															  fontSize="16" styleName="button"/>
-												</s:VGroup>
-											</s:GridItemRenderer>
-										</fx:Component>
-									</s:itemRenderer>
-								</s:GridColumn>
-								<s:GridColumn width="70" headerText="Position">
-									<s:itemRenderer>
-										<fx:Component>
-											<s:GridItemRenderer>
-												<fx:Script>
-													<![CDATA[
-														import Elixys.Objects.Reagent;
-														
-														override public function set data(value:Object):void
-														{
-															// Set our base class' variable
-															super.data = value;
+				<s:BorderContainer width="100%" height="100%">
+					<s:VGroup x="0" y="0" width="100%" height="100%" horizontalAlign="center"
+							  horizontalCenter="0" verticalAlign="top" verticalCenter="0">
+						<s:DataGrid id="_editCassetteGrid" width="100%" height="100%"
+									selectionMode="none" variableRowHeight="true">
+							<s:columns>
+								<s:ArrayList>
+									<s:GridColumn width="50" headerText="Edit">
+										<s:itemRenderer>
+											<fx:Component>
+												<s:GridItemRenderer>
+													<s:VGroup height="100%" paddingBottom="10"
+															  paddingLeft="10" paddingRight="10"
+															  paddingTop="10" verticalAlign="middle">
+														<s:Button width="30" height="100%" label="+"
+																  click="outerDocument.OnEditButtonClick(event, data)"
+																  fontSize="16" styleName="button"/>
+													</s:VGroup>
+												</s:GridItemRenderer>
+											</fx:Component>
+										</s:itemRenderer>
+									</s:GridColumn>
+									<s:GridColumn width="70" headerText="Position">
+										<s:itemRenderer>
+											<fx:Component>
+												<s:GridItemRenderer>
+													<fx:Script>
+														<![CDATA[
+															import Elixys.Objects.Reagent;
 															
-															if (value != null)
+															override public function set data(value:Object):void
 															{
-																// Formats the centered label
-																_text.text = (value as Reagent).Position;
-															}
-														}
-													]]>
-												</fx:Script>
-												<s:VGroup width="100%" height="100%"
-														  horizontalAlign="center"
-														  verticalAlign="middle">
-													<s:Label id="_text" styleName="TextMedium"/>
-												</s:VGroup>
-											</s:GridItemRenderer>
-										</fx:Component>
-									</s:itemRenderer>
-								</s:GridColumn>
-								<s:GridColumn>
-									<s:headerRenderer>
-										<fx:Component>
-											<Renderers:ReagentGridHeader>
-												<Renderers:ReagentGridHeaderChild id="Name" x="0"
-																				  y="0" width="150"/>
-												<Renderers:ReagentGridHeaderChild id="Description"
-																				  x="150" y="0"
-																				  width="100%"/>
-											</Renderers:ReagentGridHeader>
-										</fx:Component>
-									</s:headerRenderer>
-									<s:itemRenderer>
-										<fx:Component>
-											<s:GridItemRenderer>
-												<fx:Script>
-													<![CDATA[
-														import Elixys.Objects.Reagent;
-														
-														// Formats the name and description labels
-														override public function set data(value:Object):void
-														{
-															// Set our base class' variable
-															super.data = value;
-															
-															if (value != null)
-															{
-																// Are we currently the selected reagent?
-																var pReagent:Reagent = value as Reagent;
-																if (pReagent.ReagentID == outerDocument.SelectedReagentID())
+																// Set our base class' variable
+																super.data = value;
+																
+																if (value != null)
 																{
-																	// Yes, so hide the static text and show the edit controls
-																	_staticView.visible = false;
-																	_staticView.includeInLayout = false;
-																	_editView.visible = true;
-																	_editView.includeInLayout = true;
-																	
-																	// Set the used check box and the edit box text
-																	_usedCheckBox.selected = pReagent.Available;
-																	if (outerDocument.KeyboardFocusTextArea() != _editName)
-																	{
-																		_editName.text = pReagent.Name;
-																	}
-																	if (outerDocument.KeyboardFocusTextArea() != _editDescription)
-																	{
-																		_editDescription.text = pReagent.Description;
-																	}
-																	
-																	// Enable or disable the edit boxes
-																	_editName.enabled = pReagent.Available;
-																	_editDescription.enabled = pReagent.Available;
-																}
-																else
-																{
-																	// No, so show the static text and hide the edit controls
-																	_staticView.visible = true;
-																	_staticView.includeInLayout = true;
-																	_editView.visible = false;
-																	_editView.includeInLayout = false;
-																	
-																	// Set the static text
-																	_nameLabel.text = data.Name;
-																	_descriptionLabel.text = data.Description;
+																	// Formats the centered label
+																	_text.text = (value as Reagent).Position;
 																}
 															}
-														}
-													]]>
-												</fx:Script>
-												<s:VGroup width="100%" height="100%">
-													<s:HGroup id="_staticView" visible="true"
-															  width="100%" height="100%"
-															  includeInLayout="true">
-														<s:VGroup width="150" height="100%"
-																  horizontalAlign="left"
-																  verticalAlign="middle">
-															<s:Label id="_nameLabel" paddingLeft="4"
-																	 paddingRight="4"
-																	 styleName="TextMedium"/>
-														</s:VGroup>
-														<s:VGroup width="100%" height="100%"
-																  horizontalAlign="left"
-																  verticalAlign="middle">
-															<s:Label id="_descriptionLabel"
-																	 paddingLeft="4"
-																	 paddingRight="4"
-																	 styleName="TextSmall"/>
-														</s:VGroup>
-													</s:HGroup>
-													<s:VGroup id="_editView" visible="false"
-															  width="100%" height="100%" gap="15"
-															  includeInLayout="false">
-														<s:HGroup width="100%" paddingLeft="20"
-																  paddingTop="15">
-															<s:CheckBox id="_usedCheckBox"
-																		label="Use this reagent in this sequence"
-																		change="outerDocument.OnReagentUsedCheckBox(event)"
-																		styleName="TextMedium"/>
+														]]>
+													</fx:Script>
+													<s:VGroup width="100%" height="100%"
+															  horizontalAlign="center"
+															  verticalAlign="middle">
+														<s:Label id="_text" styleName="TextMedium"/>
+													</s:VGroup>
+												</s:GridItemRenderer>
+											</fx:Component>
+										</s:itemRenderer>
+									</s:GridColumn>
+									<s:GridColumn>
+										<s:headerRenderer>
+											<fx:Component>
+												<Renderers:ReagentGridHeader>
+													<Renderers:ReagentGridHeaderChild id="Name" x="0"
+																					  y="0" width="150"/>
+													<Renderers:ReagentGridHeaderChild id="Description"
+																					  x="150" y="0"
+																					  width="100%"/>
+												</Renderers:ReagentGridHeader>
+											</fx:Component>
+										</s:headerRenderer>
+										<s:itemRenderer>
+											<fx:Component>
+												<s:GridItemRenderer>
+													<fx:Script>
+														<![CDATA[
+															import Elixys.Objects.Reagent;
+															
+															// Formats the name and description labels
+															override public function set data(value:Object):void
+															{
+																// Set our base class' variable
+																super.data = value;
+																
+																if (value != null)
+																{
+																	// Are we currently the selected reagent?
+																	var pReagent:Reagent = value as Reagent;
+																	if (pReagent.ReagentID == outerDocument.SelectedReagentID())
+																	{
+																		// Yes, so hide the static text and show the edit controls
+																		_staticView.visible = false;
+																		_staticView.includeInLayout = false;
+																		_editView.visible = true;
+																		_editView.includeInLayout = true;
+																		
+																		// Set the used check box and the edit box text
+																		_usedCheckBox.selected = pReagent.Available;
+																		if (outerDocument.KeyboardFocusTextArea() != _editName)
+																		{
+																			_editName.text = pReagent.Name;
+																		}
+																		if (outerDocument.KeyboardFocusTextArea() != _editDescription)
+																		{
+																			_editDescription.text = pReagent.Description;
+																		}
+																		
+																		// Enable or disable the edit boxes
+																		_editName.enabled = pReagent.Available;
+																		_editDescription.enabled = pReagent.Available;
+																	}
+																	else
+																	{
+																		// No, so show the static text and hide the edit controls
+																		_staticView.visible = true;
+																		_staticView.includeInLayout = true;
+																		_editView.visible = false;
+																		_editView.includeInLayout = false;
+																		
+																		// Set the static text
+																		_nameLabel.text = data.Name;
+																		_descriptionLabel.text = data.Description;
+																	}
+																}
+															}
+														]]>
+													</fx:Script>
+													<s:VGroup width="100%" height="100%">
+														<s:HGroup id="_staticView" visible="true"
+																  width="100%" height="100%"
+																  includeInLayout="true">
+															<s:VGroup width="150" height="100%"
+																	  horizontalAlign="left"
+																	  verticalAlign="middle">
+																<s:Label id="_nameLabel" paddingLeft="4"
+																		 paddingRight="4"
+																		 styleName="TextMedium"/>
+															</s:VGroup>
+															<s:VGroup width="100%" height="100%"
+																	  horizontalAlign="left"
+																	  verticalAlign="middle">
+																<s:Label id="_descriptionLabel"
+																		 paddingLeft="4"
+																		 paddingRight="4"
+																		 styleName="TextSmall"/>
+															</s:VGroup>
 														</s:HGroup>
-														<s:VGroup width="100%" height="100%">
-															<s:HGroup width="100%"
-																	  verticalAlign="bottom">
-																<s:HGroup width="30%" height="100%"
-																		  horizontalAlign="right"
-																		  paddingTop="5"
-																		  verticalAlign="middle">
-																	<s:Label height="100%"
-																			 styleName="TextMedium"
-																			 text="Name"/>
-																</s:HGroup>
-																<s:VGroup width="70%"
-																		  horizontalAlign="left"
-																		  verticalAlign="middle">
-																	<Renderers:AutoTextArea id="_editName"
-																							width="80%"
-																							focusIn="outerDocument.OnTextFocusIn(event)"
-																							focusOut="outerDocument.OnTextFocusOut(event)"
-																							styleName="TextMedium"/>
-																	<s:Label styleName="FieldDescription" text="Brief name of this reagent"/>
-																</s:VGroup>
+														<s:VGroup id="_editView" visible="false"
+																  width="100%" height="100%" gap="15"
+																  includeInLayout="false">
+															<s:HGroup width="100%" paddingLeft="20"
+																	  paddingTop="15">
+																<s:CheckBox id="_usedCheckBox"
+																			label="Use this reagent in this sequence"
+																			change="outerDocument.OnReagentUsedCheckBox(event)"
+																			styleName="TextMedium"/>
 															</s:HGroup>
-															<s:HGroup width="100%"
-																	  verticalAlign="top">
-																<s:HGroup width="30%"
-																		  horizontalAlign="right"
-																		  paddingTop="5"
-																		  verticalAlign="middle">
-																	<s:Label height="100%"
-																			 styleName="TextMedium"
-																			 text="Description"/>
+															<s:VGroup width="100%" height="100%">
+																<s:HGroup width="100%"
+																		  verticalAlign="bottom">
+																	<s:HGroup width="30%" height="100%"
+																			  horizontalAlign="right"
+																			  paddingTop="5"
+																			  verticalAlign="middle">
+																		<s:Label height="100%"
+																				 styleName="TextMedium"
+																				 text="Name"/>
+																	</s:HGroup>
+																	<s:VGroup width="70%"
+																			  horizontalAlign="left"
+																			  verticalAlign="middle">
+																		<Renderers:AutoTextArea id="_editName"
+																								width="80%"
+																								focusIn="outerDocument.OnTextFocusIn(event)"
+																								focusOut="outerDocument.OnTextFocusOut(event)"
+																								styleName="TextMedium"/>
+																		<s:Label styleName="FieldDescription" text="Brief name of this reagent"/>
+																	</s:VGroup>
 																</s:HGroup>
-																<s:VGroup width="70%"
-																		  horizontalAlign="left"
-																		  verticalAlign="middle">
-																	<Renderers:AutoTextArea id="_editDescription"
-																							width="80%"
-																							fixedHeightInLines="2"
-																							focusIn="outerDocument.OnTextFocusIn(event)"
-																							focusOut="outerDocument.OnTextFocusOut(event)"
-																							styleName="TextMedium"/>
-																	<s:Label styleName="FieldDescription" text="Long description of this reagent"/>
-																</s:VGroup>
-															</s:HGroup>
+																<s:HGroup width="100%"
+																		  verticalAlign="top">
+																	<s:HGroup width="30%"
+																			  horizontalAlign="right"
+																			  paddingTop="5"
+																			  verticalAlign="middle">
+																		<s:Label height="100%"
+																				 styleName="TextMedium"
+																				 text="Description"/>
+																	</s:HGroup>
+																	<s:VGroup width="70%"
+																			  horizontalAlign="left"
+																			  verticalAlign="middle">
+																		<Renderers:AutoTextArea id="_editDescription"
+																								width="80%"
+																								fixedHeightInLines="2"
+																								focusIn="outerDocument.OnTextFocusIn(event)"
+																								focusOut="outerDocument.OnTextFocusOut(event)"
+																								styleName="TextMedium"/>
+																		<s:Label styleName="FieldDescription" text="Long description of this reagent"/>
+																	</s:VGroup>
+																</s:HGroup>
+															</s:VGroup>
 														</s:VGroup>
 													</s:VGroup>
-												</s:VGroup>
-											</s:GridItemRenderer>
-										</fx:Component>
-									</s:itemRenderer>    
-								</s:GridColumn>
-							</s:ArrayList>
-						</s:columns>
-					</s:DataGrid>
-				</s:VGroup>
-			</s:BorderContainer>
+												</s:GridItemRenderer>
+											</fx:Component>
+										</s:itemRenderer>    
+									</s:GridColumn>
+								</s:ArrayList>
+							</s:columns>
+						</s:DataGrid>
+					</s:VGroup>
+				</s:BorderContainer>
+			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup id="_runGroup" visible="false" width="100%" height="100%" horizontalAlign="center"
 				  horizontalCenter="0" includeInLayout="false" verticalAlign="middle"

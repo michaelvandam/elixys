@@ -32,7 +32,7 @@ class SequenceValidation:
     # Do a full validation of each component
     bValid = True
     for pComponent in pSequence["components"]:
-      pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+      pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
       if not pUnitOperation.validateFull(pAvailableReagents):
         bValid = False
       pUnitOperation.saveValidation()
@@ -46,7 +46,7 @@ class SequenceValidation:
     """Initializes the validation fields of a newly added component"""
     # Initialize the validation fields of the raw component
     pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
-    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
     self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pUnitOperation.component["name"], json.dumps(pUnitOperation.component))
 
     # Flag the sequence validation as dirty
@@ -56,7 +56,7 @@ class SequenceValidation:
     """Performs a quick validation of the given component"""
     # Load the component and do a quick validation
     pComponent = self.sequenceManager.GetComponent(sRemoteUser, nComponentID, nSequenceID)
-    pUnitOperation = UnitOperations.createFromComponent(pComponent, sRemoteUser, self.database)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
     pUnitOperation.validateQuick()
 
     # Load the raw component and update just the validation field

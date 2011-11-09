@@ -537,29 +537,7 @@ package Elixys.Views
 				var pEnumReagentValidation:EnumReagentValidation = new EnumReagentValidation(sEnumReagentValidation);
 				pReagentIDs = pEnumReagentValidation.ReagentIDs();
 			}
-			
-			// Call the shared implementation
-			UpdateEnumComboBox(pReagentIDs, pComboBox, pCurrentReagent.ReagentID);
-		}
 
-		// Update the given combo box with the specified enum-target validation string
-		protected function UpdateEnumTargetComboBox(sEnumTargetValidation:String, pComboBox:ComboBox, pCurrentTarget:Reagent):void
-		{
-			// Get the array of target IDs if we have a validation string
-			var pTargetIDs:Array = null;
-			if ((sEnumTargetValidation != null) && (sEnumTargetValidation != ""))
-			{
-				var pEnumTargetValidation:EnumTargetValidation = new EnumTargetValidation(sEnumTargetValidation);
-				pTargetIDs = pEnumTargetValidation.TargetIDs();
-			}
-			
-			// Call the shared implementation
-			UpdateEnumComboBox(pTargetIDs, pComboBox, pCurrentTarget.ReagentID);
-		}
-
-		// Shared combo box update function
-		private function UpdateEnumComboBox(pIDs:Array, pComboBox:ComboBox, nCurrentReagentID:uint):void
-		{
 			// Get a pointer to the data provider
 			var pData:ArrayList;
 			if (pComboBox.dataProvider != null)
@@ -576,11 +554,11 @@ package Elixys.Views
 
 			// Loop through the server and client arrays
 			var nReagent:uint = 0;
-			var pReagentIDs:Array = new Array();
-			if (pIDs != null)
+			var pReagentArray:Array = new Array();
+			if (pReagentIDs != null)
 			{
 				var pReagentClient:Reagent;
-				for (nReagent = 0; nReagent < pIDs.length; ++nReagent)
+				for (nReagent = 0; nReagent < pReagentIDs.length; ++nReagent)
 				{
 					// Get a pointer to an existing reagent or create a new one
 					if (nReagent < pData.length)
@@ -596,11 +574,11 @@ package Elixys.Views
 					}
 					
 					// Update the reagent ID
-					pReagentClient.ReagentID = pIDs[nReagent];
-					pReagentIDs.push(pReagentClient.ReagentID);
+					pReagentClient.ReagentID = pReagentIDs[nReagent];
+					pReagentArray.push(pReagentClient.ReagentID);
 	
 					// Make sure the currently selected reagent is reselected
-					if (pReagentClient.ReagentID == nCurrentReagentID)
+					if (pReagentClient.ReagentID == pCurrentReagent.ReagentID)
 					{
 						pComboBox.selectedIndex = nReagent;
 					}
@@ -617,7 +595,7 @@ package Elixys.Views
 			pComboBox.dataProvider = pData;
 
 			// Request the reagents from the server
-			RequestSequenceReagents(pReagentIDs);
+			RequestSequenceReagents(pReagentArray);
 		}
 		
 		// Update the reagent item in the given combo box
@@ -643,6 +621,66 @@ package Elixys.Views
 			}
 		}
 		
+		// Update the given combo box with the specified enum-string validation string
+		protected function UpdateEnumStringComboBox(sEnumStringValidation:String, pComboBox:ComboBox, sCurrentValue:String):void
+		{
+			// Get a pointer to the data provider
+			var pData:ArrayList;
+			if (pComboBox.dataProvider != null)
+			{
+				pData = pComboBox.dataProvider as ArrayList;
+			}
+			if (pData == null)
+			{
+				pData = new ArrayList();
+			}
+			
+			// Reset the selected index
+			pComboBox.selectedIndex = -1;
+			
+			// Make sure we have a validation string
+			var nOffset:uint = 0;
+			if ((sEnumStringValidation != null) && (sEnumStringValidation != ""))
+			{
+				// Get the array of string values
+				var pEnumStringValidation:EnumStringValidation = new EnumStringValidation(sEnumStringValidation);
+				var pStringValues:Array = pEnumStringValidation.StringValues();
+				
+				// Loop through the server and client arrays
+				while (nOffset < pStringValues.length)
+				{
+					// Either set the existing item or create a new one
+					if (nOffset < pData.length)
+					{
+						// Update the existing item
+						pData.setItemAt(pStringValues[nOffset], nOffset);
+					}
+					else
+					{
+						// Create a new item
+						pData.addItem(pStringValues[nOffset]);
+					}
+					
+					// Make sure the currently selected value is reselected
+					if (pData.getItemAt(nOffset) == sCurrentValue)
+					{
+						pComboBox.selectedIndex = nOffset;
+					}
+					
+					// Increment our offset
+					++nOffset;
+				}
+			}			
+			// Remove any extra values
+			while (nOffset < pData.length)
+			{
+				pData.removeItemAt(pData.length - 1);
+			}
+			
+			// Update the data provider
+			pComboBox.dataProvider = pData;
+		}
+
 		/***
 		 * Member variables
 		 **/

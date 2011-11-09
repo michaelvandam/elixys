@@ -302,6 +302,13 @@ class DBComm:
         raise Exceptions.ReagentNotFoundException(0, nSequenceID, nCassette, sPosition)
     return self.__CreateReagent(pReagentRaw[0])
 
+  def GetReagentCassette(self, sCurrentUsername, nSequenceID, nReagentID):
+    """Gets the cassette number that contains the given reagent"""
+    self.Log(sCurrentUsername, "DBComm.GetReagentCassette(%i, %i)" % (nSequenceID, nReagentID))
+    nCassette = 0
+    pCassetteRaw = self.__CallStoredProcedure("GetReagentCassette", (nSequenceID, nReagentID, nCassette))
+    return self.__ExecuteQuery("SELECT @_GetReagentCassette_2")[0][0]
+
   def UpdateReagent(self, sCurrentUsername, nReagentID, bAvailable, sName, sDescription):
     """Updates a existing reagent"""
     self.Log(sCurrentUsername, "DBComm.UpdateReagent(%i, %i, %s, %s)" % (nReagentID, bAvailable, sName, sDescription))

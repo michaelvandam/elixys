@@ -1,13 +1,13 @@
 package Elixys.Validation
 {
-	public class EnumTargetValidation extends ValidationBase
+	public class EnumStringValidation extends ValidationBase
 	{
 		/***
 		 * Member functions
 		 **/
 		
 		// Constructor
-		public function EnumTargetValidation(sValidation:String)
+		public function EnumStringValidation(sValidation:String)
 		{
 			// Call our base constructor
 			super(sValidation);
@@ -25,8 +25,8 @@ package Elixys.Validation
 			return "";
 		}
 		
-		// Returns the array of target IDs
-		public function TargetIDs():Array
+		// Returns the array of string values
+		public function StringValues():Array
 		{
 			return GetValueArray(ValidationBase.VALUEKEY);
 		}
@@ -36,6 +36,6 @@ package Elixys.Validation
 		 **/
 		
 		// Validation type
-		public static var TYPE:String = "enum-target";
+		public static var TYPE:String = "enum-string";
 	}
 }

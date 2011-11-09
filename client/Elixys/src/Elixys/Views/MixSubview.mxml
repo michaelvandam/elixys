@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Views:SubviewBase xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-		xmlns:Views="Elixys.Views.*" width="100%" height="100%" xmlns:Renderers="Elixys.Views.Renderers.*">
+		xmlns:Views="Elixys.Views.*" xmlns:Renderers="Elixys.Views.Renderers.*" width="100%" height="100%">
 	<fx:Script>
 		<![CDATA[
 			import Elixys.Events.HTTPRequestEvent;
 			import Elixys.HTTP.HTTPRequest;
 			import Elixys.Objects.Component;
-			import Elixys.Objects.ComponentReact;
+			import Elixys.Objects.ComponentMix;
 			import Elixys.Objects.ReactorState;
 			import Elixys.Objects.Reagent;
 			import Elixys.Objects.StateSequence;
@@ -24,60 +24,52 @@
 			public override function UpdateComponent(pComponent:Component):void
 			{
 				// Remember the component
-				m_pComponentReact = new ComponentReact(null, pComponent);
+				m_pComponentMix = new ComponentMix(null, pComponent);
 				
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
 					// Set the name and format the output text
-					_viewComponentName.text = m_pComponentReact.Name;
-					_outputText.text = "Move reactor " + m_pComponentReact.Reactor + " to reaction position " + m_pComponentReact.Position +
-						" and heat to " + m_pComponentReact.ReactionTemperature + " \u00B0C.\n\nHold for " + m_pComponentReact.Duration + 
-						" seconds while stirring at " + m_pComponentReact.StirSpeed + ".\n\nCool to " + m_pComponentReact.FinalTemperature + 
-						" \u00B0C.";
+					_viewComponentName.text = m_pComponentMix.Name;
+					_outputText.text = "Mix the contents of reactor " + m_pComponentMix.Reactor + " by stirring at " + m_pComponentMix.StirSpeed +
+						" for " + m_pComponentMix.MixTime + " seconds.";
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
 					// Set the name
-					_editComponentName.text = m_pComponentReact.Name;
+					_editComponentName.text = m_pComponentMix.Name;
 
-					// Fill the reactor and position combo boxes
-					UpdateEnumNumberComboBox(m_pComponentReact.ReactorValidation, _editReactorCombo, m_pComponentReact.Reactor.toString());
-					UpdateEnumNumberComboBox(m_pComponentReact.PositionValidation, _editPositionCombo, m_pComponentReact.Position);
+					// Fill the reactor combo box
+					UpdateEnumNumberComboBox(m_pComponentMix.ReactorValidation, _editReactorCombo, m_pComponentMix.Reactor.toString());
 					
-					// Set all evaporation variables except the one the user is editing
-					if (m_pKeyboardFocusTextArea != _editDuration)
+					// Set all variables except the one the user is editing
+					if (m_pKeyboardFocusTextArea != _editTime)
 					{
-						_editDuration.text = m_pComponentReact.Duration.toString();
-					}
-					if (m_pKeyboardFocusTextArea != _editReactionTemperature)
-					{
-						_editReactionTemperature.text = m_pComponentReact.ReactionTemperature.toString();
-					}
-					if (m_pKeyboardFocusTextArea != _editFinalTemperature)
-					{
-						_editFinalTemperature.text = m_pComponentReact.FinalTemperature.toString();
+						_editTime.text = m_pComponentMix.MixTime.toString();
 					}
 					if (m_pKeyboardFocusTextArea != _editStirSpeed)
 					{
-						_editStirSpeed.text = m_pComponentReact.StirSpeed.toString();
+						_editStirSpeed.text = m_pComponentMix.StirSpeed.toString();
 					}
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
-					// Removing the following line causes a compile error for reasons I don't understand
-					var pElixysMain:ElixysMain;
-
+					/*
 					// Format the output text
 					var pStateSequence:StateSequence = m_pElixysMain.GetActiveSequenceView().GetStateSequence();
-					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentReact.Reactor);
-					_runOutputText1.text = "Reacting reactor " + m_pComponentReact.Reactor + ", position " + m_pComponentReact.Position +
-						" at " + m_pComponentReact.ReactionTemperature + " C for " + m_pComponentReact.Duration +
-						" seconds and cooling to " + m_pComponentReact.FinalTemperature + " C.  Stirring at " +
-						m_pComponentReact.StirSpeed + " rpm.";
+					var pReactor:ReactorState = m_pElixysMain.GetActiveSequenceView().GetReactor(m_pComponentEvaporate.Reactor);
+					_runOutputText1.text = "Evaporating reactor " + m_pComponentEvaporate.Reactor + " at " + 
+						m_pComponentEvaporate.EvaporationTemperature + " C for " + m_pComponentEvaporate.Duration +
+						" seconds and cooling to " + m_pComponentEvaporate.FinalTemperature + " C.  Stirring at " +
+						m_pComponentEvaporate.StirSpeed + " rpm.";
 					_runOutputText2.text = "Status: " + pStateSequence.ServerState().RunState().Status() + "\nTemperature: " +
 						pReactor.Temperature() + " C";
-					_runReactorText2.text = "Reactor " + m_pComponentReact.Reactor;
+					if (pReactor.Activity() != 0)
+					{
+						_runOutputText2.text += "\nActivity: " + pReactor.Activity() + " mCi at " + pReactor.ActivityTime();
+					}
+					_runReactorText2.text = "Reactor " + m_pComponentEvaporate.Reactor;
+					*/
 				}
 			}
 
@@ -104,46 +96,29 @@
 			protected function OnReactorChange(event:IndexChangeEvent):void
 			{
 				// Update our component
-				m_pComponentReact.Reactor = parseInt(_editReactorCombo.selectedItem as String);
-				
+				m_pComponentMix.Reactor = parseInt(_editReactorCombo.selectedItem as String);
+
 				// Pass the request to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
-				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentMix, "sequence/" + nSequenceID + "/component/" + m_pComponentMix.ID);
 			}
-			protected function OnPositionChange(event:IndexChangeEvent):void
-			{
-				// Update our component
-				m_pComponentReact.Position = _editPositionCombo.selectedItem as String;
-				
-				// Pass the request to the server
-				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
-				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
-			}
-			
+
 			// Called when the user changes the text in one of our input fields
 			protected override function OnTextValueChanged(pFocusTarget:TextArea):void
 			{
 				// Update our component
-				if (m_pKeyboardFocusTextArea == _editDuration)
+				if (m_pKeyboardFocusTextArea == _editTime)
 				{
-					m_pComponentReact.Duration = parseInt(_editDuration.text);
-				}
-				if (m_pKeyboardFocusTextArea == _editReactionTemperature)
-				{
-					m_pComponentReact.ReactionTemperature = parseFloat(_editReactionTemperature.text);
-				}
-				if (m_pKeyboardFocusTextArea == _editFinalTemperature)
-				{
-					m_pComponentReact.FinalTemperature = parseFloat(_editFinalTemperature.text);
+					m_pComponentMix.MixTime = parseInt(_editTime.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editStirSpeed)
 				{
-					m_pComponentReact.StirSpeed = parseInt(_editStirSpeed.text);
+					m_pComponentMix.StirSpeed = parseInt(_editStirSpeed.text);
 				}
 				
 				// Save the component to the server
 				var nSequenceID:uint = m_pElixysMain.GetActiveSequenceView().GetSequenceID();
-				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentReact, "sequence/" + nSequenceID + "/component/" + m_pComponentReact.ID);
+				m_pElixysMain.GetActiveSequenceView().DoPost(m_pComponentMix, "sequence/" + nSequenceID + "/component/" + m_pComponentMix.ID);
 			}
 
 			/***
@@ -151,7 +126,7 @@
 			 **/
 			
 			// Component
-			private var m_pComponentReact:ComponentReact;
+			private var m_pComponentMix:ComponentMix;
 		]]>
 	</fx:Script>
 	
@@ -185,24 +160,7 @@
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
 							<s:Spacer width="50%" />
 							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Reactor to be reacted"/>
-							</s:HGroup>
-						</s:HGroup>
-					</s:VGroup>
-					<s:VGroup width="100%">
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:HGroup horizontalAlign="right" width="50%">
-								<s:Label text="Temperature:" styleName="TextMedium" />
-							</s:HGroup>
-							<s:HGroup horizontalAlign="left" width="50%">
-								<Renderers:AutoTextArea id="_editReactionTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-														focusOut="OnTextFocusOut(event)" width="100%" />
-							</s:HGroup>
-						</s:HGroup>
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:Spacer width="50%" />
-							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Reaction temperature in degrees Celsius"/>
+								<s:Label styleName="FieldDescription" text="Reactor to mix"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>
@@ -212,47 +170,14 @@
 								<s:Label text="Time:" styleName="TextMedium" />
 							</s:HGroup>
 							<s:HGroup horizontalAlign="left" width="50%">
-								<Renderers:AutoTextArea id="_editDuration" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+								<Renderers:AutoTextArea id="_editTime" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
 														focusOut="OnTextFocusOut(event)" width="100%" />
 							</s:HGroup>
 						</s:HGroup>
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
 							<s:Spacer width="50%" />
 							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Duration of reaction in seconds"/>
-							</s:HGroup>
-						</s:HGroup>
-					</s:VGroup>
-					<s:VGroup width="100%">
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:HGroup horizontalAlign="right" width="50%">
-								<s:Label text="Final Temperature:" styleName="TextMedium" />
-							</s:HGroup>
-							<s:HGroup horizontalAlign="left" width="50%">
-								<Renderers:AutoTextArea id="_editFinalTemperature" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-														focusOut="OnTextFocusOut(event)" width="100%" />
-							</s:HGroup>
-						</s:HGroup>
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:Spacer width="50%" />
-							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Final temperature in degrees Celsius"/>
-							</s:HGroup>
-						</s:HGroup>
-					</s:VGroup>
-					<s:VGroup width="100%">
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:HGroup horizontalAlign="right" width="50%">
-								<s:Label text="Position:" styleName="TextMedium" />
-							</s:HGroup>
-							<s:HGroup horizontalAlign="left" width="50%">
-								<s:ComboBox id="_editPositionCombo" change="OnPositionChange(event)" styleName="TextMedium" width="100%" />
-							</s:HGroup>
-						</s:HGroup>
-						<s:HGroup verticalAlign="middle" gap="15" width="80%">
-							<s:Spacer width="50%" />
-							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Reaction position"/>
+								<s:Label styleName="FieldDescription" text="Time to mix in seconds"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>
@@ -263,7 +188,7 @@
 							</s:HGroup>
 							<s:HGroup horizontalAlign="left" width="50%">
 								<Renderers:AutoTextArea id="_editStirSpeed" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
-									focusOut="OnTextFocusOut(event)" width="100%" />
+														focusOut="OnTextFocusOut(event)" width="100%" />
 							</s:HGroup>
 						</s:HGroup>
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
