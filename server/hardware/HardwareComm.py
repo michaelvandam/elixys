@@ -214,6 +214,7 @@ class HardwareComm():
         self.__pSystemModel = None
         self.__nStateOffset = 0
         self.__sState = ""
+        self.__bLoadingState = False
         self.__pThermocontrollerDecimalPointFlags = {}
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
@@ -288,13 +289,14 @@ class HardwareComm():
         # What mode are we in?
         if (self.__FakePLC_pMemory == None):
             # We are in normal mode.  Make sure we're not already in the process of updating the state
-            if self.__sState != "":
+            if self.__bLoadingState:
                 return
 
             # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
             # first chunk of the state
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
+            self.__bLoadingState = True
             self.__RequestNextStateChunk()
         else:
             # We are in fake PLC mode.  Format our fake memory into a string
@@ -732,6 +734,9 @@ class HardwareComm():
             # No, so request the next chunk and return
             self.__RequestNextStateChunk()
             return
+
+        # Clear our state loading flag
+        self.__bLoadingState = False
 
         # Enable analog out as needed
         nAnalogOutOffset = self.__CalculateHardwareOffset(self.__nAnalogOutUnit);

@@ -13,6 +13,7 @@ class Initialize(UnitOperation):
     try:
       #Close all valves (set state)
       self.setStatus("Initializing valves")
+      self.ReactorID = ""
       for self.ReactorID in self.ReactorTuple:
         self.setEvapValves(OFF)
         self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()

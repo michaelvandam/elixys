@@ -651,24 +651,27 @@ CREATE PROCEDURE MoveComponent(IN iComponentID INT UNSIGNED, iInsertAfterID INT 
         DECLARE lOldNextComponentID INT UNSIGNED;
         DECLARE lNewNextComponentID INT UNSIGNED;
 
-        -- Find the old previous and next component IDs
+        -- Find the old previous component ID
         CALL Internal_GetPreviousComponent(iComponentID, lOldPreviousComponentID);
-        CALL Internal_GetNextComponent(iComponentID, lOldNextComponentID);
 
-        -- Find the new next component ID
-        CALL Internal_GetNextComponent(iInsertAfterID, lNewNextComponentID);
+        -- Skip if we're not moving the component
+        IF lOldPreviousComponentID != iInsertAfterID THEN
+            -- Find the old and new next component IDs
+            CALL Internal_GetNextComponent(iComponentID, lOldNextComponentID);
+            CALL Internal_GetNextComponent(iInsertAfterID, lNewNextComponentID);
 
-        -- Remove the component
-        UPDATE Components SET NextComponentID = lOldNextComponentID WHERE ComponentID = lOldPreviousComponentID;
-        UPDATE Components SET PreviousComponentID = lOldPreviousComponentID WHERE ComponentID = lOldNextComponentID;
+            -- Remove the component
+            UPDATE Components SET NextComponentID = lOldNextComponentID WHERE ComponentID = lOldPreviousComponentID;
+            UPDATE Components SET PreviousComponentID = lOldPreviousComponentID WHERE ComponentID = lOldNextComponentID;
 
-        -- Insert the component
-        UPDATE Components SET NextComponentID = iComponentID WHERE ComponentID = iInsertAfterID;
-        UPDATE Components SET PreviousComponentID = iComponentID WHERE ComponentID = lNewNextComponentID;
+            -- Insert the component
+           UPDATE Components SET NextComponentID = iComponentID WHERE ComponentID = iInsertAfterID;
+           UPDATE Components SET PreviousComponentID = iComponentID WHERE ComponentID = lNewNextComponentID;
 
-        -- Update the component
-        UPDATE Components SET PreviousComponentID = iInsertAfterID WHERE ComponentID = iComponentID;
-        UPDATE Components SET NextComponentID = lNewNextComponentID WHERE ComponentID = iComponentID;
+           -- Update the component
+           UPDATE Components SET PreviousComponentID = iInsertAfterID WHERE ComponentID = iComponentID;
+           UPDATE Components SET NextComponentID = lNewNextComponentID WHERE ComponentID = iComponentID;
+        END IF;
     END //
 
 /* Deletes the component and removes it from the sequence:

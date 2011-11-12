@@ -59,8 +59,8 @@ class UnitOperationsWrapper:
                    "ReagentReactorID":sReagentReactor,
                    "ReagentPosition":nReagentPosition,
                    "reagentLoadPosition":nReagentDeliveryPosition,
-                   "duration":DEFAULT_ADD_DELIVERYTIME,
-                   "pressure":DEFAULT_ADD_DELIVERYPRESSURE}
+                   "duration":DEFAULT_ADD_DURATION,
+                   "pressure":DEFAULT_ADD_PRESSURE}
         pAdd = Add(self.__pSystemModel, pParams)
         pAdd.setDaemon(True)
         pAdd.start()
