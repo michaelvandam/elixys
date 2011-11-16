@@ -26,12 +26,12 @@ class Add(UnitOperation):
       self.setPressureRegulator(2,self.pressure)   #Set delivery pressure
       self.setStatus("Moving reactor")
       self.setReactorPosition(ADDREAGENT)          #Move reactor to position
-      self.setStatus("Picking up reagent")
+      self.setStatus("Picking up vial")
       self.setGripperPlace()                       #Move reagent to the addition position.
       self.setStatus("Delivering reagent")
       self.startTimer(self.duration)               #In seconds
       self.waitForTimer()                          #Wait for Dispense reagent
-      self.setStatus("Returning reagent")
+      self.setStatus("Returning vial")
       self.setGripperRemove()                      #Return vial to its starting location
       self.setStatus("Complete")
     except Exception as e:

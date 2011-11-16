@@ -117,7 +117,7 @@ def GetStateImpl(pSystemModel):
     return pSystemModel.DumpStateToString()
 
 # AbortUnitOperation implementation
-def AbortUnitOperationImple(pSystemModel):
+def AbortUnitOperationImpl(pSystemModel):
     """Abort the current unit operation"""
     # Get the current unit operation
     pCurrentUnitOperation = pSystemModel.GetUnitOperation()
@@ -126,7 +126,19 @@ def AbortUnitOperationImple(pSystemModel):
         pCurrentUnitOperation.abort = True
         return ""
     else:
-        return "No current unit operation to abort"
+        return "No current unit operation"
+
+# DeliverUserInput implementation
+def DeliverUserInputImpl(pSystemModel):
+    """Delivers user input to the current unit operation"""
+    # Get the current unit operation
+    pCurrentUnitOperation = pSystemModel.GetUnitOperation()
+    if pCurrentUnitOperation != None:
+        # Deliver user input to the current user operation
+        pCurrentUnitOperation.deliverUserInput()
+        return ""
+    else:
+        return "No current unit operation"
 
 # Base CLI class
 class BaseCLI(threading.Thread):
@@ -145,6 +157,10 @@ class BaseCLI(threading.Thread):
     def AbortUnitOperation(self):
         """Abort the current unit operation"""
         raise Exception("Subclasses must implement AbortUnitOperation")
+
+    def DeliverUserInput(self):
+        """Deliver user input to the current unit operation"""
+        raise Exception("Subclasses must implement DeliverUserInput")
 
     def OpenScript(self, sCommand):
         """Opens the script"""
@@ -239,6 +255,8 @@ class BaseCLI(threading.Thread):
                 print "  help [unit operation name]"
                 print "To abort the currently unit operation:"
                 print "  AbortUnitOperation()"
+                print "To deliver user input to a waiting unit operation:"
+                print "  DeliverUserInput()"
             elif sCommand == "help Init":
                 # React unit operation
                 print "Initialize the Elixys hardware for use."
@@ -294,7 +312,8 @@ class BaseCLI(threading.Thread):
                 print "  DeliverF18(nTrapTime,         Seconds"
                 print "             nTrapPressure,     PSI"
                 print "             nEluteTime,        Seconds"
-                print "             nElutePressure)    PSI"
+                print "             nElutePressure,    PSI"
+                print "             bCyclotronFlag)    1 for cyclotron push, 0 for Elixys push"
             elif sCommand == "help Transfer":
                 # Transfer unit operation
                 print "Transfer the contents of one reactor to another through a cartridge"
@@ -340,6 +359,9 @@ class BaseCLI(threading.Thread):
             elif sCommand == "AbortUnitOperation()":
                 # Abort the current unit operation
                 self.AbortUnitOperation()
+            elif sCommand == "DeliverUserInput()":
+                # Deliver user input to the current unit operation
+                self.DeliverUserInput()
             elif sCommand == "help hardware":
                 # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
                 # don't want to list all of our functions

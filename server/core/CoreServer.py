@@ -66,21 +66,49 @@ class CoreServerService(rpyc.Service):
         global gDatabase
         global gSystemModel
         global gRunUsername
+        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.GetServerState()")
 
         # Format the run state
-        pUnitOperation = gSystemModel.GetUnitOperation()
         pServerState = {"type":"serverstate"}
         pServerState["runstate"] = {"type":"runstate"}
-        if pUnitOperation != None:
-            pServerState["runstate"]["status"] = pUnitOperation.status
+        if (gRunSequence != None) and gRunSequence.running:
+            pUnitOperation = gSystemModel.GetUnitOperation()
+            if pUnitOperation != None:
+                pServerState["runstate"]["status"] = pUnitOperation.status
+                pServerState["runstate"]["prompt"] = {"type":"promptstate"}
+                if pUnitOperation.waitingForUserInput:
+                    pServerState["runstate"]["prompt"]["screen"] = "PROMPT_UNITOPERATION"
+                    pServerState["runstate"]["prompt"]["show"] = True
+                    pServerState["runstate"]["prompt"]["title"] = pUnitOperation.userInputTitle
+                    pServerState["runstate"]["prompt"]["text1"] = pUnitOperation.userInputText
+                    pServerState["runstate"]["prompt"]["text2"] = ""
+                    if sUsername == gRunUsername:
+                        pServerState["runstate"]["prompt"]["buttons"] = [{"type":"button",
+                            "text":"OK",
+                            "id":"OK"}]
+                    else:
+                        pServerState["runstate"]["prompt"]["buttons"] = [{"type":"button",
+                            "text":"Back",
+                            "id":"BACK"}]
+                else:
+                    pServerState["runstate"]["prompt"]["show"] = False
+            else:
+                pServerState["runstate"]["status"] = ""
+                pServerState["runstate"]["prompt"] = {"type":"promptstate",
+                    "show":False}
+            pServerState["runstate"]["username"] = gRunUsername
+            pServerState["runstate"]["sequenceid"] = gRunSequence.sequenceID
+            pServerState["runstate"]["componentid"] = gRunSequence.componentID
         else:
+            gRunSequence = None
+            gRunUsername = ""
             pServerState["runstate"]["status"] = "Idle"
-        pServerState["runstate"]["username"] = gRunUsername,
-        pServerState["runstate"]["sequenceid"] = gRunSequence.sequenceID,
-        pServerState["runstate"]["componentid"] = gRunSequence.componentID,
-        pServerState["runstate"]["prompt"] = {"type":"promptstate",
+            pServerState["runstate"]["prompt"] = {"type":"promptstate",
                 "show":False}
+            pServerState["runstate"]["username"] = ""
+            pServerState["runstate"]["sequenceid"] = 0
+            pServerState["runstate"]["componentid"] = 0
 
         # Load the hardware state
         pModel = gSystemModel.LockSystemModel()
@@ -189,6 +217,7 @@ class CoreServerService(rpyc.Service):
         global gDatabase
         global gSystemModel
         global gSequenceManager
+        global gRunUsername
         global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.RunSequence(" + str(nSequenceID) + ")")
 
@@ -202,7 +231,37 @@ class CoreServerService(rpyc.Service):
         gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSequenceManager, gSystemModel)
         gRunSequence.setDaemon(True)
         gRunSequence.start()
+        gRunUsername = sUsername
         return True
+
+    def exposed_Pause(self, sUsername):
+        """Causes the system to pause after the current unit operation is complete"""
+        global gDatabase
+        gDatabase.Log(sUsername, "CoreServerService.Pause()")
+        return False
+
+    def exposed_Continue(self, sUsername):
+        """Continues a paused run"""
+        global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
+        gDatabase.Log(sUsername, "CoreServerService.Continue()")
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.Log(sUsername, "No sequence running, cannot continue")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.Log(sUsername, "Not the user running the sequence, cannot continue")
+            return False
+
+        # Deliver the user input to the current unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation != None:
+            pUnitOperation.deliverUserInput()
 
     def exposed_Abort(self, sUsername):
         """Gently aborts the run that is in progress, cooling the system and shutting down cleanly"""
@@ -214,18 +273,6 @@ class CoreServerService(rpyc.Service):
         """Quickly turns off the heaters and terminates the run, leaving the system in its current state"""
         global gDatabase
         gDatabase.Log(sUsername, "CoreServerService.EmergencyStop()")
-        return False
-
-    def exposed_Pause(self, sUsername):
-        """Causes the system to pause after the current unit operation is complete"""
-        global gDatabase
-        gDatabase.Log(sUsername, "CoreServerService.Pause()")
-        return False
-
-    def exposed_Continue(self, sUsername):
-        """Continues a paused run"""
-        global gDatabase
-        gDatabase.Log(sUsername, "CoreServerService.Continue()")
         return False
 
     def exposed_PauseTimer(self, sUsername):
@@ -311,13 +358,37 @@ class CoreServerService(rpyc.Service):
         try:
             pCurrentUnitOperation = gSystemModel.GetUnitOperation()
             if pCurrentUnitOperation != None:
-                # Abort the current unit operation
                 pCurrentUnitOperation.abort = True
                 return ""
             else:
-                return "No unit operation to abort"
+                return "No unit operation"
         except Exception as ex:
             return "Failed to abort unit operation: " + str(ex)
+
+        return self.__pCoreServer.root.CLIDeliverUserInput(sUsername)
+
+    def DeliverUserInput(self):
+        """Deliver user input to the current unit operation"""
+        # Ask the core server to deliver user input to the current unit operation
+        sResult = self.pCoreServer.CLIDeliverUserInput("CLI")
+
+
+    def exposed_CLIDeliverUserInput(self, sUsername):
+        """Delivers user input to the current unit operation for the CLI"""
+        global gDatabase
+        global gSystemModel
+        gDatabase.Log(sUsername, "CoreServerService.CLIDeliverUserInput()")
+
+        # Deliver user input to the current unit operation
+        try:
+            pCurrentUnitOperation = gSystemModel.GetUnitOperation()
+            if pCurrentUnitOperation != None:
+                pCurrentUnitOperation.deliverUserInput()
+                return ""
+            else:
+                return "No unit operation"
+        except Exception as ex:
+            return "Failed to deliver user input to unit operation: " + str(ex)
 
 # Main function
 if __name__ == "__main__":

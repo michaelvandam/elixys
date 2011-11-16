@@ -43,8 +43,8 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
-					// Format the output text
-					_runOutputText.text = m_pComponentComment.Comment;
+					// Set the name and format the output text
+					_runComponentName.text = m_pComponentComment.Name;
 				}
 			}
 
@@ -133,9 +133,10 @@
 				</s:VGroup>
 			</s:VGroup>
 		</s:VGroup>
-		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" horizontalAlign="center" verticalAlign="middle" horizontalCenter="0"
-			verticalCenter="0" width="100%" height="100%">
-			<mx:Text id="_runOutputText" styleName="TextMedium" width="80%" />
+		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_runComponentName" styleName="TextLarge" />
+			</s:HGroup>
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

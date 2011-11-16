@@ -33,7 +33,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
     pAdd = Add(systemModel, pParams, username, database)
     pAdd.initializeComponent(pComponent)
     if pComponent["reagent"].has_key("position"):
-      pAdd.reagentPosition = pComponent["reagent"]["position"]
+      pAdd.reagentPosition = int(pComponent["reagent"]["position"])
     if pComponent["reagent"].has_key("reagentid"):
       pAdd.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
     return pAdd
@@ -71,7 +71,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
     return pReact
   elif pComponent["componenttype"] == "PROMPT":
     pParams = {}
-    pParams["userMessage"] = pComponent["message"]
+    pParams["userMessage"] = str(pComponent["message"])
     pPrompt = Prompt(systemModel, pParams, username, database)
     pPrompt.initializeComponent(pComponent)
     return pPrompt
@@ -90,6 +90,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
     return pComment
   elif pComponent["componenttype"] == "DELIVERF18":
     pParams = {}
+    pParams["cyclotronFlag"] = pComponent["cyclotronflag"]
     pParams["trapTime"] = pComponent["traptime"]
     pParams["trapPressure"] = pComponent["trappressure"]
     pParams["eluteTime"] = pComponent["elutetime"]

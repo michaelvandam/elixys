@@ -141,19 +141,9 @@
 
         {"type":"component",
         "componenttype":"DELIVERF18",
-        "traptime":60,
-        "trappressure":5,
-        "elutetime":180,
-        "elutepressure":5},
-
-        {"type":"component",
-        "componenttype":"PROMPT",
-	"message":"Manually swap the eluent vial with the K222 vial"},
-
-        {"type":"component",
-        "componenttype":"DELIVERF18",
-        "traptime":60,
-        "trappressure":5,
+        "cyclotronflag":1,
+        "traptime":0,
+        "trappressure":0,
         "elutetime":180,
         "elutepressure":5},
 

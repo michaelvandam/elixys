@@ -6,11 +6,18 @@ from UnitOperation import *
 class Prompt(UnitOperation):
   def __init__(self,systemModel,params,username = "", database = None):
     UnitOperation.__init__(self,systemModel,username,database)
+    expectedParams = {USERMESSAGE:STR}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
 
   def run(self):
-    #Need to implement this (combine with UserInput unit op)
-    #self.userMessage
-    pass
+    # Wait for user input
+    self.setStatus("Waiting for user input")
+    self.waitForUserInput(self.userMessage)
+    self.setStatus("Complete")
   
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

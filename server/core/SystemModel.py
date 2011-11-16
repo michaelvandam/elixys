@@ -365,7 +365,7 @@ class SystemModel:
 
         if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():
             sState += "\n"
-            sState += "Unit operation status: " + self.__pUnitOperation.status
+            sState += "\"" + self.__pUnitOperation.__class__.__name__ + "\" unit operation status: " + self.__pUnitOperation.status
             sState += "\n"
 
     finally:

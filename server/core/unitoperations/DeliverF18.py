@@ -6,14 +6,20 @@ from UnitOperation import *
 class DeliverF18(UnitOperation):
   def __init__(self,systemModel,params,username = "", database = None):
     UnitOperation.__init__(self,systemModel,username,database)
-    self.setParams(params)
-    self.ReactorID='Reactor1'
+    expectedParams = {CYCLOTRONFLAG:INT,TRAPTIME:INT,TRAPPRESSURE:FLOAT,ELUTETIME:INT,ELUTEPRESSURE:FLOAT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+      self.ReactorID='Reactor1'
+    else:
+      raise UnitOpError(paramError)
+
     #Should have parameters listed below:
+    #self.cyclotronFlag
     #self.trapTime
     #self.trapPressure
     #self.eluteTime
     #self.elutePressure
-    self.cyclotronFlag = False##Edit when user input possible
     
   def run(self):
     try:
@@ -37,18 +43,18 @@ class DeliverF18(UnitOperation):
       self.abortOperation(e)
       
   def F18Trap(self,time,pressure):
-    self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
-    self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
-    self.timerShowInStatus = False
-    self.setPressureRegulator(2,pressure,5) #Set pressure after valve is opened
     if (self.cyclotronFlag):
-      ##Wait for user to click OK
-      pass
+      self.setStatus("Trapping, waiting for delivery")
+      self.waitForUserInput("The system is ready for you to deliver F18 from your external source.\n\nClick OK once delivery is complete.")
     else:
+      self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
+      self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
+      self.timerShowInStatus = False
+      self.setPressureRegulator(2,pressure,5) #Set pressure after valve is opened
       self.startTimer(time)
       self.waitForTimer()
-    self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
-    self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,OFF,EQUAL,5)
+      self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
+      self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,OFF,EQUAL,5)
     
   def F18Elute(self,time,pressure):
     self.systemModel['ExternalSystems'].setF18EluteValveOpen(ON)
@@ -63,6 +69,8 @@ class DeliverF18(UnitOperation):
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent
+    if not self.component.has_key("cyclotronflagvalidation"):
+      self.component.update({"cyclotronflagvalidation":""})
     if not self.component.has_key("traptimevalidation"):
       self.component.update({"traptimevalidation":""})
     if not self.component.has_key("trappressurevalidation"):
@@ -76,6 +84,7 @@ class DeliverF18(UnitOperation):
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
     self.component["name"] = "Deliver F18"
+    self.component["cyclotronflagvalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["traptimevalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["trappressurevalidation"] = "type=number; min=0; max=25"
     self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
@@ -86,7 +95,8 @@ class DeliverF18(UnitOperation):
     """Performs a quick validation on the component"""
     #Validate all fields
     bValidationError = False
-    if not self.validateComponentField(self.component["traptime"], self.component["traptimevalidation"]) or \
+    if not self.validateComponentField(self.component["cyclotronflag"], self.component["cyclotronflagvalidation"]) or \
+       not self.validateComponentField(self.component["traptime"], self.component["traptimevalidation"]) or \
        not self.validateComponentField(self.component["trappressure"], self.component["trappressurevalidation"]) or \
        not self.validateComponentField(self.component["elutetime"], self.component["elutetimevalidation"]) or \
        not self.validateComponentField(self.component["elutepressure"], self.component["elutepressurevalidation"]):
@@ -103,6 +113,7 @@ class DeliverF18(UnitOperation):
 
     # Copy the validation fields
     pDBComponent["name"] = self.component["name"]
+    pDBComponent["cyclotronflagvalidation"] = self.component["cyclotronflagvalidation"]
     pDBComponent["traptimevalidation"] = self.component["traptimevalidation"]
     pDBComponent["trappressurevalidation"] = self.component["trappressurevalidation"]
     pDBComponent["elutetimevalidation"] = self.component["elutetimevalidation"]
@@ -119,6 +130,7 @@ class DeliverF18(UnitOperation):
 
     # Update the fields we want to save
     pTargetComponent["name"] = self.component["name"]
+    pTargetComponent["cyclotronflag"] = self.component["cyclotronflag"]
     pTargetComponent["traptime"] = self.component["traptime"]
     pTargetComponent["trappressure"] = self.component["trappressure"]
     pTargetComponent["elutetime"] = self.component["elutetime"]

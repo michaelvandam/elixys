@@ -46,6 +46,12 @@ class ElixysCLI(BaseCLI.BaseCLI):
         if sResult != "":
             print sResult
 
+    def DeliverUserInput(self):
+        """Deliver user input to the current unit operation"""
+        sResult = BaseCLI.DeliverUserInputImpl(self.pSystemModel)
+        if sResult != "":
+            print sResult
+
     def Run(self):
         """Main CLI function"""
         # Initialize variables

@@ -20,39 +20,12 @@ package Elixys.Objects
 			}
 		}
 		
-		// Data wrappers
-		public function Buttons():Array
-		{
-			// Parse the buttons
-			if (m_pButtons == null)
-			{
-				m_pButtons = new Array();
-				var pButtons:Array = super.flash_proxy::getProperty("navigationbuttons");
-				for each (var pButtonObject:Object in pButtons)
-				{
-					var pButton:Button = new Button(null, pButtonObject);
-					m_pButtons.push(pButton);
-				}
-			}
-			return m_pButtons;
-		}
-		public function SequenceID():uint
-		{
-			return parseInt(super.flash_proxy::getProperty("sequenceid"));
-		}
-		public function ComponentID():uint
-		{
-			return parseInt(super.flash_proxy::getProperty("componentid"));
-		}
-		
 		// Types
 		static public var VIEWTYPE:String = "VIEW";
 		static public var EDITTYPE:String = "EDIT";
-		static public var RUNSEQUENCETYPE:String = "RUNSEQUENCE";
-		static public var MANUALRUNTYPE:String = "MANUALRUN";
+		static public var RUNTYPE:String = "RUN";
 		
 		// State components
 		protected var m_sType:String;
-		protected var m_pButtons:Array;
 	}
 }

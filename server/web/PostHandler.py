@@ -18,6 +18,9 @@ class PostHandler:
         # Create the sequence manager
         self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
+        # Initialize server state
+        self.__pServerState = None
+
     # Main entry point for handling all POST requests
     def HandleRequest(self, pClientState, sRemoteUser, sPath, pBody, nBodyLength):
         # Remember the request variables
@@ -36,8 +39,8 @@ class PostHandler:
             return self.__HandlePostView()
         elif self.__sPath == "/EDIT":
             return self.__HandlePostEdit()
-        elif self.__sPath == "/RUNSEQUENCE":
-            return self.__HandlePostRunSequence()
+        elif self.__sPath == "/RUN":
+            return self.__HandlePostRun()
         elif self.__sPath == "/PROMPT":
             return self.__HandlePostPrompt()
         elif self.__sPath.startswith("/sequence/"):
@@ -69,8 +72,11 @@ class PostHandler:
                 return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "OBSERVE":
                 # Switch to Run Sequence
-                raise Exception("Handle Observer button")
-                #return self.__UpdateStates(self.__pCoreServer.GetRunState(self.__sRemoteUser))
+                pServerState = self.__GetServerState()
+                self.__pClientState["screen"] = "RUN"
+                self.__pClientState["sequenceid"] = pServerState["runstate"]["sequenceid"]
+                self.__pClientState["componentid"] = pServerState["runstate"]["componentid"]
+                return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -155,6 +161,9 @@ class PostHandler:
                 self.__pClientState["prompt"]["show"] = True
                 self.__pClientState["prompt"]["title"] = "Delete sequence"
                 self.__pClientState["prompt"]["text1"] = "Are you sure that you want to permanently delete sequence \"" + pSequence["metadata"]["name"] + "\"?"
+                self.__pClientState["prompt"]["edit1"] = False
+                self.__pClientState["prompt"]["text2"] = ""
+                self.__pClientState["prompt"]["edit2"] = False
                 self.__pClientState["prompt"]["buttons"] = [{"type":"button",
                     "text":"Cancel",
                     "id":"CANCEL"},
@@ -186,14 +195,17 @@ class PostHandler:
         # Fill in the state
         self.__pClientState["prompt"]["screen"] = "PROMPT_RUNSEQUENCE"
         self.__pClientState["prompt"]["show"] = True
-        self.__pClientState["prompt"]["title"] = "Run sequence"
-        self.__pClientState["prompt"]["text1"] = "Prepare the Elixys system to run \"" + pSequence["metadata"]["name"] + "\" and click OK to continue."
+        self.__pClientState["prompt"]["title"] = "Confirm run"
+        self.__pClientState["prompt"]["text1"] = "Would you like to run the sequence \"" + pSequence["metadata"]["name"] + "\"?"
+        self.__pClientState["prompt"]["edit1"] = False
+        self.__pClientState["prompt"]["text2"] = ""
+        self.__pClientState["prompt"]["edit2"] = False
         self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-            "text":"Cancel",
-            "id":"CANCEL"},
+            "text":"No",
+            "id":"NO"},
             {"type":"button",
-            "text":"OK",
-            "id":"OK"}]
+            "text":"Yes",
+            "id":"YES"}]
         self.__pClientState["sequenceid"] = nSequenceID
         return self.__SaveClientStateAndReturn()
 
@@ -249,38 +261,42 @@ class PostHandler:
         # Unhandled use case
         raise Exception("State misalignment")
 
-    # Handle POST /RUNSEQUENCE
-    def __HandlePostRunSequence(self):
-        raise Exception("Implement run sequence post")
+    # Handle POST /RUN
+    def __HandlePostRun(self):
         # Make sure we are on Run Sequence
-        #if self.__pClientState["screen"] != "RUN":
-        #    raise Exception("State misalignment")
+        if self.__pClientState["screen"] != "RUN":
+            raise Exception("State misalignment")
 
         # Parse the JSON string in the body and extract the action type and target
-        #pJSON = json.loads(self.__pBody)
-        #sActionType = str(pJSON["action"]["type"])
-        #sActionTargetID = str(pJSON["action"]["targetid"])
+        pJSON = json.loads(self.__pBody)
+        sActionType = str(pJSON["action"]["type"])
+        sActionTargetID = str(pJSON["action"]["targetid"])
 
         # Check which button the user clicked
-        #if sActionType == "BUTTONCLICK":
-        #    if sActionTargetID == "ABORT":
-        #        # Switch states to Prompt (Abort sequence run)
-        #        return self.__UpdateStates("PROMPT_ABORTSEQUENCERUN;" + self.__sClientState)
-        #        pPromptState["show"] = True
-        #        pPromptState["title"] = "Abort run"
-        #        pPromptState["text1"] = "Are you sure you want to abort the sequence run?  This operation cannot be undone."
-        #        pPromptState["buttons"].append({"type":"button",
-        #            "text":"Cancel",
-        #            "id":"CANCEL"})
-        #        pPromptState["buttons"].append({"type":"button",
-        #            "text":"Abort",
-        #            "id":"ABORT"})
-        #    elif sActionTargetID == "BACK":
-        #        # Switch states to Home
-        #        return self.__UpdateStates("HOME")
+        if sActionType == "BUTTONCLICK":
+            if sActionTargetID == "ABORT":
+                # Switch states to Prompt (Abort sequence run)
+                self.__pClientState["prompt"]["screen"] = "PROMPT_ABORTSEQUENCERUN"
+                self.__pClientState["prompt"]["show"] = True
+                self.__pClientState["prompt"]["title"] = "Abort run"
+                self.__pClientState["prompt"]["text1"] = "Are you sure you want to abort the sequence run?\n\nThis operation cannot be undone."
+                self.__pClientState["prompt"]["edit1"] = False
+                self.__pClientState["prompt"]["text2"] = ""
+                self.__pClientState["prompt"]["edit2"] = False
+                self.__pClientState["prompt"]["buttons"] = [{"type":"button",
+                    "text":"Yes",
+                    "id":"YES"},
+                    {"type":"button",
+                    "text":"No",
+                    "id":"NO"}]
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "BACK":
+                # Switch states to Home
+                self.__pClientState["screen"] = "HOME"
+                return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
-        #raise Exception("State misalignment")
+        raise Exception("State misalignment")
 
     # Handle sequence POST requests
     def __HandlePostBaseSequence(self, sActionType, sActionTargetID):
@@ -354,7 +370,9 @@ class PostHandler:
                     raise Exception("Sequence name is required")
 
                 # Create the new sequence
+                self.__pDatabase.Log("###", "A")
                 nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", 3, 10, 2)
+                self.__pDatabase.Log("###", "B")
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False
@@ -394,61 +412,40 @@ class PostHandler:
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_ABORTSEQUENCERUN":
-            if sActionTargetID == "ABORT":
+            if sActionTargetID == "YES":
                 # Abort the run and return to the home page
-                raise Exception("Implement abort sequence run")
-                #self.__pCoreServer.AbortRun(self.__sRemoteUser)
-            if sActionTargetID == "CANCEL":
+                self.__pCoreServer.Abort(self.__sRemoteUser)
+                self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "HOME"
+                return self.__SaveClientStateAndReturn()
+            if sActionTargetID == "NO":
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_RUNSEQUENCE":
-            if sActionTargetID == "OK":
+            if sActionTargetID == "YES":
                 # Run the sequence
-                raise Exception("Implement run sequence")
-                #self.__pCoreServer.RunSequence(self.__sRemoteUser, int(self.__sClientState.split(";")[1]))
-                #return self.__UpdateStates(self.__pCoreServer.GetRunState(self.__sRemoteUser))
-            if sActionTargetID == "CANCEL":
+                self.__pCoreServer.RunSequence(self.__sRemoteUser, self.__pClientState["sequenceid"])
+
+                # Hide the prompt and switch states to Run Sequence
+                self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "RUN"
+                return self.__SaveClientStateAndReturn()
+            if sActionTargetID == "NO":
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_UNITOPERATION":
-            raise Exception("Implement unit operation prompt")
-            #if sActionTargetID == "OK":
-            #    # Are we in the middle of a sequence or manual run?
-            #    sRunState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
-            #    if sRunState.split(".")[0] == "RUNSEQUENCE":
-            #        # Continue the sequence run
-            #        self.__pCoreServer.ContinueRun(self.__sRemoteUser)
-            #    return self.__UpdateStates(self.__pCoreServer.GetRunState(self.sRemoteUser))
-            #if sActionTargetID == "BACK":
-            #    # Return to the home page
-            #    return self.__UpdateStates("HOME")
-            # Look up the current sequence component
-            #pServerState = self.__GetServerState()
-            #pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, pServerState["runstate"]["componentid"], pServerState["runstate"]["sequenceid"])
-            ## Make sure this component requires a prompt
-            #if (pComponent["componenttype"] != "PROMPT") and (pComponent["componenttype"] != "INSTALL"):
-            #    # No, so update the client state and return
-            #    raise Exception("Shouldn't be at prompt")
-            #    self.__sClientState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
-            #    self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__sClientState)
-            #    return pPromptState
-            # Set the prompt message
-            #pPromptState["show"] = True
-            #pPromptState["title"] = "Prompt"
-            #pPromptState["text1"] = pComponent["message"]
-            # Set the button text depending on whether we are the user running the system
-            #if self.__sRemoteUser == pServerState["runstate"]["username"]:
-            #    pPromptState["buttons"].append({"type":"button",
-            #        "text":"OK",
-            #        "id":"OK"})
-            #else:
-            #    pPromptState["buttons"].append({"type":"button",
-            #        "text":"Back",
-            #        "id":"BACK"})
-            ## Return the state
-            #return pPromptState
+            if sActionTargetID == "OK":
+                # Continue the sequence
+                self.__pCoreServer.Continue(self.__sRemoteUser)
+                self.__pClientState["prompt"]["show"] = False
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "BACK":
+                # Switch states to Home
+                self.__pClientState["screen"] = "HOME"
+                self.__pClientState["prompt"]["show"] = False
+                return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -506,4 +503,10 @@ class PostHandler:
         self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
         pGetHandler = GetHandler.GetHandler(self.__pCoreServer, self.__pDatabase)
         return pGetHandler.HandleRequest(self.__pClientState, self.__sRemoteUser, "/state", None, 0)
+
+    # Initializes and/or returns the cached server state
+    def __GetServerState(self):
+        if self.__pServerState == None:
+            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+        return self.__pServerState
 

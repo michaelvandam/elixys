@@ -4,6 +4,7 @@
 import sys
 sys.path.append("/opt/elixys/core")
 import SequenceManager
+import copy
 
 class GetHandler:
     # Constructor
@@ -55,13 +56,11 @@ class GetHandler:
 
         # Is the remote user the one that is currently running the system?
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
-            # Yes, so make sure the user is in the appropriate run state
-            raise Exception("User is running system, make sure they are in the right place")
-            sRunState = self.__pCoreServer.GetRunState(self.__sRemoteUser)
-            if sRunState.startswith("RUNSEQUENCE") and not self.__sClientState.startswith("RUNSEQUENCE") and not self.__sClientState.startswith("PROMPT"):
-                pRunStateComponents = sRunState.split(".")
-                self.__sClientState = "RUNSEQUENCE." + pRunStateComponents[1] + "." + pRunStateComponents[2]
-                self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__sClientState)
+            # Yes, so make sure the user is on the run screen
+            if self.__pClientState["screen"] != "RUN":
+                # Update the client state
+                self.__pClientState["screen"] = "RUN"
+                self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Start the state object
         pState = {"type":"state",
@@ -80,8 +79,8 @@ class GetHandler:
             pState.update(self.__HandleGetStateView())
         elif self.__pClientState["screen"] == "EDIT":
             pState.update(self.__HandleGetStateEdit())
-        elif self.__pClientState["screen"] == "RUNSEQUENCE":
-            pState.update(self.__HandleGetStateRunSequence())
+        elif self.__pClientState["screen"] == "RUN":
+            pState.update(self.__HandleGetStateRun())
         else:
             raise Exception("Unknown screen: " + self.__pClientState["screen"])
 
@@ -214,28 +213,35 @@ class GetHandler:
         return pState
 
     # Handle GET /state for Run Sequence
-    def __HandleGetStateRunSequence(self):
-        raise Exception("Implement run sequence state")
-        # Get the server state
-        #pServerState = self.__GetServerState()
+    def __HandleGetStateRun(self):
+        # Sync the client state with the run state
+        pServerState = self.__GetServerState()
+        if (self.__pClientState["sequenceid"] != pServerState["runstate"]["sequenceid"]) or \
+           (self.__pClientState["componentid"] != pServerState["runstate"]["componentid"]) or \
+           (self.__pClientState["prompt"]["show"] != pServerState["runstate"]["prompt"]["show"]):
+            # Update the client state
+            self.__pClientState["sequenceid"] = pServerState["runstate"]["sequenceid"]
+            self.__pClientState["componentid"] = pServerState["runstate"]["componentid"]
+            self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
+            self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
-        # Create the return object
-        #pState = {"navigationbuttons":[],
-        #    "sequenceid":pServerState["runstate"]["sequenceid"],
-        #    "componentid":pServerState["runstate"]["componentid"]}
+        # Start with the common return object
+        pState = {"navigationbuttons":[],
+            "sequenceid":self.__pClientState["sequenceid"],
+            "componentid":self.__pClientState["componentid"]}
 
         # Add the button depending on the user running the system
-        #if self.__sRemoteUser == pServerState["runstate"]["username"]:
-        #    pState["navigationbuttons"].append({"type":"button",
-        #        "text":"Abort",
-        #        "id":"ABORT"})
-        #else:
-        #    pState["navigationbuttons"].append({"type":"button",
-        #        "text":"Back",
-        #        "id":"BACK"})
+        if self.__sRemoteUser == pServerState["runstate"]["username"]:
+            pState["navigationbuttons"].append({"type":"button",
+                "text":"Abort",
+                "id":"ABORT"})
+        else:
+            pState["navigationbuttons"].append({"type":"button",
+                "text":"Back",
+                "id":"BACK"})
 
         # Return the state
-        #return pState
+        return pState
 
     # Handle GET /sequence/[sequenceid]
     def __HandleGetSequence(self):
@@ -253,7 +259,9 @@ class GetHandler:
                 "name":pOldComponent["name"],
                 "id":pOldComponent["id"],
                 "componenttype":pOldComponent["componenttype"],
-                "validationerror":pOldComponent["validationerror"]}
+                "validationerror":False}
+            if pOldComponent.has_key("validationerror"):
+                pNewComponent["validationerror"] = pOldComponent["validationerror"]
             pNewComponents.append(pNewComponent)
         pSequence["components"] = pNewComponents
 

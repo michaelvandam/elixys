@@ -7,7 +7,8 @@ class Install(UnitOperation):
   def __init__(self,systemModel,params,username = "", database = None):
     UnitOperation.__init__(self,systemModel,username,database)
     self.setParams(params)
-		#Should have parameters listed below:
+
+    #Should have parameters listed below:
     #self.ReactorID
     #self.userMessage
     
@@ -15,6 +16,8 @@ class Install(UnitOperation):
     try:
       self.setStatus("Moving reactor")
       self.setReactorPosition(INSTALL)
+      self.setStatus("Waiting for user input")
+      self.waitForUserInput(self.userMessage)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)

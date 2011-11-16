@@ -63,7 +63,6 @@ class DBComm:
     return ["Add",
       "Evaporate",
       "Transfer",
-      "Elute",
       "React",
       "Prompt",
       "Install",
@@ -137,7 +136,8 @@ class DBComm:
   def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName):
     """Creates a new user"""
     self.Log(sCurrentUsername, "DBComm.CreateUser(%s, %s, %s, %s, %s)" % (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName))
-    pDefaultClientState = {"screen":"HOME",
+    pDefaultClientState = {"type":"clientstate",
+      "screen":"HOME",
       "sequenceid":0,
       "componentid":0,
       "prompt":{"type":"promptstate",

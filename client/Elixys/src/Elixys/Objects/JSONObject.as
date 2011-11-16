@@ -47,7 +47,7 @@ package Elixys.Objects
 		{
 			if (data != null)
 			{
-				content = JSON.decode(data);
+				content = com.adobe.serialization.json.JSON.decode(data);
 			}
 			else
 			{
@@ -57,12 +57,12 @@ package Elixys.Objects
 	
 		public function populate(data:String):void
 		{
-			content = JSON.decode(data);
+			content = com.adobe.serialization.json.JSON.decode(data);
 		}
 	
 		public function toString():String
 		{
-			return JSON.encode(content);
+			return com.adobe.serialization.json.JSON.encode(content);
 		}
 	
 		override flash_proxy function deleteProperty(name:*):Boolean

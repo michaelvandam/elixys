@@ -22,6 +22,20 @@ package Elixys.Objects
 		}
 
 		// Data wrappers
+		public function get CyclotronFlag():uint
+		{
+			return super.flash_proxy::getProperty("cyclotronflag");
+		}
+		public function set CyclotronFlag(value:uint):void
+		{
+			super.flash_proxy::setProperty("cyclotronflag", value);
+		}
+		
+		public function get CyclotronFlagValidation():String
+		{
+			return super.flash_proxy::getProperty("cyclotronflagvalidation");
+		}
+		
 		public function get TrapTime():uint
 		{
 			return super.flash_proxy::getProperty("traptime");
@@ -81,7 +95,8 @@ package Elixys.Objects
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sDeliverF18Details:String = JSONDataObject("traptime", TrapTime);
+			var sDeliverF18Details:String = JSONDataObject("cyclotronflag", CyclotronFlag);
+			sDeliverF18Details += JSONDataObject("traptime", TrapTime);
 			sDeliverF18Details += JSONDataObject("trappressure", TrapPressure);
 			sDeliverF18Details += JSONDataObject("elutetime", EluteTime);
 			sDeliverF18Details += JSONDataObject("elutepressure", ElutePressure, false);
@@ -97,6 +112,7 @@ package Elixys.Objects
 			"\"componenttype\":\"DELIVERF18\"," +
 			"\"id\":0," +
 			"\"name\":\"Deliver F18\"," +
+			"\"cyclotronflag\":0," +
 			"\"traptime\":0," +
 			"\"trappressure\":0," +
 			"\"elutetime\":0," +

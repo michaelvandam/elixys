@@ -178,13 +178,9 @@
 				{
 					pView = m_pEditView;
 				}
-				else if (pState.ClientState().Screen() == StateSequence.RUNSEQUENCETYPE)
+				else if (pState.ClientState().Screen() == StateSequence.RUNTYPE)
 				{
-					pView = m_pRunSequenceView;
-				}
-				else if (pState.ClientState().Screen() == StateSequence.MANUALRUNTYPE)
-				{
-					pView = m_pManualRunView;
+					pView = m_pRunView;
 				}
 				else
 				{
@@ -201,7 +197,6 @@
 				
 				// Update the view state
 				pView.UpdateState(pState);
-
 			}
 			
 			// Shows the specified sequence component
@@ -359,21 +354,13 @@
 					m_pEditView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
 					m_pEditView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
-				else if (m_pRunSequenceView == null)
+				else if (m_pRunView == null)
 				{
-					m_pRunSequenceView = new RunSequenceView();
-					m_pRunSequenceView.SetElixysMain(this);
-					_viewStack.addChild(m_pRunSequenceView);
-					m_pRunSequenceView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-					m_pRunSequenceView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
-				}
-				else if (m_pManualRunView == null)
-				{
-					m_pManualRunView = new ManualRunView();
-					m_pManualRunView.SetElixysMain(this);
-					_viewStack.addChild(m_pManualRunView);
-					m_pManualRunView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-					m_pManualRunView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					m_pRunView = new RunView();
+					m_pRunView.SetElixysMain(this);
+					_viewStack.addChild(m_pRunView);
+					m_pRunView.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					m_pRunView.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
 				else if (m_pCassetteSubview == null)
 				{
@@ -632,8 +619,7 @@
 			private var m_pSelectView:SelectView = null;
 			private var m_pViewView:ViewView = null;
 			private var m_pEditView:EditView = null;
-			private var m_pRunSequenceView:RunSequenceView = null;
-			private var m_pManualRunView:ManualRunView = null;
+			private var m_pRunView:RunView = null;
 			
 			// Child subviews
 			private var m_pCassetteSubview:CassetteSubview = null;

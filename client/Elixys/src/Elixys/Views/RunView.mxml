@@ -20,7 +20,7 @@
 			public override function UpdateState(pState:State):void
 			{
 				// Call the base function with our type
-				UpdateSequenceState(pState, StateSequence.RUNSEQUENCETYPE);
+				UpdateSequenceState(pState, StateSequence.RUNTYPE);
 			}
 			
 			// Update sequence
@@ -79,7 +79,7 @@
 				pPostSequence.TargetID((event.target as spark.components.Button).id);
 			
 				// Pass the request to the server
-				DoPost(pPostSequence, "RUNSEQUENCE");
+				DoPost(pPostSequence, "RUN");
 			}
 		]]>
 	</fx:Script>

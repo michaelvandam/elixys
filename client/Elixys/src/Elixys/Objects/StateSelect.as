@@ -58,21 +58,6 @@ package Elixys.Objects
 			}
 			return m_pOptionButtons;
 		}
-		public function NavigationButtons():Array
-		{
-			// Parse the buttons
-			if (m_pNavigationButtons == null)
-			{
-				m_pNavigationButtons = new Array();
-				var pButtons:Array = super.flash_proxy::getProperty("navigationbuttons");
-				for each (var pButtonObject:Object in pButtons)
-				{
-					var pButton:Button = new Button(null, pButtonObject);
-					m_pNavigationButtons.push(pButton);
-				}
-			}
-			return m_pNavigationButtons;
-		}
 		public function Sequences():Array
 		{
 			// Parse the sequences
@@ -95,7 +80,6 @@ package Elixys.Objects
 		// State components
 		private var m_pTabs:Array;
 		private var m_pOptionButtons:Array;
-		private var m_pNavigationButtons:Array;
 		private var m_pSequences:Array;
 	}
 }

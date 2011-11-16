@@ -46,7 +46,10 @@
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.VIEWMODE)
 				{
+					// Set the cassette name
 					_viewCassetteName.text = m_pComponentCassette.Name;
+
+					// Check if the cassette is available
 					if (m_pComponentCassette.Available)
 					{
 						// Show the reagent table and hide the static text
@@ -79,6 +82,8 @@
 				}
 				else if (m_sViewMode == SubviewBase.RUNMODE)
 				{
+					// Set the cassette name
+					_runCassetteName.text = m_pComponentCassette.Name;
 				}
 			}
 
@@ -490,11 +495,13 @@
 				</s:BorderContainer>
 			</s:VGroup>
 		</s:VGroup>
-		<s:VGroup id="_runGroup" visible="false" width="100%" height="100%" horizontalAlign="center"
-				  horizontalCenter="0" includeInLayout="false" verticalAlign="middle"
-				  verticalCenter="0">
-			<mx:Text width="80%" styleName="TextMedium"
-					 text="This where run mode will be implemented"/>		
+		<s:VGroup id="_runGroup" visible="false" includeInLayout="false" width="100%" height="100%">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Label id="_runCassetteName" styleName="TextLarge" />
+			</s:HGroup>
+			<s:Spacer height="10" />
+			<s:VGroup horizontalAlign="center" verticalAlign="middle" horizontalCenter="0" verticalCenter="0" width="100%" height="100%">
+			</s:VGroup>
 		</s:VGroup>
 	</s:VGroup>
 </Views:SubviewBase>

@@ -87,9 +87,9 @@ class UnitOperationsWrapper:
         pInstall.start()
         return pInstall
         
-    def DeliverF18(self, nTrapTime, nTrapPressure, nEluteTime, nElutePressure):
+    def DeliverF18(self, nTrapTime, nTrapPressure, nEluteTime, nElutePressure, bCyclotronFlag):
         """Performs a Deliver F18 unit operation"""
-        pParams = {"trapTime":nTrapTime,"trapPressure":nTrapPressure,"eluteTime":nEluteTime,"elutePressure":nElutePressure}
+        pParams = {"trapTime":nTrapTime,"trapPressure":nTrapPressure,"eluteTime":nEluteTime,"elutePressure":nElutePressure,"cyclotronFlag":int(bCyclotronFlag)}
         pDeliverF18 = DeliverF18(self.__pSystemModel, pParams)
         pDeliverF18.setDaemon(True)
         pDeliverF18.start()

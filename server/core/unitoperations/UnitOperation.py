@@ -44,6 +44,12 @@ PRESSURE = 'pressure'
 DURATION = 'duration'
 LIQUIDTCREACTOR = 'liquidTCReactor'
 LIQUIDTCCOLLET = 'liquidTCCollet'
+USERMESSAGE = 'userMessage'
+CYCLOTRONFLAG = 'cyclotronFlag'
+TRAPTIME = "trapTime"
+TRAPPRESSURE = "trapPressure"
+ELUTETIME = "eluteTime"
+ELUTEPRESSURE = "elutePressure"
 
 STR   = 'str'
 INT   = 'int'
@@ -103,6 +109,9 @@ class UnitOperation(threading.Thread):
     self.timerStartTime = 0
     self.timerLength = 0
     self.timerShowInStatus = False
+    self.waitingForUserInput = False
+    self.userInputTitle = ""
+    self.userInputText = ""
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
@@ -202,7 +211,7 @@ class UnitOperation(threading.Thread):
         errorMessage += "Parameter: \'%s\' was not set." % parameter
       elif (not((paramType) in (STR,INT,FLOAT)) and (userSetParams[parameter])): #Check for invalid value -- Including none and empty strings.
         self.paramsValid = False
-        errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+        errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\' (1)." % (parameter,userSetParams[parameter])
       else:
         if not(paramType == expectedParamDict[parameter]):
           valid = False
@@ -213,12 +222,12 @@ class UnitOperation(threading.Thread):
               valid = True
           if not(valid):
             self.paramsValid=False
-            errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+            errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\' (2)." % (parameter,userSetParams[parameter])
         if (paramType == STR):
           try:
             if (int(userSetParams[parameter])) and (expectedParamDict[parameter] == STR):
               self.paramsValid=False
-              errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,userSetParams[parameter])
+              errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\' (3)." % (parameter,userSetParams[parameter])
           except ValueError:
             pass    
     return errorMessage
@@ -537,25 +546,15 @@ class UnitOperation(threading.Thread):
 
   def validateEnumNumber(self, nValue, pValidation):
     """ Validates an enumeration of numbers"""
-    #Is the value set?
-    if nValue == 0:
-      #No, so check if it is required
-      if pValidation.has_key("required"):
-        if pValidation["required"]:
-          return False
+    #Make sure it is set to one of the allowed values
+    pValues = pValidation["values"].split(",")
+    for nValidValue in pValues:
+      if float(nValue) == float(nValidValue):
+        #Found it
+        return True
 
-      #Valid
-      return True
-    else:
-      #Yes, so make sure it is set to one of the allowed values
-      pValues = pValidation["values"].split(",")
-      for nValidValue in pValues:
-        if float(nValue) == float(nValidValue):
-          #Found it
-          return True
-
-      #Invalid
-      return False
+    #Invalid
+    return False
 
   def validateEnumReagent(self, pReagent, pValidation):
     """ Validates an enumeration of reagents """
@@ -596,21 +595,11 @@ class UnitOperation(threading.Thread):
 
   def validateNumber(self, nValue, pValidation):
     """ Validates a number """
-    #Is the value set?
-    if nValue == 0:
-      #No, so check if it is required
-      if pValidation.has_key("required"):
-        if pValidation["required"]:
-          return False
-
-      #Valid
+    #Make sure it within the acceptable range
+    if (float(nValue) >= float(pValidation["min"])) and (float(nValue) <= float(pValidation["max"])):
       return True
     else:
-      #Yes, so make sure it within the acceptable range
-      if (float(nValue) >= float(pValidation["min"])) and (float(nValue) <= float(pValidation["max"])):
-        return True
-      else:
-        return False
+      return False
 
   def validateString(self, sValue, pValidation):
     """ Validates a string """
@@ -695,5 +684,22 @@ class UnitOperation(threading.Thread):
 
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""
+    # Base handler does nothing
     pass
+
+  def deliverUserInput(self):
+    """Signal the unit operation to continue"""
+    # Clear the waiting flag
+    self.waitingForUserInput = False
+
+  def waitForUserInput(self, sMessage):
+    # Signal that we are waiting for user input
+    self.waitingForUserInput = True
+    self.userInputTitle = "Prompt"
+    self.userInputText = sMessage
+
+    # Wait until we get the signal to continue
+    while self.waitingForUserInput:
+      time.sleep(0.25)
+
 

@@ -91,7 +91,7 @@ package Elixys.Views
 			var pStateSequence:StateSequence = new StateSequence(sStateType, null, pState);
 			if (m_pNavigationButtons != null)
 			{
-				UpdateButtons(m_pNavigationButtons, pStateSequence.Buttons(), CreateNewButton);
+				UpdateButtons(m_pNavigationButtons, pStateSequence.NavigationButtons(), CreateNewButton);
 				function CreateNewButton():spark.components.Button
 				{
 					// Callback to create our new button
@@ -106,8 +106,15 @@ package Elixys.Views
 			
 			// Remember the state, sequence and component
 			m_pStateSequence = pStateSequence;
-			m_nSequenceID = pStateSequence.SequenceID();
-			m_nComponentID = pStateSequence.ComponentID();
+			m_nSequenceID = pStateSequence.ClientState().SequenceID();
+			m_nComponentID = pStateSequence.ClientState().ComponentID();
+
+			// Update the subview component
+			var pSubview:SubviewBase = m_pElixysMain.GetActiveSubview();
+			if (pSubview != null)
+			{
+				pSubview.UpdateState(pState);
+			}
 
 			// Request the sequence from the server
 			RequestSequence(m_nSequenceID);

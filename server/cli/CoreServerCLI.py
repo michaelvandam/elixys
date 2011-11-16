@@ -43,6 +43,13 @@ class CoreServerCLI(BaseCLI.BaseCLI):
         if sResult != "":
             print sResult
 
+    def DeliverUserInput(self):
+        """Deliver user input to the current unit operation"""
+        # Ask the core server to deliver user input to the current unit operation
+        sResult = self.pCoreServer.CLIDeliverUserInput("CLI")
+        if sResult != "":
+            print sResult
+
     def Run(self):
         """Main CLI function"""
         # Initialize the proxy

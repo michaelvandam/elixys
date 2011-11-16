@@ -17,17 +17,17 @@ class CoreServerProxy():
     def RunSequence(self, sUsername, nSequenceID):
         return self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)
 
-    def Abort(self, sUsername):
-        return self.__pCoreServer.root.Abort(sUsername)
-
-    def EmergencyStop(self, sUsername):
-        return self.__pCoreServer.root.EmergencyStop(sUsername)
-
     def Pause(self, sUsername):
         return self.__pCoreServer.root.Pause(sUsername)
 
     def Continue(self, sUsername):
         return self.__pCoreServer.root.Continue(sUsername)
+
+    def Abort(self, sUsername):
+        return self.__pCoreServer.root.Abort(sUsername)
+
+    def EmergencyStop(self, sUsername):
+        return self.__pCoreServer.root.EmergencyStop(sUsername)
 
     def PauseTimer(self, sUsername):
         return self.__pCoreServer.root.PauseTimer(sUsername)
@@ -52,4 +52,7 @@ class CoreServerProxy():
 
     def CLIAbortUnitOperation(self, sUsername):
         return self.__pCoreServer.root.CLIAbortUnitOperation(sUsername)
+
+    def CLIDeliverUserInput(self, sUsername):
+        return self.__pCoreServer.root.CLIDeliverUserInput(sUsername)
 

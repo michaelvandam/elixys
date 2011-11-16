@@ -49,6 +49,21 @@ package Elixys.Objects
 			}
 			return m_pClientState;
 		}
+		public function NavigationButtons():Array
+		{
+			// Parse the buttons
+			if (m_pNavigationButtons == null)
+			{
+				m_pNavigationButtons = new Array();
+				var pButtons:Array = super.flash_proxy::getProperty("navigationbuttons");
+				for each (var pButtonObject:Object in pButtons)
+				{
+					var pButton:Button = new Button(null, pButtonObject);
+					m_pNavigationButtons.push(pButton);
+				}
+			}
+			return m_pNavigationButtons;
+		}
 		
 		// Type
 		static public var TYPE:String = "state";
@@ -57,5 +72,6 @@ package Elixys.Objects
 		private var m_pUser:Elixys.Objects.User;
 		private var m_pServerState:Elixys.Objects.ServerState;
 		private var m_pClientState:Elixys.Objects.ClientState;
+		private var m_pNavigationButtons:Array;
 	}
 }
