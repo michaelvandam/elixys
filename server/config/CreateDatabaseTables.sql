@@ -1,4 +1,4 @@
-/* Create the tables */
+/* Create the database tables */
 
 /* Drop any existing tables to allow this file to be reimported as needed */
 DROP TABLE IF EXISTS Users;

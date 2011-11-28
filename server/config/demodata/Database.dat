@@ -1,0 +1,117 @@
+{
+    "type":"database",
+
+    "roles":[{"type":"role",
+        "name":"Administrator",
+        "flags":255},
+
+        {"type":"role",
+        "name":"Researcher",
+        "flags":255},
+
+        {"type":"role",
+        "name":"Technician",
+        "flags":255}],
+
+    "users":[{"type":"user",
+        "username":"System",
+        "firstname":"",
+        "lastname":"",
+        "passwordhash":"",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"Administrator",
+        "firstname":"first",
+        "lastname":"last",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"Researcher",
+        "firstname":"first",
+        "lastname":"last",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Researcher"},
+
+        {"type":"user",
+        "username":"Technician",
+        "firstname":"first",
+        "lastname":"last",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Technician"},
+
+        {"type":"user",
+        "username":"devel",
+        "firstname":"first",
+        "lastname":"last",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"shane",
+        "firstname":"Shane",
+        "lastname":"Claggett",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"kevin",
+        "firstname":"Kevin",
+        "lastname":"Quinn",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"mike",
+        "firstname":"Mike",
+        "lastname":"van Dam",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"melissa",
+        "firstname":"Melissa",
+        "lastname":"Esterby",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"jeff",
+        "firstname":"Jeff",
+        "lastname":"Esterby",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Administrator"},
+
+        {"type":"user",
+        "username":"mark",
+        "firstname":"Mark",
+        "lastname":"Lazari",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Researcher"},
+
+        {"type":"user",
+        "username":"gaurav",
+        "firstname":"Gaurav",
+        "lastname":"Shah",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Researcher"},
+
+        {"type":"user",
+        "username":"graciela",
+        "firstname":"Graciela",
+        "lastname":"Flores",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Researcher"},
+
+        {"type":"user",
+        "username":"patrick",
+        "firstname":"Patrick",
+        "lastname":"Phelps",
+        "passwordhash":"6E3kYsJnM9p2Y",
+        "role":"Researcher"}],
+
+    "sequences":[{"type":"sequence",
+        "filename":"FACSynthesis.seq"}]
+}
+

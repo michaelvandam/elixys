@@ -8,14 +8,14 @@ from SocketThread import SocketThread
 from SocketThread import RunawayHeaterException
 import threading
 import time
-import os.path
+import os
 import sys
 
 ### Constants ###
 
 # IP and port of the PLC.  Make sure only one PLC IP is defined
-PLC_IP = "192.168.1.200"    # Real PLC
-#PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
+REAL_PLC_IP = "192.168.1.200"    # Real PLC
+FAKE_PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
 PLC_PORT = 9600
 
 # Number of words used by each type of module
@@ -223,10 +223,16 @@ class HardwareComm():
     ### Public functions ###
 
     def StartUp(self):
+        # Determine the PLC IP
+        if not os.path.isfile("/opt/elixys/demomode"):
+            nPLC_IP = REAL_PLC_IP
+        else:
+            nPLC_IP = FAKE_PLC_IP
+
         # Spawn the socket thread
         self.__pSocketThread = SocketThread()
         self.__pSocketThreadTerminateEvent = threading.Event()
-        self.__pSocketThread.SetParameters(PLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
+        self.__pSocketThread.SetParameters(nPLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
         self.__pSocketThread.setDaemon(True)
         self.__pSocketThread.start()
 
@@ -848,7 +854,7 @@ class HardwareComm():
                 if sys.platform == "win32":
                    sLogFile = "temp_profile.txt"
                 else:
-                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
+                   sLogFile = "/home/sbc/Desktop/temp_profile.txt"
                 try:
                     self.__startTime
                 except Exception, e:

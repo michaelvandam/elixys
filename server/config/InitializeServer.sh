@@ -15,19 +15,17 @@ cd /root
 yum -y install git
 git clone --depth 1 http://github.com/michaelvandam/elixys.git
 
-# Install and configure MySQL
+# Create the root application directory
+mkdir /opt/elixys
+
+# Install, start and initialize MySQL
 yum -y install mysql mysql-server apr-util-mysql
 /sbin/service mysqld start
-mysql -e "CREATE DATABASE Elixys;"
-mysql -e "GRANT USAGE ON *.* TO Apache@'localhost' IDENTIFIED BY 'devel';"
-mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Apache@'localhost' IDENTIFIED BY 'devel';"
-mysql -e "GRANT USAGE ON *.* TO Elixys@'localhost' IDENTIFIED BY 'devel';"
-mysql -e "GRANT ALL PRIVILEGES ON Elixys.* TO Elixys@'localhost' IDENTIFIED BY 'devel';"
-mysql -e "FLUSH PRIVILEGES;"
-mysql Elixys < elixys/config/DatabaseTables.sql
-mysql Elixys < elixys/config/DatabaseProcedures.sql
-/sbin/service mysqld restart
-mkdir /opt/elixys
+cd elixys/config
+./InitializeDatabase.sh
+cd ../..
+
+# Make an application copy of the database directory
 cp -R elixys/server/database /opt/elixys
 
 # Install mod_wsgi
@@ -80,7 +78,7 @@ mkdir /var/www/eggs
 chmod 777 /var/www/eggs
 chown apache:apache /var/www/eggs
 
-# Install SELinux management tools and open the RPC port
+# Install SELinux management tools and define the RPC port
 yum -y install policycoreutils-python
 semanage port -a -t http_port_t -p tcp 18862
 
@@ -111,4 +109,3 @@ echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
 
 # Remove the git repository
 rm -rf /root/elixys
-
