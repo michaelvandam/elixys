@@ -248,7 +248,6 @@ class BaseCLI(threading.Thread):
                 print "  Install"
                 print "  DeliverF18"
                 print "  Transfer"
-                print "  TransferToHPLC"
                 print "  TempProfile"
                 print "  RampPressure"
                 print "  Mix"
@@ -326,7 +325,7 @@ class BaseCLI(threading.Thread):
                 print "           nTransferPressure)   PSI"
             elif sCommand == "help TransferToHPLC":
                 # TransferToHPLC unit operation
-                print "To do:  TransferToHPLC(nReactor, nStopcockPosition)"
+                print "Todo:  TransferToHPLC(nReactor, nStopcockPosition)"
             elif sCommand == "help TempProfile":
                 # React unit operation
                 print "Heats the reactor in the transfer position for temperature profiling."
@@ -351,6 +350,12 @@ class BaseCLI(threading.Thread):
                 print "  Mix(sReactor,             'Reactor1','Reactor2','Reactor3'"
                 print "      nStirSpeed,           Suggested 500"
                 print "      nDuration)            Seconds"
+            elif sCommand == "help UserInput":
+                # UserInput unit operation
+                print "Todo: UserInput(sUserMessage, bIsCheckBox, sDescription)"
+            elif sCommand == "help DetectRadiation":
+                # Detect radiation unit operation
+                print "Todo: DetectRadiation()"
             elif sCommand == "AbortUnitOperation()":
                 # Abort the current unit operation
                 self.AbortUnitOperation()
@@ -362,25 +367,23 @@ class BaseCLI(threading.Thread):
                 # don't want to list all of our functions
                 print "Recognized hardware functions:"
                 print "  * CoolingSystemOn()   * CoolingSystemOff()"
-                print "  * VacuumSystemOn()    * VacuumSystemOff()"
                 print "  * SetPressureRegulator(nPressureRegulator, nPressure)"
-                print "  * MoveRobotToElute(nReactor)      MoveRobotToReagent(nReactor, nReagent)"
+                print "  * MoveRobotToReagent(nReactor, nReagent)   * MoveRobotToHome()"
                 print "  * MoveRobotToDelivery(nReactor, nPosition)"
-                print "  * GripperUp()         * GripperDown()    * GripperOpen()   * GripperClose()"
-                print "  * GasTransferUp()     * GasTransferDown()"
-                print "  * GasTransferStart()  * GasTransferStop()"
-                print "  * LoadF18Start()      * LoadF18Stop()    * LoadHPLCStart() * LoadHPLCStop()  "
+                print "  * GripperUp()      * GripperDown()   * GripperOpen()     * GripperClose()"
+                print "  * LoadF18Start()   * LoadF18Stop()   * EluteF18Start()   * EluteF18Stop()"
+                print "  * LoadHPLCStart()  * LoadHPLCStop()"
                 print "  * MoveReactor(nReactor, sPositionName)"
-                print "  * ReactorUp(nReactor) * ReactorDown(nReactor)"
-                print "  * ReactorStopcockCW(nReactor, nStopcock)"
-                print "  * ReactorStopcockCCW(nReactor, nStopcock)"
-                print "  * HeaterOn(nReactor)  * HeaterOff(nReactor)"
-                print "  * SingleHeaterOn(nReactor, nCollet)   * SingleHeaterOff(nReactor, nCollet)"
-                print "  * SetHeaterTemp(nReactor, fSetPoint)  * SetMotorSpeed(nReactor, nMotorSpeed)"
-                print "  * HomeRobots()        * HomeReactorRobot(nReactor)"
-                print "  * HomeReagentRobotX() * HomeReagentRobotY()  "
-                print "  * DisableRobots()     * EnableRobots()"
-                print "  * DisableReagentRobots()          * EnableReagentRobots()"
+                print "  * ReactorUp(nReactor)               * ReactorDown(nReactor)"
+                print "  * ReactorEvaporateStart(nReactor)   * ReactorEvaporateStop(nReactor)"
+                print "  * ReactorTransferStart(nReactor)    * ReactorTransferStop(nReactor)"
+                print "  * ReactorReagentTransferStart(nReactor, nPosition)"
+                print "  * ReactorReagentTransferStop(nReactor, nPosition)"
+                print "  * ReactorStopcockPosition(nReactor, nStopcock, nPosition)"
+                print "  * HeaterOn(nReactor)   * HeaterOff(nReactor)"
+                print "  * SetHeater(nReactor, fSetPoint)   * SetMotorSpeed(nReactor, nMotorSpeed)"
+                print "  * HomeRobots()   * DisableRobots()   * EnableRobots()"
+                print "  * DisableReagentRobots()   * EnableReagentRobots()"
                 print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
                 print "All values are numbers except sPositionName which is one of the following:"
                 print "      Install, Transfer, React1, Add, React2, Evaporate, Radiation"

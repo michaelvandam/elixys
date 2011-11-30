@@ -1,6 +1,6 @@
-"""External Systems Model
+"""Valves Model
 
-Externals Systems Model Class
+Valves Model Class
 """
 
 # Imports
@@ -9,15 +9,22 @@ sys.path.append("../hardware/")
 from HardwareComm import HardwareComm
 from ComponentModel import ComponentModel
     
-# External systems model
-class ExternalSystemsModel(ComponentModel):
+# Valves model
+class ValvesModel(ComponentModel):
   def __init__(self, name, hardwareComm, modelLock):
-    """External systems model constructor"""
+    """Valves model constructor"""
     ComponentModel.__init__(self, name, hardwareComm, modelLock)
+    self.gasTransferValveOpen = False
     self.f18LoadValveOpen = False
-    self.f18EluteValveOpen = False
     self.hplcLoadValveOpen  = False
 
+  def getGasTransferValveOpen(self, bLockModel = True):
+    """Returns True if the gas transfer valve is open, False otherwise"""
+    if bLockModel:
+      return self.protectedReturn1(self.getGasTransferValveOpen)
+    else:
+      return self.gasTransferValveOpen
+     
   def getF18LoadValveOpen(self, bLockModel = True):
     """Returns True if the F18 load valve is open, False otherwise"""
     if bLockModel:
@@ -25,19 +32,19 @@ class ExternalSystemsModel(ComponentModel):
     else:
       return self.f18LoadValveOpen
 
-  def getF18EluteValveOpen(self, bLockModel = True):
-    """Returns True if the F18 elute valve is open, False otherwise"""
-    if bLockModel:
-      return self.protectedReturn1(self.getF18EluteValveOpen)
-    else:
-      return self.f18EluteValveOpen
-     
   def getHPLCLoadValveOpen(self, bLockModel = True):
     """Returns True if the HPLC load valve is open, False otherwise"""
     if bLockModel:
       return self.protectedReturn1(self.getHPLCLoadValveOpen)
     else:
       return self.hplcLoadValveOpen
+
+  def setGasTransferValveOpen(self, bValveOpen):
+    """Opens or closes the gas transfer valve"""
+    if bValveOpen:
+      self.hardwareComm.GasTransferStart()
+    else:
+      self.hardwareComm.GasTransferStop()
 
   def setF18LoadValveOpen(self, bValveOpen):
     """Opens or closes the F18 load valve"""
@@ -46,13 +53,6 @@ class ExternalSystemsModel(ComponentModel):
     else:
       self.hardwareComm.LoadF18Stop()
 
-  def setF18EluteValveOpen(self, bValveOpen):
-    """Opens or closes the F18 elute valve"""
-    if bValveOpen:
-      self.hardwareComm.EluteF18Start()
-    else:
-      self.hardwareComm.EluteF18Stop()
-
   def setHPLCLoadValveOpen(self, nReagent, bValveOpen):
     """Opens or closes the HPLC load value"""
     if bValveOpen:
@@ -60,8 +60,8 @@ class ExternalSystemsModel(ComponentModel):
     else:
       self.hardwareComm.LoadHPLCStop()
 
-  def updateState(self, bF18LoadValveOpen, bF18EluteValveOpen, bHPLCLoadValveOpen):
+  def updateState(self, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen):
     """Update the internal state"""
+    self.gasTransferValveOpen = bGasTransferValveOpen
     self.f18LoadValveOpen = bF18LoadValveOpen
-    self.f18EluteValveOpen = bF18EluteValveOpen
     self.hplcLoadValveOpen  = bHPLCLoadValveOpen

@@ -55,7 +55,7 @@ class ElixysCLI(BaseCLI.BaseCLI):
     def Run(self):
         """Main CLI function"""
         # Initialize variables
-        self.pHardwareComm = HardwareComm("../hardware/")
+        self.pHardwareComm = HardwareComm("../")
         self.pHardwareComm.StartUp()
         self.pSystemModel = SystemModel(self.pHardwareComm, "../core/")
         self.pSystemModel.StartUp()

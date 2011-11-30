@@ -17,9 +17,11 @@ class ReagentDeliveryModel(ComponentModel):
     self.setPositionReactor = 0
     self.setPositionReagent = 0
     self.setPositionDelivery = 0
+    self.setPositionElute = 0
     self.currentPositionReactor = 0
     self.currentPositionReagent = 0
     self.currentPositionDelivery = 0
+    self.currentPositionElute = 0
     self.setPositionRawX = 0
     self.setPositionRawZ = 0
     self.currentPositionRawX = 0
@@ -28,12 +30,20 @@ class ReagentDeliveryModel(ComponentModel):
     self.setGripperDown = False
     self.setGripperOpen = False
     self.setGripperClose = False
+    self.setGasTransferUp = False
+    self.setGasTransferDown = False
     self.currentGripperUp = False
     self.currentGripperDown = False
     self.currentGripperOpen = False
     self.currentGripperClose = False
+    self.currentGasTransferUp = False
+    self.currentGasTransferDown = False
     self.robotXStatus = 0
-    self.robotZStatus = 0
+    self.robotXControlWord = 0
+    self.robotXCheckWord = 0
+    self.robotYStatus = 0
+    self.robotYControlWord = 0
+    self.robotYCheckWord = 0
 
   def getAllowedReagentPositions(self):
     """Return a list of allowed reagent positions"""
@@ -48,28 +58,28 @@ class ReagentDeliveryModel(ComponentModel):
     if bLockModel:
       return self.protectedReturn3(self.getSetPosition)
     else:
-      return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery
+      return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery, self.setPositionElute
 
   def getSetPositionRaw(self, bLockModel = True):
-    """Return the set raw reactor position in the format (X, Z)"""
+    """Return the set raw reactor position in the format (X, Y)"""
     if bLockModel:
       return self.protectedReturn2(self.getSetPositionRaw)
     else:
-      return self.setPositionRawX, self.setPositionRawZ
+      return self.setPositionRawY, self.setPositionRawY
     
   def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
       return self.protectedReturn3(self.getCurrentPosition)
     else:
-      return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery
+      return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery, self.currentPositionElute
     
   def getCurrentPositionRaw(self, bLockModel = True):
-    """Return the current raw reactor position in the format (X, Z)"""
+    """Return the current raw reactor position in the format (X, Y)"""
     if bLockModel:
       return self.protectedReturn2(self.getCurrentPositionRaw)
     else:
-      return self.currentPositionRawX, self.currentPositionRawZ
+      return self.currentPositionRawY, self.currentPositionRawY
 
   def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
@@ -99,6 +109,20 @@ class ReagentDeliveryModel(ComponentModel):
     else:
       return self.setGripperClose
 
+  def getSetGasTransferUp(self, bLockModel = True):
+    """Returns True if the gas transfer is set to up, False otherwise"""
+    if bLockModel:
+      return self.protectedReturn1(self.getSetGasTransferUp)
+    else:
+      return self.setGasTransferUp
+
+  def getSetGasTransferDown(self, bLockModel = True):
+    """Returns True if the gas transfer is set to down, False otherwise"""
+    if bLockModel:
+      return self.protectedReturn1(self.getSetGasTransferDown)
+    else:
+      return self.setGasTransferDown
+
   def getCurrentGripperUp(self, bLockModel = True):
     """Returns True if the gripper is currently up, False otherwise"""
     if bLockModel:
@@ -127,13 +151,41 @@ class ReagentDeliveryModel(ComponentModel):
     else:
       return self.currentGripperClose
       
+  def getCurrentGasTransferUp(self, bLockModel = True):
+    """Returns True if the gas transfer is currently up, False otherwise"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCurrentGasTransferUp)
+    else:
+      return self.currentGasTransferUp
+
+  def getCurrentGasTransferDown(self, bLockModel = True):
+    """Returns True if the gas transfer is currently down, False otherwise"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCurrentGasTransferDown)
+    else:
+      return self.currentGasTransferDown
+      
   def getRobotStatus(self, bLockModel = True):
     """Returns the robot axis status code"""
     if bLockModel:
       return self.protectedReturn2(self.getRobotStatus)
     else:
-      return self.robotXStatus, self.robotZStatus
+      return self.robotXStatus, self.robotYStatus
       
+  def getRobotXControlWords(self, bLockModel = True):
+    """Returns the robot X axis control words"""
+    if bLockModel:
+      return self.protectedReturn2(self.getRobotXControlWords)
+    else:
+      return self.robotXControlWord, self.robotXCheckWord
+
+  def getRobotYControlWords(self, bLockModel = True):
+    """Returns the robot Y axis control words"""
+    if bLockModel:
+      return self.protectedReturn2(self.getRobotYControlWords)
+    else:
+      return self.robotYControlWord, self.robotYCheckWord
+
   def moveToReagentPosition(self, nReactor, nReagentPosition):
     """Moves the reagent robot to the given reagent position"""
     self.hardwareComm.MoveRobotToReagent(nReactor, nReagentPosition)
@@ -141,6 +193,10 @@ class ReagentDeliveryModel(ComponentModel):
   def moveToDeliveryPosition(self, nReactor, nDeliveryPosition):
     """Moves the reagent robot to the given delivery position"""
     self.hardwareComm.MoveRobotToDelivery(nReactor, nDeliveryPosition)
+
+  def moveToElutePosition(self, nReactor):
+    """Moves the reagent robot to the elute position"""
+    self.hardwareComm.MoveRobotToElute(nReactor)
 
   def moveToHome(self):
     """Moves the reagent robot to the home position"""
@@ -170,28 +226,39 @@ class ReagentDeliveryModel(ComponentModel):
     """Close the gripper"""
     self.hardwareComm.GripperClose()
 
-  def updateState(self, nSetPositionReactor, nSetPositionReagent, nSetPositionDelivery, nCurrentPositionReactor, nCurrentPositionReagent,
-                  nCurrentPositionDelivery, nSetPositionRawX, nSetPositionRawZ, nCurrentPositionRawX, nCurrentPositionRawZ, bSetGripperUp,
-                  bSetGripperDown, bSetGripperOpen, bSetGripperClose, bCurrentGripperUp, bCurrentGripperDown, bCurrentGripperOpen,
-                  bCurrentGripperClose, nRobotXStatus, nRobotZStatus):
+  def updateState(self, nSetPositionReactor, nSetPositionReagent, nSetPositionDelivery, nSetPositionElute, nCurrentPositionReactor, nCurrentPositionReagent,
+                  nCurrentPositionDelivery, nCurrentPositionElute, nSetPositionRawX, nSetPositionRawY, nCurrentPositionRawX, nCurrentPositionRawY, bSetGripperUp,
+                  bSetGripperDown, bSetGripperOpen, bSetGripperClose, bSetGasTransferUp, bSetGasTransferDown, bCurrentGripperUp, 
+                  bCurrentGripperDown, bCurrentGripperOpen, bCurrentGripperClose, bCurrentGasTransferUp, bCurrentGasTransferDown, 
+                  nRobotXStatus, robotXControlWord, robotXCheckWord, nRobotYStatus, robotYControlWord, robotYCheckWord):
     """Updates the internal state"""
     self.setPositionReactor = nSetPositionReactor
     self.setPositionReagent = nSetPositionReagent
     self.setPositionDelivery = nSetPositionDelivery
+    self.setPositionElute = nSetPositionElute
     self.currentPositionReactor = nCurrentPositionReactor
     self.currentPositionReagent = nCurrentPositionReagent
     self.currentPositionDelivery = nCurrentPositionDelivery
+    self.currentPositionElute = nCurrentPositionElute
     self.setPositionRawX = nSetPositionRawX
-    self.setPositionRawZ = nSetPositionRawZ
+    self.setPositionRawY = nSetPositionRawY
     self.currentPositionRawX = nCurrentPositionRawX
-    self.currentPositionRawZ = nCurrentPositionRawZ
+    self.currentPositionRawY = nCurrentPositionRawY
     self.setGripperUp = bSetGripperUp
     self.setGripperDown = bSetGripperDown
     self.setGripperOpen = bSetGripperOpen
     self.setGripperClose = bSetGripperClose
+    self.setGasTransferUp = bSetGasTransferUp
+    self.setGasTransferDown = bSetGasTransferDown
     self.currentGripperUp = bCurrentGripperUp
     self.currentGripperDown = bCurrentGripperDown
     self.currentGripperOpen = bCurrentGripperOpen
     self.currentGripperClose = bCurrentGripperClose
+    self.currentGasTransferUp = bCurrentGasTransferUp
+    self.currentGasTransferDown = bCurrentGasTransferDown
     self.robotXStatus = nRobotXStatus
-    self.robotZStatus = nRobotZStatus
+    self.robotXControlWord = robotXControlWord
+    self.robotXCheckWord = robotXCheckWord
+    self.robotYStatus = nRobotYStatus
+    self.robotYControlWord = robotYControlWord
+    self.robotYCheckWord = robotYCheckWord

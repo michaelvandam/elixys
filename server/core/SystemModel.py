@@ -21,8 +21,7 @@ from ReagentDeliveryModel import ReagentDeliveryModel
 from CoolingSystemModel import CoolingSystemModel
 from VacuumSystemModel import VacuumSystemModel
 from PressureRegulatorModel import PressureRegulatorModel
-from ValveModel import ValveModel
-from ExternalSystemsModel import ExternalSystemsModel
+from ValvesModel import ValvesModel
 
 # Constants
 STATECOMMONCOLUMN1WIDTH = 45
@@ -58,9 +57,9 @@ class SystemModel:
       elif key == "VacuumSystem":
         if value == "True":
           self.model[key] = VacuumSystemModel(key, self.hardwareComm, self.modelLock)
-      elif key == "ExternalSystems":
+      elif key == "Valves":
         if value == "True":
-          self.model[key] = ExternalSystemsModel(key, self.hardwareComm, self.modelLock)
+          self.model[key] = ValvesModel(key, self.hardwareComm, self.modelLock)
       elif key == "PressureRegulators":
         for nPressureRegulator in range(1, int(value) + 1):
           sPressureRegulator = "PressureRegulator" + str(nPressureRegulator)
@@ -74,7 +73,6 @@ class SystemModel:
           nStopcocks = int(value["Stopcocks"])
           self.model[sReactor] = {}
           self.model[sReactor]["Motion"] = MotionModel(sReactor, nReactor, self.hardwareComm, self.modelLock)
-          self.model[sReactor]["Valves"] = ValveModel(sReactor, nReactor, self.hardwareComm, self.modelLock)
           for nStopcock in range(1, nStopcocks + 1):
             self.model[sReactor]["Stopcock" + str(nStopcock)] = StopcockValveModel(sReactor, nReactor, nStopcock, self.hardwareComm, self.modelLock)
           self.model[sReactor]["Thermocouple"] = TemperatureControlModel(sReactor, nReactor, self.hardwareComm, self.modelLock)
@@ -143,9 +141,11 @@ class SystemModel:
     # Perform the state dump in a try/except/finally block to make sure we release our lock on the system model
     try:        
         # Get the robot positions
-        nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery = self.model["ReagentDelivery"].getSetPosition(False)
+        nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery, \
+            nReagentRobotSetPositionElute = self.model["ReagentDelivery"].getSetPosition(False)
         nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ = self.model["ReagentDelivery"].getSetPositionRaw(False)
-        nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery = self.model["ReagentDelivery"].getCurrentPosition(False)
+        nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, \
+            nReagentRobotCurrentPositionElute = self.model["ReagentDelivery"].getCurrentPosition(False)
         nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawZ = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
         nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusZ = self.model["ReagentDelivery"].getRobotStatus(False)
 
@@ -172,16 +172,6 @@ class SystemModel:
         sState += self.__PadString(self.__BoolToString(self.model["CoolingSystem"].getCoolingSystemOn(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
 
-        # External systems        
-        sState += self.__PadString("F-18 valves open (load/elute)", STATECOMMONCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["ExternalSystems"].getF18LoadValveOpen(False)) + "/" + \
-            self.__BoolToString(self.model["ExternalSystems"].getF18EluteValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
-        sState += "\n"
-
-        sState += self.__PadString("HPLC valve open (load)", STATECOMMONCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["ExternalSystems"].getHPLCLoadValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
-        sState += "\n"
-        
         # Pressure regulators
         sState += self.__PadString("Pressure regulator 1", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString("%.1f"%(self.model["PressureRegulator1"].getSetPressure(False)), STATECOMMONCOLUMN2WIDTH)
@@ -192,14 +182,49 @@ class SystemModel:
         sState += self.__PadString("%.1f"%(self.model["PressureRegulator2"].getSetPressure(False)), STATECOMMONCOLUMN2WIDTH)
         sState += self.__PadString("%.1f"%(self.model["PressureRegulator2"].getCurrentPressure(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
+
+        # Valves
+        sState += self.__PadString("Gas transfer valve open", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Valves"].getGasTransferValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        sState += self.__PadString("F-18 load valve open", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Valves"].getF18LoadValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        sState += self.__PadString("HPLC load valve open", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["Valves"].getHPLCLoadValveOpen(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
         
         # Reagent robot
         sState += "Reagent robot\n"
-        sState += self.__PadString("  Position (reactor/reagent/delivery)", STATECOMMONCOLUMN1WIDTH)
-        sState += self.__PadString(str(nReagentRobotSetPositionReactor) + "/" + str(nReagentRobotSetPositionReagent) + "/" + \
-            str(nReagentRobotSetPositionDelivery), STATECOMMONCOLUMN2WIDTH)
-        sState += self.__PadString(str(nReagentRobotCurrentPositionReactor) + "/" + str(nReagentRobotCurrentPositionReagent) + "/" + \
-            str(nReagentRobotCurrentPositionDelivery), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("  Position", STATECOMMONCOLUMN1WIDTH)
+        if (nReagentRobotSetPositionReagent != 0) or (nReagentRobotSetPositionDelivery != 0) or (nReagentRobotSetPositionElute != 0):
+            sState += self.__PadString("Reactor " + str(nReagentRobotSetPositionReactor), STATECOMMONCOLUMN2WIDTH)
+        else:
+            sState += self.__PadString("Unknown", STATECOMMONCOLUMN2WIDTH)
+        if (nReagentRobotCurrentPositionReagent != 0) or (nReagentRobotCurrentPositionDelivery != 0) or (nReagentRobotCurrentPositionElute != 0):
+            sState += self.__PadString("Reactor " + str(nReagentRobotCurrentPositionReactor), STATECOMMONCOLUMN2WIDTH)
+        else:
+            sState += self.__PadString("Unknown", STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+        sState += self.__PadString("", STATECOMMONCOLUMN1WIDTH)
+        if (nReagentRobotSetPositionReagent != 0) or (nReagentRobotSetPositionDelivery != 0) or (nReagentRobotSetPositionElute != 0):
+            if nReagentRobotSetPositionReagent != 0:
+                sState += self.__PadString("Reagent " + str(nReagentRobotSetPositionReagent), STATECOMMONCOLUMN2WIDTH)
+            elif nReagentRobotSetPositionDelivery != 0:
+                sState += self.__PadString("Delivery " + str(nReagentRobotSetPositionDelivery), STATECOMMONCOLUMN2WIDTH)
+            else:
+                sState += self.__PadString("Elute", STATECOMMONCOLUMN2WIDTH)
+        else:
+                sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+        if (nReagentRobotCurrentPositionReagent != 0) or (nReagentRobotCurrentPositionDelivery != 0) or (nReagentRobotCurrentPositionElute != 0):
+            if nReagentRobotCurrentPositionReagent != 0:
+                sState += self.__PadString("Reagent " + str(nReagentRobotCurrentPositionReagent), STATECOMMONCOLUMN2WIDTH)
+            elif nReagentRobotCurrentPositionDelivery != 0:
+                sState += self.__PadString("Delivery " + str(nReagentRobotCurrentPositionDelivery), STATECOMMONCOLUMN2WIDTH)
+            else:
+                sState += self.__PadString("Elute", STATECOMMONCOLUMN2WIDTH)
+        else:
+                sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
             
         sState += self.__PadString("  Raw position (x/z)", STATECOMMONCOLUMN1WIDTH)
@@ -224,6 +249,13 @@ class SystemModel:
             self.__BoolToString(self.model["ReagentDelivery"].getSetGripperClose(False)), STATECOMMONCOLUMN2WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperOpen(False)) + "/" + \
             self.__BoolToString(self.model["ReagentDelivery"].getCurrentGripperClose(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("  Gas transfer (up/down)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGasTransferUp(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getSetGasTransferDown(False)), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getCurrentGasTransferUp(False)) + "/" + \
+            self.__BoolToString(self.model["ReagentDelivery"].getCurrentGasTransferDown(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n\n"
 
         # Reactors
@@ -283,38 +315,14 @@ class SystemModel:
         sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Motion"].getSetReactorDown(False)) + "/" + \
             self.__BoolToString(self.model["Reactor3"]["Motion"].getCurrentReactorDown(False)), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
-            
-        sState += self.__PadString("Evaporation valves open (N2/vac)", STATEREACTORCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor1"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor2"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getEvaporationNitrogenValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor3"]["Valves"].getEvaporationVacuumValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += "\n"
-            
-        sState += self.__PadString("Transfer valve open", STATEREACTORCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getTransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += "\n"
-        
-        sState += self.__PadString("Reagent transfer valves open (1/2)", STATEREACTORCOLUMN1WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Valves"].getReagent1TransferValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor1"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor2"]["Valves"].getReagent1TransferValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor2"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += self.__PadString(self.__BoolToString(self.model["Reactor3"]["Valves"].getReagent1TransferValveOpen(False)) + \
-            "/" + self.__BoolToString(self.model["Reactor3"]["Valves"].getReagent2TransferValveOpen(False)), STATEREACTORCOLUMN2WIDTH)
-        sState += "\n"
-            
+                        
         sState += self.__PadString("Stopcock positions (1/2/3)", STATEREACTORCOLUMN1WIDTH)
         sState += self.__PadString(str(self.model["Reactor1"]["Stopcock1"].getPosition(False)) + "/" + \
             str(self.model["Reactor1"]["Stopcock2"].getPosition(False)) + "/" + str(self.model["Reactor1"]["Stopcock3"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
         sState += self.__PadString(str(self.model["Reactor2"]["Stopcock1"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
         sState += self.__PadString(str(self.model["Reactor3"]["Stopcock1"].getPosition(False)), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
-            
+
         sState += self.__PadString("Collet 1 Temp (on/set/actual)", STATEREACTORCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Thermocouple"].getHeater1On(False)) + "/" + \
             "%.1f" % self.model["Reactor1"]["Thermocouple"].getHeater1SetTemperature(False) + "/" + \

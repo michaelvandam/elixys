@@ -159,11 +159,10 @@ class HardwareComm():
 
     ### Construction/Destruction ###
 
-    def __init__(self, sRootDirectory):
+    def __init__(self, sHardwareDirectory):
         # Load the hardware map and robot positions
-        self.__sRootDirectory = sRootDirectory
-        sHardwareMap = self.__sRootDirectory + "hardware/HardwareMap.ini"
-        sRobotPositions = self.__sRootDirectory + "hardware/RobotPositions.ini"
+        sHardwareMap = sHardwareDirectory + "HardwareMap.ini"
+        sRobotPositions = sHardwareDirectory + "RobotPositions.ini"
         if not os.path.exists(sHardwareMap) or not os.path.exists(sRobotPositions):
             print "Invalid path to INI files"
             return
@@ -192,20 +191,20 @@ class HardwareComm():
 
         # Load the motor axes
         self.__nReagentXAxis = int(self.__pRobotPositions["ReagentXAxis"])
-        self.__nReagentYAxis = int(self.__pRobotPositions["ReagentYAxis"])
+        self.__nReagentZAxis = int(self.__pRobotPositions["ReagentZAxis"])
         self.__nReactor1Axis = int(self.__pRobotPositions["Reactor1Axis"])
         self.__nReactor2Axis = int(self.__pRobotPositions["Reactor2Axis"])
         self.__nReactor3Axis = int(self.__pRobotPositions["Reactor3Axis"])
 
         # Load the reactor offsets
         self.__nReactor1CassetteXOffset = int(self.__pRobotPositions["Reactor1"]["CassetteXOffset"])
-        self.__nReactor1CassetteYOffset = int(self.__pRobotPositions["Reactor1"]["CassetteYOffset"])
+        self.__nReactor1CassetteZOffset = int(self.__pRobotPositions["Reactor1"]["CassetteZOffset"])
         self.__nReactor1ReactorOffset = int(self.__pRobotPositions["Reactor1"]["ReactorOffset"])
         self.__nReactor2CassetteXOffset = int(self.__pRobotPositions["Reactor2"]["CassetteXOffset"])
-        self.__nReactor2CassetteYOffset = int(self.__pRobotPositions["Reactor2"]["CassetteYOffset"])
+        self.__nReactor2CassetteZOffset = int(self.__pRobotPositions["Reactor2"]["CassetteZOffset"])
         self.__nReactor2ReactorOffset = int(self.__pRobotPositions["Reactor2"]["ReactorOffset"])
         self.__nReactor3CassetteXOffset = int(self.__pRobotPositions["Reactor3"]["CassetteXOffset"])
-        self.__nReactor3CassetteYOffset = int(self.__pRobotPositions["Reactor3"]["CassetteYOffset"])
+        self.__nReactor3CassetteZOffset = int(self.__pRobotPositions["Reactor3"]["CassetteZOffset"])
         self.__nReactor3ReactorOffset = int(self.__pRobotPositions["Reactor3"]["ReactorOffset"])
 
         # Calculate the memory address range.  We will use this information to query for the entire state at once
@@ -225,8 +224,7 @@ class HardwareComm():
 
     def StartUp(self):
         # Determine the PLC IP
-        sDemoFile = self.__sRootDirectory + "demomode"
-        if not os.path.isfile(sDemoFile):
+        if not os.path.isfile("/opt/elixys/demomode"):
             nPLC_IP = REAL_PLC_IP
         else:
             nPLC_IP = FAKE_PLC_IP
@@ -318,18 +316,20 @@ class HardwareComm():
             self.__ProcessRawState(sMemory)
 
     ### Hardware control functions ###
+    
+    # Vacuum system (currently not implemented in the hardware)
+    def VacuumSystemOn(self):
+        pass
+        #self.__SetBinaryValue("VacuumSystemOn", True)
+    def VacuumSystemOff(self):
+        pass
+        #self.__SetBinaryValue("VacuumSystemOn", False)
 
     # Cooling system
     def CoolingSystemOn(self):
         self.__SetBinaryValue("CoolingSystemOn", True)
     def CoolingSystemOff(self):
         self.__SetBinaryValue("CoolingSystemOn", False)
-    
-    # Vacuum system (currently not implemented in the hardware)
-    def VacuumSystemOn(self):
-        self.__SetBinaryValue("VacuumSystemOn", True)
-    def VacuumSystemOff(self):
-        self.__SetBinaryValue("VacuumSystemOn", False)
 
     # Pressure regulator
     def SetPressureRegulator(self, nPressureRegulator, nPressurePSI):
@@ -341,30 +341,23 @@ class HardwareComm():
         self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_SetPressure", nPressurePLC)
 
     # Reagent robot
-    def MoveRobotToElute(self, nReactor):
-        if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
-        pPosition = self.__LookUpRobotPosition("ReagentRobot_Elute")
-        self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
-        self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToReagent(self, nReactor, nReagent):
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False:
+                raise Exception("Cannot move robot unless gripper is up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
-        self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+        self.__SetRobotPosition(self.__nReagentZAxis, self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"]))
     def MoveRobotToDelivery(self, nReactor, nPosition):
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False:
+                raise Exception("Cannot move robot unless gripper is up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
-        self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+        self.__SetRobotPosition(self.__nReagentZAxis, self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"]))
+    def MoveRobotToHome(self):
+        self.__SetRobotPosition(self.__nReagentXAxis, 0)
+        self.__SetRobotPosition(self.__nReagentZAxis, 0)
     def GripperUp(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", True)
@@ -377,26 +370,22 @@ class HardwareComm():
     def GripperClose(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperOpen", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperClose", True)
-    def GasTransferUp(self):
-        self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", False)
-        self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", True)
-    def GasTransferDown(self):
-        self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", False)
-        self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", True)
 
-    # Valves
-    def GasTransferStart(self):
-        self.__SetBinaryValue("Valves_GasTransferValve", True)
-    def GasTransferStop(self):
-        self.__SetBinaryValue("Valves_GasTransferValve", False)
+    # F-18
     def LoadF18Start(self):
-        self.__SetBinaryValue("Valves_F18Load", True)
+        self.__SetBinaryValue("F18_Load", True)
     def LoadF18Stop(self):
-        self.__SetBinaryValue("Valves_F18Load", False)
+        self.__SetBinaryValue("F18_Load", False)
+    def EluteF18Start(self):
+        self.__SetBinaryValue("F18_Elute", True)
+    def EluteF18Stop(self):
+        self.__SetBinaryValue("F18_Elute", False)
+
+    # HPLC
     def LoadHPLCStart(self):
-        self.__SetBinaryValue("Valves_HPLCLoad", True)
+        self.__SetBinaryValue("HPLC_Load", True)
     def LoadHPLCStop(self):
-        self.__SetBinaryValue("Valves_HPLCLoad", False)
+        self.__SetBinaryValue("HPLC_Load", False)
 
     # Reactor
     def MoveReactor(self, nReactor, sPositionName):
@@ -405,7 +394,7 @@ class HardwareComm():
                 raise Exception("Cannot move reactor when it is up")
         nReactorOffset = self.__LookUpReactorOffset(nReactor)
         pPosition = self.__LookUpRobotPosition("Reactors_" + sPositionName)
-        self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["y"]))
+        self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["z"]))
     def ReactorUp(self, nReactor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", False)
         time.sleep(0.1)
@@ -414,33 +403,46 @@ class HardwareComm():
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorUp", False)
         time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", True)
-    def ReactorStopcockCW(self, nReactor, nStopcock):
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCCW", False)
+    def ReactorEvaporateStart(self, nReactor):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationNitrogenValve", True)
         time.sleep(0.1)
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCW", True)
-    def ReactorStopcockCCW(self, nReactor, nStopcock):
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCW", False)
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationVacuumValve", True)
+    def ReactorEvaporateStop(self, nReactor):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationNitrogenValve", False)
         time.sleep(0.1)
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCCW", True)
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_EvaporationVacuumValve", False)
+    def ReactorTransferStart(self, nReactor):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_TransferValve", True)
+    def ReactorTransferStop(self, nReactor):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_TransferValve", False)
+    def ReactorReagentTransferStart(self, nReactor, nPosition):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Reagent" + str(nPosition) + "TransferValve", True)
+    def ReactorReagentTransferStop(self, nReactor, nPosition):
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Reagent" + str(nPosition) + "TransferValve", False)
+    def ReactorStopcockPosition(self, nReactor, nStopcock, nPosition):
+        if nPosition == 1:
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition2", False)
+            time.sleep(0.1)
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition1", True)
+        elif nPosition == 2:
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition1", False)
+            time.sleep(0.1)
+            self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValvePosition2", True)
+        else:
+            raise Exception("Invalid stopcock position")
 
     # Temperature controllers
     def HeaterOn(self, nReactor):
         # Clear the stop bit
         for nHeater in range(1, 4):
-            self.SingleHeaterOn(nReactor, nHeater)
+            nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
+            self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
     def HeaterOff(self, nReactor):
         # Set the stop bit
         for nHeater in range(1, 4):
-            self.SingleHeaterOff(nReactor, nHeater)
-    def SingleHeaterOn(self, nReactor, nHeater):
-        # Clear the stop bit
-        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
-        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
-    def SingleHeaterOff(self, nReactor, nHeater):
-        # Set the stop bit
-        nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
-        self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
-    def SetHeaterTemp(self, nReactor, nSetPoint):
+            nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
+            self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
+    def SetHeater(self, nReactor, nSetPoint):
         # Set the heater temperature
         for nHeater in range(1, 4):
             self.__SetThermocontrollerSetValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater), nSetPoint)
@@ -451,40 +453,18 @@ class HardwareComm():
 
     # Home all robots
     def HomeRobots(self):
-        # Home the reactors and reagent robot
-        for nReactor in range(1,4):
-            self.HomeReactorRobots(nReactor)
-        self.HomeReagentRobotX()
-        self.HomeReagentRobotY()
-
-    # Home the reactor robot
-    def HomeReactorRobot(self, nReactor):
-        # Turn on the reactor axis
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
-        time.sleep(0.1)
-
-        # Home the axis
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x12)
-        time.sleep(0.1)
-
-    # Home the reagent robots
-    def HomeReagentRobotX(self):
-        # Turn on and home the reagent robot axis
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x12)
-        time.sleep(0.1)
-    def HomeReagentRobotY(self):
-        # Turn on and home the reagent robot axis
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x10)
-        time.sleep(0.1)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x12)
-        time.sleep(0.1)
+        for nAxis in range(0, 5):
+            # Turn on each axis
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x10)
+            time.sleep(0.1)
+        for nAxis in range(0, 5):
+            # Home each axis
+            self.__SetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4), 0x12)
+            time.sleep(0.1)
 
     # Disable all robots
     def DisableRobots(self):
         self.DisableReagentRobots()
-        time.sleep(0.1)
         for nReactor in range(1, 4):
             # Disable each axis
             self.DisableReactorRobot(nReactor)
@@ -493,7 +473,6 @@ class HardwareComm():
     # Enable all robots
     def EnableRobots(self):
         self.EnableReagentRobots()
-        time.sleep(0.1)
         for nReactor in range(1, 4):
             # Enable each axis
             self.EnableReactorRobot(nReactor)
@@ -502,12 +481,12 @@ class HardwareComm():
     # Disable reagent robots
     def DisableReagentRobots(self):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x08)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x08)
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentZAxis * 4), 0x08)
 
     # Enable reagent robots
     def EnableReagentRobots(self):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
-        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x10)
+        self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentZAxis * 4), 0x10)
 
     # Disable reactor robot
     def DisableReactorRobot(self, nReactor):
@@ -556,22 +535,12 @@ class HardwareComm():
         self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
-        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentYAxis * 4), nPositionZ)
-    def FakePLC_SetReagentRobotGripper(self, bGripperUp, bGripperDown, bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown):
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4), nPositionZ)
+    def FakePLC_SetReagentRobotGripper(self, bGripperUp, bGripperDown, bGripperOpen, bGripperClose):
         self.__SetBinaryValue("ReagentRobot_GripperUp", bGripperUp)
         self.__SetBinaryValue("ReagentRobot_GripperDown", bGripperDown)
         self.__SetBinaryValue("ReagentRobot_GripperOpen", bGripperOpen)
         self.__SetBinaryValue("ReagentRobot_GripperClose", bGripperClose)
-        self.__SetBinaryValue("ReagentRobot_GasTransferUp", bGasTransferUp)
-        self.__SetBinaryValue("ReagentRobot_GasTransferDown", bGasTransferDown)
-    def FakePLC_EnableReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_ENABLED1)
-    def FakePLC_DisableReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_DISABLED)
-    def FakePLC_EnableReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_ENABLED1)
-    def FakePLC_DisableReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_DISABLED)
     def FakePLC_EnableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReactorRobot(self, nReactor):
@@ -581,9 +550,10 @@ class HardwareComm():
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorUp", bUpSensor)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorDown", bDownSensor)
-    def FakePLC_SetReactorActualTemperature(self, nReactor, nHeater, nTemperature):
-        nOffset = self.__LookUpThermocontrollerActualOffset("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater))
-        self.__SetIntegerValueRaw(nOffset, nTemperature)
+    def FakePLC_SetReactorActualTemperature(self, nReactor, nTemperature):
+        for nHeater in range(1, 4):
+            nOffset = self.__LookUpThermocontrollerActualOffset("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater))
+            self.__SetIntegerValueRaw(nOffset, nTemperature)
     def FakePLC_SetBinaryValue(self, nWordOffset, nBitOffset, bValue):
         self.__SetBinaryValueRaw(nWordOffset, nBitOffset, bValue)
     def FakePLC_SetWordValue(self, nWordOffset, nValue):
@@ -802,13 +772,13 @@ class HardwareComm():
             
             # Look up our reagent robot positions
             nReagentRobotSetX = self.__GetReagentRobotSetX()
-            nReagentRobotSetY = self.__GetReagentRobotSetY()
-            nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery, nReagentRobotSetPositionElute = \
-                self.__LookUpReagentRobotPosition(nReagentRobotSetX, nReagentRobotSetY)
+            nReagentRobotSetZ = self.__GetReagentRobotSetZ()
+            nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery = \
+                self.__LookUpReagentRobotPosition(nReagentRobotSetX, nReagentRobotSetZ)
             nReagentRobotActualX = self.__GetReagentRobotActualX()
-            nReagentRobotActualY = self.__GetReagentRobotActualY()
-            nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, nReagentRobotCurrentPositionElute = \
-                self.__LookUpReagentRobotPosition(nReagentRobotActualX, nReagentRobotActualY)
+            nReagentRobotActualZ = self.__GetReagentRobotActualZ()
+            nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery = \
+                self.__LookUpReagentRobotPosition(nReagentRobotActualX, nReagentRobotActualZ)
 
             # Look up our reactor robot positions
             nReactor1RobotSetPositionRaw = self.__GetReactorRobotSetPosition(1)
@@ -826,28 +796,26 @@ class HardwareComm():
 
             # Update the system model
             pModel["CoolingSystem"].updateState(self.__GetBinaryValue("CoolingSystemOn"))
-            pModel["VacuumSystem"].updateState(self.__GetBinaryValue("VacuumSystemOn"), self.__GetVacuumPressure())
-            pModel["Valves"].updateState(self.__GetBinaryValue("Valves_GasTransferValve"), self.__GetBinaryValue("Valves_F18Load"), self.__GetBinaryValue("Valves_HPLCLoad"))
+            pModel["VacuumSystem"].updateState(True, self.__GetVacuumPressure())
+            pModel["ExternalSystems"].updateState(self.__GetBinaryValue("F18_Load"), self.__GetBinaryValue("F18_Elute"), self.__GetBinaryValue("HPLC_Load"))
             pModel["PressureRegulator1"].updateState(self.__GetPressureRegulatorSetPressure(1), self.__GetPressureRegulatorActualPressure(1))
             pModel["PressureRegulator2"].updateState(self.__GetPressureRegulatorSetPressure(2), self.__GetPressureRegulatorActualPressure(2))
             pModel["ReagentDelivery"].updateState(nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery,
-                nReagentRobotSetPositionElute, nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery,
-                nReagentRobotCurrentPositionElute, nReagentRobotSetX, nReagentRobotSetY, nReagentRobotActualX, nReagentRobotActualY, 
-                self.__GetBinaryValue("ReagentRobot_SetGripperUp"), self.__GetBinaryValue("ReagentRobot_SetGripperDown"), 
-                self.__GetBinaryValue("ReagentRobot_SetGripperOpen"), self.__GetBinaryValue("ReagentRobot_SetGripperClose"), 
-                self.__GetBinaryValue("ReagentRobot_SetGasTransferUp"), self.__GetBinaryValue("ReagentRobot_SetGasTransferDown"), 
-                self.__GetBinaryValue("ReagentRobot_GripperUp"), self.__GetBinaryValue("ReagentRobot_GripperDown"), 
-                self.__GetBinaryValue("ReagentRobot_GripperOpen"), self.__GetBinaryValue("ReagentRobot_GripperClose"), 
-                self.__GetBinaryValue("ReagentRobot_GasTransferUp"), self.__GetBinaryValue("ReagentRobot_GasTransferDown"), 
-                self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotControlWord(self.__nReagentXAxis), self.__GetRobotCheckWord(self.__nReagentXAxis), 
-                self.__GetRobotStatus(self.__nReagentYAxis), self.__GetRobotControlWord(self.__nReagentYAxis), self.__GetRobotCheckWord(self.__nReagentYAxis))
+                nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, nReagentRobotSetX,
+                nReagentRobotSetZ, nReagentRobotActualX, nReagentRobotActualZ, self.__GetBinaryValue("ReagentRobot_SetGripperUp"),
+                self.__GetBinaryValue("ReagentRobot_SetGripperDown"), self.__GetBinaryValue("ReagentRobot_SetGripperOpen"),
+                self.__GetBinaryValue("ReagentRobot_SetGripperClose"), self.__GetBinaryValue("ReagentRobot_GripperUp"), self.__GetBinaryValue("ReagentRobot_GripperDown"), 
+                self.__GetBinaryValue("ReagentRobot_GripperOpen"), self.__GetBinaryValue("ReagentRobot_GripperClose"), self.__GetRobotStatus(self.__nReagentXAxis), 
+                self.__GetRobotStatus(self.__nReagentZAxis))
             pModel["Reactor1"]["Motion"].updateState(nReactor1RobotSetPosition, nReactor1RobotActualPosition, nReactor1RobotSetPositionRaw, nReactor1RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor1_SetReactorUp"), self.__GetBinaryValue("Reactor1_SetReactorDown"), self.__GetBinaryValue("Reactor1_ReactorUp"),
-                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotControlWord(self.__LookUpReactorAxis(1)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(1)))
-            pModel["Reactor1"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor1_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock1ValveCCW"))
-            pModel["Reactor1"]["Stopcock2"].updateState(self.__GetBinaryValue("Reactor1_Stopcock2ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock2ValveCCW"))
-            pModel["Reactor1"]["Stopcock3"].updateState(self.__GetBinaryValue("Reactor1_Stopcock3ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock3ValveCCW"))
+                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotControlWord(1), 
+                self.__GetRobotCheckWord(1))
+            pModel["Reactor1"]["Valves"].updateState(self.__GetBinaryValue("Reactor1_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor1_EvaporationVacuumValve"),
+                self.__GetBinaryValue("Reactor1_TransferValve"), self.__GetBinaryValue("Reactor1_Reagent1TransferValve"), self.__GetBinaryValue("Reactor1_Reagent2TransferValve"))
+            pModel["Reactor1"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor1_Stopcock1ValvePosition2"))
+            pModel["Reactor1"]["Stopcock2"].updateState(self.__GetBinaryValue("Reactor1_Stopcock2ValvePosition1"), self.__GetBinaryValue("Reactor1_Stopcock2ValvePosition2"))
+            pModel["Reactor1"]["Stopcock3"].updateState(self.__GetBinaryValue("Reactor1_Stopcock3ValvePosition1"), self.__GetBinaryValue("Reactor1_Stopcock3ValvePosition2"))
             pModel["Reactor1"]["Stir"].updateState(self.__GetAnalogValue("Reactor1_StirMotor"))
             pModel["Reactor1"]["Thermocouple"].updateState(self.__GetHeaterOn(1, 1), self.__GetHeaterOn(1, 2), self.__GetHeaterOn(1, 3),
                 self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2"),
@@ -856,9 +824,11 @@ class HardwareComm():
             pModel["Reactor1"]["Radiation"].updateState(self.__GetRadiation(1))
             pModel["Reactor2"]["Motion"].updateState(nReactor2RobotSetPosition, nReactor2RobotActualPosition, nReactor2RobotSetPositionRaw, nReactor2RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor2_SetReactorUp"), self.__GetBinaryValue("Reactor2_SetReactorDown"), self.__GetBinaryValue("Reactor2_ReactorUp"),
-                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotControlWord(self.__LookUpReactorAxis(2)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(2)))
-            pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor2_Stopcock1ValveCCW"))
+                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotControlWord(2), 
+                self.__GetRobotCheckWord(2))
+            pModel["Reactor2"]["Valves"].updateState(self.__GetBinaryValue("Reactor2_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor2_EvaporationVacuumValve"),
+                self.__GetBinaryValue("Reactor2_TransferValve"), self.__GetBinaryValue("Reactor2_Reagent1TransferValve"), self.__GetBinaryValue("Reactor2_Reagent2TransferValve"))
+            pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor2_Stopcock1ValvePosition2"))
             pModel["Reactor2"]["Stir"].updateState(self.__GetAnalogValue("Reactor2_StirMotor"))
             pModel["Reactor2"]["Thermocouple"].updateState(self.__GetHeaterOn(2, 1), self.__GetHeaterOn(2, 2), self.__GetHeaterOn(2, 3),
                 self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2"),
@@ -867,9 +837,11 @@ class HardwareComm():
             pModel["Reactor2"]["Radiation"].updateState(self.__GetRadiation(2))
             pModel["Reactor3"]["Motion"].updateState(nReactor3RobotSetPosition, nReactor3RobotActualPosition, nReactor3RobotSetPositionRaw, nReactor3RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor3_SetReactorUp"), self.__GetBinaryValue("Reactor3_SetReactorDown"), self.__GetBinaryValue("Reactor3_ReactorUp"),
-                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotControlWord(self.__LookUpReactorAxis(3)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(3)))
-            pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor3_Stopcock1ValveCCW"))
+                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotControlWord(3), 
+                self.__GetRobotCheckWord(3))
+            pModel["Reactor3"]["Valves"].updateState(self.__GetBinaryValue("Reactor3_EvaporationNitrogenValve"), self.__GetBinaryValue("Reactor3_EvaporationVacuumValve"),
+                self.__GetBinaryValue("Reactor3_TransferValve"), self.__GetBinaryValue("Reactor3_Reagent1TransferValve"), self.__GetBinaryValue("Reactor3_Reagent2TransferValve"))
+            pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition1"), self.__GetBinaryValue("Reactor3_Stopcock1ValvePosition2"))
             pModel["Reactor3"]["Stir"].updateState(self.__GetAnalogValue("Reactor3_StirMotor"))
             pModel["Reactor3"]["Thermocouple"].updateState(self.__GetHeaterOn(3, 1), self.__GetHeaterOn(3, 2), self.__GetHeaterOn(3, 3),
                 self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2"),
@@ -1044,12 +1016,12 @@ class HardwareComm():
     # Get reagent robot positions
     def __GetReagentRobotSetX(self):
         return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4)))
-    def __GetReagentRobotSetY(self):
-        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentYAxis * 4)))
+    def __GetReagentRobotSetZ(self):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentZAxis * 4)))
     def __GetReagentRobotActualX(self):
         return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4)))
-    def __GetReagentRobotActualY(self):
-        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentYAxis * 4)))
+    def __GetReagentRobotActualZ(self):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentZAxis * 4)))
 
     # Get reactor robot positions
     def __GetReactorRobotSetPosition(self, nReactor):
@@ -1076,10 +1048,10 @@ class HardwareComm():
             return "Error"
         else:
             return str(nCheckWord)
-    def __GetRobotControlWord(self, nAxis):
-        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4)))
-    def __GetRobotCheckWord(self, nAxis):
-        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4)))
+    def __GetRobotControlWord(self, nReactor):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4)))
+    def __GetRobotCheckWord(self, nReactor):
+        return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4)))
 
     ### Support functions ###
         
@@ -1117,13 +1089,13 @@ class HardwareComm():
             raise Exception("Invalid reactor")
 
     # Look up the reactor cassette Z offset
-    def __LookUpReactorCassetteYOffset(self, nReactor):
+    def __LookUpReactorCassetteZOffset(self, nReactor):
         if (nReactor == 1):
-            return self.__nReactor1CassetteYOffset
+            return self.__nReactor1CassetteZOffset
         elif (nReactor == 2):
-            return self.__nReactor2CassetteYOffset
+            return self.__nReactor2CassetteZOffset
         elif (nReactor == 3):
-            return self.__nReactor3CassetteYOffset
+            return self.__nReactor3CassetteZOffset
         else:
             raise Exception("Invalid reactor")
 
@@ -1177,11 +1149,11 @@ class HardwareComm():
             pDescriptorComponents = sPositionDescriptor.split("_")
             if len(pDescriptorComponents) == 1:
                 return {"name":sPositionName,
-                    "y":str(pDescriptorComponents[0])}
+                    "z":str(pDescriptorComponents[0])}
             elif len(pDescriptorComponents) == 2:
                 return {"name":sPositionName,
                     "x":str(pDescriptorComponents[0]),
-                    "y":str(pDescriptorComponents[1])}
+                    "z":str(pDescriptorComponents[1])}
             else:
                 raise Exception()
         except Exception as ex:
@@ -1287,49 +1259,41 @@ class HardwareComm():
             raise Exception("Invalid thermocontroller loop")
 
     # Looks up the reagent robot position
-    def __LookUpReagentRobotPosition(self, nPositionX, nPositionY):
+    def __LookUpReagentRobotPosition(self, nPositionX, nPositionZ):
         # Hit test each reactor
         for nReactor in range(1,4):
             # Hit test each reagent position
             for nReagent in range(1, 11):
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
-                nReagentYOffset = self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"])
-                if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentYOffset, nPositionY):
-                    # We're over a reagent
-                    return nReactor, nReagent, 0, 0
+                nReagentZOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
+                if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentZOffset, nPositionZ):
+                  # We're over a reagent
+                  return nReactor, nReagent, 0
 
             # Hit test each reagent delivery position
             for nReagentDelivery in range(1, 3):
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nReagentDelivery))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
-                nReagentYOffset = self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"])
-                if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentYOffset, nPositionY):
-                    # We're over a reagent delivery position
-                    return nReactor, 0, nReagentDelivery, 0
+                nReagentZOffset = self.__LookUpReactorCassetteZOffset(nReactor) + int(pPosition["z"])
+                if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentZOffset, nPositionZ):
+                  # We're over a reagent delivery position
+                  return nReactor, 0, nReagentDelivery
         
-            # Hit test the elute position
-            pPosition = self.__LookUpRobotPosition("ReagentRobot_Elute")
-            nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
-            nReagentYOffset = self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"])
-            if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentYOffset, nPositionY):
-                # We're over the elute position
-                return nReactor, 0, 0, 1
-                  
         # Failed to find match
-        return 0, 0, 0, 0
+        return 0, 0, 0
      
     # Look up the reactor robot position
-    def __LookUpReactorRobotPosition(self, nReactor, nPositionY):
+    def __LookUpReactorRobotPosition(self, nReactor, nPositionZ):
         # Hit test each reactor position
         nReactorOffset = self.__LookUpReactorOffset(nReactor)
         for sPositionName in self.__pRobotPositions["Reactors"]:
-            if self.__HitTest(nPositionY - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
+            if self.__HitTest(nPositionZ - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
                 # We're over a know position
                 return sPositionName
                   
         # Failed to find a named position
-        return "Unknown" 
+        return "Indeterminate" 
 
     # Hit tests the given reagent position
     def __HitTest(self, nPosition, nSetPosition):

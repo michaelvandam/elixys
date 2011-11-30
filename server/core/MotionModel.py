@@ -94,19 +94,12 @@ class MotionModel(ComponentModel):
     else:
       return self.robotStatus
 
-  def getCurrentRobotControlWord(self, bLockModel = True):
+  def getCurrentRobotControlWords(self, bLockModel = True):
     """Returns the robot control word"""
     if bLockModel:
-      return self.protectedReturn1(self.getCurrentRobotControlWord)
+      return self.protectedReturn2(self.getCurrentRobotControlWords)
     else:
-      return self.robotControlWord
-
-  def getCurrentRobotCheckWord(self, bLockModel = True):
-    """Returns the robot status"""
-    if bLockModel:
-      return self.protectedReturn1(self.getCurrentRobotCheckWord)
-    else:
-      return self.robotCheckWord
+      return self.robotControlWord, self.robotCheckWord
 
   def setDisableReactorRobot(self):
     """Disables the reactor robot"""

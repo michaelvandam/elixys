@@ -41,7 +41,7 @@ class FakePLC():
     def StartUp(self):
         """Starts up the fake PLC"""
         # Create the hardware layer
-        self.__pHardwareComm = HardwareComm.HardwareComm("../../hardware/")
+        self.__pHardwareComm = HardwareComm.HardwareComm("../../")
   
         # Determine the memory range we need to emulate
         self.__nMemoryLower, self.__nMemoryUpper = self.__pHardwareComm.CalculateMemoryRange()
@@ -230,6 +230,7 @@ class FakePLC():
         self.__UpdatePressureRegulator(1)
         self.__UpdatePressureRegulator(2)
         self.__UpdateCoolingSystem()
+        self.__UpdateReagentRobotStatus()
         self.__UpdateReagentRobotPosition()
         self.__UpdateReagentRobotGripper()
         self.__UpdateReactorRobotStatus(1)
@@ -244,27 +245,14 @@ class FakePLC():
 
     def __UpdateVacuumPressure(self):
         """Updates the vacuum pressure in response to system changes"""
-        # Get the current state of the vacuum valves and vacuum pressure
-        nEvaporationValvesOpen = 0
-        if self.__pSystemModel.model["Reactor1"]["Valves"].getEvaporationVacuumValveOpen():
-            nEvaporationValvesOpen += 1
-        if self.__pSystemModel.model["Reactor2"]["Valves"].getEvaporationVacuumValveOpen():
-            nEvaporationValvesOpen += 1
-        if self.__pSystemModel.model["Reactor3"]["Valves"].getEvaporationVacuumValveOpen():
-            nEvaporationValvesOpen += 1
-        nActualPressure = self.__pSystemModel.model["VacuumSystem"].getVacuumSystemPressure()
-
-        # Calculate the target vacuum pressure
-        if nEvaporationValvesOpen == 0:
-            nTargetPressure = -71.6
-        elif nEvaporationValvesOpen == 1:
+        # Check if the vacuum is on and determine the target pressure
+        if self.__pSystemModel.model["VacuumSystem"].getVacuumSystemOn():
             nTargetPressure = -12.4
-        elif nEvaporationValvesOpen == 2:
-            nTargetPressure = -8.1
         else:
-            nTargetPressure = -5.9
+            nTargetPressure = -71.9
         
         # Compare the pressures.  Add leeway to account for rounding errors
+        nActualPressure = self.__pSystemModel.model["VacuumSystem"].getVacuumSystemPressure()
         if ((nActualPressure + 1) < nTargetPressure) or ((nActualPressure - 1) > nTargetPressure):
             # Update the actual pressure to the target pressure
             self.__pHardwareComm.FakePLC_SetVacuumPressure(nTargetPressure)
@@ -288,11 +276,16 @@ class FakePLC():
                     self.__pReactor3HeatingThread.join()
  
                 # Kick off the cooling thread
-                nReactor1CurrentTemperature = self.__pSystemModel.model["Reactor1"]["Thermocouple"].getCurrentTemperature(False)
-                nReactor2CurrentTemperature = self.__pSystemModel.model["Reactor2"]["Thermocouple"].getCurrentTemperature(False)
-                nReactor3CurrentTemperature = self.__pSystemModel.model["Reactor3"]["Thermocouple"].getCurrentTemperature(False)
                 self.__pCoolingThread = CoolingThread()
-                self.__pCoolingThread.SetParameters(self.__pHardwareComm, nReactor1CurrentTemperature, nReactor2CurrentTemperature, nReactor3CurrentTemperature)
+                self.__pCoolingThread.SetParameters(self.__pHardwareComm, self.__pSystemModel.model["Reactor1"]["Thermocouple"].getHeater1CurrentTemperature(),
+                    self.__pSystemModel.model["Reactor1"]["Thermocouple"].getHeater2CurrentTemperature(), 
+                    self.__pSystemModel.model["Reactor1"]["Thermocouple"].getHeater3CurrentTemperature(),
+                    self.__pSystemModel.model["Reactor2"]["Thermocouple"].getHeater1CurrentTemperature(),
+                    self.__pSystemModel.model["Reactor2"]["Thermocouple"].getHeater2CurrentTemperature(), 
+                    self.__pSystemModel.model["Reactor2"]["Thermocouple"].getHeater3CurrentTemperature(),
+                    self.__pSystemModel.model["Reactor3"]["Thermocouple"].getHeater1CurrentTemperature(),
+                    self.__pSystemModel.model["Reactor3"]["Thermocouple"].getHeater2CurrentTemperature(), 
+                    self.__pSystemModel.model["Reactor3"]["Thermocouple"].getHeater3CurrentTemperature())
                 self.__pCoolingThread.setDaemon(True)
                 self.__pCoolingThread.start()
         else:
@@ -329,6 +322,22 @@ class FakePLC():
                 else:
                     self.__pPressureRegulator2Thread = pThread
 
+    def __UpdateReagentRobotStatus(self):
+        """Updates the reagent robot status in response to system changes"""
+        # Get the reagent robot control and check words
+        nControlWordX, nCheckWordX = self.__pSystemModel.model["ReagentDelivery"].getRobotXControlWords()
+        nControlWordY, nCheckWordY = self.__pSystemModel.model["ReagentDelivery"].getRobotYControlWords()
+
+        # Enable or disable the robots
+        if (nControlWordX == 0x10) and (nCheckWordX != HardwareComm.ROBONET_ENABLED1):
+            self.__pHardwareComm.FakePLC_EnableReagentRobotX()
+        elif (nControlWordX == 0x08) and (nCheckWordX != HardwareComm.ROBONET_DISABLED):
+            self.__pHardwareComm.FakePLC_DisableReagentRobotX()
+        if (nControlWordY == 0x10) and (nCheckWordY != HardwareComm.ROBONET_ENABLED1):
+            self.__pHardwareComm.FakePLC_EnableReagentRobotY()
+        elif (nControlWordY == 0x08) and (nCheckWordY != HardwareComm.ROBONET_DISABLED):
+            self.__pHardwareComm.FakePLC_DisableReagentRobotY()
+
     def __UpdateReagentRobotPosition(self):
         """Updates the reagent robot position in response to system changes"""
         # Get the set and actual positions
@@ -354,15 +363,16 @@ class FakePLC():
         bGripperSetDown = self.__pSystemModel.model["ReagentDelivery"].getSetGripperDown()
         bGripperSetOpen = self.__pSystemModel.model["ReagentDelivery"].getSetGripperOpen()
         bGripperSetClose = self.__pSystemModel.model["ReagentDelivery"].getSetGripperClose()
+        bSetGasTransferUp = self.__pSystemModel.model["ReagentDelivery"].getSetGasTransferUp()
+        bSetGasTransferDown = self.__pSystemModel.model["ReagentDelivery"].getSetGasTransferDown()
         
         # Set the current gripper values
-        self.__pHardwareComm.FakePLC_SetReagentRobotGripper(bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose)
+        self.__pHardwareComm.FakePLC_SetReagentRobotGripper(bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose, bSetGasTransferUp, bSetGasTransferDown)
 
     def __UpdateReactorRobotStatus(self, nReactor):
         """Updates the reactor robot status in response to system changes"""
         # Get the reactor robot control and check words
-        nControlWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotControlWord()
-        nCheckWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotCheckWord()
+        nControlWord, nCheckWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotControlWords()
 
         # Enable or disable the robot
         if (nControlWord == 0x10) and (nCheckWord != HardwareComm.ROBONET_ENABLED1):
@@ -462,7 +472,15 @@ class FakePLC():
                 if (pThread == None) or not pThread.is_alive():
                     # No, so kick off the thread
                     pThread = HeatingThread()
-                    pThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualTemperature, nReactorSetTemperature)
+                    pThread.SetParameters(self.__pHardwareComm, nReactor, self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater1On(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater2On(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater3On(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater1CurrentTemperature(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater2CurrentTemperature(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater3CurrentTemperature(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater1SetTemperature(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater2SetTemperature(),
+                        self.__pSystemModel.model["Reactor" + str(nReactor)]["Thermocouple"].getHeater3SetTemperature())
                     pThread.setDaemon(True)
                     pThread.start()
                 

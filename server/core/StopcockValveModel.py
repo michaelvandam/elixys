@@ -16,28 +16,44 @@ class StopcockValveModel(ComponentModel):
     ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.reactor = reactor
     self.stopcock = stopcock
-    self.valvePosition = 0
+    self.valveCW = False
+    self.valveCCW = False
 
-  def getAllowedPositions(self):
-    """Returns the allowed stopcock positions"""
-    return [1, 2]
-     
   def getPosition(self, bLockModel = True):
     """Returns the current stopcock position"""
     if bLockModel:
       return self.protectedReturn1(self.getPosition)
     else:
-      return self.valvePosition
-     
-  def setPosition(self, nPosition):
-    """Sets the stopcock position"""
-    self.hardwareComm.ReactorStopcockPosition(self.reactor, self.stopcock, nPosition)
+      if self.valveCW and not self.valveCCW:
+        return "CW"
+      elif not self.valveCW and self.valveCCW:
+        return "CCW"
+      else:
+        return "Unk"
 
-  def updateState(self, nValvePosition1, nValvePosition2):
-    """Update the internal state"""
-    if (nValvePosition1 == True) and (nValvePosition2 == False):
-      self.valvePosition = 1
-    elif (nValvePosition1 == False) and (nValvePosition2 == True):
-      self.valvePosition = 2
+  def getCW(self, bLockModel = True):
+    """Returns the current clockwise stopcock position"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCW)
     else:
-      self.valvePosition = 0
+      return self.valveCW
+     
+  def getCCW(self, bLockModel = True):
+    """Returns the current clockwise stopcock position"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCCW)
+    else:
+      return self.valveCCW
+
+  def setCW(self):
+    """Sets the stopcock to the clockwise position"""
+    self.hardwareComm.ReactorStopcockCW(self.reactor, self.stopcock)
+
+  def setCCW(self):
+    """Sets the stopcock to the counterclockwise position"""
+    self.hardwareComm.ReactorStopcockCCW(self.reactor, self.stopcock)
+    
+  def updateState(self, bValveCW, bValveCCW):
+    """Update the internal state"""
+    self.valveCW = bValveCW
+    self.valveCCW = bValveCCW
