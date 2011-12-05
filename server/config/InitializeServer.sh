@@ -21,12 +21,18 @@ mkdir /opt/elixys
 # Install, start and initialize MySQL
 yum -y install mysql mysql-server apr-util-mysql
 /sbin/service mysqld start
-cd elixys/config
+cd elixys/server/config
+chmod 755 *.sh
 ./InitializeDatabase.sh
-cd ../..
+cd ../../..
 
-# Make an application copy of the database directory
-cp -R elixys/server/database /opt/elixys
+# Make an application copy of the config directory
+cp -R elixys/server/config /opt/elixys
+
+# Initialize and make an application copy of the rtmpd directory
+### Needs work!
+chmod 711 elixys/server/rtmpd/crtmpserver
+cp -R elixys/server/rtmpd /opt/elixys
 
 # Install mod_wsgi
 yum -y install mod_wsgi
@@ -83,29 +89,27 @@ yum -y install policycoreutils-python
 semanage port -a -t http_port_t -p tcp 18862
 
 # Install the Adobe policy module and file
-cp elixys/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
+cp elixys/server/config/adobepolicyfile/mod_adobe_crossdomainpolicy.so /usr/lib64/httpd/modules/
 chmod 755 /usr/lib64/httpd/modules/mod_adobe_crossdomainpolicy.so
-cp elixys/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
+cp elixys/server/config/adobepolicyfile/crossdomain.xml /var/www/adobepolicyfile
 chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
 # Update the firewall settings
-mv -f elixys/config/iptables /etc/sysconfig/
+mv -f elixys/server/config/iptables /etc/sysconfig/
 chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
 # Put shortcuts on the user's desktop
-mkdir /opt/elixys/config
-cp elixys/config/UpdateServer.sh /opt/elixys/config
-chmod 755 /opt/elixys/config/UpdateServer.sh
-cp elixys/config/LoadDemoData.py /opt/elixys/config
-cp elixys/config/FACSynthesis.seq /opt/elixys/config
-cp elixys/config/shortcuts/* /home/$USER/Desktop
-chmod 755 /home/$USER/Desktop/ElixysCLI.sh
-chmod 755 /home/$USER/Desktop/StateMonitor.sh
-chmod 755 /home/$USER/Desktop/UpdateServer.sh
+chmod 755 elixys/server/config/shortcuts/*.sh
+cp elixys/server/config/shortcuts/* /home/$USER/Desktop
 
 # Give all users the ability to run the update script as root
 echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
 
 # Remove the git repository
 rm -rf /root/elixys
+
+# Run the update script to perform the initial pull of the source code
+cd /home/$USER/Desktop
+./UpdateServer.sh
+

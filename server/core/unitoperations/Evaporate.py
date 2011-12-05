@@ -24,29 +24,70 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,self.pressure/3)
+      self.setPressureRegulator(1,self.pressure)
       self.setStatus("Moving reactor")
       self.setReactorPosition(EVAPORATE)
       self.setStatus("Starting motor")
       self.setStirSpeed(self.stirSpeed)
+      self.setStatus("Moving robot")
+      self.setRobotPosition()
+      self.setGasTransferValve(ON)
+      self.setVacuumSystem(ON)
       self.setStatus("Heating")
-      self.setEvapValves(ON)
       self.setTemp()
       self.setHeater(ON)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
-      self.setPressureRegulator(2,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
+      #self.setPressureRegulator(1,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
       self.waitForTimer() #Now wait until the rest of the time elapses
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCool()
       self.setStatus("Completing") 
       self.setStirSpeed(OFF)
-      self.setEvapValves(OFF)
+      self.setStatus("Moving robot")
+      self.setGasTransferValve(OFF)
+      self.setVacuumSystem(OFF)
+      self.removeRobotPosition()
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)
   
+  def setRobotPosition(self):
+    #Make sure the reagent robot is up
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
+      self.abortOperation("ERROR: setRobotPosition called while gripper was not up. Operation aborted.") 
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL):
+      self.abortOperation("ERROR: setRobotPosition called while gas transfer was not up. Operation aborted.") 
+
+    #Make sure the robots are enabled
+    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
+      self.systemModel['ReagentDelivery'].setEnableRobots()
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+
+    #Move to the evaporate position
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReactorID[-1]),EVAPORATEPOSITION)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
+      EVAPORATEPOSITION, 0, 0),EQUAL,5)
+
+    #Lower the gas transfer
+    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+
+  def removeRobotPosition(self):
+    #Make sure we are down
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
+      self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
+
+    #Raise the gas transfer
+    self.setGasTransferValve(OFF)
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+
+    #Move to home
+    self.systemModel['ReagentDelivery'].moveToHomeFast()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
+
   """def setParams(self,currentParams):
     expectedParams = ['ReactorID','evapTime','evapTemp','coolTemp','stirSpeed']
     self.paramsValid = True

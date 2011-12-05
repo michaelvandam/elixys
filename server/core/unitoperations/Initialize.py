@@ -14,19 +14,18 @@ class Initialize(UnitOperation):
       #Close all valves (set state)
       self.setStatus("Initializing valves")
       self.ReactorID = ""
+      self.setGasTransferValve(OFF)
+      self.setVacuumSystem(OFF)
       for self.ReactorID in self.ReactorTuple:
-        self.setEvapValves(OFF)
         self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
-        for self.reagentLoadPosition in self.reagentLoadPositionTuple:
-          self.setReagentTransferValves(OFF)
         self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
         self.setStopcockPosition(TRANSFERDEFAULT,self.ReactorID)
       self.setStopcockPosition(F18DEFAULT,"Reactor1")
 
       #Set pressures
       self.setStatus("Initializing pressures")
-      self.setPressureRegulator(2,5)
-      self.setPressureRegulator(1,60)
+      self.setPressureRegulator(1,5)
+      self.setPressureRegulator(2,60)
 
       #Raise and open gripper    
       self.setStatus("Initializing robots")
@@ -34,11 +33,21 @@ class Initialize(UnitOperation):
       self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,2)
       self.systemModel['ReagentDelivery'].setMoveGripperOpen()
       self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2) 
+      self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
 
-      #Home robots
-      self.systemModel[self.ReactorID]['Motion'].moveHomeRobots()
+      #Home the robot once but don't check if it happens
+      self.systemModel['ReagentDelivery'].moveToHome()
+      for self.ReactorID in self.ReactorTuple:
+        self.systemModel[self.ReactorID]['Motion'].moveToHome()
       time.sleep(2)
-      self.waitForCondition(self.areRobotsHomed,True,EQUAL,10)
+
+      #Home the robot again and check for the proper state
+      self.systemModel['ReagentDelivery'].moveToHome()
+      for self.ReactorID in self.ReactorTuple:
+        self.systemModel[self.ReactorID]['Motion'].moveToHome()
+      time.sleep(2)
+      self.waitForCondition(self.areRobotsHomed,True,EQUAL,25)
       for self.ReactorID in self.ReactorTuple:
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")

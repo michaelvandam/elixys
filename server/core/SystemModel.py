@@ -143,11 +143,11 @@ class SystemModel:
         # Get the robot positions
         nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery, \
             nReagentRobotSetPositionElute = self.model["ReagentDelivery"].getSetPosition(False)
-        nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ = self.model["ReagentDelivery"].getSetPositionRaw(False)
+        nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawY = self.model["ReagentDelivery"].getSetPositionRaw(False)
         nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, \
             nReagentRobotCurrentPositionElute = self.model["ReagentDelivery"].getCurrentPosition(False)
-        nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawZ = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
-        nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusZ = self.model["ReagentDelivery"].getRobotStatus(False)
+        nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
+        nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY = self.model["ReagentDelivery"].getRobotStatus(False)
 
         # Format the state into a string
         sState += self.__PadString("Component", STATECOMMONCOLUMN1WIDTH)
@@ -164,7 +164,7 @@ class SystemModel:
         sState += self.__PadString("Vacuum system (on/pressure)", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["VacuumSystem"].getVacuumSystemOn(False)) + "/" + \
-            str(self.model["VacuumSystem"].getVacuumSystemPressure(False)), STATECOMMONCOLUMN2WIDTH)
+            "%.1f"%(self.model["VacuumSystem"].getVacuumSystemPressure(False)), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
 
         # Cooling system
@@ -227,14 +227,14 @@ class SystemModel:
                 sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
             
-        sState += self.__PadString("  Raw position (x/z)", STATECOMMONCOLUMN1WIDTH)
-        sState += self.__PadString(str(nReagentRobotSetPositionRawX) + "/" + str(nReagentRobotSetPositionRawZ), STATECOMMONCOLUMN2WIDTH)
-        sState += self.__PadString(str(nReagentRobotCurrentPositionRawX) + "/" + str(nReagentRobotCurrentPositionRawZ), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString("  Raw position (x/y)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString(str(nReagentRobotSetPositionRawX) + "/" + str(nReagentRobotSetPositionRawY), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotCurrentPositionRawX) + "/" + str(nReagentRobotCurrentPositionRawY), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
             
-        sState += self.__PadString("  Robot status (x/z)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("  Robot status (x/y)", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
-        sState += self.__PadString(str(nReagentRobotCurrentStatusX) + "/" + str(nReagentRobotCurrentStatusZ), STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotCurrentStatusX) + "/" + str(nReagentRobotCurrentStatusY), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
         
         sState += self.__PadString("  Gripper (up/down)", STATECOMMONCOLUMN1WIDTH)

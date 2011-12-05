@@ -35,7 +35,7 @@ gDatabase.Connect()
 gSequenceManager = SequenceManager(gDatabase)
 
 # Create the hardware layer and system model
-gHardwareComm = HardwareComm("../hardware/")
+gHardwareComm = HardwareComm("../")
 gHardwareComm.StartUp()
 gSystemModel = SystemModel(gHardwareComm, "../core/")
 gSystemModel.StartUp()
@@ -318,8 +318,7 @@ class CoreServerService(rpyc.Service):
 
         # Execute the command
         try:
-            BaseCLI.ExecuteCommandImpl(sCommand, gUnitOperationsWrapper, gSystemModel, gHardwareComm)
-            return ""
+            return BaseCLI.ExecuteCommandImpl(sCommand, gUnitOperationsWrapper, gSystemModel, gHardwareComm)
         except Exception as ex:
             return "Failed to execute command: " + str(ex)
 

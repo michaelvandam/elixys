@@ -15,16 +15,18 @@ class DeliverF18(UnitOperation):
       raise UnitOpError(paramError)
 
     #Should have parameters listed below:
-    #self.cyclotronFlag
     #self.trapTime
     #self.trapPressure
     #self.eluteTime
     #self.elutePressure
-    
+    #self.cyclotronFlag
+    #self.ReagentReactorID
+    #self.ReagentPosition
+
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,0) #Vent pressure to avoid delivery issues
+      self.setPressureRegulator(1,0) #Vent pressure to avoid delivery issues
       self.setStatus("Moving reactor")
       self.setReactorPosition(ADDREAGENT)
       self.setStatus("Trapping")
@@ -32,7 +34,7 @@ class DeliverF18(UnitOperation):
       time.sleep(0.5)
       self.F18Trap(self.trapTime,self.trapPressure)
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,0) #Vent pressure to avoid delivery issues
+      self.setPressureRegulator(1,0) #Vent pressure to avoid delivery issues
       self.setStatus("Eluting")
       self.setStopcockPosition(F18ELUTE)
       time.sleep(0.5)
@@ -47,24 +49,22 @@ class DeliverF18(UnitOperation):
       self.setStatus("Trapping, waiting for delivery")
       self.waitForUserInput("The system is ready for you to deliver F18 from your external source.\n\nClick OK once delivery is complete.")
     else:
-      self.systemModel['ExternalSystems'].setF18LoadValveOpen(ON)  
-      self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,ON,EQUAL,5)
+      self.systemModel['Valves'].setF18LoadValveOpen(ON)  
+      self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,ON,EQUAL,5)
       self.timerShowInStatus = False
-      self.setPressureRegulator(2,pressure,5) #Set pressure after valve is opened
+      self.setPressureRegulator(1,pressure,5) #Set pressure after valve is opened
       self.startTimer(time)
       self.waitForTimer()
-      self.systemModel['ExternalSystems'].setF18LoadValveOpen(OFF)
-      self.waitForCondition(self.systemModel['ExternalSystems'].getF18LoadValveOpen,OFF,EQUAL,5)
+      self.systemModel['Valves'].setF18LoadValveOpen(OFF)
+      self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,OFF,EQUAL,5)
     
   def F18Elute(self,time,pressure):
-    self.systemModel['ExternalSystems'].setF18EluteValveOpen(ON)
-    self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,ON,EQUAL,5)
+    self.setGripperPlace(1)
     self.timerShowInStatus = False
-    self.setPressureRegulator(2,pressure,5)
+    self.setPressureRegulator(1,pressure,5)
     self.startTimer(time)
     self.waitForTimer()
-    self.systemModel['ExternalSystems'].setF18EluteValveOpen(OFF)
-    self.waitForCondition(self.systemModel['ExternalSystems'].getF18EluteValveOpen,OFF,EQUAL,5)
+    self.removeGripperPlace()
 
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

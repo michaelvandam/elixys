@@ -23,18 +23,19 @@ class Add(UnitOperation):
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(2,self.pressure)   #Set delivery pressure
+      self.setPressureRegulator(1,self.pressure)      #Set delivery pressure
       self.setStatus("Moving reactor")
-      self.setReactorPosition(ADDREAGENT)          #Move reactor to position
+      self.setReactorPosition(ADDREAGENT)             #Move reactor to position
       self.setStatus("Picking up vial")
-      self.setGripperPlace()                       #Move reagent to the addition position.
+      self.setGripperPlace(0)                         #Move reagent to the addition position
       self.setStatus("Delivering reagent")
-      self.startTimer(self.duration)               #In seconds
-      self.waitForTimer()                          #Wait for Dispense reagent
+      self.startTimer(self.duration)                  #In seconds
+      self.waitForTimer()                             #Wait for Dispense reagent
       self.setStatus("Returning vial")
-      self.setGripperRemove()                      #Return vial to its starting location
+      self.removeGripperPlace()                       #Return vial to its starting location
       self.setStatus("Complete")
     except Exception as e:
+      print "Error: " + str(e)
       self.abortOperation(e)
   
   """def setParams(self,currentParams):
@@ -46,67 +47,6 @@ class Add(UnitOperation):
         #Log Error
       self.paramsValidated = True"""
     
-  def setGripperPlace(self):
-    #Make sure we are open and up
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL):
-      self.abortOperation("ERROR: setGripperPlace called while gripper was not open. Operation aborted.")
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
-      self.abortOperation("ERROR: setGripperPlace called while gripper was not up. Operation aborted.") 
-
-    #Make sure the reagent robots are enabled
-    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
-      self.systemModel['ReagentDelivery'].setEnableRobots()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
-
-    #Move to ReagentPosition, then down and close
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition) #Move Reagent Robot to position
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0),EQUAL,5)
-    self.systemModel['ReagentDelivery'].setMoveGripperDown() #Move Gripper down
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,2)
-    self.systemModel['ReagentDelivery'].setMoveGripperClose() #Close Gripper
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,2)
-    
-    #Move up and over to the Delivery Position
-    self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
-    self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, self.reagentLoadPosition),EQUAL,5)
-
-    #Turn the transfer gas on and move the vial down    
-    self.setReagentTransferValves(ON)
-    time.sleep(0.5)
-    self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
-    
-  def setGripperRemove(self):
-    #Make sure we are closed, down and in position
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
-      self.abortOperation("ERROR: setGripperRemove called while gripper was not closed. Operation aborted.")
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL):
-      self.abortOperation("ERROR: setGripperRemove called while gripper was not up. Operation aborted.")
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, self.reagentLoadPosition),EQUAL):
-      self.abortOperation("ERROR: setGripperRemove called while gripper was not in the target position. Operation aborted.")
-
-    #Turn off the transfer gas and move up
-    self.setReagentTransferValves(OFF)
-    time.sleep(0.25)
-    self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
-
-    #Move to ReagentPosition, then down and open
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0),EQUAL,5)
-    self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
-    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2)
-    
-    #Move up and to home
-    self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
-    self.systemModel['ReagentDelivery'].moveToHome()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0),EQUAL,5)
-
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent

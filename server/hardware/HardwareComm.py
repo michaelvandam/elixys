@@ -39,7 +39,8 @@ ROBONET_ERROR1 = 0x400A
 ROBONET_SERVOON = 0x4011
 ROBONET_ERROR2 = 0x4013
 ROBONET_HOMING = 0x4014
-ROBONET_DISABLED = 0x7002
+ROBONET_DISABLED1 = 0x7002
+ROBONET_DISABLED2 = 0x4002
 ROBONET_ENABLED1 = 0x7012
 ROBONET_ENABLED2 = 0x7013
 ROBONET_MOVING = 0x7016
@@ -165,8 +166,7 @@ class HardwareComm():
         sHardwareMap = self.__sRootDirectory + "hardware/HardwareMap.ini"
         sRobotPositions = self.__sRootDirectory + "hardware/RobotPositions.ini"
         if not os.path.exists(sHardwareMap) or not os.path.exists(sRobotPositions):
-            print "Invalid path to INI files"
-            return
+            raise Exception("Invalid path to INI files")
         self.__pHardwareMap = ConfigObj(sHardwareMap)
         self.__pRobotPositions = ConfigObj(sRobotPositions)
 
@@ -350,6 +350,8 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToReagent(self, nReactor, nReagent):
+        if ((nReactor == 1) and (nReagent == 1)) or ((nReactor == 3) and (nReagent == 4)):
+            raise Exception("Reagent position is not allowed")
         if self.__pSystemModel != None:
             if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
                (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
@@ -365,6 +367,13 @@ class HardwareComm():
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+    def MoveRobotToHome(self):
+        if self.__pSystemModel != None:
+            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
+               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
+                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+        self.__SetRobotPosition(self.__nReagentXAxis, 0)
+        self.__SetRobotPosition(self.__nReagentYAxis, 0)
     def GripperUp(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", True)
@@ -451,13 +460,14 @@ class HardwareComm():
 
     # Home all robots
     def HomeRobots(self):
-        # Home the reactors and reagent robot
-        for nReactor in range(1,4):
-            self.HomeReactorRobots(nReactor)
-        self.HomeReagentRobotX()
-        self.HomeReagentRobotY()
+        # Home the reactors and reagent robots
+        self.HomeReactorRobots()
+        self.HomeReagentRobots()
 
-    # Home the reactor robot
+    # Home the reactor robots
+    def HomeReactorRobots(self):
+        for nReactor in range(1,4):
+            self.HomeReactorRobot(nReactor)
     def HomeReactorRobot(self, nReactor):
         # Turn on the reactor axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
@@ -468,14 +478,14 @@ class HardwareComm():
         time.sleep(0.1)
 
     # Home the reagent robots
-    def HomeReagentRobotX(self):
-        # Turn on and home the reagent robot axis
+    def HomeReagentRobots(self):
+        # Turn on and home the X axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
         time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x12)
         time.sleep(0.1)
-    def HomeReagentRobotY(self):
-        # Turn on and home the reagent robot axis
+
+        # Turn on and home the Y axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x10)
         time.sleep(0.1)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x12)
@@ -882,7 +892,7 @@ class HardwareComm():
                 if sys.platform == "win32":
                    sLogFile = "temp_profile.txt"
                 else:
-                   sLogFile = "/home/sbc/Desktop/temp_profile.txt"
+                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
                 try:
                     self.__startTime
                 except Exception, e:
@@ -1066,7 +1076,7 @@ class HardwareComm():
             return "On"
         elif nCheckWord == ROBONET_HOMING:
             return "Homing"
-        elif nCheckWord == ROBONET_DISABLED:
+        elif (nCheckWord == ROBONET_DISABLED1) or (nCheckWord == ROBONET_DISABLED2):
             return "Disabled"
         elif (nCheckWord == ROBONET_ENABLED1) or (nCheckWord == ROBONET_ENABLED2):
             return "Enabled"
@@ -1291,7 +1301,7 @@ class HardwareComm():
         # Hit test each reactor
         for nReactor in range(1,4):
             # Hit test each reagent position
-            for nReagent in range(1, 11):
+            for nReagent in range(1, 12):
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
                 nReagentYOffset = self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"])
@@ -1365,3 +1375,4 @@ class HardwareComm():
             for nReactor in range(1, 4):
                 self.HeaterOff(nReactor)
             raise RunawayHeaterException(nReactor)
+

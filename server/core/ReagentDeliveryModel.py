@@ -23,9 +23,9 @@ class ReagentDeliveryModel(ComponentModel):
     self.currentPositionDelivery = 0
     self.currentPositionElute = 0
     self.setPositionRawX = 0
-    self.setPositionRawZ = 0
+    self.setPositionRawY = 0
     self.currentPositionRawX = 0
-    self.currentPositionRawZ = 0
+    self.currentPositionRawY = 0
     self.setGripperUp = False
     self.setGripperDown = False
     self.setGripperOpen = False
@@ -56,7 +56,7 @@ class ReagentDeliveryModel(ComponentModel):
   def getSetPosition(self, bLockModel = True):
     """Return the set reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
-      return self.protectedReturn3(self.getSetPosition)
+      return self.protectedReturn4(self.getSetPosition)
     else:
       return self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery, self.setPositionElute
 
@@ -65,12 +65,12 @@ class ReagentDeliveryModel(ComponentModel):
     if bLockModel:
       return self.protectedReturn2(self.getSetPositionRaw)
     else:
-      return self.setPositionRawY, self.setPositionRawY
+      return self.setPositionRawX, self.setPositionRawY
     
   def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
-      return self.protectedReturn3(self.getCurrentPosition)
+      return self.protectedReturn4(self.getCurrentPosition)
     else:
       return self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery, self.currentPositionElute
     
@@ -79,7 +79,7 @@ class ReagentDeliveryModel(ComponentModel):
     if bLockModel:
       return self.protectedReturn2(self.getCurrentPositionRaw)
     else:
-      return self.currentPositionRawY, self.currentPositionRawY
+      return self.currentPositionRawX, self.currentPositionRawY
 
   def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
@@ -200,6 +200,10 @@ class ReagentDeliveryModel(ComponentModel):
 
   def moveToHome(self):
     """Moves the reagent robot to the home position"""
+    self.hardwareComm.HomeReagentRobots()
+
+  def moveToHomeFast(self):
+    """Moves the reagent robot to the home position"""
     self.hardwareComm.MoveRobotToHome()
 
   def setDisableRobots(self):
@@ -226,6 +230,14 @@ class ReagentDeliveryModel(ComponentModel):
     """Close the gripper"""
     self.hardwareComm.GripperClose()
 
+  def setMoveGasTransferUp(self):
+    """Raise the gas transfer actuator"""
+    self.hardwareComm.GasTransferUp()
+
+  def setMoveGasTransferDown(self):
+    """Lower the gas transfer actuator"""
+    self.hardwareComm.GasTransferDown()
+    
   def updateState(self, nSetPositionReactor, nSetPositionReagent, nSetPositionDelivery, nSetPositionElute, nCurrentPositionReactor, nCurrentPositionReagent,
                   nCurrentPositionDelivery, nCurrentPositionElute, nSetPositionRawX, nSetPositionRawY, nCurrentPositionRawX, nCurrentPositionRawY, bSetGripperUp,
                   bSetGripperDown, bSetGripperOpen, bSetGripperClose, bSetGasTransferUp, bSetGasTransferDown, bCurrentGripperUp, 

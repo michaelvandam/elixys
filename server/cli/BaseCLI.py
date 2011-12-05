@@ -289,7 +289,7 @@ class BaseCLI(threading.Thread):
                 print "                                  added ('Reactor1','Reactor2','Reactor3')"
                 print "      nReagentReactor,            Reactor of the cassette where the reagent"
                 print "                                  resides ('Reactor1','Reactor2','Reactor3')"
-                print "      nReagentPosition,           1-10"
+                print "      nReagentPosition,           1-11"
                 print "      nReagentDeliveryPosition)   1 or 2"
             elif sCommand == "help Evaporate":
                 # Evaporate unit operation
@@ -314,6 +314,9 @@ class BaseCLI(threading.Thread):
                 print "             nTrapPressure,     PSI"
                 print "             nEluteTime,        Seconds"
                 print "             nElutePressure,    PSI"
+                print "             nReagentReactor,   Reactor of the cassette where the reagent"
+                print "                                resides ('Reactor1','Reactor2','Reactor3')"
+                print "             nReagentPosition,  1-11"
                 print "             bCyclotronFlag)    1 for cyclotron push, 0 for Elixys push"
             elif sCommand == "help Transfer":
                 # Transfer unit operation
@@ -377,7 +380,8 @@ class BaseCLI(threading.Thread):
                 print "  * HeaterOn(nReactor)  * HeaterOff(nReactor)"
                 print "  * SingleHeaterOn(nReactor, nCollet)   * SingleHeaterOff(nReactor, nCollet)"
                 print "  * SetHeaterTemp(nReactor, fSetPoint)  * SetMotorSpeed(nReactor, nMotorSpeed)"
-                print "  * HomeRobots()        * HomeReactorRobot(nReactor)"
+                print "  * HomeRobots()        * HomeReagentRobots()"
+                print "  * HomeReactorRobots() * HomeReactorRobot(nReactor)"
                 print "  * HomeReagentRobotX() * HomeReagentRobotY()  "
                 print "  * DisableRobots()     * EnableRobots()"
                 print "  * DisableReagentRobots()          * EnableReagentRobots()"

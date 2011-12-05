@@ -6,24 +6,32 @@ import threading
 import json
 import copy
 
-#Reactor X Positions
+#Reactor Y Positions
 REACT_A    = 'React1'
 REACT_B    = 'React2'
 INSTALL    = 'Install'
 TRANSFER   = 'Transfer'
-RADIATION  = 'Radation'
 EVAPORATE  = 'Evaporate'
 ADDREAGENT = 'Add'
+
+#Robot states
 ENABLED    = 'Enabled'
 DISABLED   = 'Disabled'
 
+#Reagent robot position for transfer
+TRANSFERPOSITION = 11
+EVAPORATEPOSITION = 3
+
 #Stopcock positions
-F18DEFAULT = (0,2,1)
-F18TRAP = (0,2,2)
-F18ELUTE = (0,1,1)
-TRANSFERDEFAULT = (1,0,0)
-TRANSFERTRAP = (2,0,0)
-TRANSFERELUTE = (1,0,0)
+NA = ''
+CW = 'CW'
+CCW = 'CCW'
+F18DEFAULT = (NA,CCW,CCW)
+F18TRAP = (NA,CCW,CW)
+F18ELUTE = (NA,CW,CCW)
+TRANSFERDEFAULT = (CCW,NA,NA)
+TRANSFERTRAP = (CW,NA,NA)
+TRANSFERELUTE = (CCW,NA,NA)
 
 ON = True
 OFF = False
@@ -78,8 +86,8 @@ DEFAULT_ADD_DURATION = 10
 DEFAULT_ADD_PRESSURE = 5
 DEFAULT_EVAPORATE_PRESSURE = 10
 DEFAULT_STIRSPEED = 500
-DEFAULT_TRANSFER_DURATION = 10
-DEFAULT_TRANSFER_PRESSURE = 5
+DEFAULT_TRANSFER_DURATION = 45
+DEFAULT_TRANSFER_PRESSURE = 10
 
 class UnitOpError(Exception):
   def __init__(self, value):
@@ -250,29 +258,111 @@ class UnitOperation(threading.Thread):
     motionTimeout = 10 #How long to wait before erroring out.
     if (ReactorID==255):
       ReactorID = self.ReactorID
+
+    #Check if we are in the correct position
+    if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL):
+      if not reactorPosition == INSTALL:
+        if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
+          return
+      else:
+        if not self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
+          return
+
+    #Lower the reactor and enable the robot
+    self.systemModel[ReactorID]['Motion'].moveReactorDown()
+    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,motionTimeout)
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
       self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
       self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
-    if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL)):
-      self.systemModel[ReactorID]['Motion'].moveReactorDown()
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,motionTimeout)
-      self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
-      if not reactorPosition == INSTALL:
-        self.systemModel[ReactorID]['Motion'].moveReactorUp()
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-      self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
-    else: #We're in the right position, check if we're sealed.
-      #This is where we would ideally check if the reactor is up but our up sensors aren't working as desired due to the deformability of the
-      #gaskets.  What we'll do for now is only raise the reactor if we know for sure it is down
-      if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
-        if not(reactorPosition==INSTALL):
-          self.systemModel[ReactorID]['Motion'].moveReactorUp()
-          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-          self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-          self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
+
+    #Move to the correct position and raise the reactor
+    self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
+    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
+    self.systemModel[ReactorID]['Motion'].moveReactorUp()
+    if not reactorPosition == INSTALL:
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
+    else:
+      time.sleep(0.5)
+
+    #Disable the robot
+    self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
     
+  def setGripperPlace(self, nElute):
+    #Make sure we are open and up
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL):
+      self.abortOperation("ERROR: setGripperPlace called while gripper was not open. Operation aborted.")
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
+      self.abortOperation("ERROR: setGripperPlace called while gripper was not up. Operation aborted.") 
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL):
+      self.abortOperation("ERROR: setGripperPlace called while gas transfer was not up. Operation aborted.") 
+
+    #Make sure the reagent robots are enabled
+    if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
+      self.systemModel['ReagentDelivery'].setEnableRobots()
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+
+    #Move to the reagent position
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
+      self.reagentPosition, 0, 0),EQUAL,5)
+
+    #Move down, close and up
+    self.systemModel['ReagentDelivery'].setMoveGripperDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,2)
+    self.systemModel['ReagentDelivery'].setMoveGripperClose()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,2)
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+
+    #Move to the delivery or elute position
+    if nElute == 0:
+      self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReagentReactorID[-1]),self.reagentLoadPosition)
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
+        0, self.reagentLoadPosition, 0),EQUAL,5)
+    else:
+      self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReagentReactorID[-1]))
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), 0, 0, 1),EQUAL,5)
+    
+    #Lower and turn on the gas transfer
+    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+    self.setGasTransferValve(ON)
+
+    #Move the vial down    
+    self.systemModel['ReagentDelivery'].setMoveGripperDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+    
+  def removeGripperPlace(self):
+    #Make sure we are closed and down
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
+      self.abortOperation("ERROR: setGripperRemove called while gripper was not closed. Operation aborted.")
+    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL):
+      self.abortOperation("ERROR: setGripperRemove called while gripper was not up. Operation aborted.")
+
+    #Move the vial up
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+
+    #Turn off and raise the transfer gas
+    self.setGasTransferValve(OFF)
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+
+    #Move to ReagentPosition, then down and open
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
+    self.systemModel['ReagentDelivery'].setMoveGripperDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2)
+    
+    #Move up and to home
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+    self.systemModel['ReagentDelivery'].moveToHomeFast()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
+
   def waitForCondition(self,function,condition,comparator,timeout): #Timeout in seconds, default to 3.
     startTime = time.time()
     self.delay = 500
@@ -440,9 +530,15 @@ class UnitOperation(threading.Thread):
     if (ReactorID==255):
       ReactorID = self.ReactorID
     for stopcock in range(1,(len(stopcockPositions)+1)):
-      if not stopcockPositions[stopcock-1] == 0:
-        self.systemModel[ReactorID]['Stopcock'+str(stopcock)].setPosition(stopcockPositions[stopcock-1])
-        self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getPosition,stopcockPositions[stopcock-1],EQUAL,3) 
+      if not stopcockPositions[stopcock-1] == NA:
+        if stopcockPositions[stopcock-1] == CW:
+          self.systemModel[ReactorID]['Stopcock'+str(stopcock)].setCW()
+          self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getCW,True,EQUAL,3) 
+        elif stopcockPositions[stopcock-1] == CCW:
+          self.systemModel[ReactorID]['Stopcock'+str(stopcock)].setCCW()
+          self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getCCW,True,EQUAL,3) 
+        else:
+          self.abortOperation("Unknown stopcock position: " + stopcockPosition[stopcock-1])
  
   def startTransfer(self,state):
     self.systemModel[self.ReactorID]['Valves'].setTransferValveOpen(state)
@@ -475,23 +571,23 @@ class UnitOperation(threading.Thread):
       stirSpeed = 0
     self.systemModel[self.ReactorID]['Stir'].setSpeed(stirSpeed) #Set analog value on PLC
     self.waitForCondition(self.systemModel[self.ReactorID]['Stir'].getCurrentSpeed,stirSpeed,EQUAL,10) #Read value from PLC memory... should be equal
+  
+  def setGasTransferValve(self,valveSetting):
+    if (valveSetting):
+      self.systemModel['Valves'].setGasTransferValveOpen(ON)
+      self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,True,EQUAL,3)     
+    else:
+      self.systemModel['Valves'].setGasTransferValveOpen(OFF)
+      self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,False,EQUAL,3)      
+  
+  def setVacuumSystem(self,systemOn):
+    if (systemOn):
+      self.systemModel['VacuumSystem'].setVacuumSystemOn()
+      self.waitForCondition(self.systemModel['VacuumSystem'].getVacuumSystemOn,True,EQUAL,3)     
+    else:
+      self.systemModel['VacuumSystem'].setVacuumSystemOff()
+      self.waitForCondition(self.systemModel['VacuumSystem'].getVacuumSystemOn,False,EQUAL,3)     
 
-  def setEvapValves(self,evapValvesSetting):
-    if (evapValvesSetting):
-      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(ON)
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,True,EQUAL,3)     
-    else:
-      self.systemModel[self.ReactorID]['Valves'].setEvaporationValvesOpen(OFF)
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetEvaporationValvesOpen,False,EQUAL,3)      
-  
-  def setReagentTransferValves(self,transferValvesSetting):
-    if (transferValvesSetting):
-      self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,ON) #set pressure on
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,True,EQUAL,2)
-    else:
-      self.systemModel[self.ReactorID]['Valves'].setReagentTransferValve(self.reagentLoadPosition,OFF) #set pressure off
-      self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getSetReagentTransferValve,False,EQUAL,2)
-  
   def setPressureRegulator(self,regulator,pressureSetPoint,rampTime=0): #Time in seconds
     if (str(regulator) == '1') or (str(regulator) == 'PressureRegulator1'):
       self.pressureRegulator = 'PressureRegulator1'

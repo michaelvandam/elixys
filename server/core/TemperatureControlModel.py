@@ -129,7 +129,7 @@ class TemperatureControlModel(ComponentModel):
 
   def setSetPoint(self, nSetTemperature):
     """Sets the heater set Set Point"""
-    self.hardwareComm.SetHeater(self.reactor, nSetTemperature)
+    self.hardwareComm.SetHeaterTemp(self.reactor, nSetTemperature)
 
   def updateState(self, nHeater1On, nHeater2On, nHeater3On, nHeater1SetTemperature, nHeater2SetTemperature, nHeater3SetTemperature, nHeater1CurrentTemperature,
                   nHeater2CurrentTemperature, nHeater3CurrentTemperature):

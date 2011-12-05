@@ -37,3 +37,11 @@ class ComponentModel():
     pReturn1, pReturn2, pReturn3 = pGetFunction(False)
     self.modelLock.release()
     return pReturn1, pReturn2, pReturn3
+
+  def protectedReturn4(self, pGetFunction):
+    """Returns the value of the variables as protected by the model lock"""
+    self.modelLock.acquire()
+    pReturn1, pReturn2, pReturn3, pReturn4 = pGetFunction(False)
+    self.modelLock.release()
+    return pReturn1, pReturn2, pReturn3, pReturn4
+
