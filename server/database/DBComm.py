@@ -67,7 +67,8 @@ class DBComm:
       "Prompt",
       "Install",
       "Comment",
-      "DeliverF18",
+      "TrapF18",
+      "EluteF18",
       "Initialize",
       "Mix",
       "Move"]

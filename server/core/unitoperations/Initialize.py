@@ -15,17 +15,22 @@ class Initialize(UnitOperation):
       self.setStatus("Initializing valves")
       self.ReactorID = ""
       self.setGasTransferValve(OFF)
-      self.setVacuumSystem(OFF)
       for self.ReactorID in self.ReactorTuple:
-        self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
         self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
         self.setStopcockPosition(TRANSFERDEFAULT,self.ReactorID)
       self.setStopcockPosition(F18DEFAULT,"Reactor1")
 
+      #Initialize cooling, vacuum, heaters and stir motors
+      self.setCoolingSystem(OFF)
+      self.setVacuumSystem(OFF)
+      for self.ReactorID in self.ReactorTuple:
+        self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
+        self.systemModel[self.ReactorID]['Stir'].setSpeed(0)
+
       #Set pressures
       self.setStatus("Initializing pressures")
       self.setPressureRegulator(1,5)
-      self.setPressureRegulator(2,60)
+      self.setPressureRegulator(2,47)
 
       #Raise and open gripper    
       self.setStatus("Initializing robots")

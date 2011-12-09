@@ -6,7 +6,12 @@ from UnitOperation import *
 class TempProfile(UnitOperation):
   def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
-    self.setParams(params)
+    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,LIQUIDTCREACTOR:INT,LIQUIDTCCOLLET:INT,STIRSPEED:INT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
     #Should have parameters listed below:
     #self.ReactorID
     #self.reactTemp
@@ -14,12 +19,14 @@ class TempProfile(UnitOperation):
     #self.coolTemp
     #self.liquidTCReactor
     #self.liquidTCCollet
+    #self.stirSpeed
 
   def run(self):
     try:
       self.setStatus("Moving to position")
       self.setReactorPosition(TRANSFER)
       self.setStatus("Heating")
+      self.setStirSpeed(self.stirSpeed)
       self.setTemp()
       self.setHeater(ON)
       self.setStatus("Profiling")
@@ -28,6 +35,7 @@ class TempProfile(UnitOperation):
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCoolLiquid()
+      self.setStirSpeed(OFF)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)

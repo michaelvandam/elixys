@@ -11,7 +11,8 @@ from React import React
 from Prompt import Prompt
 from Install import Install
 from Comment import Comment
-from DeliverF18 import DeliverF18
+from TrapF18 import TrapF18
+from EluteF18 import EluteF18
 from Initialize import Initialize
 from Mix import Mix
 from Move import Move
@@ -88,16 +89,27 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
     pComment = Comment(systemModel, pParams, username, database)
     pComment.initializeComponent(pComponent)
     return pComment
-  elif pComponent["componenttype"] == "DELIVERF18":
+  elif pComponent["componenttype"] == "TRAPF18":
     pParams = {}
     pParams["cyclotronFlag"] = pComponent["cyclotronflag"]
     pParams["trapTime"] = pComponent["traptime"]
     pParams["trapPressure"] = pComponent["trappressure"]
+    pTrapF18 = TrapF18(systemModel, pParams, username, database)
+    pTrapF18.initializeComponent(pComponent)
+    return pTrapF18
+  elif pComponent["componenttype"] == "ELUTEF18":
+    pParams = {}
     pParams["eluteTime"] = pComponent["elutetime"]
     pParams["elutePressure"] = pComponent["elutepressure"]
-    pDeliverF18 = DeliverF18(systemModel, pParams, username, database)
-    pDeliverF18.initializeComponent(pComponent)
-    return pDeliverF18
+    pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
+    pParams["ReagentPosition"] = 0             #Ditto
+    pEluteF18 = EluteF18(systemModel, pParams, username, database)
+    pEluteF18.initializeComponent(pComponent)
+    if pComponent["reagent"].has_key("position"):
+      pEluteF18.reagentPosition = int(pComponent["reagent"]["position"])
+    if pComponent["reagent"].has_key("reagentid"):
+      pEluteF18.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
+    return pEluteF18
   elif pComponent["componenttype"] == "INITIALIZE":
     pInitialize = Initialize(systemModel, {}, username, database)
     pInitialize.initializeComponent(pComponent)

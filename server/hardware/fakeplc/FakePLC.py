@@ -331,11 +331,11 @@ class FakePLC():
         # Enable or disable the robots
         if (nControlWordX == 0x10) and (nCheckWordX != HardwareComm.ROBONET_ENABLED1):
             self.__pHardwareComm.FakePLC_EnableReagentRobotX()
-        elif (nControlWordX == 0x08) and (nCheckWordX != HardwareComm.ROBONET_DISABLED):
+        elif (nControlWordX == 0x08) and (nCheckWordX != HardwareComm.ROBONET_DISABLED1):
             self.__pHardwareComm.FakePLC_DisableReagentRobotX()
         if (nControlWordY == 0x10) and (nCheckWordY != HardwareComm.ROBONET_ENABLED1):
             self.__pHardwareComm.FakePLC_EnableReagentRobotY()
-        elif (nControlWordY == 0x08) and (nCheckWordY != HardwareComm.ROBONET_DISABLED):
+        elif (nControlWordY == 0x08) and (nCheckWordY != HardwareComm.ROBONET_DISABLED1):
             self.__pHardwareComm.FakePLC_DisableReagentRobotY()
 
     def __UpdateReagentRobotPosition(self):
@@ -377,7 +377,7 @@ class FakePLC():
         # Enable or disable the robot
         if (nControlWord == 0x10) and (nCheckWord != HardwareComm.ROBONET_ENABLED1):
             self.__pHardwareComm.FakePLC_EnableReactorRobot(nReactor)
-        elif (nControlWord == 0x08) and (nCheckWord != HardwareComm.ROBONET_DISABLED):
+        elif (nControlWord == 0x08) and (nCheckWord != HardwareComm.ROBONET_DISABLED1):
             self.__pHardwareComm.FakePLC_DisableReactorRobot(nReactor)
 
     def __UpdateReactorPosition(self, nReactor):

@@ -12,7 +12,8 @@ from Move import Move
 from Add import Add
 from Evaporate import Evaporate
 from Install import Install
-from DeliverF18 import DeliverF18
+from TrapF18 import TrapF18
+from EluteF18 import EluteF18
 from Transfer import Transfer
 from TempProfile import TempProfile
 from RampPressure import RampPressure
@@ -87,19 +88,26 @@ class UnitOperationsWrapper:
         pInstall.start()
         return pInstall
         
-    def DeliverF18(self, nTrapTime, nTrapPressure, nEluteTime, nElutePressure, sReagentReactor, nReagentPosition, bCyclotronFlag):
-        """Performs a Deliver F18 unit operation"""
-        pParams = {"trapTime":nTrapTime,
-                   "trapPressure":nTrapPressure,
-                   "eluteTime":nEluteTime,
+    def TrapF18(self, bCyclotronFlag, nTrapTime, nTrapPressure):
+        """Performs a Trap F18 unit operation"""
+        pParams = {"cyclotronFlag":int(bCyclotronFlag),
+                   "trapTime":nTrapTime,
+                   "trapPressure":nTrapPressure}
+        pTrapF18 = TrapF18(self.__pSystemModel, pParams)
+        pTrapF18.setDaemon(True)
+        pTrapF18.start()
+        return pTrapF18
+
+    def EluteF18(self, nEluteTime, nElutePressure, sReagentReactor, nReagentPosition):
+        """Performs an Elute F18 unit operation"""
+        pParams = {"eluteTime":nEluteTime,
                    "elutePressure":nElutePressure,
                    "ReagentReactorID":sReagentReactor,
-                   "ReagentPosition":nReagentPosition,
-                   "cyclotronFlag":int(bCyclotronFlag)}
-        pDeliverF18 = DeliverF18(self.__pSystemModel, pParams)
-        pDeliverF18.setDaemon(True)
-        pDeliverF18.start()
-        return pDeliverF18
+                   "ReagentPosition":nReagentPosition}
+        pEluteF18 = EluteF18(self.__pSystemModel, pParams)
+        pEluteF18.setDaemon(True)
+        pEluteF18.start()
+        return pEluteF18
 
     def Transfer(self, sSourceReactor, sTransferReactor, sTransferType, nTransferTimer, nTransferPressure):
         """Performs a transfer unit operation"""
@@ -113,14 +121,15 @@ class UnitOperationsWrapper:
         pTransfer.start()
         return pTransfer
 
-    def TempProfile(self, sReactor, nProfileTemperature, nProfileTime, nFinalTemperature, nLiquidTCReactor, nLiquidTCCollet):
+    def TempProfile(self, sReactor, nProfileTemperature, nProfileTime, nFinalTemperature, nLiquidTCReactor, nLiquidTCCollet, nStirSpeed):
         """Heats the reactor in the transfer position for temperature profiling"""
         pParams = {"ReactorID":sReactor,
                    "reactTemp":nProfileTemperature,
                    "reactTime":nProfileTime,
                    "coolTemp":nFinalTemperature,
                    "liquidTCReactor":nLiquidTCReactor,
-                   "liquidTCCollet":nLiquidTCCollet}
+                   "liquidTCCollet":nLiquidTCCollet,
+                   "stirSpeed":nStirSpeed}
         pTempProfile = TempProfile(self.__pSystemModel, pParams)
         pTempProfile.setDaemon(True)
         pTempProfile.start()

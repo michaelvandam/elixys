@@ -83,7 +83,7 @@ LESS     = "<"
 
 # Default component values
 DEFAULT_ADD_DURATION = 10
-DEFAULT_ADD_PRESSURE = 5
+DEFAULT_ADD_PRESSURE = 2
 DEFAULT_EVAPORATE_PRESSURE = 10
 DEFAULT_STIRSPEED = 500
 DEFAULT_TRANSFER_DURATION = 45
@@ -560,11 +560,9 @@ class UnitOperation(threading.Thread):
   def setCool(self):
     self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
-    self.systemModel['CoolingSystem'].setCoolingSystemOn(ON)
-    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,ON,EQUAL,3)
+    self.setCoolingSystem(ON)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
-    self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
-    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,OFF,EQUAL,3)
+    self.setCoolingSystem(OFF)
     
   def setStirSpeed(self,stirSpeed):
     if (stirSpeed == OFF): #Fix issue with False being misinterpreted.
@@ -587,6 +585,14 @@ class UnitOperation(threading.Thread):
     else:
       self.systemModel['VacuumSystem'].setVacuumSystemOff()
       self.waitForCondition(self.systemModel['VacuumSystem'].getVacuumSystemOn,False,EQUAL,3)     
+
+  def setCoolingSystem(self,systemOn):
+    if (systemOn):
+      self.systemModel['CoolingSystem'].setCoolingSystemOn(ON)
+      self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,ON,EQUAL,3)
+    else:
+      self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
+      self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,OFF,EQUAL,3)
 
   def setPressureRegulator(self,regulator,pressureSetPoint,rampTime=0): #Time in seconds
     if (str(regulator) == '1') or (str(regulator) == 'PressureRegulator1'):

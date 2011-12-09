@@ -577,15 +577,15 @@ class HardwareComm():
     def FakePLC_EnableReagentRobotX(self):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_DISABLED)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_DISABLED1)
     def FakePLC_EnableReagentRobotY(self):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_DISABLED)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_DISABLED1)
     def FakePLC_EnableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReactorRobot(self, nReactor):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED1)
     def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionZ)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):

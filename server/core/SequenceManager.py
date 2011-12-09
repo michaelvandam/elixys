@@ -92,8 +92,8 @@ class SequenceManager:
     # Process each component
     for pComponent in pSequence["components"]:
       if (pComponent["type"] != ""):
-        # Convert reagent and target names into IDs
-        if pComponent["componenttype"] == "ADD":
+        # Convert reagent names into IDs
+        if pComponent.has_key("reagent"):
           pReagent = self.__PopReagent(pComponent["reagent"], pAvailableReagents)
           pComponent["reagent"] = pReagent["reagentid"]
 
