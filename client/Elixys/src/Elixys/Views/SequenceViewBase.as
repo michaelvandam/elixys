@@ -273,8 +273,12 @@ package Elixys.Views
 					pComponent = new ComponentInitialize();
 					break;
 				
-				case ComponentDeliverF18.TYPE:
-					pComponent = new ComponentDeliverF18();
+				case ComponentTrapF18.TYPE:
+					pComponent = new ComponentTrapF18();
+					break;
+				
+				case ComponentEluteF18.TYPE:
+					pComponent = new ComponentEluteF18();
 					break;
 				
 				case ComponentMix.TYPE:

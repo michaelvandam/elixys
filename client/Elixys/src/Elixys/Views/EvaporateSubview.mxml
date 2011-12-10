@@ -279,7 +279,7 @@
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
 							<s:Spacer width="50%" />
 							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Evaporation pressure in PSI"/>
+								<s:Label styleName="FieldDescription" text="Evaporation pressure in psi"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>

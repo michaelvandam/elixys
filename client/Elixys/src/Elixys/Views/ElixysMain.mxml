@@ -55,7 +55,7 @@
 			private function Init3_OnCreateChildrenTimer(event:TimerEvent):void
 			{
 				// Initialize the child creation variables
-				m_nTotalChildren = 20;
+				m_nTotalChildren = 21;
 				m_nChildrenLoaded = 0;
 				
 				// Create the first child view
@@ -246,8 +246,12 @@
 						pSubview = m_pInitializeSubview;
 						break;
 					
-					case ComponentDeliverF18.TYPE:
-						pSubview = m_pDeliverF18Subview;
+					case ComponentTrapF18.TYPE:
+						pSubview = m_pTrapF18Subview;
+						break;
+					
+					case ComponentEluteF18.TYPE:
+						pSubview = m_pEluteF18Subview;
 						break;
 					
 					case ComponentMix.TYPE:
@@ -433,12 +437,19 @@
 					addChild(m_pInitializeSubview);
 					m_pInitializeSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
-				else if (m_pDeliverF18Subview == null)
+				else if (m_pTrapF18Subview == null)
 				{
-					m_pDeliverF18Subview = new DeliverF18Subview();
-					m_pDeliverF18Subview.SetElixysMain(this);
-					addChild(m_pDeliverF18Subview);
-					m_pDeliverF18Subview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+					m_pTrapF18Subview = new TrapF18Subview();
+					m_pTrapF18Subview.SetElixysMain(this);
+					addChild(m_pTrapF18Subview);
+					m_pTrapF18Subview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pEluteF18Subview == null)
+				{
+					m_pEluteF18Subview = new EluteF18Subview();
+					m_pEluteF18Subview.SetElixysMain(this);
+					addChild(m_pEluteF18Subview);
+					m_pEluteF18Subview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
 				else if (m_pMixSubview == null)
 				{
@@ -633,7 +644,8 @@
 			private var m_pActiveSubview:SubviewBase = null;
 			private var m_pMessageSubview:SubviewBase = null;
 			private var m_pInitializeSubview:SubviewBase = null;
-			private var m_pDeliverF18Subview:SubviewBase = null;
+			private var m_pTrapF18Subview:SubviewBase = null;
+			private var m_pEluteF18Subview:SubviewBase = null;
 			private var m_pMixSubview:SubviewBase = null;
 			private var m_pMoveSubview:SubviewBase = null;
 			

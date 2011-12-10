@@ -92,14 +92,14 @@
 					{
 						_runOutputText1.text = "Trapping the contents of reactor " + m_pComponentTransfer.SourceReactor + 
 							" and sending the liquid to waste.";
-						_runOutputText2.text = "Transferring using " + m_pComponentTransfer.Pressure + " PSI nitrogen for " +
+						_runOutputText2.text = "Transferring using " + m_pComponentTransfer.Pressure + " psi nitrogen for " +
 							m_pComponentTransfer.Duration + " seconds.";
 					}
 					else if (m_pComponentTransfer.Mode == "Elute")
 					{
 						_runOutputText1.text = "Eluting from reactor " + m_pComponentTransfer.SourceReactor + " into reactor " + 
 							m_pComponentTransfer.TargetReactor + ".";
-						_runOutputText2.text = "Transferring using " + m_pComponentTransfer.Pressure + " PSI nitrogen for " +
+						_runOutputText2.text = "Transferring using " + m_pComponentTransfer.Pressure + " psi nitrogen for " +
 							m_pComponentTransfer.Duration + " seconds.";
 					}
 					else
@@ -285,7 +285,7 @@
 						<s:HGroup verticalAlign="middle" gap="15" width="80%">
 							<s:Spacer width="50%" />
 							<s:HGroup horizontalAlign="left" width="50%">
-								<s:Label styleName="FieldDescription" text="Transfer pressure in PSI"/>
+								<s:Label styleName="FieldDescription" text="Transfer pressure in psi"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>
