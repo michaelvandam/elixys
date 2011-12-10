@@ -317,12 +317,12 @@ class UnitOperation(threading.Thread):
 
     #Move to the delivery or elute position
     if nElute == 0:
-      self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReagentReactorID[-1]),self.reagentLoadPosition)
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
+      self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
         0, self.reagentLoadPosition, 0),EQUAL,5)
     else:
-      self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReagentReactorID[-1]))
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), 0, 0, 1),EQUAL,5)
+      self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReactorID[-1]))
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, 0, 1),EQUAL,5)
     
     #Lower and turn on the gas transfer
     self.systemModel['ReagentDelivery'].setMoveGasTransferDown()

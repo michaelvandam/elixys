@@ -3,7 +3,7 @@
     "name":"FAC Synthesis",
     "description":"Sequence for the synthesis of FAC",
     "reactors":3,
-    "reagentsperreactor":10,
+    "reagentsperreactor":11,
     "columnsperreactor":2,
 
     "reagents":[{"type":"reagent",
@@ -143,14 +143,14 @@
 
         {"type":"component",
         "componenttype":"ELUTEF18",
-        "elutetime":0,
-        "elutepressure":0,
+        "elutetime":60,
+        "elutepressure":10,
         "reagent":"K222"},
 
         {"type":"component",
         "componenttype":"ELUTEF18",
-        "elutetime":0,
-        "elutepressure":0,
+        "elutetime":60,
+        "elutepressure":10,
         "reagent":"MeCN-1"},
 
         {"type":"component",

@@ -156,6 +156,10 @@ class Add(UnitOperation):
         pTargetComponent.update({"name":"Add " + pTargetComponent["reagent"]["name"]})
       else:
         pTargetComponent.update({"name":"Add"})
+      if pTargetComponent["reagent"].has_key("reagentid"):
+        pTargetComponent["reagent"] = pTargetComponent["reagent"]["reagentid"]
+      else:
+        pTargetComponent["reagent"] = 0
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["deliveryposition"] = self.component["deliveryposition"]
     pTargetComponent["deliverytime"] = self.component["deliverytime"]

@@ -370,9 +370,7 @@ class PostHandler:
                     raise Exception("Sequence name is required")
 
                 # Create the new sequence
-                self.__pDatabase.Log("###", "A")
                 nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", 3, 10, 2)
-                self.__pDatabase.Log("###", "B")
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False

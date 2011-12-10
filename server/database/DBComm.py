@@ -53,7 +53,7 @@ class DBComm:
       "version":"2.0",
       "debug":"false",
       "reactors":3,
-      "reagentsperreactor":10,
+      "reagentsperreactor":11,
       "columnsperreactor":2}
 
   def GetSupportedOperations(self, sCurrentUsername):

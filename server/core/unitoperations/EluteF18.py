@@ -26,13 +26,15 @@ class EluteF18(UnitOperation):
       self.setPressureRegulator(1,0) #Vent pressure to avoid delivery issues
       self.setStatus("Moving reactor")
       self.setReactorPosition(ADDREAGENT)
-      self.setStatus("Eluting")
+      self.setStatus("Picking up vial")
       self.setStopcockPosition(F18ELUTE)
       self.setGripperPlace(1)
+      self.setStatus("Eluting")
       self.timerShowInStatus = False
       self.setPressureRegulator(1,self.elutePressure,5)
       self.startTimer(self.eluteTime)
       self.waitForTimer()
+      self.setStatus("Returning vial")
       self.removeGripperPlace()
       self.setStopcockPosition(F18DEFAULT)
       self.setStatus("Complete")
@@ -52,7 +54,7 @@ class EluteF18(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Deliver F18"
+    self.component["name"] = "Elute F18"
     self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["elutepressurevalidation"] = "type=number; min=0; max=25"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
@@ -62,7 +64,7 @@ class EluteF18(UnitOperation):
       pReagent = self.getReagentByID(self.component["reagent"]["reagentid"], pAvailableReagents, True)
       if pReagent != None:
         #Set the component name
-        self.component["name"] = "Elute with " + pReagent["name"]
+        self.component["name"] = "Elute F18 with " + pReagent["name"]
 
     #Do a quick validation
     return self.validateQuick()
@@ -125,14 +127,18 @@ class EluteF18(UnitOperation):
     if self.isNumber(pTargetComponent["reagent"]):
       if pTargetComponent["reagent"] != 0:
         pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
-        pTargetComponent.update({"name":"Elute with " + pReagent["name"]})
+        pTargetComponent.update({"name":"Elute F18 with " + pReagent["name"]})
       else:
         pTargetComponent.update({"name":"Elute"})
     else:
       if pTargetComponent["reagent"].has_key("name"):
-        pTargetComponent.update({"name":"Elute with " + pTargetComponent["reagent"]["name"]})
+        pTargetComponent.update({"name":"Elute F18 with " + pTargetComponent["reagent"]["name"]})
       else:
         pTargetComponent.update({"name":"Elute"})
+      if pTargetComponent["reagent"].has_key("reagentid"):
+        pTargetComponent["reagent"] = pTargetComponent["reagent"]["reagentid"]
+      else:
+        pTargetComponent["reagent"] = 0
 
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""

@@ -117,7 +117,7 @@ class CoreServerService(rpyc.Service):
         bGripperActuatorUp = pModel["ReagentDelivery"].getCurrentGripperUp(False)
         bGripperActuatorDown = pModel["ReagentDelivery"].getCurrentGripperDown(False)
         if bGripperActuatorUp and not bGripperActuatorDown:
-            sReagentRobotActuator = "Up"
+            sReagentRobotGripperActuator = "Up"
         elif not bGripperActuatorUp and bGripperActuatorDown:
             sReagentRobotGripperActuator = "Down"
         else:
@@ -133,7 +133,7 @@ class CoreServerService(rpyc.Service):
         bGasTransferActuatorUp = pModel["ReagentDelivery"].getCurrentGasTransferUp(False)
         bGasTransferActuatorDown = pModel["ReagentDelivery"].getCurrentGasTransferDown(False)
         if bGasTransferActuatorUp and not bGasTransferActuatorDown:
-            sReagentRobotActuator = "Up"
+            sReagentRobotGasTransferActuator = "Up"
         elif not bGasTransferActuatorUp and bGasTransferActuatorDown:
             sReagentRobotGasTransferActuator = "Down"
         else:
