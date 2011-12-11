@@ -17,12 +17,12 @@ chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/h
 
 # Update the static web content
 rm -rf /var/www/http/*
-mv -f elixys/bin/WebContent/* /var/www/http/
+mv -f elixys/server/web/http/* /var/www/http/
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/http/*
 
 # Update the web server
 rm -rf /var/www/wsgi/*
-mv -f elixys/server/web/* /var/www/wsgi
+mv -f elixys/server/web/wsgi/* /var/www/wsgi
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
 # Restart Apache

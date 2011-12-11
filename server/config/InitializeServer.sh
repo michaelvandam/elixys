@@ -38,31 +38,26 @@ cp -R elixys/server/rtmpd /opt/elixys
 yum -y install mod_wsgi
 
 # Install configobj for Python
-wget http://www.voidspace.org.uk/downloads/configobj-4.7.2.zip
 mkdir configobj
-unzip -d configobj configobj-4.7.2.zip
+unzip -d configobj elixys/server/config/packages/configobj-4.7.2.zip
 cd configobj/configobj-4.7.2
 python setup.py install
 cd ../..
 rm -rf configobj*
 
 # Install RPyC for Python
-wget http://downloads.sourceforge.net/project/rpyc/main/3.1.0/RPyC-3.1.0.zip
-unzip RPyC-3.1.0.zip
+unzip elixys/server/config/packages/RPyC-3.1.0.zip
 cd RPyC-3.1.0
 python setup.py install
 cd ..
 rm -rf RPyC-3.1.0*
 
 # Install setuptools for Python
-wget http://peak.telecommunity.com/dist/ez_setup.py
-python ez_setup.py
-rm -f ez_setup.py
+python elixys/server/config/packages/ez_setup.py
 
 # Install MySQL for Python
 yum -y install python-devel mysql-devel
-wget http://sourceforge.net/projects/mysql-python/files/mysql-python/1.2.3/MySQL-python-1.2.3.tar.gz/download
-tar -xf MySQL-python-1.2.3.tar.gz
+tar -xf elixys/server/config/packages/MySQL-python-1.2.3.tar.gz
 cd MySQL-python-1.2.3
 python setup.py build
 python setup.py install

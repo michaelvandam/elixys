@@ -10,7 +10,9 @@ fi
 
 # Create the database, tables and stored procedures
 echo "Recreating database..."
-mysql Elixys < CreateDatabase.sql
+mysql -e "DROP DATABASE IF EXISTS Elixys;"
+mysql -e "CREATE DATABASE Elixys;"
+mysql Elixys < SetDatabasePrivileges.sql
 mysql Elixys < CreateDatabaseTables.sql
 mysql Elixys < CreateDatabaseProcedures.sql
 
