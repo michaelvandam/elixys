@@ -273,6 +273,7 @@ class BaseCLI(threading.Thread):
                 print "        nReactionTemperature,     Celsius"
                 print "        nReactionTime,            Seconds"
                 print "        nFinalTemperature,        Celsius"
+                print "        nCoolingDelay,            Seconds"
                 print "        sReactPosition,           'React1','React2'"
                 print "        nStirSpeed)               Suggested 500"
             elif sCommand == "help Move":

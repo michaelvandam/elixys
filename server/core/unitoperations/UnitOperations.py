@@ -65,6 +65,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
     pParams["reactTemp"] = pComponent["reactiontemperature"]
     pParams["reactTime"] = pComponent["duration"]
     pParams["coolTemp"] = pComponent["finaltemperature"]
+    pParams["coolingDelay"] = pComponent["coolingdelay"]
     pParams["reactPosition"] = "React" + str(pComponent["position"])
     pParams["stirSpeed"] = pComponent["stirspeed"]
     pReact = React(systemModel, pParams, username, database)

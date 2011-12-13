@@ -29,6 +29,7 @@
 				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
 				m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnChildExceptionEvent);
 				m_pHTTPConnectionPool.SetCredentials(sCredentials);
+				m_sServer = sServer;
 			}
 
 			// Step 2: This function is called when this view has been created
@@ -309,6 +310,12 @@
 			public function GetActiveSequenceView():SequenceViewBase
 			{
 				return (_viewStack.selectedChild as SequenceViewBase); 
+			}
+			
+			// Return the server
+			public function GetServer():String
+			{
+				return m_sServer;
 			}
 			
 			/***
@@ -622,7 +629,8 @@
 			private var m_nTotalChildren:uint = 0;
 			private var m_nChildrenLoaded:uint = 0;
 
-			// HTTP connection pool to the server
+			// Server and HTTP connection pool
+			private var m_sServer:String = "";
 			private var m_pHTTPConnectionPool:HTTPConnectionPool = null;
 
 			// Child views

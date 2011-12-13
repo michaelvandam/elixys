@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
+				   backgroundColor="0x777777">
+	<fx:Script>
+		<![CDATA[
+
+			/***
+			 * Member functions
+			 **/
+
+			// Update the video stream URL
+			public function SetStream(sRootURL:String, sStreamName:String):void
+			{
+				// Has the stream changed?
+				if ((m_sRootURL != sRootURL) || (m_sStreamName != sStreamName))
+				{
+					// Yes, so remember the new values
+					m_sRootURL = sRootURL;
+					m_sFullURL = "rtmp://" + sRootURL + "/flvplayback/";
+					m_sStreamName = sStreamName;
+
+					// Remove any existing video and clear variables
+					if (m_pVideo != null)
+					{
+						_uiComponent.removeChild(m_pVideo);
+					}
+					m_pVideo = null;
+					m_pNetConnection = null;
+					m_pNetStream = null;
+					
+					// Create the video and net connection
+					m_pVideo = new Video();
+					_uiComponent.addChild(m_pVideo);
+					m_pNetConnection = new NetConnection();
+					m_pNetConnection.addEventListener(NetStatusEvent.NET_STATUS, OnNetConnection);
+					m_pNetConnection.client = {};
+					m_pNetConnection.client.onBWDone = OnBWDone;
+					trace("Establishing net connection to " + m_sFullURL);
+					m_pNetConnection.connect(m_sFullURL);
+				}
+				
+				// Bandwidth handler
+				function OnBWDone():void
+				{
+					trace("OnBWDone");
+				}
+			}
+
+			/***
+			 * Message handlers
+			 **/
+
+			private function OnNetConnection(event:NetStatusEvent):void
+			{
+				trace("OnNetConnection: " + event.info.code);
+				if (event.info.code == "NetConnection.Connect.Success")
+				{
+					// Create the net stream and play the stream
+					m_pNetStream = new NetStream(m_pNetConnection);
+					m_pNetStream.client = {};
+					m_pNetStream.client.onMetaData = OnMetaData;
+					m_pNetStream.bufferTime = 0;
+					trace("Playing net stream: " + m_sStreamName);
+					m_pNetStream.play(m_sStreamName);
+					m_pVideo.attachNetStream(m_pNetStream);
+					m_pNetStream.addEventListener(NetStatusEvent.NET_STATUS, OnNetStatus);
+					
+					// Metadata handler
+					function OnMetaData(item:Object):void
+					{
+						trace("OnMetaData");
+						// Resize and center video
+						//m_pReactorVideo.width = item.width;
+						//m_pReactorVideo.height = item.height;
+						//m_pReactorVideo.x = (_reactor1.width - m_pReactorVideo.width) / 2;
+						//m_pReactorVideo.y = (_reactor1.height - m_pReactorVideo.height) / 2;
+					}
+				}
+			}
+
+			private function OnNetStatus(event:NetStatusEvent):void
+			{
+				trace("NetStatus code = " + event.info.code + ", description = " + event.info.description);
+				
+				// Set the playing flag
+				if (event.info.code == "NetStream.Play.Start")
+				{
+					m_bPlaying = true;
+				}
+				if (event.info.code == "NetStream.Play.Stop")
+				{
+					m_bPlaying = false;
+				}
+
+				// Check for the end of the video stream (stop followed by empty)
+				if (!m_bPlaying && (event.info.code == "NetStream.Buffer.Empty"))
+				{
+					trace("Restarting stream");
+					m_pNetStream.play(m_sStreamName);
+				}
+			}
+
+			/***
+			 * Member variables
+			 **/
+			
+			// Stream URLs and name
+			private var m_sRootURL:String = "";
+			private var m_sFullURL:String = "";
+			private var m_sStreamName:String = "";
+
+			// Video, net connection and stream
+			private var m_pVideo:Video;
+			private var m_pNetConnection:NetConnection;
+			private var m_pNetStream:NetStream;
+			
+			// Flag that indicates if our video stream is playing
+			private var m_bPlaying:Boolean = false;
+		]]>
+	</fx:Script>
+	<mx:UIComponent id="_uiComponent" width="100%" height="100%" />
+</s:BorderContainer>

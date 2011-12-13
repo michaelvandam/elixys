@@ -131,7 +131,7 @@ class SystemModel:
         except EOFError, ex:
           print "Warning: failed to send state to monitor, will not attempt again"
           self.__pStateMonitor = None
-    
+
   def DumpStateToString(self):
     """Dumps the state to a string"""
     # Acquire a lock on the system model
@@ -144,9 +144,11 @@ class SystemModel:
         nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery, \
             nReagentRobotSetPositionElute = self.model["ReagentDelivery"].getSetPosition(False)
         nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawY = self.model["ReagentDelivery"].getSetPositionRaw(False)
+        sReagentRobotSetPositionName1, sReagentRobotSetPositionName2 = self.model["ReagentDelivery"].getSetPositionName(False)
         nReagentRobotCurrentPositionReactor, nReagentRobotCurrentPositionReagent, nReagentRobotCurrentPositionDelivery, \
             nReagentRobotCurrentPositionElute = self.model["ReagentDelivery"].getCurrentPosition(False)
         nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
+        sReagentRobotCurrentPositionName1, sReagentRobotCurrentPositionName2 = self.model["ReagentDelivery"].getCurrentPositionName(False)
         nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY = self.model["ReagentDelivery"].getRobotStatus(False)
 
         # Format the state into a string
@@ -197,34 +199,12 @@ class SystemModel:
         # Reagent robot
         sState += "Reagent robot\n"
         sState += self.__PadString("  Position", STATECOMMONCOLUMN1WIDTH)
-        if (nReagentRobotSetPositionReagent != 0) or (nReagentRobotSetPositionDelivery != 0) or (nReagentRobotSetPositionElute != 0):
-            sState += self.__PadString("Reactor " + str(nReagentRobotSetPositionReactor), STATECOMMONCOLUMN2WIDTH)
-        else:
-            sState += self.__PadString("Unknown", STATECOMMONCOLUMN2WIDTH)
-        if (nReagentRobotCurrentPositionReagent != 0) or (nReagentRobotCurrentPositionDelivery != 0) or (nReagentRobotCurrentPositionElute != 0):
-            sState += self.__PadString("Reactor " + str(nReagentRobotCurrentPositionReactor), STATECOMMONCOLUMN2WIDTH)
-        else:
-            sState += self.__PadString("Unknown", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(sReagentRobotSetPositionName1, STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(sReagentRobotCurrentPositionName1, STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
         sState += self.__PadString("", STATECOMMONCOLUMN1WIDTH)
-        if (nReagentRobotSetPositionReagent != 0) or (nReagentRobotSetPositionDelivery != 0) or (nReagentRobotSetPositionElute != 0):
-            if nReagentRobotSetPositionReagent != 0:
-                sState += self.__PadString("Reagent " + str(nReagentRobotSetPositionReagent), STATECOMMONCOLUMN2WIDTH)
-            elif nReagentRobotSetPositionDelivery != 0:
-                sState += self.__PadString("Delivery " + str(nReagentRobotSetPositionDelivery), STATECOMMONCOLUMN2WIDTH)
-            else:
-                sState += self.__PadString("Elute", STATECOMMONCOLUMN2WIDTH)
-        else:
-                sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
-        if (nReagentRobotCurrentPositionReagent != 0) or (nReagentRobotCurrentPositionDelivery != 0) or (nReagentRobotCurrentPositionElute != 0):
-            if nReagentRobotCurrentPositionReagent != 0:
-                sState += self.__PadString("Reagent " + str(nReagentRobotCurrentPositionReagent), STATECOMMONCOLUMN2WIDTH)
-            elif nReagentRobotCurrentPositionDelivery != 0:
-                sState += self.__PadString("Delivery " + str(nReagentRobotCurrentPositionDelivery), STATECOMMONCOLUMN2WIDTH)
-            else:
-                sState += self.__PadString("Elute", STATECOMMONCOLUMN2WIDTH)
-        else:
-                sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(sReagentRobotSetPositionName2, STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(sReagentRobotCurrentPositionName2, STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
             
         sState += self.__PadString("  Raw position (x/y)", STATECOMMONCOLUMN1WIDTH)

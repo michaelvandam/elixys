@@ -233,6 +233,7 @@
         "duration":900,
         "reactiontemperature":160,
         "finaltemperature":25,
+        "coolingdelay":120,
         "stirspeed":450},
 
         {"type":"component",
@@ -341,6 +342,7 @@
         "duration":600,
         "reactiontemperature":80,
         "finaltemperature":30,
+        "coolingdelay":120,
         "stirspeed":450},
 
         {"type":"component",
@@ -384,6 +386,7 @@
         "duration":1800,
         "reactiontemperature":163,
         "finaltemperature":30,
+        "coolingdelay":120,
         "stirspeed":450},
 
         {"type":"component",
@@ -507,6 +510,7 @@
         "duration":300,
         "reactiontemperature":105,
         "finaltemperature":30,
+        "coolingdelay":120,
         "stirspeed":450},
 
         {"type":"component",

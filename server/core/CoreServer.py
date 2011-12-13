@@ -114,8 +114,7 @@ class CoreServerService(rpyc.Service):
 
         # Load the hardware state
         pModel = gSystemModel.LockSystemModel()
-        nReagentRobotReactor, nReagentRobotReagent, nReagentRobotDelivery, nReagentRobotElute = \
-            pModel["ReagentDelivery"].getCurrentPosition(False)
+        sReagentRobotPositionName1, sReagentRobotPositionName2 = pModel["ReagentDelivery"].getCurrentPositionName(False)
         bGripperActuatorUp = pModel["ReagentDelivery"].getCurrentGripperUp(False)
         bGripperActuatorDown = pModel["ReagentDelivery"].getCurrentGripperDown(False)
         if bGripperActuatorUp and not bGripperActuatorDown:
@@ -160,10 +159,8 @@ class CoreServerService(rpyc.Service):
         pServerState["hardwarestate"]["valves"]["hplcloadvalve"] = pModel["Valves"].getHPLCLoadValveOpen(False)
         pServerState["hardwarestate"]["reagentrobot"] = {"type":"reagentrobotstate"}
         pServerState["hardwarestate"]["reagentrobot"]["position"] = {"type":"reagentrobotposition",
-            "cassette":nReagentRobotReactor,
-            "reagent":nReagentRobotReagent,
-            "delivery":nReagentRobotDelivery,
-            "elute":nReagentRobotElute}
+            "name1":sReagentRobotPositionName1,
+            "name2":sReagentRobotPositionName2}
         pServerState["hardwarestate"]["reagentrobot"]["gripperactuator"] = sReagentRobotGripperActuator
         pServerState["hardwarestate"]["reagentrobot"]["gripper"] = sReagentRobotGripper
         pServerState["hardwarestate"]["reagentrobot"]["gastransferactuator"] = sReagentRobotGasTransferActuator
@@ -174,7 +171,7 @@ class CoreServerService(rpyc.Service):
             bDemoMode = False
         else:
             bDemoMode = True
-
+            
         # Format the hardware state associated with each reactor
         pServerState["hardwarestate"]["reactors"] = []
         nReactorCount = gDatabase.GetConfiguration("System")["reactors"]

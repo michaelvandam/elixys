@@ -35,10 +35,10 @@ class MoveReagentRobotThread(threading.Thread):
             z += nStepZ
             if z < 0:
                 z = 0
-            self.__pHardwareComm.FakePLC_SetReagentRobotPosition(x, z)
+            self.__pHardwareComm.FakePLC_SetReagentRobotActualPosition(x, z)
 
         # Set the position to the target
-        self.__pHardwareComm.FakePLC_SetReagentRobotPosition(self.__nTargetX, self.__nTargetZ)
+        self.__pHardwareComm.FakePLC_SetReagentRobotActualPosition(self.__nTargetX, self.__nTargetZ)
         
         # Sleep an additional second to allow everything to settle
         time.sleep(1)

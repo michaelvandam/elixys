@@ -66,7 +66,15 @@ class ReagentDeliveryModel(ComponentModel):
       return self.protectedReturn2(self.getSetPositionRaw)
     else:
       return self.setPositionRawX, self.setPositionRawY
-    
+
+  def getSetPositionName(self, bLockModel = True):
+    """Return the set reactor position name as a pair of strings"""
+    if bLockModel:
+      return self.protectedReturn2(self.getSetPositionName)
+    else:
+      return self.getPositionName(self.setPositionReactor, self.setPositionReagent, self.setPositionDelivery, self.setPositionElute, 
+        self.setPositionRawX, self.setPositionRawY)
+
   def getCurrentPosition(self, bLockModel = True):
     """Return the current reagent robot position in the format (nReactor, nReagentPosition, nDeliveryPosition)"""
     if bLockModel:
@@ -80,6 +88,14 @@ class ReagentDeliveryModel(ComponentModel):
       return self.protectedReturn2(self.getCurrentPositionRaw)
     else:
       return self.currentPositionRawX, self.currentPositionRawY
+
+  def getCurrentPositionName(self, bLockModel = True):
+    """Return the current reactor position name as a pair of strings"""
+    if bLockModel:
+      return self.protectedReturn2(self.getCurrentPositionName)
+    else:
+      return self.getPositionName(self.currentPositionReactor, self.currentPositionReagent, self.currentPositionDelivery, self.currentPositionElute,
+        self.currentPositionRawX, self.currentPositionRawY)
 
   def getSetGripperUp(self, bLockModel = True):
     """Returns True if the gripper is set to up, False otherwise"""
@@ -274,3 +290,21 @@ class ReagentDeliveryModel(ComponentModel):
     self.robotYStatus = nRobotYStatus
     self.robotYControlWord = robotYControlWord
     self.robotYCheckWord = robotYCheckWord
+
+  def getPositionName(self, nReactor, nReagent, nDelivery, nElute, nRawX, nRawY):
+    if (nReagent != 0) or (nDelivery != 0) or (nElute != 0):
+      sName1 = "Reactor " + str(nReactor)
+      if nReagent != 0:
+        sName2 = "Reagent " + str(nReagent)
+      elif nDelivery != 0:
+        sName2 = "Delivery " + str(nDelivery)
+      else:
+        sName2 = "Elute"
+    else:
+      if (nRawX == 0) and (nRawY == 0):
+        sName1 = "Home"
+      else:
+        sName1 = "Unknown"
+      sName2 = ""
+    return sName1, sName2
+

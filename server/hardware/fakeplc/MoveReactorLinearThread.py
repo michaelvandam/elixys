@@ -29,10 +29,10 @@ class MoveReactorLinearThread(threading.Thread):
             z += nStepZ
             if z < 0:
                 z = 0
-            self.__pHardwareComm.FakePLC_SetReactorLinearPosition(self.__nReactor, z)
+            self.__pHardwareComm.FakePLC_SetReactorLinearActualPosition(self.__nReactor, z)
 
         # Set the position to the target
-        self.__pHardwareComm.FakePLC_SetReactorLinearPosition(self.__nReactor, self.__nTargetZ)
+        self.__pHardwareComm.FakePLC_SetReactorLinearActualPosition(self.__nReactor, self.__nTargetZ)
         
         # Sleep an additional second to allow everything to settle
         time.sleep(1)

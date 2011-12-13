@@ -42,6 +42,7 @@ REACTORID = 'ReactorID'
 REACTTEMP = 'reactTemp'
 REACTTIME = 'reactTime'
 COOLTEMP  = 'coolTemp'
+COOLINGDELAY  = 'coolingDelay'
 STIRSPEED = 'stirSpeed'
 REACTPOSITION = 'reactPosition'
 REAGENTPOSITION = 'ReagentPosition'
@@ -110,7 +111,6 @@ class UnitOperation(threading.Thread):
     self.database = database
     self.status = ""
     self.delay = 50#50ms delay
-    self.isRunning = False
     self.paused = False
     self.abort = False
     self.pausedLock = threading.Lock()
@@ -120,6 +120,7 @@ class UnitOperation(threading.Thread):
     self.waitingForUserInput = False
     self.userInputTitle = ""
     self.userInputText = ""
+    self.error = ""
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
@@ -134,6 +135,8 @@ class UnitOperation(threading.Thread):
         self.reactTime = params['evapTime']
       if paramname=="coolTemp":
         self.coolTemp = params['coolTemp']
+      if paramname=="coolingDelay":
+        self.coolingDelay = params['coolingDelay']
       if paramname=="ReactorID":
         self.ReactorID = params['ReactorID']
       if paramname=="ReagentReactorID":
@@ -183,20 +186,6 @@ class UnitOperation(threading.Thread):
       if paramname=="liquidTCCollet":
         self.liquidTCCollet = params['liquidTCCollet']
 
-  """def validateParams(self,currentParams,expectedParams):
-    errorMessage = ""
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        errorMessage += "Parameter: \'%s\' was not set." % parameter
-      else:
-        if not(currentParams[parameter]):
-          self.paramsValid = False
-          errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\'." % (parameter,currentParams[parameter])
-    self.paramsValidated = True
-    return errorMessage"""
-    
   def logError(self,error):
     """Logs an error."""
     if self.database != None:
@@ -253,6 +242,9 @@ class UnitOperation(threading.Thread):
   def checkAbort(self):
     if self.abort:
       self.abortOperation("Operation aborted")
+
+  def getError(self):
+    return self.error
 
   def setReactorPosition(self,reactorPosition,ReactorID=255):
     motionTimeout = 10 #How long to wait before erroring out.
@@ -512,20 +504,9 @@ class UnitOperation(threading.Thread):
       self.systemModel[sReactor]['Thermocouple'].setSetPoint(OFF)
       self.systemModel[sReactor]['Thermocouple'].setHeaterOff()
     self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
+    self.error = error
     raise UnitOpError(error)
     
-  def getTotalSteps(self):
-    return self.steps #Integer
-    
-  def isRunning(self):
-    return self.isRunning
-    
-  def getCurrentStepNumber(self):
-    return self.currentStepNumber
-
-  def getCurrentStep(self):
-    return self.currentStepDescription
-
   def setStopcockPosition(self,stopcockPositions,ReactorID=255):
     if (ReactorID==255):
       ReactorID = self.ReactorID
@@ -557,11 +538,14 @@ class UnitOperation(threading.Thread):
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(self.reactTemp)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getSetTemperature,self.reactTemp,EQUAL,3)
 
-  def setCool(self):
+  def setCool(self,coolingDelay = 0):
     self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
     self.setCoolingSystem(ON)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
+    if coolingDelay > 0:
+      self.startTimer(coolingDelay)
+      self.waitForTimer()
     self.setCoolingSystem(OFF)
     
   def setStirSpeed(self,stirSpeed):
@@ -613,7 +597,7 @@ class UnitOperation(threading.Thread):
         self.checkAbort()
     self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
     self.pressureSetPoint = pressureSetPoint
-    self.waitForCondition(self.pressureSet,True,EQUAL,3)
+    self.waitForCondition(self.pressureSet,True,EQUAL,4)
 
   def pressureSet(self):
     return (self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint - 1,GREATER) and

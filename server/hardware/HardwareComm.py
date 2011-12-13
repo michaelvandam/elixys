@@ -220,6 +220,11 @@ class HardwareComm():
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
         self.__FakePLC_nMemoryUpper = 0
+        self.__FakePLC_nHomingReagentRobotXStep = 0
+        self.__FakePLC_nHomingReagentRobotYStep = 0
+        self.__FakePLC_nHomingReactorRobot1Step = 0
+        self.__FakePLC_nHomingReactorRobot2Step = 0
+        self.__FakePLC_nHomingReactorRobot3Step = 0
         
     ### Public functions ###
 
@@ -564,7 +569,10 @@ class HardwareComm():
     def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
         nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
         self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
-    def FakePLC_SetReagentRobotPosition(self, nPositionX, nPositionZ):
+    def FakePLC_SetReagentRobotSetPosition(self, nPositionX, nPositionZ):
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4), nPositionX)
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentYAxis * 4), nPositionZ)
+    def FakePLC_SetReagentRobotActualPosition(self, nPositionX, nPositionZ):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentYAxis * 4), nPositionZ)
     def FakePLC_SetReagentRobotGripper(self, bGripperUp, bGripperDown, bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown):
@@ -574,6 +582,37 @@ class HardwareComm():
         self.__SetBinaryValue("ReagentRobot_GripperClose", bGripperClose)
         self.__SetBinaryValue("ReagentRobot_GasTransferUp", bGasTransferUp)
         self.__SetBinaryValue("ReagentRobot_GasTransferDown", bGasTransferDown)
+    def FakePLC_CheckForHomingReagentRobotX(self):
+        return (self.__FakePLC_nHomingReagentRobotXStep == 2)
+    def FakePLC_CheckForHomingReagentRobotY(self):
+        return (self.__FakePLC_nHomingReagentRobotYStep == 2)
+    def FakePLC_CheckForHomingReactorRobot(self, nReactor):
+        if nReactor == 1:
+            return (self.__FakePLC_nHomingReactorRobot1Step == 2)
+        elif nReactor == 2:
+            return (self.__FakePLC_nHomingReactorRobot2Step == 2)
+        elif nReactor == 3:
+            return (self.__FakePLC_nHomingReactorRobot3Step == 2)
+        else:
+            raise Exception("Invalid reactor")
+    def FakePLC_ResetReagentRobotHoming(self):
+        self.__FakePLC_nHomingReagentRobotXStep = 0
+        self.__FakePLC_nHomingReagentRobotYStep = 0
+    def FakePLC_ResetReactorRobotHoming(self, nReactor):
+        if nReactor == 1:
+            self.__FakePLC_nHomingReactorRobot1Step = 0
+        elif nReactor == 2:
+            self.__FakePLC_nHomingReactorRobot2Step = 0
+        elif nReactor == 3:
+            self.__FakePLC_nHomingReactorRobot3Step = 0
+        else:
+            raise Exception("Invalid reactor")
+    def FakePLC_HomeReagentRobotX(self):
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_HOMING)
+    def FakePLC_HomeReagentRobotY(self):
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_HOMING)
+    def FakePLC_HomeReactorRobot(self, nReactor):
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_HOMING)
     def FakePLC_EnableReagentRobotX(self):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReagentRobotX(self):
@@ -586,8 +625,10 @@ class HardwareComm():
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
     def FakePLC_DisableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED1)
-    def FakePLC_SetReactorLinearPosition(self, nReactor, nPositionZ):
-        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionZ)
+    def FakePLC_SetReactorLinearSetPosition(self, nReactor, nPositionY):
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4), nPositionY)
+    def FakePLC_SetReactorLinearActualPosition(self, nReactor, nPositionY):
+        self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionY)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorUp", bUpSensor)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorDown", bDownSensor)
@@ -597,6 +638,29 @@ class HardwareComm():
     def FakePLC_SetBinaryValue(self, nWordOffset, nBitOffset, bValue):
         self.__SetBinaryValueRaw(nWordOffset, nBitOffset, bValue)
     def FakePLC_SetWordValue(self, nWordOffset, nValue):
+        # Watch for the memory toggle that signals the robots to home
+        if (self.__FakePLC_nHomingReagentRobotXStep == 0) and (nWordOffset == (ROBONET_CONTROL + (self.__nReagentXAxis * 4))) and (nValue == 0x10):
+            self.__FakePLC_nHomingReagentRobotXStep = 1
+        if (self.__FakePLC_nHomingReagentRobotXStep == 1) and (nWordOffset == (ROBONET_CONTROL + (self.__nReagentXAxis * 4))) and (nValue == 0x12):
+            self.__FakePLC_nHomingReagentRobotXStep = 2
+        if (self.__FakePLC_nHomingReagentRobotYStep == 0) and (nWordOffset == (ROBONET_CONTROL + (self.__nReagentYAxis * 4))) and (nValue == 0x10):
+            self.__FakePLC_nHomingReagentRobotYStep = 1
+        if (self.__FakePLC_nHomingReagentRobotYStep == 1) and (nWordOffset == (ROBONET_CONTROL + (self.__nReagentYAxis * 4))) and (nValue == 0x12):
+            self.__FakePLC_nHomingReagentRobotYStep = 2
+        if (self.__FakePLC_nHomingReactorRobot1Step == 0) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(1) * 4))) and (nValue == 0x10):
+            self.__FakePLC_nHomingReactorRobot1Step = 1
+        if (self.__FakePLC_nHomingReactorRobot1Step == 1) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(1) * 4))) and (nValue == 0x12):
+            self.__FakePLC_nHomingReactorRobot1Step = 2
+        if (self.__FakePLC_nHomingReactorRobot2Step == 0) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(2) * 4))) and (nValue == 0x10):
+            self.__FakePLC_nHomingReactorRobot2Step = 1
+        if (self.__FakePLC_nHomingReactorRobot2Step == 1) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(2) * 4))) and (nValue == 0x12):
+            self.__FakePLC_nHomingReactorRobot2Step = 2
+        if (self.__FakePLC_nHomingReactorRobot3Step == 0) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(3) * 4))) and (nValue == 0x10):
+            self.__FakePLC_nHomingReactorRobot3Step = 1
+        if (self.__FakePLC_nHomingReactorRobot3Step == 1) and (nWordOffset == (ROBONET_CONTROL + (self.__LookUpReactorAxis(3) * 4))) and (nValue == 0x12):
+            self.__FakePLC_nHomingReactorRobot3Step = 2
+
+        # Set the raw value
         self.__SetIntegerValueRaw(nWordOffset, nValue)
 
     ### PLC send functions ###
@@ -892,7 +956,7 @@ class HardwareComm():
                 if sys.platform == "win32":
                    sLogFile = "temp_profile.txt"
                 else:
-                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
+                   sLogFile = "/home/sbc/Desktop/temp_profile.txt"
                 try:
                     self.__startTime
                 except Exception, e:
@@ -1325,7 +1389,7 @@ class HardwareComm():
             if self.__HitTest(nReagentXOffset, nPositionX) and self.__HitTest(nReagentYOffset, nPositionY):
                 # We're over the elute position
                 return nReactor, 0, 0, 1
-                  
+
         # Failed to find match
         return 0, 0, 0, 0
      
@@ -1337,7 +1401,11 @@ class HardwareComm():
             if self.__HitTest(nPositionY - nReactorOffset, int(self.__pRobotPositions["Reactors"][sPositionName])):
                 # We're over a know position
                 return sPositionName
-                  
+
+        # Check for home
+        if nPositionY == 0:
+            return "Home"
+
         # Failed to find a named position
         return "Unknown" 
 

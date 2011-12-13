@@ -44,9 +44,18 @@
 					// Set the name and format the output text
 					_viewComponentName.text = m_pComponentReact.Name;
 					_outputText.text = "Move reactor " + m_pComponentReact.Reactor + " to reaction position " + m_pComponentReact.Position +
-						" and heat to " + m_pComponentReact.ReactionTemperature + " \u00B0C.\n\nHold for " + m_pComponentReact.Duration + 
-						" seconds while stirring at " + m_pComponentReact.StirSpeed + ".\n\nCool to " + m_pComponentReact.FinalTemperature + 
-						" \u00B0C.";
+						" and heat to " + m_pComponentReact.ReactionTemperature + " \u00B0C.\n\n";
+					_outputText.text += "Hold for " + m_pComponentReact.Duration + " seconds while stirring at " + 
+						m_pComponentReact.StirSpeed + ".\n\n";
+					_outputText.text += "Cool to " + m_pComponentReact.FinalTemperature + " \u00B0C";
+					if (m_pComponentReact.CoolingDelay != 0)
+					{
+						_outputText.text += " and continue cooling for another " + m_pComponentReact.CoolingDelay + " seconds.";
+					}
+					else
+					{
+						_outputText.text += ".";
+					}
 				}
 				else if (m_sViewMode == SubviewBase.EDITMODE)
 				{
@@ -70,6 +79,10 @@
 					{
 						_editFinalTemperature.text = m_pComponentReact.FinalTemperature.toString();
 					}
+					if (m_pKeyboardFocusTextArea != _editCoolingDelay)
+					{
+						_editCoolingDelay.text = m_pComponentReact.CoolingDelay.toString();
+					}
 					if (m_pKeyboardFocusTextArea != _editStirSpeed)
 					{
 						_editStirSpeed.text = m_pComponentReact.StirSpeed.toString();
@@ -86,7 +99,15 @@
 						" at " + m_pComponentReact.ReactionTemperature + " \u00B0C for " + m_pComponentReact.Duration +
 						" seconds.";
 					_runOutputText2.text = "Stirring at " + m_pComponentReact.StirSpeed + " and cooling to " + m_pComponentReact.FinalTemperature +
-						" \u00B0C.";
+						" \u00B0C";
+					if (m_pComponentReact.CoolingDelay != 0)
+					{
+						_runOutputText2.text += " with an additional delay of " + m_pComponentReact.CoolingDelay + " seconds.";
+					}
+					else
+					{
+						_runOutputText2.text += ".";
+					}
 					_runVideoText.text = "Reactor " + m_pComponentReact.Reactor;
 				}
 			}
@@ -145,6 +166,10 @@
 				if (m_pKeyboardFocusTextArea == _editFinalTemperature)
 				{
 					m_pComponentReact.FinalTemperature = parseFloat(_editFinalTemperature.text);
+				}
+				if (m_pKeyboardFocusTextArea == _editCoolingDelay)
+				{
+					m_pComponentReact.CoolingDelay = parseFloat(_editCoolingDelay.text);
 				}
 				if (m_pKeyboardFocusTextArea == _editStirSpeed)
 				{
@@ -247,6 +272,23 @@
 							<s:Spacer width="50%" />
 							<s:HGroup horizontalAlign="left" width="50%">
 								<s:Label styleName="FieldDescription" text="Final temperature in degrees Celsius"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:VGroup width="100%">
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:HGroup horizontalAlign="right" width="50%">
+								<s:Label text="Cooling delay:" styleName="TextMedium" />
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="50%">
+								<Renderers:AutoTextArea id="_editCoolingDelay" styleName="TextMedium" focusIn="OnTextFocusIn(event)"
+														focusOut="OnTextFocusOut(event)" width="100%" />
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup verticalAlign="middle" gap="15" width="80%">
+							<s:Spacer width="50%" />
+							<s:HGroup horizontalAlign="left" width="50%">
+								<s:Label styleName="FieldDescription" text="Additional cooling time in seconds"/>
 							</s:HGroup>
 						</s:HGroup>
 					</s:VGroup>

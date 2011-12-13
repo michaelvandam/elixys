@@ -32,12 +32,13 @@ class UnitOperationsWrapper:
         pInit.start()
         return pInit
        
-    def React(self, sReactor, nReactionTemperature, nReactionTime, nFinalTemperature, sReactPosition, nStirSpeed):
+    def React(self, sReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nCoolingDelay, sReactPosition, nStirSpeed):
         """Performs a react unit operation"""
         pParams = {"ReactorID":sReactor,
                    "reactTemp":nReactionTemperature,
                    "reactTime":nReactionTime,
                    "coolTemp":nFinalTemperature,
+                   "coolingDelay":nCoolingDelay,
                    "reactPosition":sReactPosition,
                    "stirSpeed":nStirSpeed}
         pReact = React(self.__pSystemModel, pParams)

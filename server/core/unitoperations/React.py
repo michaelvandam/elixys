@@ -6,7 +6,7 @@ from UnitOperation import *
 class React(UnitOperation):
   def __init__(self,systemModel,params,username = "", database = None):
     UnitOperation.__init__(self,systemModel,username,database)
-    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,REACTPOSITION:STR,STIRSPEED:INT}
+    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,COOLINGDELAY:INT,REACTPOSITION:STR,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
@@ -17,6 +17,7 @@ class React(UnitOperation):
     #self.reactTemp
     #self.reactTime
     #self.coolTemp
+    #self.coolingDelay
     #self.reactPosition
     #self.stirSpeed
   def run(self):
@@ -33,7 +34,7 @@ class React(UnitOperation):
       self.waitForTimer()
       self.setStatus("Cooling")
       self.setHeater(OFF)
-      self.setCool()
+      self.setCool(self.coolingDelay)
       self.setStatus("Completing") 
       self.setStirSpeed(OFF)
       self.setStatus("Complete")
@@ -53,6 +54,8 @@ class React(UnitOperation):
       self.component.update({"reactiontemperaturevalidation":""})
     if not self.component.has_key("finaltemperaturevalidation"):
       self.component.update({"finaltemperaturevalidation":""})
+    if not self.component.has_key("coolingdelayvalidation"):
+      self.component.update({"coolingdelayvalidation":""})
     if not self.component.has_key("stirspeedvalidation"):
       self.component.update({"stirspeedvalidation":""})
     self.addComponentDetails()
@@ -65,6 +68,7 @@ class React(UnitOperation):
     self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["reactiontemperaturevalidation"] = "type=number; min=20; max=200; required=true"
     self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["coolingdelayvalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
 
     #Do a quick validation
@@ -79,6 +83,7 @@ class React(UnitOperation):
        not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]) or \
        not self.validateComponentField(self.component["reactiontemperature"], self.component["reactiontemperaturevalidation"]) or \
        not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["coolingdelay"], self.component["coolingdelayvalidation"]) or \
        not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]):
       bValidationError = True
 
@@ -98,6 +103,7 @@ class React(UnitOperation):
     pDBComponent["durationvalidation"] = self.component["durationvalidation"]
     pDBComponent["reactiontemperaturevalidation"] = self.component["reactiontemperaturevalidation"]
     pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
+    pDBComponent["coolingdelayvalidation"] = self.component["coolingdelayvalidation"]
     pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
@@ -122,4 +128,5 @@ class React(UnitOperation):
     pTargetComponent["duration"] = self.component["duration"]
     pTargetComponent["reactiontemperature"] = self.component["reactiontemperature"]
     pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
+    pTargetComponent["coolingdelay"] = self.component["coolingdelay"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]

@@ -14,7 +14,9 @@ from SystemModel import SystemModel
 import Utilities
 from CoolingThread import CoolingThread
 from PressureRegulatorThread import PressureRegulatorThread
+from HomeReagentRobotThread import HomeReagentRobotThread
 from MoveReagentRobotThread import MoveReagentRobotThread
+from HomeReactorRobotThread import HomeReactorRobotThread
 from MoveReactorLinearThread import MoveReactorLinearThread
 from MoveReactorVerticalThread import MoveReactorVerticalThread
 from HeatingThread import HeatingThread
@@ -27,7 +29,11 @@ class FakePLC():
         self.__pCoolingThread = None
         self.__pPressureRegulator1Thread = None
         self.__pPressureRegulator2Thread = None
+        self.__pHomeReagentRobotThread = None
         self.__pMoveReagentRobotThread = None
+        self.__pReactor1HomeThread = None
+        self.__pReactor2HomeThread = None
+        self.__pReactor3HomeThread = None
         self.__pReactor1LinearMovementThread = None
         self.__pReactor2LinearMovementThread = None
         self.__pReactor3LinearMovementThread = None
@@ -338,6 +344,21 @@ class FakePLC():
         elif (nControlWordY == 0x08) and (nCheckWordY != HardwareComm.ROBONET_DISABLED1):
             self.__pHardwareComm.FakePLC_DisableReagentRobotY()
 
+        # Home the robots
+        if self.__pHardwareComm.FakePLC_CheckForHomingReagentRobotX() and self.__pHardwareComm.FakePLC_CheckForHomingReagentRobotY():
+            # Check either of the reagent robots movement threads are running
+            if ((self.__pHomeReagentRobotThread == None) or not self.__pHomeReagentRobotThread.is_alive()) and \
+               ((self.__pMoveReagentRobotThread == None) or not self.__pMoveReagentRobotThread.is_alive()):
+                # No, so kick off the homing thread
+                nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ = self.__pSystemModel.model["ReagentDelivery"].getCurrentPositionRaw()
+                self.__pHomeReagentRobotThread = HomeReagentRobotThread()
+                self.__pHomeReagentRobotThread.SetParameters(self.__pHardwareComm, nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ)
+                self.__pHomeReagentRobotThread.setDaemon(True)
+                self.__pHomeReagentRobotThread.start()
+
+            # Clear the homing flags
+            self.__pHardwareComm.FakePLC_ResetReagentRobotHoming()
+
     def __UpdateReagentRobotPosition(self):
         """Updates the reagent robot position in response to system changes"""
         # Get the set and actual positions
@@ -347,9 +368,10 @@ class FakePLC():
         # Compare the positions.  Add leeway to account for motor positioning errors
         if ((nReagentRobotSetPositionRawX + 5) < nReagentRobotActualPositionRawX) or ((nReagentRobotSetPositionRawX - 5) > nReagentRobotActualPositionRawX) or \
            ((nReagentRobotSetPositionRawZ + 5) < nReagentRobotActualPositionRawZ) or ((nReagentRobotSetPositionRawZ - 5) > nReagentRobotActualPositionRawZ):
-            # Check if the reagent robot movement thread is running
-            if (self.__pMoveReagentRobotThread == None) or not self.__pMoveReagentRobotThread.is_alive():
-                # No, so kick off the thread
+            # Check if either of the reagent robot movement threads are running
+            if ((self.__pMoveReagentRobotThread == None) or not self.__pMoveReagentRobotThread.is_alive()) and \
+               ((self.__pHomeReagentRobotThread == None) or not self.__pHomeReagentRobotThread.is_alive()):
+                # No, so kick off the movement thread
                 self.__pMoveReagentRobotThread = MoveReagentRobotThread()
                 self.__pMoveReagentRobotThread.SetParameters(self.__pHardwareComm, nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ, \
                     nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ)
@@ -379,6 +401,42 @@ class FakePLC():
             self.__pHardwareComm.FakePLC_EnableReactorRobot(nReactor)
         elif (nControlWord == 0x08) and (nCheckWord != HardwareComm.ROBONET_DISABLED1):
             self.__pHardwareComm.FakePLC_DisableReactorRobot(nReactor)
+
+        # Home the robots
+        for nReactor in range(1, 4):
+            # Set reactor-specific parameters
+            if nReactor == 1:
+                pReactorHomeThread = self.__pReactor1HomeThread
+                pReactorLinearMovementThread = self.__pReactor1LinearMovementThread
+            elif nReactor == 2:
+                pReactorHomeThread = self.__pReactor2HomeThread
+                pReactorLinearMovementThread = self.__pReactor2LinearMovementThread
+            else:
+                pReactorHomeThread = self.__pReactor3HomeThread
+                pReactorLinearMovementThread = self.__pReactor3LinearMovementThread
+
+            # Check if we need to home
+            if self.__pHardwareComm.FakePLC_CheckForHomingReactorRobot(nReactor):
+                # Check either of the reactor robots movement threads are running
+                if ((pReactorHomeThread == None) or not pReactorHomeThread.is_alive()) and \
+                   ((pReactorLinearMovementThread == None) or not pReactorLinearMovementThread.is_alive()):
+                    # No, so kick off the homing thread
+                    nReactorActualPositionY = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentPositionRaw()
+                    pReactorHomeThread = HomeReactorRobotThread()
+                    pReactorHomeThread.SetParameters(self.__pHardwareComm, nReactor, nReactorActualPositionY)
+                    pReactorHomeThread.setDaemon(True)
+                    pReactorHomeThread.start()
+
+                    # Remember the thread
+                    if nReactor == 1:
+                        self.__pReactor1HomeThread = pReactorHomeThread
+                    elif nReactor == 2:
+                        self.__pReactor2HomeThread = pReactorHomeThread
+                    else:
+                        self.__pReactor3HomeThread = pReactorHomeThread
+
+                # Clear the homing flags
+                self.__pHardwareComm.FakePLC_ResetReactorRobotHoming(nReactor)
 
     def __UpdateReactorPosition(self, nReactor):
         """Updates the reactor position in response to system changes"""

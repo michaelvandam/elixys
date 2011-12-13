@@ -35,32 +35,30 @@ class Sequence(Thread):
     """Thread entry point"""
     # Main sequence run loop
     self.running = True
-    for pComponent in self.sequence["components"]:
-      # Create and run the next unit operation
-      self.componentID = pComponent["id"]
-      pUnitOperation = UnitOperations.createFromComponent(self.sequenceID, pComponent, self.username, self.sequenceManager.database, self.systemModel)
-      pUnitOperation.setDaemon(True)
-      pUnitOperation.start()
-      self.systemModel.SetUnitOperation(pUnitOperation)
+    try:
+      for pComponent in self.sequence["components"]:
+        # Create and run the next unit operation
+        self.componentID = pComponent["id"]
+        pUnitOperation = UnitOperations.createFromComponent(self.sequenceID, pComponent, self.username, self.sequenceManager.database, self.systemModel)
+        pUnitOperation.setDaemon(True)
+        pUnitOperation.start()
+        self.systemModel.SetUnitOperation(pUnitOperation)
 
-      # Wait until the operation completes
-      while pUnitOperation.is_alive():
-        time.sleep(0.25)
+        # Wait until the operation completes
+        while pUnitOperation.is_alive():
+          time.sleep(0.25)
+
+        # Check for unit operation error
+        sError = pUnitOperation.getError()
+        if sError != "":
+          raise Exception(sError)
+    except Exception as ex:
+        self.sequenceManager.database.Log(self.username, "Sequence run failed: " + str(ex))
 
     # Run complete
     self.running = False
 
-    """self.pOperations = []
-    self.nOperationIndex = 0
-    for pComponent in self.sequenceData['components']:
-      pComponentData = (nOperationIndex,pComponent['id'],pComponent['name'],pComponent['componenttype'])
-      self.pOperations.append(pComponentData)
-      self.nOperationIndex +=1
-    self.nCurrentOperationIndex = 0 # Current operation index, starts at zero.
-    self.nTotalOperations = len(self.pOperations) #Grab total number of operations
-    self.sCurrentOperationName = None #String describing current operation."""
-    
-  def setParameters(sequenceParameters):
+  """def setParameters(sequenceParameters):
     self.sequenceID = sequenceParameters['id']
     self.sequenceName = sequenceParameters['name']
     self.sequenceShortName = sequenceParameters['shortName']
@@ -99,7 +97,6 @@ class Sequence(Thread):
     return self.pOperations[self.nCurrentOperationIndex] # You can return any details you want here, currently has (Index,ID,name,componenttype)
     
   def GetReagent(self, sRemoteUser, nReagentID):
-    """ Gets a reagent from the database """
     # Fetch the reagent from the databse
     return self.database.GetReagent(sRemoteUser, nReagentID)
  
@@ -109,4 +106,5 @@ def test():
   seq1.database.getSequences()
     
 if __name__=="__main__":
-    test()
+    test()"""
+

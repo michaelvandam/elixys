@@ -92,6 +92,20 @@ package Elixys.Objects
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
 		}
 	
+		public function get CoolingDelay():uint
+		{
+			return super.flash_proxy::getProperty("coolingdelay");
+		}
+		public function set CoolingDelay(value:uint):void
+		{
+			super.flash_proxy::setProperty("coolingdelay", value);
+		}
+		
+		public function get CoolingDelayValidation():String
+		{
+			return super.flash_proxy::getProperty("coolingdelayvalidation");
+		}
+
 		public function get StirSpeed():uint
 		{
 			return super.flash_proxy::getProperty("stirspeed");
@@ -114,6 +128,7 @@ package Elixys.Objects
 			sReactDetails += JSONDataObject("duration", Duration);
 			sReactDetails += JSONDataObject("reactiontemperature", ReactionTemperature);
 			sReactDetails += JSONDataObject("finaltemperature", FinalTemperature);
+			sReactDetails += JSONDataObject("coolingdelay", CoolingDelay);
 			sReactDetails += JSONDataObject("stirspeed", StirSpeed, false);
 			return sReactDetails;
 		}
@@ -132,6 +147,7 @@ package Elixys.Objects
 			"\"duration\":0," +
 			"\"reactiontemperature\":0," +
 			"\"finaltemperature\":0," +
+			"\"coolingdelay\":0," +
 			"\"stirspeed\":0}";
 	}
 }
