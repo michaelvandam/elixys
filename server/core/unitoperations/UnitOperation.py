@@ -309,11 +309,11 @@ class UnitOperation(threading.Thread):
 
     #Move down, close and up
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,2)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
     self.systemModel['ReagentDelivery'].setMoveGripperClose()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,2)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
 
     #Move to the delivery or elute position
     if nElute == 0:
@@ -326,12 +326,12 @@ class UnitOperation(threading.Thread):
     
     #Lower and turn on the gas transfer
     self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,3)
     self.setGasTransferValve(ON)
 
     #Move the vial down    
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
     
   def removeGripperPlace(self):
     #Make sure we are closed and down
@@ -342,24 +342,24 @@ class UnitOperation(threading.Thread):
 
     #Move the vial up
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
 
     #Turn off and raise the transfer gas
     self.setGasTransferValve(OFF)
     self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,3)
 
     #Move to ReagentPosition, then down and open
     self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
     self.systemModel['ReagentDelivery'].setMoveGripperOpen()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
     
     #Move up and to home
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
     self.systemModel['ReagentDelivery'].moveToHomeFast()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 

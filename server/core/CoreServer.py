@@ -24,6 +24,7 @@ import Sequences
 import UnitOperation
 import BaseCLI
 from UnitOperationsWrapper import UnitOperationsWrapper
+import os
 
 # Suppress rpyc warning messages
 import logging
@@ -35,9 +36,10 @@ gDatabase.Connect()
 gSequenceManager = SequenceManager(gDatabase)
 
 # Create the hardware layer and system model
-gHardwareComm = HardwareComm("../")
+gRootDirectory = "../"
+gHardwareComm = HardwareComm(gRootDirectory)
 gHardwareComm.StartUp()
-gSystemModel = SystemModel(gHardwareComm, "../core/")
+gSystemModel = SystemModel(gHardwareComm, gRootDirectory + "core/")
 gSystemModel.StartUp()
 
 # Create the unit operations wrapper
@@ -166,6 +168,13 @@ class CoreServerService(rpyc.Service):
         pServerState["hardwarestate"]["reagentrobot"]["gripper"] = sReagentRobotGripper
         pServerState["hardwarestate"]["reagentrobot"]["gastransferactuator"] = sReagentRobotGasTransferActuator
 
+        # Determine if we are in demo mode
+        sDemoFile = gRootDirectory + "demomode"
+        if not os.path.isfile(sDemoFile):
+            bDemoMode = False
+        else:
+            bDemoMode = True
+
         # Format the hardware state associated with each reactor
         pServerState["hardwarestate"]["reactors"] = []
         nReactorCount = gDatabase.GetConfiguration("System")["reactors"]
@@ -202,7 +211,10 @@ class CoreServerService(rpyc.Service):
             pReactor["activitytime"] = ""
             pReactor["transferposition"] = sTransferPosition
             pReactor["stirspeed"] = pReactorModel["Stir"].getCurrentSpeed(False)
-            pReactor["video"] = ""
+            if not bDemoMode:
+               pReactor["video"] = "Reactor" + str(nReactor)
+            else:
+               pReactor["video"] = "mp4:elixys.mp4"
 
             # Format additional fields for reactor 1
             if nReactor == 1:

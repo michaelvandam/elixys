@@ -16,8 +16,9 @@ class Install(UnitOperation):
     try:
       self.setStatus("Moving reactor")
       self.setReactorPosition(INSTALL)
-      self.setStatus("Waiting for user input")
-      self.waitForUserInput(self.userMessage)
+      if self.userMessage != "":
+        self.setStatus("Waiting for user input")
+        self.waitForUserInput(self.userMessage)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(e)

@@ -82,7 +82,8 @@ class UnitOperationsWrapper:
 
     def Install(self, sReactor):
         """Performs an install unit operation"""
-        pParams = {"ReactorID":sReactor}
+        pParams = {"ReactorID":sReactor,
+                   "userMessage":""}
         pInstall = Install(self.__pSystemModel, pParams)
         pInstall.setDaemon(True)
         pInstall.start()
