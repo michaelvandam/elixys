@@ -55,16 +55,27 @@ if __name__ == '__main__':
         print "  " + pUser["username"]
         pDBComm.CreateUser("System", pUser["username"], pUser["passwordhash"], pUser["firstname"], pUser["lastname"], pUser["role"])
 
-    # Import the sequences
-    print "Importing sequences..."
-    for pSequence in pDatabase["sequences"]:
+    # Import the saved sequences
+    print "Importing saved sequences..."
+    for pSequence in pDatabase["savedsequences"]:
         # Make sure the sequence file exists
         sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
         if not os.path.isfile(sSequenceFile):
             print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
             continue
         print "  " + sSequenceFile
-        pSequenceManager.ImportSequence("System", sSequenceFile)
+        pSequenceManager.ImportSequence("System", sSequenceFile, "Saved")
+
+    # Import the run history
+    print "Importing run history..."
+    for pSequence in pDatabase["runhistory"]:
+        # Make sure the sequence file exists
+        sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
+        if not os.path.isfile(sSequenceFile):
+            print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
+            continue
+        print "  " + sSequenceFile
+        pSequenceManager.ImportSequence("System", sSequenceFile, "History")
 
     # Complete
     pDBComm.Disconnect()
