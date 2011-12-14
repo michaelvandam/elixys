@@ -238,6 +238,9 @@ class UnitOperation(threading.Thread):
        self.setStatus(statusComponents[0] + ", " + status)
     else:
        self.setStatus(status)
+
+  def setAbort(self):
+    self.abort = True
     
   def checkAbort(self):
     if self.abort:

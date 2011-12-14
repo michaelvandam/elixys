@@ -111,7 +111,9 @@
         "passwordhash":"6E3kYsJnM9p2Y",
         "role":"Researcher"}],
 
-    "sequences":[{"type":"sequence",
+    "savedsequences":[{"type":"sequence",
         "filename":"FACSynthesis.seq"}]
+
+    "runhistory":[]
 }
 

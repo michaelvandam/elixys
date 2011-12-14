@@ -412,7 +412,7 @@ class PostHandler:
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_ABORTSEQUENCERUN":
             if sActionTargetID == "YES":
                 # Abort the run and return to the home page
-                self.__pCoreServer.Abort(self.__sRemoteUser)
+                self.__pCoreServer.EmergencyStop(self.__sRemoteUser)
                 self.__pClientState["prompt"]["show"] = False
                 self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()

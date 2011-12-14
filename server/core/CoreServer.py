@@ -282,6 +282,7 @@ class CoreServerService(rpyc.Service):
         pUnitOperation = gSystemModel.GetUnitOperation()
         if pUnitOperation != None:
             pUnitOperation.deliverUserInput()
+        return True
 
     def exposed_Abort(self, sUsername):
         """Gently aborts the run that is in progress, cooling the system and shutting down cleanly"""
@@ -292,8 +293,26 @@ class CoreServerService(rpyc.Service):
     def exposed_EmergencyStop(self, sUsername):
         """Quickly turns off the heaters and terminates the run, leaving the system in its current state"""
         global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.EmergencyStop()")
-        return False
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.Log(sUsername, "No sequence running, cannot abort")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.Log(sUsername, "Not the user running the sequence, cannot abort")
+            return False
+
+        # Deliver the abort signal to the current unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation != None:
+            pUnitOperation.setAbort()
+        return True
 
     def exposed_PauseTimer(self, sUsername):
         """Pauses the timer if the unit operation has one running"""

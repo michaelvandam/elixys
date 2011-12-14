@@ -105,6 +105,61 @@ class SequenceManager:
     # Validate the sequence
     self.validation.ValidateSequenceFull(sRemoteUser, nSequenceID)
 
+  def ExportSequence(self, sRemoteUser, nSequenceID, sFilename):
+    """Exports the specified sequence from the database"""
+    # Load the sequence
+    pDBSequence = self.GetSequence(sRemoteUser, nSequenceID, False)
+    print "DB sequence = " + str(pDBSequence)
+
+    # Get the system configuration
+    pConfiguration = self.database.GetConfiguration(sRemoteUser)
+
+    # Create the sequence
+    pSequence = {}
+    pSequence["type"] ="sequence"
+    pSequence["name"] = pDBSequence["metadata"]["name"]
+    pSequence["description"] = pDBSequence["metadata"]["comment"]
+    pSequence["reactors"] = pConfiguration["reactors"]
+    pSequence["reagentsperreactor"] = pConfiguration["reagentsperreactor"]
+    pSequence["columnsperreactor"] = pConfiguration["columnsperreactor"]
+    pSequence["reagents"] = []
+    pSequence["components"] = []
+
+    # Add the reagents from each cassette
+    nCassette = 1
+    for pComponent in pDBSequence["components"]:
+        if pComponent["componenttype"] == "CASSETTE":
+            pCassette = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
+            pCassette.addComponentDetails()
+            for pReagent in pCassette.component["reagents"]:
+                if pReagent["available"]:
+                    pSequence["reagents"].append({"type":"reagent",
+                        "cassette":nCassette,
+                        "position":pReagent["position"],
+                        "name":pReagent["name"],
+                        "description":pReagent["description"]})
+            nCassette += 1
+
+    # Add each component
+    for pComponent in pDBSequence["components"]:
+        # Minimalize the component
+        pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
+        pMinimalComponent = {}
+        pUnitOperation.updateComponentDetails(pMinimalComponent)
+
+        # Replace any reagent ID with a name
+        if pComponent.has_key("reagent"):
+            pMinimalComponent["reagent"] = pComponent["reagent"]["name"]
+        print "Minimal component = " + str(pMinimalComponent)
+
+        # Append the component
+        pSequence["components"].append(pMinimalComponent)
+
+    # Save the sequence to the file
+    pSequenceFile = open(sFilename, "w")
+    sSequenceJSON = json.dumps(pSequence)
+    pSequenceFile.write(sSequenceJSON)
+
   ### Reagent functions ###
 
   def GetReagent(self, sRemoteUser, nReagentID):

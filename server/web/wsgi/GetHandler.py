@@ -219,10 +219,16 @@ class GetHandler:
         if (self.__pClientState["sequenceid"] != pServerState["runstate"]["sequenceid"]) or \
            (self.__pClientState["componentid"] != pServerState["runstate"]["componentid"]) or \
            (self.__pClientState["prompt"]["show"] != pServerState["runstate"]["prompt"]["show"]):
-            # Update the client state
+            # Update the sequence and component IDs
             self.__pClientState["sequenceid"] = pServerState["runstate"]["sequenceid"]
             self.__pClientState["componentid"] = pServerState["runstate"]["componentid"]
-            self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
+
+            # Update the prompt if it isn't abort
+            if (self.__pClientState["prompt"]["show"] == False) or \
+               (self.__pClientState["prompt"].has_key("screen") and self.__pClientState["prompt"]["screen"] != "PROMPT_ABORTSEQUENCERUN"):
+                self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
+
+            # Update the client state
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Start with the common return object

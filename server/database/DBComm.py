@@ -89,12 +89,24 @@ class DBComm:
   def GetAllRoles(self, sCurrentUsername):
     """Returns all user roles"""
     self.Log(sCurrentUsername, "DBComm.GetAllRoles()")
-    return self.__CallStoredProcedure("GetRoles", ())
+    pRolesRaw = self.__CallStoredProcedure("GetAllRoles", ())
+
+    # Create and return the role objects
+    pRoles = []
+    for pRoleRaw in pRolesRaw:
+      pRoles.append(self.__CreateRole(pRoleRaw))
+    return pRoles
 
   def GetRole(self, sCurrentUsername, sRoleName):
     """Returns the desired role"""
+    # Load the database access and get the role
     self.Log(sCurrentUsername, "DBComm.GetRole(%s)" % (sRoleName, ))
-    return self.__CallStoredProcedure("GetRole", (sRoleName, ))
+    pRoleRaw = self.__CallStoredProcedure("GetRole", (sRoleName, ))
+    if len(pRoleRaw) == 0:
+        raise Exception("Role " + sUsername + " not found")
+
+    # Create and return the role object
+    return self.__CreateRole(pRoleRaw[0])
 
   def CreateRole(self, sCurrentUsername, sRoleName, nFlags):
     """Creates the specified role"""
@@ -116,7 +128,13 @@ class DBComm:
   def GetAllUsers(self, sCurrentUsername):
     """Returns details of all system users"""
     self.Log(sCurrentUsername, "DBComm.GetAllUsers()")
-    return self.__CallStoredProcedure("GetAllUsers", ())
+    pUsersRaw = self.__CallStoredProcedure("GetAllUsers", ())
+
+    # Create and return the user objects
+    pUsers = []
+    for pUserRaw in pUsersRaw:
+      pUsers.append(self.__CreateUser(pUserRaw))
+    return pUsers
 
   def GetUser(self, sCurrentUsername, sUsername):
     """Returns details of the specified user"""
@@ -126,13 +144,8 @@ class DBComm:
     if len(pUserRaw) == 0:
         raise Exception("User " + sUsername + " not found")
 
-    # Create the user object
-    pUser = {"type":"user"}
-    pUser["username"] = pUserRaw[0][0]
-    pUser["firstname"] = pUserRaw[0][1]
-    pUser["lastname"] = pUserRaw[0][2]
-    pUser["accesslevel"] = pUserRaw[0][3]
-    return pUser
+    # Create and return the user object
+    return self.__CreateUser(pUserRaw[0])
 
   def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName):
     """Creates a new user"""
@@ -438,6 +451,23 @@ class DBComm:
       return pRows
     except MySQLdb.Error, e:
       raise Exception("SQL Error %d: %s" % (e.args[0],e.args[1]))
+
+  def __CreateRole(self, pRoleRaw):
+    """Packages a role"""
+    pRole = {"type":"role"}
+    pRole["id"] = pRoleRaw[0]
+    pRole["name"] = pRoleRaw[1]
+    pRole["flags"] = pRoleRaw[2]
+    return pRole
+
+  def __CreateUser(self, pUserRaw):
+    """Packages a user"""
+    pUser = {"type":"user"}
+    pUser["username"] = pUserRaw[0]
+    pUser["firstname"] = pUserRaw[1]
+    pUser["lastname"] = pUserRaw[2]
+    pUser["accesslevel"] = pUserRaw[3]
+    return pUser
 
   def __GetComponent(self, nComponentID):
     """Fetches and packages a component"""
