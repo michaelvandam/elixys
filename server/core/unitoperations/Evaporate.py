@@ -24,7 +24,7 @@ class Evaporate(UnitOperation):
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(1,self.pressure)
+      self.setPressureRegulator(1,self.pressure,7)
       self.setStatus("Moving reactor")
       self.setReactorPosition(EVAPORATE)
       self.setStatus("Starting motor")

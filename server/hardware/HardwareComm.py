@@ -956,7 +956,7 @@ class HardwareComm():
                 if sys.platform == "win32":
                    sLogFile = "temp_profile.txt"
                 else:
-                   sLogFile = "/home/sbc/Desktop/temp_profile.txt"
+                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
                 try:
                     self.__startTime
                 except Exception, e:
