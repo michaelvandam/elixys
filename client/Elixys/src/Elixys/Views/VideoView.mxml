@@ -1,15 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" xmlns:mx="library://ns.adobe.com/flex/mx"
-				   backgroundColor="0x777777">
+				   borderVisible="false" width="100%" height="100%" creationComplete="OnCreationComplete()">
 	<fx:Script>
 		<![CDATA[
+			import mx.events.FlexEvent;
 
 			/***
 			 * Member functions
 			 **/
 
+			// Called when creation is complete
+			private function OnCreationComplete():void
+			{
+				// Create timers
+				m_pWatchTimer = new Timer(250);
+				m_pHiddenTimer = new Timer(3000, 1);
+				m_pReconnectTimer = new Timer(1000, 1);
+				
+				// Add event listeners
+				m_pWatchTimer.addEventListener(TimerEvent.TIMER, OnWatchTimer);
+				m_pHiddenTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHiddenTimerComplete);
+				m_pReconnectTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnReconnectTimerComplete);
+				
+				// Start the watch timer
+				m_pWatchTimer.start();
+			}
+			
 			// Update the video stream URL
-			public function SetStream(sRootURL:String, sStreamName:String):void
+			public function SetStream(sRootURL:String, sStreamName:String, nWidth:uint, nHeight:uint):void
 			{
 				// Has the stream changed?
 				if ((m_sRootURL != sRootURL) || (m_sStreamName != sStreamName))
@@ -19,40 +37,95 @@
 					m_sFullURL = "rtmp://" + sRootURL + "/flvplayback/";
 					m_sStreamName = sStreamName;
 
-					// Remove any existing video and clear variables
-					if (m_pVideo != null)
-					{
-						_uiComponent.removeChild(m_pVideo);
-					}
-					m_pVideo = null;
-					m_pNetConnection = null;
-					m_pNetStream = null;
-					
-					// Create the video and net connection
-					m_pVideo = new Video();
-					_uiComponent.addChild(m_pVideo);
-					m_pNetConnection = new NetConnection();
-					m_pNetConnection.addEventListener(NetStatusEvent.NET_STATUS, OnNetConnection);
-					m_pNetConnection.client = {};
-					m_pNetConnection.client.onBWDone = OnBWDone;
-					trace("Establishing net connection to " + m_sFullURL);
-					m_pNetConnection.connect(m_sFullURL);
+					// Establish a connection to the server
+					CreateVideoConnection();
 				}
+			}
+
+			// Establishes a connection to the server
+			private function CreateVideoConnection():void
+			{
+				// Drop any existing video connection
+				DropVideoConnection();
+				
+				// Create the video and net connection
+				m_pVideo = new Video();
+				_uiComponent.addChild(m_pVideo);
+				m_pNetConnection = new NetConnection();
+				m_pNetConnection.addEventListener(NetStatusEvent.NET_STATUS, OnNetConnection);
+				m_pNetConnection.client = {};
+				m_pNetConnection.client.onBWDone = OnBWDone;
+				m_pNetConnection.connect(m_sFullURL);
 				
 				// Bandwidth handler
 				function OnBWDone():void
 				{
-					trace("OnBWDone");
 				}
 			}
 
+			// Drops any existing video connection to the server
+			private function DropVideoConnection():void
+			{
+				if (m_pVideo != null)
+				{
+					_uiComponent.removeChild(m_pVideo);
+				}
+				if (m_pNetConnection != null)
+				{
+					m_pNetConnection.close();
+				}
+				if (m_pNetStream != null)
+				{
+					m_pNetStream.close();
+				}
+				m_pVideo = null;
+				m_pNetConnection = null;
+				m_pNetStream = null;
+				m_bPlaying = false;
+			}
+			
+			// Checks the visibilty of the object.  An object is visible if it an all its parents are visible
+			private function CheckVisibility(pDisplayObject:DisplayObject):Boolean
+			{
+				if (!pDisplayObject.visible)
+				{
+					return false;
+				}
+				if ((pDisplayObject.parent != null) && (pDisplayObject.parent is DisplayObject))
+				{
+					return CheckVisibility(pDisplayObject.parent as DisplayObject);
+				}
+				return true;
+			}
+			
+			// Updates the video dimensions
+			private function UpdateVideoDimensions():void
+			{
+				// Resize and center the video
+				var fUIComponent:Number = _uiComponent.width / _uiComponent.height;
+				var fVideo:Number = m_pVideo.width / m_pVideo.height;
+				if (fUIComponent < fVideo)
+				{
+					m_pVideo.height = m_pVideo.height * (_uiComponent.width / m_pVideo.width);
+					m_pVideo.width = _uiComponent.width;
+					m_pVideo.y = (_uiComponent.height - m_pVideo.height) / 2;
+				}
+				else if (fUIComponent > fVideo)
+				{
+					m_pVideo.width = m_pVideo.width * (_uiComponent.height / m_pVideo.height);
+					m_pVideo.height = _uiComponent.height;
+					m_pVideo.x = (_uiComponent.width - m_pVideo.width) / 2;
+				}
+				m_nWidth = _uiComponent.width;
+				m_nHeight = _uiComponent.height;
+			}
+			
 			/***
 			 * Message handlers
 			 **/
 
 			private function OnNetConnection(event:NetStatusEvent):void
 			{
-				trace("OnNetConnection: " + event.info.code);
 				if (event.info.code == "NetConnection.Connect.Success")
 				{
 					// Create the net stream and play the stream
@@ -60,7 +133,6 @@
 					m_pNetStream.client = {};
 					m_pNetStream.client.onMetaData = OnMetaData;
 					m_pNetStream.bufferTime = 0;
-					trace("Playing net stream: " + m_sStreamName);
 					m_pNetStream.play(m_sStreamName);
 					m_pVideo.attachNetStream(m_pNetStream);
 					m_pNetStream.addEventListener(NetStatusEvent.NET_STATUS, OnNetStatus);
@@ -68,20 +140,23 @@
 					// Metadata handler
 					function OnMetaData(item:Object):void
 					{
-						trace("OnMetaData");
-						// Resize and center video
-						//m_pReactorVideo.width = item.width;
-						//m_pReactorVideo.height = item.height;
-						//m_pReactorVideo.x = (_reactor1.width - m_pReactorVideo.width) / 2;
-						//m_pReactorVideo.y = (_reactor1.height - m_pReactorVideo.height) / 2;
+						// Update the video dimensions
+						UpdateVideoDimensions();
+					}
+				}
+				else if((event.info.code == "NetConnection.Connect.Closed") || (event.info.code == "NetConnection.Connect.Failed"))
+				{
+					// Make sure we're visible
+					if (m_bVisible)
+					{
+						// We can't call connect from here so set the reconnect timer
+						m_pReconnectTimer.start();
 					}
 				}
 			}
 
 			private function OnNetStatus(event:NetStatusEvent):void
 			{
-				trace("NetStatus code = " + event.info.code + ", description = " + event.info.description);
-				
 				// Set the playing flag
 				if (event.info.code == "NetStream.Play.Start")
 				{
@@ -95,9 +170,55 @@
 				// Check for the end of the video stream (stop followed by empty)
 				if (!m_bPlaying && (event.info.code == "NetStream.Buffer.Empty"))
 				{
-					trace("Restarting stream");
 					m_pNetStream.play(m_sStreamName);
 				}
+			}
+
+			// Called when the watch timer triggers
+			private function OnWatchTimer(event:TimerEvent):void
+			{
+				// Check if we've been shown or hidden
+				var bVisible:Boolean = CheckVisibility(this);
+				if (bVisible && !m_bVisible)
+				{
+					// We've been shown.  Stop the hidden timer if it's running
+					if (m_pHiddenTimer.running)
+					{
+						m_pHiddenTimer.stop();
+					}
+					
+					// Recreate the video connection if we're not playing
+					if (!m_bPlaying)
+					{
+						CreateVideoConnection();
+					}
+				}
+				else if (!bVisible && m_bVisible)
+				{
+					// We've been hidden.  Start the hidden timer
+					m_pHiddenTimer.start();
+				}
+				m_bVisible = bVisible;
+
+				// Check if our dimensions have changed
+				if ((m_nWidth != _uiComponent.width) || (m_nHeight != _uiComponent.height))
+				{
+					UpdateVideoDimensions();
+				}
+			}
+
+			// Called when the hidden timer completes
+			private function OnHiddenTimerComplete(event:TimerEvent):void
+			{
+				// Drop the video connection
+				DropVideoConnection();
+			}
+
+			// Called when the reconnect timer completes
+			private function OnReconnectTimerComplete(event:TimerEvent):void
+			{
+				// Recreate the video connection
+				CreateVideoConnection();
 			}
 
 			/***
@@ -114,9 +235,20 @@
 			private var m_pNetConnection:NetConnection;
 			private var m_pNetStream:NetStream;
 			
-			// Flag that indicates if our video stream is playing
+			// Timers
+			private var m_pWatchTimer:Timer;
+			private var m_pHiddenTimer:Timer;
+			private var m_pReconnectTimer:Timer;
+			
+			// Flags and dimensions
+			private var m_bVisible:Boolean = true;
 			private var m_bPlaying:Boolean = false;
+			private var m_nWidth:uint = 0;
+			private var m_nHeight:uint = 0;
 		]]>
 	</fx:Script>
-	<mx:UIComponent id="_uiComponent" width="100%" height="100%" />
+	
+	<s:VGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%">
+		<mx:UIComponent id="_uiComponent" width="100%" height="100%" />
+	</s:VGroup>
 </s:BorderContainer>

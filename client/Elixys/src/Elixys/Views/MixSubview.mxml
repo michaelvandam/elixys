@@ -27,11 +27,15 @@
 				// Handle according to our view mode
 				if (m_sViewMode == SubviewBase.RUNMODE)
 				{
-					// Set the status
+					// Set the status and video stream
 					_runStatusText.text = pState.ServerState().RunState().Status();
+					if (m_pComponentMix != null)
+					{
+						m_pElixysMain.SetVideo(pState, m_pComponentMix.Reactor, _runVideo);
+					}
 				}
 			}
-
+			
 			// Called when component details arrive from the server
 			public override function UpdateComponent(pComponent:Component):void
 			{
@@ -218,7 +222,7 @@
 					<mx:Text id="_runStatusText" styleName="TextMedium" width="100%" />
 				</s:HGroup>
 				<s:HGroup horizontalAlign="center" verticalAlign="middle" width="80%">
-					<s:BorderContainer backgroundColor="0x777777" width="320" height="320" />
+					<mx:UIComponent id="_runVideo" width="480" height="320" />
 				</s:HGroup>
 				<s:HGroup horizontalAlign="center" verticalAlign="middle" width="80%">
 					<mx:Text id="_runVideoText" styleName="TextMedium" />

@@ -10,9 +10,11 @@
 			import Elixys.Objects.*;
 			
 			import mx.controls.Alert;
+			import mx.core.UIComponent;
 			import mx.events.ResizeEvent;
 			import mx.managers.PopUpManager;
 			
+			import spark.components.Group;
 			import spark.components.VGroup;
 
 			/***
@@ -316,6 +318,65 @@
 			public function GetServer():String
 			{
 				return m_sServer;
+			}
+			
+			// Sets the video player
+			public function SetVideo(pState:State, nReactor:uint, pParent:UIComponent):void
+			{
+				var pVideoView:VideoView;
+				switch(nReactor)
+				{
+					case 1:
+						if (m_pReactor1Video == null)
+						{
+							m_pReactor1Video = new VideoView();
+						}
+						pVideoView = m_pReactor1Video;
+						break;
+
+					case 2:
+						if (m_pReactor2Video == null)
+						{
+							m_pReactor2Video = new VideoView();
+						}
+						pVideoView = m_pReactor2Video;
+						break;
+					
+					case 3:
+						if (m_pReactor3Video == null)
+						{
+							m_pReactor3Video = new VideoView();
+						}
+						pVideoView = m_pReactor3Video;
+						break;
+					
+					default:
+						throw Error("Unknown reactor");
+				}
+				pVideoView.width = pParent.width;
+				pVideoView.height = pParent.height;
+				SetVideoInternal(pState, nReactor, pParent, pVideoView, pParent.width, pParent.height);
+			}
+			
+			// Sets the video player
+			private function SetVideoInternal(pState:State, nReactor:uint, pParent:UIComponent, pReactorVideo:VideoView,
+				nWidth:uint, nHeight:uint):void
+			{
+				// Assign the video to the parent
+				if ((pReactorVideo.parent == null) || (pReactorVideo.parent != pParent))
+				{
+					if (pReactorVideo.parent != null)
+					{
+						pReactorVideo.parent.removeChild(pReactorVideo);
+					}
+					pParent.addChild(pReactorVideo);
+					pParent.width = pReactorVideo.width;
+					pParent.height = pReactorVideo.height;
+				}
+				
+				// Update the stream
+				var pReactor:ReactorState = pState.ServerState().HardwareState().Reactors()[nReactor - 1] as ReactorState;
+				pReactorVideo.SetStream(m_sServer, pReactor.Video(), nWidth, nHeight);
 			}
 			
 			/***
@@ -656,7 +717,7 @@
 			private var m_pEluteF18Subview:SubviewBase = null;
 			private var m_pMixSubview:SubviewBase = null;
 			private var m_pMoveSubview:SubviewBase = null;
-			
+
 			// State update timer
 			private var m_pStateTimer:Timer;
 
@@ -665,6 +726,11 @@
 
 			// Prompt pop up window
 			private var _viewPrompt:PromptView;
+
+			// Reactor videos
+			private var m_pReactor1Video:VideoView;
+			private var m_pReactor2Video:VideoView;
+			private var m_pReactor3Video:VideoView;
 		]]>
 	</fx:Script>
 	
