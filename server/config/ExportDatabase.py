@@ -50,11 +50,12 @@ if __name__ == '__main__':
     print "Exporting users..."
     pUsers = pDBComm.GetAllUsers("System")
     for pUser in pUsers:
+        sPasswordHash = pDBComm.GetUserPasswordHash("System", pUser["username"])
         pDatabase["users"].append({"type":"user",
             "username":pUser["username"],
             "firstname":pUser["firstname"],
             "lastname":pUser["lastname"],
-            "passwordhash":"secret",
+            "passwordhash":sPasswordHash,
             "role":pUser["accesslevel"]})
 
     # Add the saved sequences

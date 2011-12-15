@@ -50,7 +50,7 @@ class SequenceManager:
     # Return the ID of the new sequence
     return nNewSequenceID  
   
-  def ImportSequence(self, sRemoteUser, sFilename):
+  def ImportSequence(self, sRemoteUser, sFilename, sType):
     """Imports the specified sequence into the database"""
     # Open the file and read the contents
     pSequenceFile = open(sFilename)
@@ -66,7 +66,7 @@ class SequenceManager:
     # Create the sequence
     if (pSequence["type"] == "sequence") and (pSequence["name"] != "") and (pSequence["reactors"] != 0) and (pSequence["reagentsperreactor"] != 0) and \
        (pSequence["columnsperreactor"] != 0):
-      nSequenceID = self.database.CreateSequence(sRemoteUser, pSequence["name"], pSequence["description"], "Saved", pSequence["reactors"], 
+      nSequenceID = self.database.CreateSequence(sRemoteUser, pSequence["name"], pSequence["description"], sType, pSequence["reactors"], 
         pSequence["reagentsperreactor"], pSequence["columnsperreactor"])
     else:
       raise Exception("Invalid sequence parameters")
@@ -142,6 +142,10 @@ class SequenceManager:
 
     # Add each component
     for pComponent in pDBSequence["components"]:
+        # Skip the cassettes
+        if pComponent["componenttype"] == "CASSETTE":
+            continue
+
         # Minimalize the component
         pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
         pMinimalComponent = {}

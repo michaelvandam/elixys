@@ -149,6 +149,15 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
         SELECT * FROM tmp_User WHERE Username = iUsername;
     END //
 
+/* Gets the password hash for the user:
+ *   IN Username - Name of the user
+ */
+DROP PROCEDURE IF EXISTS GetUserPasswordHash;
+CREATE PROCEDURE GetUserPasswordHash(IN iUsername VARCHAR(30))
+    BEGIN
+        SELECT Password FROM Users WHERE Username = iUsername;
+    END //
+
 /* Creates a new user:
  *   
  *   IN Username - Username

@@ -147,6 +147,15 @@ class DBComm:
     # Create and return the user object
     return self.__CreateUser(pUserRaw[0])
 
+  def GetUserPasswordHash(self, sCurrentUsername, sUsername):
+    """Returns the password hash of the specified user"""
+    # Load the database access and get the user password hash
+    self.Log(sCurrentUsername, "DBComm.GetUserPasswordHash(%s)" % (sUsername, ))
+    pPasswordHash = self.__CallStoredProcedure("GetUserPasswordHash", (sUsername, ))
+    if len(pPasswordHash) == 0:
+        raise Exception("User " + sUsername + " not found")
+    return pPasswordHash[0][0]
+
   def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName):
     """Creates a new user"""
     self.Log(sCurrentUsername, "DBComm.CreateUser(%s, %s, %s, %s, %s)" % (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName))
