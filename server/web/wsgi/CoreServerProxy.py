@@ -17,17 +17,17 @@ class CoreServerProxy():
     def RunSequence(self, sUsername, nSequenceID):
         return self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)
 
-    def Pause(self, sUsername):
-        return self.__pCoreServer.root.Pause(sUsername)
+    def PauseSequence(self, sUsername):
+        return self.__pCoreServer.root.PauseSequence(sUsername)
 
-    def Continue(self, sUsername):
-        return self.__pCoreServer.root.Continue(sUsername)
+    def ContinueSequence(self, sUsername):
+        return self.__pCoreServer.root.ContinueSequence(sUsername)
 
-    def Abort(self, sUsername):
-        return self.__pCoreServer.root.Abort(sUsername)
+    def AbortSequence(self, sUsername):
+        return self.__pCoreServer.root.AbortSequence(sUsername)
 
-    def EmergencyStop(self, sUsername):
-        return self.__pCoreServer.root.EmergencyStop(sUsername)
+    def DeliverUserInput(self, sUsername):
+        return self.__pCoreServer.root.DeliverUserInput(sUsername)
 
     def PauseTimer(self, sUsername):
         return self.__pCoreServer.root.PauseTimer(sUsername)
@@ -49,10 +49,4 @@ class CoreServerProxy():
 
     def CLIGetState(self, sUsername):
         return self.__pCoreServer.root.CLIGetState(sUsername)
-
-    def CLIAbortUnitOperation(self, sUsername):
-        return self.__pCoreServer.root.CLIAbortUnitOperation(sUsername)
-
-    def CLIDeliverUserInput(self, sUsername):
-        return self.__pCoreServer.root.CLIDeliverUserInput(sUsername)
 

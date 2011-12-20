@@ -157,18 +157,6 @@ class UnitOperationsWrapper:
         pMix.start()
         return pMix
 
-    def UserInput(self, sUserMessage, bIsCheckBox, sDescription):
-        """Performs a user input unit operation
-        raise Exception("Implement UserInput unit operation")
-        pParams = {"userMessage":sUserMessage,
-                   "isCheckbox":bIsCheckBox,
-                   "description":sDescription}
-        pUserInput = UserInput(self.__pSystemModel, pParams)
-        pUserInput.setDaemon(True)
-        pUserInput.start()
-        return pUserInput"""
-        return None
-
     def DetectRadiation(self):
         """Performs a radiation detection unit operation
         raise Exception("Implement DetectRadiation unit operation")

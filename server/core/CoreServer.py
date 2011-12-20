@@ -254,83 +254,167 @@ class CoreServerService(rpyc.Service):
         gRunUsername = sUsername
         return True
 
-    def exposed_Pause(self, sUsername):
+    def exposed_PauseSequence(self, sUsername):
         """Causes the system to pause after the current unit operation is complete"""
         global gDatabase
         gDatabase.Log(sUsername, "CoreServerService.Pause()")
         return False
 
-    def exposed_Continue(self, sUsername):
+    def exposed_ContinueSequence(self, sUsername):
         """Continues a paused run"""
         global gDatabase
-        global gSystemModel
-        global gRunUsername
-        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.Continue()")
-
-        # Make sure the system is running
-        if (gRunSequence == None) or not gRunSequence.running:
-            gDatabase.Log(sUsername, "No sequence running, cannot continue")
-            return False
-
-        # Make sure we are the user running the system
-        if gRunUsername != sUsername:
-            gDatabase.Log(sUsername, "Not the user running the sequence, cannot continue")
-            return False
-
-        # Deliver the user input to the current unit operation
-        pUnitOperation = gSystemModel.GetUnitOperation()
-        if pUnitOperation != None:
-            pUnitOperation.deliverUserInput()
-        return True
-
-    def exposed_Abort(self, sUsername):
-        """Gently aborts the run that is in progress, cooling the system and shutting down cleanly"""
-        global gDatabase
-        gDatabase.Log(sUsername, "CoreServerService.Abort()")
         return False
 
-    def exposed_EmergencyStop(self, sUsername):
+    def exposed_AbortSequence(self, sUsername):
         """Quickly turns off the heaters and terminates the run, leaving the system in its current state"""
         global gDatabase
         global gSystemModel
         global gRunUsername
         global gRunSequence
-        gDatabase.Log(sUsername, "CoreServerService.EmergencyStop()")
+        gDatabase.Log(sUsername, "CoreServerService.AbortSequence()")
 
-        # Make sure the system is running
-        if (gRunSequence == None) or not gRunSequence.running:
-            gDatabase.Log(sUsername, "No sequence running, cannot abort")
-            return False
+        # Perform additional checks if the user is someone other than the CLI
+        if sUsername != "CLI":
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                gDatabase.Log(sUsername, "No sequence running, cannot abort")
+                return False
 
-        # Make sure we are the user running the system
-        if gRunUsername != sUsername:
-            gDatabase.Log(sUsername, "Not the user running the sequence, cannot abort")
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                gDatabase.Log(sUsername, "Not the user running the sequence, cannot abort")
+                return False
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.Log(sUsername, "No unit operation, cannot abort")
             return False
 
         # Deliver the abort signal to the current unit operation
-        pUnitOperation = gSystemModel.GetUnitOperation()
-        if pUnitOperation != None:
-            pUnitOperation.setAbort()
+        pUnitOperation.setAbort()
         return True
 
     def exposed_PauseTimer(self, sUsername):
         """Pauses the timer if the unit operation has one running"""
         global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.PauseTimer()")
-        return False
+
+        # Perform additional checks if the user is someone other than the CLI
+        if sUsername != "CLI":
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                gDatabase.Log(sUsername, "No sequence running, cannot pause timer")
+                return False
+
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                gDatabase.Log(sUsername, "Not the user running the sequence, cannot pause timer")
+                return False
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.Log(sUsername, "No unit operation, cannot pause timer")
+            return False
+
+        # Deliver the pause timer signal to the current unit operation
+        pUnitOperation.pauseTimer()
+        return True
 
     def exposed_ContinueTimer(self, sUsername):
         """Continues the timer if the unit operation has one paused"""
         global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.ContinueTimer()")
-        return False
+
+        # Perform additional checks if the user is someone other than the CLI
+        if sUsername != "CLI":
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                gDatabase.Log(sUsername, "No sequence running, cannot continue timer")
+                return False
+
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                gDatabase.Log(sUsername, "Not the user running the sequence, cannot continue timer")
+                return False
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.Log(sUsername, "No unit operation, cannot continue timer")
+            return False
+
+        # Deliver the continue timer signal to the current unit operation
+        pUnitOperation.continueTimer()
+        return True
 
     def exposed_StopTimer(self, sUsername):
         """Cuts the timer short if the unit operation has one running"""
         global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
         gDatabase.Log(sUsername, "CoreServerService.StopTimer()")
-        return False
+
+        # Perform additional checks if the user is someone other than the CLI
+        if sUsername != "CLI":
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                gDatabase.Log(sUsername, "No sequence running, cannot stop timer")
+                return False
+
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                gDatabase.Log(sUsername, "Not the user running the sequence, cannot stop timer")
+                return False
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.Log(sUsername, "No unit operation, cannot stop timer")
+            return False
+
+        # Deliver the stop timer signal to the current unit operation
+        pUnitOperation.stopTimer()
+        return True
+
+    def exposed_DeliverUserInput(self, sUsername):
+        """Delivers user input to the current unit operation for the CLI"""
+        global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
+        gDatabase.Log(sUsername, "CoreServerService.DeliverUserInput()")
+
+        # Perform additional check if the user is not the CLI
+        if sUsername != "CLI":
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                gDatabase.Log(sUsername, "No sequence running, cannot deliver user input")
+                return False
+
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                gDatabase.Log(sUsername, "Not the user running the sequence, cannot deliver user input")
+                return False
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.Log(sUsername, "No unit operation, cannot deliver user input")
+            return False
+
+        # Deliver the user input to the current unit operation
+        pUnitOperation.deliverUserInput()
+        return True
 
     def exposed_CLIConnectToStateMonitor(self, sUsername):
         """Sets the state monitor"""
@@ -345,7 +429,6 @@ class CoreServerService(rpyc.Service):
             return ""
         except socket.error, ex:
             print "Warning: failed to connect to state monitor, no output will be displayed"
-
 
     def exposed_CLIExecuteCommand(self, sUsername, sCommand):
         """Executes a command for the CLI"""
@@ -385,48 +468,6 @@ class CoreServerService(rpyc.Service):
             return BaseCLI.GetStateImpl(gSystemModel)
         except Exception as ex:
             return "Failed to get system state: " + str(ex)
-
-    def exposed_CLIAbortUnitOperation(self, sUsername):
-        """Aborts the current unit operation for the CLI"""
-        global gDatabase
-        global gSystemModel
-        gDatabase.Log(sUsername, "CoreServerService.CLIAbortUnitOpertion()")
-
-        # Abort the current unit operation
-        try:
-            pCurrentUnitOperation = gSystemModel.GetUnitOperation()
-            if pCurrentUnitOperation != None:
-                pCurrentUnitOperation.abort = True
-                return ""
-            else:
-                return "No unit operation"
-        except Exception as ex:
-            return "Failed to abort unit operation: " + str(ex)
-
-        return self.__pCoreServer.root.CLIDeliverUserInput(sUsername)
-
-    def DeliverUserInput(self):
-        """Deliver user input to the current unit operation"""
-        # Ask the core server to deliver user input to the current unit operation
-        sResult = self.pCoreServer.CLIDeliverUserInput("CLI")
-
-
-    def exposed_CLIDeliverUserInput(self, sUsername):
-        """Delivers user input to the current unit operation for the CLI"""
-        global gDatabase
-        global gSystemModel
-        gDatabase.Log(sUsername, "CoreServerService.CLIDeliverUserInput()")
-
-        # Deliver user input to the current unit operation
-        try:
-            pCurrentUnitOperation = gSystemModel.GetUnitOperation()
-            if pCurrentUnitOperation != None:
-                pCurrentUnitOperation.deliverUserInput()
-                return ""
-            else:
-                return "No unit operation"
-        except Exception as ex:
-            return "Failed to deliver user input to unit operation: " + str(ex)
 
 # Main function
 if __name__ == "__main__":

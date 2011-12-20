@@ -116,30 +116,6 @@ def GetStateImpl(pSystemModel):
     """Formats the state as a string"""
     return pSystemModel.DumpStateToString()
 
-# AbortUnitOperation implementation
-def AbortUnitOperationImpl(pSystemModel):
-    """Abort the current unit operation"""
-    # Get the current unit operation
-    pCurrentUnitOperation = pSystemModel.GetUnitOperation()
-    if pCurrentUnitOperation != None:
-        # Abort the current unit operation
-        pCurrentUnitOperation.abort = True
-        return ""
-    else:
-        return "No current unit operation"
-
-# DeliverUserInput implementation
-def DeliverUserInputImpl(pSystemModel):
-    """Delivers user input to the current unit operation"""
-    # Get the current unit operation
-    pCurrentUnitOperation = pSystemModel.GetUnitOperation()
-    if pCurrentUnitOperation != None:
-        # Deliver user input to the current user operation
-        pCurrentUnitOperation.deliverUserInput()
-        return ""
-    else:
-        return "No current unit operation"
-
 # Base CLI class
 class BaseCLI(threading.Thread):
     def ExecuteCommand(self, sCommand):
@@ -255,10 +231,12 @@ class BaseCLI(threading.Thread):
                 print "  Mix"
                 print "For additional information on each operation:"
                 print "  help [unit operation name]"
-                print "To abort the currently unit operation:"
-                print "  AbortUnitOperation()"
-                print "To deliver user input to a waiting unit operation:"
-                print "  DeliverUserInput()"
+                print "Addition function that apply to the current unit operation:"
+                print "  AbortUnitOperation()   Abort the unit operation"
+                print "  DeliverUserInput()     Delivers input to the waiting unit operation"
+                print "  PauseTimer()           Pauses the running unit operation timer"
+                print "  ContinueTimer()        Continues the paused unit operation timer"
+                print "  StopTimer()            Stops the unit operation timer"
             elif sCommand == "help Init":
                 # React unit operation
                 print "Initialize the Elixys hardware for use."
@@ -367,6 +345,15 @@ class BaseCLI(threading.Thread):
             elif sCommand == "DeliverUserInput()":
                 # Deliver user input to the current unit operation
                 self.DeliverUserInput()
+            elif sCommand == "PauseTimer()":
+                # Pauses the running unit operation timer
+                self.PauseTimer()
+            elif sCommand == "ContinueTimer()":
+                # Continues the paused unit operation timer
+                self.ContinueTimer()
+            elif sCommand == "StopTimer()":
+                # Stops the unit operation timer
+                self.StopTimer()
             elif sCommand == "help hardware":
                 # Yes, it's a wall of text.  We could use introspection for the function names but it gets even messier that way because we
                 # don't want to list all of our functions

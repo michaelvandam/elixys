@@ -38,17 +38,38 @@ class CoreServerCLI(BaseCLI.BaseCLI):
 
     def AbortUnitOperation(self):
         """Abort the current unit operation"""
-        # Ask the core server to abort the current unit operation
-        sResult = self.pCoreServer.CLIAbortUnitOperation("CLI")
-        if sResult != "":
-            print sResult
+        # Ask the core server to abort the current unit operation by calling AbortSequence
+        bSuccess = self.pCoreServer.AbortSequence("CLI")
+        if not bSuccess:
+            print "Failed to abort unit operation"
 
     def DeliverUserInput(self):
         """Deliver user input to the current unit operation"""
         # Ask the core server to deliver user input to the current unit operation
-        sResult = self.pCoreServer.CLIDeliverUserInput("CLI")
-        if sResult != "":
-            print sResult
+        bSuccess = self.pCoreServer.DeliverUserInput("CLI")
+        if not bSuccess:
+            print "Failed to deliver user input"
+
+    def PauseTimer(self):
+        """Pauses the currently running unit operation timer"""
+        # Ask the core server to pause the current running unit operation timer
+        bSuccess = self.pCoreServer.PauseTimer("CLI")
+        if not bSuccess:
+            print "Failed to pause timer"
+
+    def ContinueTimer(self):
+        """Continues the paused unit operation timer"""
+        # Ask the core server to continue the paused unit operation timer
+        bSuccess = self.pCoreServer.ContinueTimer("CLI")
+        if not bSuccess:
+            print "Failed to continue timer"
+
+    def StopTimer(self):
+        """Stops the unit operation timer"""
+        # Ask the core server to stop the unit operation timer
+        bSuccess = self.pCoreServer.StopTimer("CLI")
+        if not bSuccess:
+            print "Failed to stop timer"
 
     def Run(self):
         """Main CLI function"""

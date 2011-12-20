@@ -68,7 +68,7 @@ class Add(UnitOperation):
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
     self.component["deliverypositionvalidation"] = "type=enum-number; values=1,2; required=true"
-    self.component["deliverytimevalidation"] = "type=number; min=0; max=10"
+    self.component["deliverytimevalidation"] = "type=number; min=0; max=90"
     self.component["deliverypressurevalidation"] = "type=number; min=0; max=15"
 
     #Look up the reagent we are adding and remove it from the list of available reagents

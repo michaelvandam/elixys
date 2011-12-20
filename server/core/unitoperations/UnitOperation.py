@@ -111,12 +111,13 @@ class UnitOperation(threading.Thread):
     self.database = database
     self.status = ""
     self.delay = 50#50ms delay
-    self.paused = False
     self.abort = False
-    self.pausedLock = threading.Lock()
     self.timerStartTime = 0
     self.timerLength = 0
     self.timerShowInStatus = False
+    self.timerPaused = False
+    self.timerPauseTime = 0
+    self.timerPausedTime = 0
     self.waitingForUserInput = False
     self.userInputTitle = ""
     self.userInputText = ""
@@ -326,7 +327,7 @@ class UnitOperation(threading.Thread):
 
     #Move the vial down    
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,6)
     
   def removeGripperPlace(self):
     #Make sure we are closed and down
@@ -337,7 +338,7 @@ class UnitOperation(threading.Thread):
 
     #Move the vial up
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,6)
 
     #Turn off and raise the transfer gas
     self.setGasTransferValve(OFF)
@@ -348,13 +349,13 @@ class UnitOperation(threading.Thread):
     self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
     self.systemModel['ReagentDelivery'].setMoveGripperOpen()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
     
     #Move up and to home
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
     self.systemModel['ReagentDelivery'].moveToHomeFast()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 
@@ -364,7 +365,6 @@ class UnitOperation(threading.Thread):
     self.checkAbort()
     if comparator == EQUAL:
       while not(function() == condition):
-        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
@@ -374,7 +374,6 @@ class UnitOperation(threading.Thread):
         self.checkAbort()
     elif comparator == NOTEQUAL:
       while (function() == condition):
-        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
@@ -384,7 +383,6 @@ class UnitOperation(threading.Thread):
         self.checkAbort()
     elif comparator == GREATER:
       while not(function() >= condition):
-        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
@@ -394,7 +392,6 @@ class UnitOperation(threading.Thread):
         self.checkAbort()
     elif comparator == LESS:
       while not(function() <=condition):
-        #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
         self.stateCheckInterval(self.delay)
         if not(timeout == 65535):
           if self.isTimerExpired(startTime,timeout):
@@ -405,7 +402,6 @@ class UnitOperation(threading.Thread):
     else:
       self.logError("Invalid comparator: " + comparator)
       self.abortOperation("Invalid comparator: " + comparator)
-    #print "%s Function %s == %s, expected %s" % (self.curTime(),str(function.__name__),str(function()),str(condition))
     
   def checkForCondition(self,function,condition,comparator):
     ret = False #Default False
@@ -432,14 +428,18 @@ class UnitOperation(threading.Thread):
     self.timerShowInStatus = showInStatus
     
   def waitForTimer(self):
-    while not(self.isTimerExpired(self.timerStartTime,self.timerLength)):
+    while self.timerPaused or not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
       self.updateTimer()
       self.checkAbort()
       self.stateCheckInterval(50) #Sleep 50ms between checks
 
   def updateTimer(self):
     if self.timerShowInStatus:
-      self.updateStatus("%s remaining" % self.formatTime(self.timerLength-(time.time()-self.timerStartTime)))
+      if not self.timerPaused:
+        nSecondsRemaining = self.timerLength - (time.time() - self.timerStartTime) + self.timerPausedTime
+        self.updateStatus("%s remaining" % self.formatTime(nSecondsRemaining))
+      else:
+        self.updateStatus("paused")
       
   def isTimerExpired(self,startTime,length):
     if (length == 65535):
@@ -447,9 +447,6 @@ class UnitOperation(threading.Thread):
     if (time.time()-startTime >= length):
       return True
     return False
-    
-  def curTime(self):
-    return time.strftime("%H:%M:%S", time.localtime())
     
   def formatTime(self,timeValue):
     hours = 0
@@ -474,32 +471,27 @@ class UnitOperation(threading.Thread):
     else:
       time.sleep(0.05)#default if delay = None or delay = 0
 
-  def setPaused():
-   # Acquire the lock, set the variable and release the lock
-   self.pausedLock.acquire()
-   self.paused = True
-   self.pausedLock.release()
+  def pauseTimer(self):
+    """Pauses the running unit operation timer"""
+    if not self.timerPaused:
+      self.timerPaused = True
+      self.timerPauseTime = time.time()
+      print "Timer paused at " + str(self.timerPauseTime)
 
-  def paused():
-   # Acquire the lock before reading the variable
-   self.pausedLock.acquire()
+  def continueTimer(self):
+    """Continues the paused unit operation timer"""
+    if self.timerPaused:
+      self.timerPaused = False
+      self.timerPausedTime += time.time() - self.timerPauseTime
+      print "Timer resumed, paused time " + str(self.timerPausedTime)
 
-   # Pausing loop
-   while self.paused:
-    # Release the lock before sleeping and acquire again before reading the variable
-    self.pausedLock.release()
-    time.sleep(0.05)
-    self.pausedLock.acquire()
+  def stopTimer(self):
+    """Stops the unit operation timer"""
+    if self.timerPaused:
+      self.continueTimer()
+    if not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
+      self.timerLength = time.time() - self.timerStartTime - self.timerPausedTime
 
-   # Release the lock before returning
-   self.pausedLock.release()
-
-  def setUnpaused():
-   # Acquire the lock, clear the variable and release the lock
-   self.pausedLock.acquire()
-   self.paused = False
-   self.pausedLock.release()
-      
   def abortOperation(self,error):
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
     for nReactor in range(1, 4):
@@ -782,6 +774,7 @@ class UnitOperation(threading.Thread):
     self.waitingForUserInput = False
 
   def waitForUserInput(self, sMessage):
+    """Pauses the unit operation until we get a signal to continue"""
     # Signal that we are waiting for user input
     self.waitingForUserInput = True
     self.userInputTitle = "Prompt"
@@ -790,5 +783,5 @@ class UnitOperation(threading.Thread):
     # Wait until we get the signal to continue
     while self.waitingForUserInput:
       time.sleep(0.25)
-
+      self.checkAbort()
 

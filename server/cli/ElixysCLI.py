@@ -42,15 +42,53 @@ class ElixysCLI(BaseCLI.BaseCLI):
 
     def AbortUnitOperation(self):
         """Abort the current unit operation"""
-        sResult = BaseCLI.AbortUnitOperationImpl(self.pSystemModel)
-        if sResult != "":
-            print sResult
+        # Get the current unit operation
+        pCurrentUnitOperation = self.pSystemModel.GetUnitOperation()
+        if pCurrentUnitOperation != None:
+            # Abort the current unit operation
+            pCurrentUnitOperation.setAbort()
+        else:
+            print "No current unit operation"
 
     def DeliverUserInput(self):
         """Deliver user input to the current unit operation"""
-        sResult = BaseCLI.DeliverUserInputImpl(self.pSystemModel)
-        if sResult != "":
-            print sResult
+        # Get the current unit operation
+        pCurrentUnitOperation = self.pSystemModel.GetUnitOperation()
+        if pCurrentUnitOperation != None:
+            # Deliver user input to the current user operation
+            pCurrentUnitOperation.deliverUserInput()
+        else:
+            print "No current unit operation"
+
+    def PauseTimer(self):
+        """Pauses the currently running unit operation timer"""
+        # Get the current unit operation
+        pCurrentUnitOperation = self.pSystemModel.GetUnitOperation()
+        if pCurrentUnitOperation != None:
+            # Pause the currently running unit operation timer
+            pCurrentUnitOperation.pauseTimer()
+        else:
+            print "No current unit operation"
+
+    def ContinueTimer(self):
+        """Continues the paused unit operation timer"""
+        # Get the current unit operation
+        pCurrentUnitOperation = self.pSystemModel.GetUnitOperation()
+        if pCurrentUnitOperation != None:
+            # Continue the currently paused unit operation timer
+            pCurrentUnitOperation.continueTimer()
+        else:
+            print "No current unit operation"
+
+    def StopTimer(self):
+        """Stops the unit operation timer"""
+        # Get the current unit operation
+        pCurrentUnitOperation = self.pSystemModel.GetUnitOperation()
+        if pCurrentUnitOperation != None:
+            # Stop the unit operation timer
+            pCurrentUnitOperation.stopTimer()
+        else:
+            print "No current unit operation"
 
     def Run(self):
         """Main CLI function"""

@@ -40,6 +40,10 @@ class Initialize(UnitOperation):
       self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2) 
       self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
       self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+ 
+      # Wait for the reactors to reach the down position
+      for self.ReactorID in self.ReactorTuple:
+        self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,3)
 
       #Home the robot once but don't check if it happens
       self.systemModel['ReagentDelivery'].moveToHome()
