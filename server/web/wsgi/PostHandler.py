@@ -209,6 +209,41 @@ class PostHandler:
         self.__pClientState["sequenceid"] = nSequenceID
         return self.__SaveClientStateAndReturn()
 
+    # Show the Run Sequence From Component prompt
+    def __ShowRunSequenceFromComponentPrompt(self, nSequenceID, nComponentID):
+        # Load the sequence and find the component
+        pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
+        pComponent = None
+        nIndex = 1
+        for pSeqComponent in pSequence["components"]:
+             if pSeqComponent["id"] == nComponentID:
+                 pComponent = pSeqComponent
+                 break
+             nIndex += 1
+        if pComponent == None:
+            raise Exception("Component " + str(nComponentID) + " not found in sequence " + str(nSequenceID))
+
+        # Adjust the component index for the cassettes
+        nIndex -= self.__pDatabase.GetConfiguration(self.__sRemoteUser)["reactors"]
+
+        # Fill in the state
+        self.__pClientState["prompt"]["screen"] = "PROMPT_RUNSEQUENCEFROMCOMPONENT"
+        self.__pClientState["prompt"]["show"] = True
+        self.__pClientState["prompt"]["title"] = "Confirm run"
+        self.__pClientState["prompt"]["text1"] = "Would you like to run the sequence \"" + pSequence["metadata"]["name"] + \
+            "\" starting with unit operation number " + str(nIndex) + " (\"" + pComponent["name"] + "\")?"
+        self.__pClientState["prompt"]["edit1"] = False
+        self.__pClientState["prompt"]["text2"] = ""
+        self.__pClientState["prompt"]["edit2"] = False
+        self.__pClientState["prompt"]["buttons"] = [{"type":"button",
+            "text":"No",
+            "id":"NO"},
+            {"type":"button",
+            "text":"Yes",
+            "id":"YES"}]
+        self.__pClientState["sequenceid"] = nSequenceID
+        return self.__SaveClientStateAndReturn()
+
     # Handle POST /VIEW
     def __HandlePostView(self):
         # Make sure we are on View Sequence
@@ -233,6 +268,9 @@ class PostHandler:
             elif sActionTargetID == "RUN":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(self.__pClientState["sequenceid"])
+            elif sActionTargetID == "RUNHERE":
+                # Show the Run Sequence From Component prompt
+                return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -257,6 +295,9 @@ class PostHandler:
             if sActionTargetID == "RUN":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(self.__pClientState["sequenceid"])
+            elif sActionTargetID == "RUNHERE":
+                # Show the Run Sequence From Component prompt
+                return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
         # Unhandled use case
         raise Exception("State misalignment")
@@ -275,24 +316,30 @@ class PostHandler:
         # Check which button the user clicked
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "ABORT":
-                # Switch states to Prompt (Abort sequence run)
-                self.__pClientState["prompt"]["screen"] = "PROMPT_ABORTSEQUENCERUN"
-                self.__pClientState["prompt"]["show"] = True
-                self.__pClientState["prompt"]["title"] = "Abort run"
-                self.__pClientState["prompt"]["text1"] = "Are you sure you want to abort the sequence run?\n\nThis operation cannot be undone."
-                self.__pClientState["prompt"]["edit1"] = False
-                self.__pClientState["prompt"]["text2"] = ""
-                self.__pClientState["prompt"]["edit2"] = False
-                self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-                    "text":"Yes",
-                    "id":"YES"},
-                    {"type":"button",
-                    "text":"No",
-                    "id":"NO"}]
+                # Abort the run and return to the home page
+                self.__pCoreServer.AbortSequence(self.__sRemoteUser)
+                self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "BACK":
                 # Switch states to Home
                 self.__pClientState["screen"] = "HOME"
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "PAUSE":
+                # Pause the timer
+                self.__pCoreServer.PauseTimer(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "CONTINUE":
+                # Continue the timer
+                self.__pCoreServer.ContinueTimer(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "STOP":
+                # Stop the timer
+                self.__pCoreServer.StopTimer(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "USERINPUT":
+                # Deliver user input
+                self.__pCoreServer.DeliverUserInput(self.__sRemoteUser)
                 return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
@@ -409,17 +456,6 @@ class PostHandler:
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
-        elif self.__pClientState["prompt"]["screen"] == "PROMPT_ABORTSEQUENCERUN":
-            if sActionTargetID == "YES":
-                # Abort the run and return to the home page
-                self.__pCoreServer.EmergencyStop(self.__sRemoteUser)
-                self.__pClientState["prompt"]["show"] = False
-                self.__pClientState["screen"] = "HOME"
-                return self.__SaveClientStateAndReturn()
-            if sActionTargetID == "NO":
-                # Hide the prompt
-                self.__pClientState["prompt"]["show"] = False
-                return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_RUNSEQUENCE":
             if sActionTargetID == "YES":
                 # Run the sequence
@@ -433,17 +469,22 @@ class PostHandler:
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
+        elif self.__pClientState["prompt"]["screen"] == "PROMPT_RUNSEQUENCEFROMCOMPONENT":
+            if sActionTargetID == "YES":
+                # Run the sequence from the component
+                self.__pCoreServer.RunSequenceFromComponent(self.__sRemoteUser, self.__pClientState["sequenceid"], self.__pClientState["componentid"])
+
+                # Hide the prompt and switch states to Run Sequence
+                self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "RUN"
+                return self.__SaveClientStateAndReturn()
+            if sActionTargetID == "NO":
+                # Hide the prompt
+                self.__pClientState["prompt"]["show"] = False
+                return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_UNITOPERATION":
-            if sActionTargetID == "OK":
-                # Continue the sequence
-                self.__pCoreServer.Continue(self.__sRemoteUser)
-                self.__pClientState["prompt"]["show"] = False
-                return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "BACK":
-                # Switch states to Home
-                self.__pClientState["screen"] = "HOME"
-                self.__pClientState["prompt"]["show"] = False
-                return self.__SaveClientStateAndReturn()
+            # Currently unused
+            return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
         raise Exception("State misalignment")

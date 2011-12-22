@@ -302,6 +302,11 @@ package Elixys.Views
 			DoPost(pComponent, sURL);
 		}
 
+		// Button click handler
+		public function OnButtonClick(event:MouseEvent):void
+		{
+		}
+		
 		/***
 		 * Member variables
 		 **/

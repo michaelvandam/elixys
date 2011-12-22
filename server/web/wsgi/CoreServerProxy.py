@@ -17,6 +17,9 @@ class CoreServerProxy():
     def RunSequence(self, sUsername, nSequenceID):
         return self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)
 
+    def RunSequenceFromComponent(self, sUsername, nSequenceID, nComponentID):
+        return self.__pCoreServer.root.RunSequenceFromComponent(sUsername, nSequenceID, nComponentID)
+
     def PauseSequence(self, sUsername):
         return self.__pCoreServer.root.PauseSequence(sUsername)
 

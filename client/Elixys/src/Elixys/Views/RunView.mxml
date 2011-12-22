@@ -72,7 +72,7 @@
 			}
 
 			// Button click handler
-			public function OnButtonClick(event:MouseEvent):void
+			public override function OnButtonClick(event:MouseEvent):void
 			{
 				// Create a POST request
 				var pPostSequence:PostSequence = new PostSequence();

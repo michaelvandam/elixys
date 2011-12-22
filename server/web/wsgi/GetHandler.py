@@ -178,12 +178,17 @@ class GetHandler:
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 
-        # Add the run button if no one is running the system
+        # Add the run buttons if no one is running the system
         pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
             pState["navigationbuttons"].insert(1, {"type":"button",
                 "text":"Run",
                 "id":"RUN"})
+            pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
+            if pComponent["componenttype"] != "CASSETTE":
+                pState["navigationbuttons"].insert(2, {"type":"button",
+                    "text":"Run here",
+                    "id":"RUNHERE"})
         return pState
 
     # Handle GET /state for Edit Sequence
@@ -204,12 +209,17 @@ class GetHandler:
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 
-        # Add the run button if no one is running the system
+        # Add the run buttons if no one is running the system
         pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
             pState["navigationbuttons"].insert(0, {"type":"button",
                 "text":"Run",
                 "id":"RUN"})
+            pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
+            if pComponent["componenttype"] != "CASSETTE":
+                pState["navigationbuttons"].insert(1, {"type":"button",
+                    "text":"Run here",
+                    "id":"RUNHERE"})
         return pState
 
     # Handle GET /state for Run Sequence

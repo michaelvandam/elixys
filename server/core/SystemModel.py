@@ -150,6 +150,11 @@ class SystemModel:
         nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
         sReagentRobotCurrentPositionName1, sReagentRobotCurrentPositionName2 = self.model["ReagentDelivery"].getCurrentPositionName(False)
         nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY = self.model["ReagentDelivery"].getRobotStatus(False)
+        nReagentRobotXControlWord, nReagentRobotXCheckWord = self.model["ReagentDelivery"].getRobotXControlWords(False)
+        nReagentRobotYControlWord, nReagentRobotYCheckWord = self.model["ReagentDelivery"].getRobotYControlWords(False)
+        nReactor1RobotControlWord, nReactor1RobotCheckWord = self.model["Reactor1"]["Motion"].getCurrentRobotControlWords(False)
+        nReactor2RobotControlWord, nReactor2RobotCheckWord = self.model["Reactor2"]["Motion"].getCurrentRobotControlWords(False)
+        nReactor3RobotControlWord, nReactor3RobotCheckWord = self.model["Reactor3"]["Motion"].getCurrentRobotControlWords(False)
 
         # Format the state into a string
         sState += self.__PadString("Component", STATECOMMONCOLUMN1WIDTH)
@@ -217,6 +222,16 @@ class SystemModel:
         sState += self.__PadString(str(nReagentRobotCurrentStatusX) + "/" + str(nReagentRobotCurrentStatusY), STATECOMMONCOLUMN2WIDTH)
         sState += "\n"
         
+        sState += self.__PadString("  Robot control (x/y)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotXControlWord) + "/" + str(nReagentRobotYControlWord), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("  Robot check (x/y)", STATECOMMONCOLUMN1WIDTH)
+        sState += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReagentRobotXCheckWord) + "/" + str(nReagentRobotYCheckWord), STATECOMMONCOLUMN2WIDTH)
+        sState += "\n"
+
         sState += self.__PadString("  Gripper (up/down)", STATECOMMONCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["ReagentDelivery"].getSetGripperUp(False)) + "/" + \
             self.__BoolToString(self.model["ReagentDelivery"].getSetGripperDown(False)), STATECOMMONCOLUMN2WIDTH)
@@ -278,6 +293,18 @@ class SystemModel:
         sState += self.__PadString(str(self.model["Reactor3"]["Motion"].getCurrentRobotStatus(False)), STATEREACTORCOLUMN2WIDTH)
         sState += "\n"
         
+        sState += self.__PadString("Robot control", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(nReactor1RobotControlWord), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReactor2RobotControlWord), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReactor3RobotControlWord), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+
+        sState += self.__PadString("Robot check", STATEREACTORCOLUMN1WIDTH)
+        sState += self.__PadString(str(nReactor1RobotCheckWord), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReactor2RobotCheckWord), STATEREACTORCOLUMN2WIDTH)
+        sState += self.__PadString(str(nReactor3RobotCheckWord), STATEREACTORCOLUMN2WIDTH)
+        sState += "\n"
+
         sState += self.__PadString("Reactor up (set/actual)", STATEREACTORCOLUMN1WIDTH)
         sState += self.__PadString(self.__BoolToString(self.model["Reactor1"]["Motion"].getSetReactorUp(False)) + "/" + \
             self.__BoolToString(self.model["Reactor1"]["Motion"].getCurrentReactorUp(False)), STATEREACTORCOLUMN2WIDTH)

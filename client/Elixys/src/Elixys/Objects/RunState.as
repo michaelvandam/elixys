@@ -47,11 +47,43 @@ package Elixys.Objects
 			}
 			return m_pPromptState;
 		}
+		public function TimerButtons():Array
+		{
+			// Parse the buttons
+			if (m_pTimerButtons == null)
+			{
+				m_pTimerButtons = new Array();
+				var pButtons:Array = super.flash_proxy::getProperty("timerbuttons");
+				for each (var pButtonObject:Object in pButtons)
+				{
+					var pButton:Button = new Button(null, pButtonObject);
+					m_pTimerButtons.push(pButton);
+				}
+			}
+			return m_pTimerButtons;
+		}
+		public function UnitOperationButtons():Array
+		{
+			// Parse the buttons
+			if (m_pUnitOperationButtons == null)
+			{
+				m_pUnitOperationButtons = new Array();
+				var pButtons:Array = super.flash_proxy::getProperty("unitoperationbuttons");
+				for each (var pButtonObject:Object in pButtons)
+				{
+					var pButton:Button = new Button(null, pButtonObject);
+					m_pUnitOperationButtons.push(pButton);
+				}
+			}
+			return m_pUnitOperationButtons;
+		}
 		
 		// Type
 		static public var TYPE:String = "runstate";
 
 		// State components
 		private var m_pPromptState:Elixys.Objects.PromptState;
+		private var m_pTimerButtons:Array;
+		private var m_pUnitOperationButtons:Array;
 	}
 }

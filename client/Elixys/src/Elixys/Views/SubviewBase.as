@@ -53,6 +53,23 @@ package Elixys.Views
 			}
 		}
 
+		protected function CreateButtonCallback():spark.components.Button
+		{
+			// Callback to create our new button
+			var pButton:spark.components.Button = new spark.components.Button();
+			pButton.width = 150;
+			pButton.height = 40;
+			pButton.styleName = "button";
+			pButton.addEventListener(MouseEvent.CLICK, OnButtonClick);
+			return pButton;
+		}
+		
+		// Button click handler
+		public function OnButtonClick(event:MouseEvent):void
+		{
+			m_pElixysMain.GetActiveSequenceView().OnButtonClick(event);
+		}
+
 		/***
 		 * Member variables
 		 **/

@@ -48,7 +48,7 @@
 				// Hack: hardcode the authentication parameter until we get the server redirect working
 				if (sServer == "")
 				{
-					sServer = "192.168.180.149";
+					sServer = "131.179.5.153";
 				}
 				if (sUsername == "")
 				{

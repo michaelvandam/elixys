@@ -75,30 +75,31 @@ class CoreServerService(rpyc.Service):
         pServerState = {"type":"serverstate"}
         pServerState["runstate"] = {"type":"runstate"}
         if (gRunSequence != None) and gRunSequence.running:
+            pServerState["runstate"]["status"] = ""
+            pServerState["runstate"]["prompt"] = {"type":"promptstate",
+                "show":False}
+            pServerState["runstate"]["timerbuttons"] = []
+            pServerState["runstate"]["unitoperationbuttons"] = []
             pUnitOperation = gSystemModel.GetUnitOperation()
             if pUnitOperation != None:
                 pServerState["runstate"]["status"] = pUnitOperation.status
-                pServerState["runstate"]["prompt"] = {"type":"promptstate"}
-                if pUnitOperation.waitingForUserInput:
-                    pServerState["runstate"]["prompt"]["screen"] = "PROMPT_UNITOPERATION"
-                    pServerState["runstate"]["prompt"]["show"] = True
-                    pServerState["runstate"]["prompt"]["title"] = pUnitOperation.userInputTitle
-                    pServerState["runstate"]["prompt"]["text1"] = pUnitOperation.userInputText
-                    pServerState["runstate"]["prompt"]["text2"] = ""
-                    if sUsername == gRunUsername:
-                        pServerState["runstate"]["prompt"]["buttons"] = [{"type":"button",
-                            "text":"OK",
-                            "id":"OK"}]
+                sTimerStatus = pUnitOperation.getTimerStatus()
+                if (sTimerStatus == "Running") or (sTimerStatus == "Paused"):
+                    if sTimerStatus == "Running":
+                        pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                            "text":"Pause",
+                            "id":"PAUSE"})
                     else:
-                        pServerState["runstate"]["prompt"]["buttons"] = [{"type":"button",
-                            "text":"Back",
-                            "id":"BACK"}]
-                else:
-                    pServerState["runstate"]["prompt"]["show"] = False
-            else:
-                pServerState["runstate"]["status"] = ""
-                pServerState["runstate"]["prompt"] = {"type":"promptstate",
-                    "show":False}
+                        pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                            "text":"Continue",
+                            "id":"CONTINUE"})
+                    pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                        "text":"Stop",
+                        "id":"STOP"})
+                if pUnitOperation.waitingForUserInput:
+                    pServerState["runstate"]["unitoperationbuttons"].append({"type":"button",
+                            "text":"OK",
+                            "id":"USERINPUT"})
             pServerState["runstate"]["username"] = gRunUsername
             pServerState["runstate"]["sequenceid"] = gRunSequence.sequenceID
             pServerState["runstate"]["componentid"] = gRunSequence.componentID
@@ -111,6 +112,8 @@ class CoreServerService(rpyc.Service):
             pServerState["runstate"]["username"] = ""
             pServerState["runstate"]["sequenceid"] = 0
             pServerState["runstate"]["componentid"] = 0
+            pServerState["runstate"]["timerbuttons"] = []
+            pServerState["runstate"]["unitoperationbuttons"] = []
 
         # Load the hardware state
         pModel = gSystemModel.LockSystemModel()
@@ -250,6 +253,29 @@ class CoreServerService(rpyc.Service):
         # Create and start the sequence
         gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSequenceManager, gSystemModel)
         gRunSequence.setDaemon(True)
+        gRunSequence.start()
+        gRunUsername = sUsername
+        return True
+
+    def exposed_RunSequenceFromComponent(self, sUsername, nSequenceID, nComponentID):
+        """Loads a sequence from the database and runs it from the specified component"""
+        global gDatabase
+        global gSystemModel
+        global gSequenceManager
+        global gRunUsername
+        global gRunSequence
+        gDatabase.Log(sUsername, "CoreServerService.RunSequenceFromComponent(" + str(nSequenceID) + ", " + str(nComponentID) + ")")
+
+        # Make sure we aren't already running a sequence
+        if gRunSequence != None:
+          if gRunSequence.running:
+            gDatabase.Log(sUsername, "A sequence is already running, cannot run another")
+            return False
+
+        # Create and start the sequence
+        gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSequenceManager, gSystemModel)
+        gRunSequence.setDaemon(True)
+        gRunSequence.setStartComponent(nComponentID)
         gRunSequence.start()
         gRunUsername = sUsername
         return True

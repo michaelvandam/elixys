@@ -83,8 +83,8 @@ GREATER  = ">"
 LESS     = "<"
 
 # Default component values
-DEFAULT_ADD_DURATION = 10
-DEFAULT_ADD_PRESSURE = 2
+DEFAULT_ADD_DURATION = 15
+DEFAULT_ADD_PRESSURE = 3
 DEFAULT_EVAPORATE_PRESSURE = 10
 DEFAULT_STIRSPEED = 500
 DEFAULT_TRANSFER_DURATION = 45
@@ -491,6 +491,16 @@ class UnitOperation(threading.Thread):
       self.continueTimer()
     if not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
       self.timerLength = time.time() - self.timerStartTime - self.timerPausedTime
+
+  def getTimerStatus(self):
+    if self.timerStartTime == 0:
+      return "None"
+    if self.timerPaused:
+      return "Paused"
+    if not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
+      return "Running"
+    else:
+      return "Complete"
 
   def abortOperation(self,error):
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.

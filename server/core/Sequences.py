@@ -23,6 +23,7 @@ class Sequence(Thread):
     self.systemModel = pSystemModel
     self.componentID = 0
     self.running = False
+    self.startComponentID = 0
 
     # Fetch the sequence from the database
     self.sequence = self.sequenceManager.GetSequence(sRemoteUser, nSequenceID)
@@ -31,12 +32,19 @@ class Sequence(Thread):
     if not self.sequence["metadata"]["valid"]:
       raise Exception("Cannot run an invalid sequence")
 
+  def setStartComponent(self, nComponentID):
+    self.startComponentID = nComponentID
+
   def run(self):
     """Thread entry point"""
     # Main sequence run loop
-    self.running = True
     try:
       for pComponent in self.sequence["components"]:
+        # Skip components until we find our start component
+        if not self.running and (self.startComponentID != 0) and (pComponent["id"] != self.startComponentID):
+          continue
+        self.running = True
+
         # Create and run the next unit operation
         self.componentID = pComponent["id"]
         pUnitOperation = UnitOperations.createFromComponent(self.sequenceID, pComponent, self.username, self.sequenceManager.database, self.systemModel)
