@@ -275,10 +275,14 @@ class UnitOperation(threading.Thread):
     self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
     self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
     self.systemModel[ReactorID]['Motion'].moveReactorUp()
-    if not reactorPosition == INSTALL:
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
-    else:
+    if reactorPosition == INSTALL:
+      # Sleep briefly since we don't have up sensors for the install position
       time.sleep(0.5)
+    elif reactorPosition == ADDREAGENT:
+      # Nor do we have up sensors for the add position
+      time.sleep(2)
+    else:
+      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
 
     #Disable the robot
     self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
@@ -325,9 +329,11 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,3)
     self.setGasTransferValve(ON)
 
-    #Move the vial down    
+    #Increase the pressure and lower the vial
+    self.setPressureRegulator(2,60)
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,6)
+    self.setPressureRegulator(2,47)
     
   def removeGripperPlace(self):
     #Make sure we are closed and down
@@ -336,9 +342,32 @@ class UnitOperation(threading.Thread):
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL):
       self.abortOperation("ERROR: setGripperRemove called while gripper was not up. Operation aborted.")
 
-    #Move the vial up
-    self.systemModel['ReagentDelivery'].setMoveGripperUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,6)
+    # Remove the vial
+    bVialUp = False
+    nFailureCount = 0
+    self.setPressureRegulator(2,60)
+    while not bVialUp:
+      #Move the vial up
+      self.systemModel['ReagentDelivery'].setMoveGripperUp()
+      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,6)
+
+      #Do we still have the vial?
+      if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
+        #Yes
+        bVialUp = True
+      elif nFailureCount < 3:
+        #No, so pick it up again
+        self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
+        self.systemModel['ReagentDelivery'].setMoveGripperDown()
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+        self.systemModel['ReagentDelivery'].setMoveGripperClose()
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+        nFailureCount += 1
+      else:
+        self.setPressureRegulator(2,47)
+        raise Exception("Failed to remove vial")
+    self.setPressureRegulator(2,47)
 
     #Turn off and raise the transfer gas
     self.setGasTransferValve(OFF)

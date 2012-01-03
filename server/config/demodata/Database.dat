@@ -115,28 +115,7 @@
         "filename":"FACSynthesis.seq"},
 
         {"type": "sequence",
-        "filename": "FAC1_DeliverF18.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC2_SolventExchange.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC3_Fluorination.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC4_Transfer1to2.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC5_Bromination.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC6_CytosineCoupling.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC7_Transfer2to3.seq"},
-
-        {"type": "sequence",
-        "filename": "FAC8_Deprotection.seq"}],
+        "filename": "Cleaning.seq"}],
 
     "runhistory": []
 }
