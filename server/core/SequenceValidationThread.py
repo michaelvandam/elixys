@@ -6,7 +6,7 @@ Validates the given sequence on this thread's time"""
 import threading
 import sys
 sys.path.append("../database")
-import DBComm
+from DBComm import *
 import SequenceManager
 import time
 
@@ -19,9 +19,9 @@ class SequenceValidationThread(threading.Thread):
     def run(self):
         """Thread entry point"""
         # Connect to the database
-        pDatabase = DBComm.DBComm()
+        pDatabase = DBComm()
         pDatabase.Connect()
-        pDatabase.Log("ValidationThread", "Validation thread starting")
+        pDatabase.SystemLog(LOG_INFO, "ValidationThread", "Validation thread starting")
 
         # Create the sequence manager
         pSequenceManager = SequenceManager.SequenceManager(pDatabase)
@@ -34,7 +34,7 @@ class SequenceValidationThread(threading.Thread):
             for pSequence in pSequences:
                if pSequence["dirty"]:
                    # Perform a full validation on the sequence
-                   pDatabase.Log("ValidationThread", "Performing full validation on sequence " + str(pSequence["id"]))
+                   pDatabase.SystemLog(LOG_INFO, "ValidationThread", "Performing full validation on sequence " + str(pSequence["id"]))
                    pSequenceManager.validation.ValidateSequenceFull("ValidationThread", pSequence["id"])
                    bAllSequencesClean = False
 
@@ -43,6 +43,6 @@ class SequenceValidationThread(threading.Thread):
                 time.sleep(1)
 
         # Shut down and exit
-        pDatabase.Log("ValidationThread", "Validation thread exiting")
+        pDatabase.SystemLog(LOG_INFO, "ValidationThread", "Validation thread exiting")
         pDatabase.Disconnect()
 

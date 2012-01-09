@@ -4,6 +4,127 @@
 DELIMITER //
 
 /****************************************************************************************************************************************************************
+ ** Logging *****************************************************************************************************************************************************
+ ***************************************************************************************************************************************************************/
+
+/* Logs a message to the SystemLog table:
+ *   IN Level - Log message level
+ *   IN Username - Name of the user that generated the log message
+ *   IN Message - Log message
+ */
+DROP PROCEDURE IF EXISTS SystemLog;
+CREATE PROCEDURE SystemLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iMessage VARCHAR(1024))
+    BEGIN
+        DECLARE lUserID INT UNSIGNED;
+
+        -- Look up the user ID
+        SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
+
+        -- Insert the entry
+        IF lUserID IS NOT NULL THEN
+            INSERT INTO SystemLog VALUES (NULL, NULL, iLevel, lUserID, iMessage);
+        END IF;
+    END //
+
+/* Logs a message to the RunLog table:
+ *   IN Level - Log message level
+ *   IN Username - Name of the user that generated the log message
+ *   IN SequenceID - ID of the sequence that is currently running
+ *   IN ComponentID - ID of the component that is currently running
+ *   IN Message - Log message
+ */
+DROP PROCEDURE IF EXISTS RunLog;
+CREATE PROCEDURE RunLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iSequenceID INT UNSIGNED, IN iComponentID INT UNSIGNED, IN iMessage VARCHAR(1024))
+    BEGIN
+        DECLARE lUserID INT UNSIGNED;
+
+        -- Look up the user ID
+        SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
+
+        -- Insert the entry
+        IF lUserID IS NOT NULL THEN
+            INSERT INTO RunLog VALUES (NULL, NULL, iLevel, lUserID, iSequenceID, iComponentID, iMessage);
+        END IF;
+    END //
+
+/* Logs a message to the StatusLog table: *   IN SystemState - JSON string describing the state of the system */
+DROP PROCEDURE IF EXISTS StatusLog;
+CREATE PROCEDURE StatusLog(IN iSystemState VARCHAR(4096))
+    BEGIN
+        -- Insert the entry
+        INSERT INTO StatusLog VALUES (NULL, NULL, iSystemState);
+    END //
+
+/* Gets any logs in the SystemLog and RunLog tables that are more recent than the timestamp:
+ *   IN Level - Log message level
+ *   IN Timestamp - Timestamp to specify when to start returning log messages
+ */
+DROP PROCEDURE IF EXISTS GetRecentLogsByTimestamp;
+CREATE PROCEDURE GetRecentLogsByTimestamp(IN iLevel INT UNSIGNED, IN iTimestamp TIMESTAMP)
+    BEGIN
+        -- Create a temporary table to hold the logs
+        DROP TEMPORARY TABLE IF EXISTS tmp_Logs;
+        CREATE TEMPORARY TABLE tmp_Logs
+        (
+            LogID INT UNSIGNED NOT NULL,
+            Date TIMESTAMP NOT NULL,
+            Level INT UNSIGNED NOT NULL,
+            UserID INT UNSIGNED NOT NULL,
+            SequenceID INT UNSIGNED,
+            ComponentID INT UNSIGNED,
+            Message VARCHAR(1024) NOT NULL
+        ) ENGINE=Memory COMMENT="Temporary logs";
+
+        -- Insert the system logs into the temporary table
+        INSERT INTO tmp_Logs SELECT LogID, Date, Level, UserID, 0, 0, Message FROM SystemLog WHERE (Level <= iLevel) AND (Date >= iTimestamp) ORDER BY Date DESC, LogID DESC;
+
+        -- Insert the run logs into the temporary table
+        INSERT INTO tmp_Logs SELECT LogID, Date, Level, UserID, SequenceID, ComponentID, Message FROM RunLog WHERE (Level <= iLevel) AND (Date >= iTimestamp) ORDER BY Date DESC, LogID DESC;
+
+        -- Return the most recent messages
+        SELECT tmp_Logs.LogID, tmp_Logs.Date, tmp_Logs.Level, Users.Username, tmp_Logs.SequenceID, tmp_Logs.ComponentID, tmp_Logs.Message FROM tmp_Logs, Users WHERE tmp_Logs.UserID = Users.UserID ORDER BY Date DESC, LogID DESC;
+    END //
+
+/* Gets the N most recent logs from the SystemLog and RunLog tables:
+ *   IN Level - Log message level
+ *   IN Count - Maximum number of log messages to return
+ */
+DROP PROCEDURE IF EXISTS GetRecentLogsByCount;
+CREATE PROCEDURE GetRecentLogsByCount(IN iLevel INT UNSIGNED, IN iCount INT UNSIGNED)
+    BEGIN
+        -- Create a temporary table to hold the logs
+        DROP TEMPORARY TABLE IF EXISTS tmp_Logs;
+        CREATE TEMPORARY TABLE tmp_Logs
+        (
+            LogID INT UNSIGNED NOT NULL,
+            Date TIMESTAMP NOT NULL,
+            Level INT UNSIGNED NOT NULL,
+            UserID INT UNSIGNED NOT NULL,
+            SequenceID INT UNSIGNED,
+            ComponentID INT UNSIGNED,
+            Message VARCHAR(1024) NOT NULL
+        ) ENGINE=Memory COMMENT="Temporary logs";
+
+        -- Insert the system logs into the temporary table
+        SET @sql = concat('INSERT INTO tmp_Logs SELECT LogID, Date, Level, UserID, 0, 0, Message FROM SystemLog WHERE Level <= ', iLevel, ' ORDER BY Date DESC, LogID DESC LIMIT ', iCount);
+        PREPARE statement FROM @sql;
+        EXECUTE statement;
+        DROP PREPARE statement;
+
+        -- Insert the run logs into the temporary table
+        SET @sql = concat('INSERT INTO tmp_Logs SELECT LogID, Date, Level, UserID, SequenceID, ComponentID, Message FROM RunLog WHERE Level <= ', iLevel, ' ORDER BY Date DESC, LogID DESC LIMIT ', iCount);
+        PREPARE statement FROM @sql;
+        EXECUTE statement;
+        DROP PREPARE statement;
+
+        -- Return the most recent messages
+        SET @sql = concat('SELECT tmp_Logs.LogID, tmp_Logs.Date, tmp_Logs.Level, Users.Username, tmp_Logs.SequenceID, tmp_Logs.ComponentID, tmp_Logs.Message FROM tmp_Logs, Users WHERE  tmp_Logs.UserID = Users.UserID ORDER BY Date DESC, LogID DESC LIMIT ', iCount);
+        PREPARE statement FROM @sql;
+        EXECUTE statement;
+        DROP PREPARE statement;
+    END //
+
+/****************************************************************************************************************************************************************
  ** Roles *******************************************************************************************************************************************************
  ***************************************************************************************************************************************************************/
 

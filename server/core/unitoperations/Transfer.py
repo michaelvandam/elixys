@@ -62,9 +62,9 @@ class Transfer(UnitOperation):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
 
   def removeRobotPosition(self):
-    #Make sure we are down
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
-      self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
+    #Make sure we are down (this is causing problems due to actuator sinking)
+    #if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
+    #  self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
 
     #Raise the gas transfer
     self.setGasTransferValve(OFF)

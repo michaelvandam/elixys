@@ -95,7 +95,7 @@ class ElixysCLI(BaseCLI.BaseCLI):
         # Initialize variables
         self.pHardwareComm = HardwareComm("../")
         self.pHardwareComm.StartUp()
-        self.pSystemModel = SystemModel(self.pHardwareComm, "../core/")
+        self.pSystemModel = SystemModel(self.pHardwareComm, None, "../core/")
         self.pSystemModel.StartUp()
         self.pUnitOperationsWrapper = UnitOperationsWrapper(self.pSystemModel)
     

@@ -13,12 +13,24 @@ class StateUpdateThread(threading.Thread):
         self.__pHardwareComm = pHardwareComm
         self.__pTerminateEvent = pTerminateEvent
 
+        # Initialize variables
+        self.__sError = ""
+
+    # Returns any error
+    def GetError(self):
+        return self.__sError
+
     # Thread function
     def run(self):
-        # State updating loop
-        while not self.__pTerminateEvent.is_set():
-            # Update the state
-            self.__pHardwareComm.UpdateState()
+        try:
+            # State updating loop
+            while not self.__pTerminateEvent.is_set():
+                # Update the state
+                self.__pHardwareComm.UpdateState()
             
-            # Sleep
-            time.sleep(0.5)
+                # Sleep
+                time.sleep(0.5)
+        except Exception as ex:
+            # Remember the error
+            self.__sError = str(ex)
+

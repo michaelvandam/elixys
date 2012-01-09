@@ -64,7 +64,7 @@ class FakePLC():
         self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, self.__nMemoryLower, self.__nMemoryUpper)
         
         # Create the system model
-        self.__pSystemModel = SystemModel(self.__pHardwareComm, "../../core/")
+        self.__pSystemModel = SystemModel(self.__pHardwareComm, None, "../../core/")
         self.__pSystemModel.StartUp()
 
         # Create the socket
@@ -78,7 +78,7 @@ class FakePLC():
     def Run(self):
         """Runs the fake PLC"""
         # Packet processing loop
-        print "Listening for packets (press q to quit)..."
+        print "Fake PLC running, type 'q' and press enter to quit..."
         while True:
             # Check if the user pressed 'q' to quit
             if self.__pUtilities.CheckForQuit():
@@ -91,7 +91,6 @@ class FakePLC():
                     # Data is available for receiving
                     pBinaryPacket = self.__pSocket.recv(1024)
                     sPacket = pBinaryPacket.encode("hex")
-                    print "Received packet: " + sPacket
 
                     # Check the message length
                     if len(sPacket) >= 36:
@@ -176,7 +175,6 @@ class FakePLC():
         sResponse = "0000000000000000000001010000" + sMemory
         pBinaryResponse = sResponse.decode("hex")
         self.__pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9601))
-        print "Sent read response packet"
 
     def __HandleWrite(self, sPacket):
         """Handle the write command"""
@@ -226,7 +224,6 @@ class FakePLC():
         sResponse = "0000000000000000000001020000"
         pBinaryResponse = sResponse.decode("hex")
         self.__pSocket.sendto(pBinaryResponse, ("127.0.0.1", 9601))
-        print "Wrote data and sent response packet"
 
     def __UpdatePLC(self):
         """Updates the PLC in response to any changes to system changes"""

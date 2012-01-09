@@ -37,8 +37,10 @@ class Sequence(Thread):
 
   def run(self):
     """Thread entry point"""
-    # Main sequence run loop
     try:
+      # Create a new sequence in the run history
+
+      # Main sequence run loop
       for pComponent in self.sequence["components"]:
         # Skip components until we find our start component
         if not self.running and (self.startComponentID != 0) and (pComponent["id"] != self.startComponentID):
@@ -61,58 +63,8 @@ class Sequence(Thread):
         if sError != "":
           raise Exception(sError)
     except Exception as ex:
-        self.sequenceManager.database.Log(self.username, "Sequence run failed: " + str(ex))
+        self.sequenceManager.database.SystemLog(LOG_ERROR, self.username, "Sequence run failed: " + str(ex))
 
     # Run complete
     self.running = False
-
-  """def setParameters(sequenceParameters):
-    self.sequenceID = sequenceParameters['id']
-    self.sequenceName = sequenceParameters['name']
-    self.sequenceShortName = sequenceParameters['shortName']
-    self.sequenceDescription = sequenceParameters['description']
-  def logError(self,sErrorMessage):
-    CoreServer.gDatabase.Log(sUername, "Sequences Error:(" +(sErrorMessage) + ")")
-    
-  def RunSequence(self):
-    print "running the sequence!"
-    for index in range(self.nOperationIndex):
-      #print self.pOperations[index][1]  ##This pulls out the OperationID at the current index.
-      if self.CheckExpectedOperation(index): #If this returns true, our expected operation matches. Otherwise our data has changed!
-        #self.CheckForPause() 
-        self.nCurrentOperationIndex = index #Each iteration update operation variable.
-        
-      else:
-        abort()
-        
-  def CheckExpectedOperation(self,index):
-    #Check for expected operation at current index
-    expectedOperation = self.pOperations[index] #Grab the expected operation tuple
-    #if expectedOperation[1] = self.sequenceData['components'][expectedOperation[1]]['id']:
-    #  if expectedOperation[2] = self.sequenceData['components'][expectedOperation[1]]['name']:
-    #    if expectedOperation[3] = self.sequenceData['components'][expectedOperation[1]]['componenttype']:
-    #      return True #If they all match return true
-    return False
-  def resume(self):
-    pass
-  def pauseSequence(self):
-    pass
-  def abort(self):
-    pass    
-  def getOperations(self):
-    unitOperations = self.Sequence.getUnitOperations(self.sequenceName)
-  def getCurrentOperation(self):
-    return self.pOperations[self.nCurrentOperationIndex] # You can return any details you want here, currently has (Index,ID,name,componenttype)
-    
-  def GetReagent(self, sRemoteUser, nReagentID):
-    # Fetch the reagent from the databse
-    return self.database.GetReagent(sRemoteUser, nReagentID)
- 
-
-def test():
-  seq1 = Sequence()
-  seq1.database.getSequences()
-    
-if __name__=="__main__":
-    test()"""
 

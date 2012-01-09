@@ -49,6 +49,10 @@ ROBONET_ERROR3 = 0x700A
 # Robot position hit test limit
 ROBOT_POSITION_LIMIT = 60
 
+# State update timeout in seconds and max retry count
+STATE_UPDATE_TIMEOUT = 3
+STATE_UPDATE_TIMEOUT_COUNT = 3
+
 # Constants for PLC command formatting
 MAX_PLC_READLENGTH = 0x350
 ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0=Cmd 1=Resp][00000][0 or 1=Resp Req]                      
@@ -216,6 +220,8 @@ class HardwareComm():
         self.__nStateOffset = 0
         self.__sState = ""
         self.__bLoadingState = False
+        self.__nLoadStateStart = 0
+        self.__nLoadTimeoutCount = 0
         self.__pThermocontrollerDecimalPointFlags = {}
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
@@ -300,16 +306,29 @@ class HardwareComm():
     # Update state
     def UpdateState(self):
         # What mode are we in?
-        if (self.__FakePLC_pMemory == None):
-            # We are in normal mode.  Make sure we're not already in the process of updating the state
+        if not self.IsFakePLC():
+            # We are in normal mode.  Are we already in the processes of updating the state?
             if self.__bLoadingState:
-                return
+                # Yes, so check if we have timed out
+                if (time.time() - self.__nLoadStateStart) < STATE_UPDATE_TIMEOUT:
+                    # We haven't timed out yet
+                    return
+                else:
+                    # We've timed out
+                    if (self.__nLoadTimeoutCount < STATE_UPDATE_TIMEOUT_COUNT):
+                        # Recycle the connection and request the state again
+                        self.ShutDown()
+                        self.StartUp()
+                        self.__nLoadTimeoutCount += 1
+                    else:
+                        raise Exception("Failed to communicate with PLC")
 
             # We're limited in the maximum amount of data we can read in a single request.  Start by requesting the
             # first chunk of the state
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
             self.__bLoadingState = True
+            self.__nLoadStateStart = time.time()
             self.__RequestNextStateChunk()
         else:
             # We are in fake PLC mode.  Format our fake memory into a string
@@ -321,6 +340,10 @@ class HardwareComm():
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
             self.__ProcessRawState(sMemory)
+
+    # Determines if we are using a fake PLC
+    def IsFakePLC(self):
+      return (self.__FakePLC_pMemory != None)
 
     ### Hardware control functions ###
 
@@ -536,7 +559,6 @@ class HardwareComm():
     
     # Used by the fake PLC to set the PLC memory
     def FakePLC_SetMemory(self, pMemory, nMemoryLower, nMemoryUpper):
-        print "Fake PLC set memory: " + str(nMemoryLower) + " - " + str(nMemoryUpper)
         # Make sure the memory ranges match up
         if (nMemoryLower != self.__nMemoryLower) or (nMemoryUpper != self.__nMemoryUpper):
             raise Exception("Memory range mismatch")
@@ -681,7 +703,7 @@ class HardwareComm():
     # Set binary value raw
     def __SetBinaryValueRaw(self, nWordOffset, nBitOffset, bValue):
         # What mode are we in?
-        if (self.__FakePLC_pMemory == None):
+        if not self.IsFakePLC():
             # We are in normal mode.  Format and send the raw command to the PLC
             sCommand = "010230"					            # Write bit to CIO memory
             sCommand = sCommand + ("%0.4X" % nWordOffset)	# Memory offset (words)
@@ -719,7 +741,7 @@ class HardwareComm():
     # Set integer value raw
     def __SetIntegerValueRaw(self, nAddress, nValue):
         # What mode are we in?
-        if (self.__FakePLC_pMemory == None):
+        if not self.IsFakePLC():
             # We are in normal mode.  Format and send the raw command to the PLC
             sCommand = "0102B0"					                    # Write word to CIO memory
             sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
@@ -845,8 +867,9 @@ class HardwareComm():
             self.__RequestNextStateChunk()
             return
 
-        # Clear our state loading flag
+        # Clear our state loading flag and reset our timeout counter
         self.__bLoadingState = False
+        self.__nLoadTimeoutCount = 0
 
         # Enable analog out as needed
         nAnalogOutOffset = self.__CalculateHardwareOffset(self.__nAnalogOutUnit);

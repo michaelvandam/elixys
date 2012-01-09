@@ -8,6 +8,7 @@ os.environ["PYTHON_EGG_CACHE"] = "/var/www/eggs"
 from wsgiref.simple_server import make_server
 import json
 from wsgiref.headers import Headers
+from time import time
 import sys
 sys.path.append("/opt/elixys/core")
 sys.path.append("/opt/elixys/database")
@@ -20,14 +21,11 @@ import CoreServerProxy
 import Exceptions
 
 # Import and create the database connection
-import DBComm
-gDatabase = DBComm.DBComm()
+from DBComm import *
+gDatabase = DBComm()
 
 # Create a proxy connection to the core server
 gCoreServer = CoreServerProxy.CoreServerProxy()
-
-# Temp
-from time import time
 
 def application(pEnvironment, fStartResponse):
     # Connect to the database.  It is important that we do this at the start of every request or two things happen:
@@ -45,7 +43,8 @@ def application(pEnvironment, fStartResponse):
 
     # Load the client state and log the request
     pClientState = gDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
-    gDatabase.Log(sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath + " (client state = " + str(pClientState) + ")")
+    gDatabase.SystemLog(LOG_INFO, sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath)
+    gDatabase.SystemLog(LOG_DEBUG, sRemoteUser, "Client state = " + str(pClientState))
 
     # Handle the request
     try:
@@ -73,7 +72,7 @@ def application(pEnvironment, fStartResponse):
         sResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, gDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID, )
     except Exception as ex:
         # Log the actual error and send the client a generic error
-        gDatabase.Log(sRemoteUser, "Web server encountered an error: " + str(ex))
+        gDatabase.SystemLog(LOG_ERROR, sRemoteUser, "Web server encountered an error: " + str(ex))
         sResponse = {"type":"error","description":"An internal server error occurred"}
 
     # Initialize the return status and headers
@@ -81,12 +80,12 @@ def application(pEnvironment, fStartResponse):
     sResponseJSON = json.dumps(sResponse)
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
 
-    # Close the database connection
+    # Log the timestamp
+    nElapsed = time() - nStart
+    gDatabase.SystemLog(LOG_DEBUG, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
     gDatabase.Disconnect()
 
     # Send the response
     fStartResponse(sStatus, pHeaders)
-    nElapsed = time() - nStart
-    gDatabase.Log("timestamp", sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
     return [sResponseJSON]
 
