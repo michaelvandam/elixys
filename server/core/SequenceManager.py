@@ -237,16 +237,3 @@ class SequenceManager:
       nIndex += 1
     raise Exception("Too few '" + sReagentName + "' reagents in sequence")
 
-# Main function
-import sys
-sys.path.append("../database/")
-from DBComm import DBComm
-if __name__ == "__main__":
-  pDatabase = DBComm()
-  pDatabase.Connect()
-  pSequenceManager = SequenceManager(pDatabase)
-  print "Loading sequence"
-  pSequence = pSequenceManager.GetSequence("main", 1)
-  print str(pSequence)
-  print "Done"
-

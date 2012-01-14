@@ -6,8 +6,8 @@ Monitors the logs and displays log messages as they occur
 import os
 import json
 import sys
-sys.path.append("../database/")
-sys.path.append("../core/")
+sys.path.append("/opt/elixys/database/")
+sys.path.append("/opt/elixys/core/")
 from DBComm import *
 import Utilities
 import time
@@ -50,12 +50,11 @@ if __name__ == '__main__':
 
     # Monitor the logs until the user presses 'q' to quit
     print "Monitoring logs, type 'q' and press enter to quit..."
-    pUtilities = Utilities.Utilities()
 
     # Logging loop
     pLastLogTimestamp = None
     nLastLogID = 0
-    while not pUtilities.CheckForQuit():
+    while not Utilities.CheckForQuit():
         # Do we have a previous log timestamp?
         if pLastLogTimestamp != None:
             # Yes, so get any recent log messages
@@ -84,7 +83,7 @@ if __name__ == '__main__':
                 sLog += "Info "
             elif pLog["level"] == 3:
                 sLog += "Debug "
-            sLog += pLog["username"] + ": " + pLog["message"]
+            sLog += "(" + pLog["username"] + "): " + pLog["message"]
             if (pLog["sequenceid"] != 0) and (pLog["componentid"] != 0):
                 sLog += "( sequence " + str(pLog["sequenceid"]) + ", component " + str(pLog["componentid"]) + ")"
             elif pLog["sequenceid"] != 0:

@@ -7,8 +7,8 @@ import time
 import rpyc
 import socket
 import sys
-sys.path.append("../hardware/")
-sys.path.append("../core/")
+sys.path.append("/opt/elixys/hardware/")
+sys.path.append("/opt/elixys/core/")
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
 from UnitOperationsWrapper import UnitOperationsWrapper
@@ -93,9 +93,9 @@ class ElixysCLI(BaseCLI.BaseCLI):
     def Run(self):
         """Main CLI function"""
         # Initialize variables
-        self.pHardwareComm = HardwareComm("../")
+        self.pHardwareComm = HardwareComm()
         self.pHardwareComm.StartUp()
-        self.pSystemModel = SystemModel(self.pHardwareComm, None, "../core/")
+        self.pSystemModel = SystemModel(self.pHardwareComm, None)
         self.pSystemModel.StartUp()
         self.pUnitOperationsWrapper = UnitOperationsWrapper(self.pSystemModel)
     

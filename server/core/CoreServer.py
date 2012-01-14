@@ -11,10 +11,10 @@ from SequenceManager import SequenceManager
 from SequenceValidationThread import SequenceValidationThread
 from CoreServerThread import CoreServerThread
 import sys
-sys.path.append("../database")
-sys.path.append("../hardware")
-sys.path.append("../cli")
-sys.path.append("unitoperations")
+sys.path.append("/opt/elixys/database")
+sys.path.append("/opt/elixys/hardware")
+sys.path.append("/opt/elixys/cli")
+sys.path.append("/opt/elixys/core/unitoperations")
 from DBComm import *
 from HardwareComm import HardwareComm
 from SystemModel import SystemModel
@@ -33,7 +33,6 @@ logging.basicConfig(level=logging.ERROR)
 # Initialize global variables
 gDatabase = None
 gSequenceManager = None
-gRootDirectory = "../"
 gHardwareComm = None
 gSystemModel = None
 gUnitOperationsWrapper = None
@@ -62,8 +61,8 @@ class CoreServerService(rpyc.Service):
         global gRunSequence
         gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.GetServerState()")
 
-        # Get a reference to the server state and create a deep copy
-        pServerState = gSystemModel.GetStateObject().deepcopy()
+        # Get the server state
+        pServerState = gSystemModel.GetStateObject()
 
         # Format the run state
         pServerState["runstate"] = {"type":"runstate"}
@@ -109,7 +108,6 @@ class CoreServerService(rpyc.Service):
             pServerState["runstate"]["unitoperationbuttons"] = []
 
         # Unlock the model and return the server state as a JSON string
-        gSystemModel.UnlockSystemModel()
         return json.dumps(pServerState)
 
     def exposed_RunSequence(self, sUsername, nSequenceID):
@@ -381,9 +379,9 @@ if __name__ == "__main__":
         gSequenceManager = SequenceManager(gDatabase)
 
         # Create the hardware layer and system model
-        gHardwareComm = HardwareComm(gRootDirectory)
+        gHardwareComm = HardwareComm()
         gHardwareComm.StartUp()
-        gSystemModel = SystemModel(gHardwareComm, gDatabase, gRootDirectory + "core/")
+        gSystemModel = SystemModel(gHardwareComm, gDatabase)
         gSystemModel.StartUp()
 
         # Create the unit operations wrapper
@@ -409,8 +407,7 @@ if __name__ == "__main__":
         print "CoreServer running, type 'q' and press enter to quit..."
 
         # Run the server until the user presses 'q' to quit
-        pUtilities = Utilities.Utilities()
-        while not pUtilities.CheckForQuit():
+        while not Utilities.CheckForQuit():
             gSystemModel.CheckForError()
             time.sleep(0.25)
 
@@ -421,5 +418,5 @@ if __name__ == "__main__":
         gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
     except Exception as ex:
         # Log the error
-        gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer encountered an error: " + str(ex))
+        gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
 

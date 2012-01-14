@@ -5,6 +5,9 @@ import time
 import threading
 import json
 import copy
+import sys
+sys.path.append("/opt/elixys/database")
+from DBComm import *
 
 #Reactor Y Positions
 REACT_A    = 'React1'
@@ -507,14 +510,12 @@ class UnitOperation(threading.Thread):
     if not self.timerPaused:
       self.timerPaused = True
       self.timerPauseTime = time.time()
-      print "Timer paused at " + str(self.timerPauseTime)
 
   def continueTimer(self):
     """Continues the paused unit operation timer"""
     if self.timerPaused:
       self.timerPaused = False
       self.timerPausedTime += time.time() - self.timerPauseTime
-      print "Timer resumed, paused time " + str(self.timerPausedTime)
 
   def stopTimer(self):
     """Stops the unit operation timer"""

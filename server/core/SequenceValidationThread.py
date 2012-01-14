@@ -5,7 +5,7 @@ Validates the given sequence on this thread's time"""
 ### Imports
 import threading
 import sys
-sys.path.append("../database")
+sys.path.append("/opt/elixys/database")
 from DBComm import *
 import SequenceManager
 import time

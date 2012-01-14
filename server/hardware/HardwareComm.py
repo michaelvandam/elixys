@@ -164,11 +164,10 @@ class HardwareComm():
 
     ### Construction/Destruction ###
 
-    def __init__(self, sRootDirectory):
+    def __init__(self):
         # Load the hardware map and robot positions
-        self.__sRootDirectory = sRootDirectory
-        sHardwareMap = self.__sRootDirectory + "hardware/HardwareMap.ini"
-        sRobotPositions = self.__sRootDirectory + "hardware/RobotPositions.ini"
+        sHardwareMap = "/opt/elixys/hardware/HardwareMap.ini"
+        sRobotPositions = "/opt/elixys/hardware/RobotPositions.ini"
         if not os.path.exists(sHardwareMap) or not os.path.exists(sRobotPositions):
             raise Exception("Invalid path to INI files")
         self.__pHardwareMap = ConfigObj(sHardwareMap)
@@ -236,7 +235,7 @@ class HardwareComm():
 
     def StartUp(self):
         # Determine the PLC IP
-        sDemoFile = self.__sRootDirectory + "demomode"
+        sDemoFile = "/opt/elixys/demomode"
         if not os.path.isfile(sDemoFile):
             nPLC_IP = REAL_PLC_IP
         else:
@@ -307,7 +306,15 @@ class HardwareComm():
     def UpdateState(self):
         # What mode are we in?
         if not self.IsFakePLC():
-            # We are in normal mode.  Are we already in the processes of updating the state?
+            # We are in normal mode.  Make sure the socket thread is alive and well
+            if self.__pSocketThread == None:
+                raise Exception("Socket thread does not exist")
+            if self.__pSocketThread.GetError() != "":
+                raise Exception(self.__pSocketThread.GetError())
+            if not self.__pSocketThread.is_alive():
+                raise Exception("Socket thread terminated unexpectedly")
+
+            # Are we already in the processes of updating the state?
             if self.__bLoadingState:
                 # Yes, so check if we have timed out
                 if (time.time() - self.__nLoadStateStart) < STATE_UPDATE_TIMEOUT:

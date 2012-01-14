@@ -31,7 +31,7 @@ class Initialize(UnitOperation):
       self.setStatus("Initializing pressures")
       self.setPressureRegulator(1,5)
       self.setPressureRegulator(2,60)
-       time.sleep(1)     # Allow the stopcocks to fully turn
+      time.sleep(1)     # Allow the stopcocks to fully turn
       self.setPressureRegulator(2,47)
 
       #Raise and open gripper    

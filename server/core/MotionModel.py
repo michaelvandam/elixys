@@ -5,7 +5,7 @@ Reactor Motion Model Class
 
 # Imports
 import sys
-sys.path.append("../hardware/")
+sys.path.append("/opt/elixys/hardware/")
 from HardwareComm import HardwareComm
 from ComponentModel import ComponentModel
 

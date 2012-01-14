@@ -4,11 +4,12 @@ Elixys Sequences
 """
 
 import sys
-sys.path.append("unitoperations")
+sys.path.append("/opt/elixys/core/unitoperations")
 import UnitOperations
 import CoreServer
 from threading import Thread 
 import time
+from DBComm import *
 
 class Sequence(Thread):
   def __init__(self, sRemoteUser, nSequenceID, pSequenceManager, pSystemModel):

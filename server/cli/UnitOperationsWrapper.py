@@ -4,7 +4,7 @@ Implements an wrapper around the unit operations class for use by the CLI interf
 
 ### Imports
 import sys
-sys.path.append("../core/unitoperations")
+sys.path.append("/opt/elixys/core/unitoperations")
 from UnitOperation import *
 from Initialize import Initialize
 from React import React

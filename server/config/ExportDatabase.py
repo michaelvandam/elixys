@@ -6,8 +6,8 @@ Exports the contents of the database to the specified directory
 import os
 import json
 import sys
-sys.path.append("../database/")
-sys.path.append("../core/")
+sys.path.append("/opt/elixys/database/")
+sys.path.append("/opt/elixys/core/")
 from DBComm import DBComm
 from SequenceManager import SequenceManager
 

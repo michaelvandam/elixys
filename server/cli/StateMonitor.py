@@ -9,7 +9,7 @@ from rpyc.utils.server import ThreadedServer
 import StateMonitorThread
 from datetime import datetime
 import sys
-sys.path.append("../core/")
+sys.path.append("/opt/elixys/core/")
 import Utilities
 
 # The console package we import depends on the OS
@@ -108,8 +108,7 @@ if __name__ == "__main__":
     Print("Waiting for CLI to connect (press 'q' to quit)...")
     
     # Run the server until the user presses 'q' to quit
-    pUtilities = Utilities.Utilities()
-    while not pUtilities.CheckForQuit():
+    while not Utilities.CheckForQuit():
         time.sleep(0.25)
 
     # Stop the RPC server

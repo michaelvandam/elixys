@@ -7,8 +7,8 @@ import threading
 import time
 import inspect
 import sys
-sys.path.append("../hardware/")
-sys.path.append("../core/")
+sys.path.append("/opt/elixys/hardware/")
+sys.path.append("/opt/elixys/core/")
 from HardwareComm import HardwareComm
 from UnitOperationsWrapper import UnitOperationsWrapper
 

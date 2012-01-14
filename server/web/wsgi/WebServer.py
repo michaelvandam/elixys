@@ -8,7 +8,7 @@ os.environ["PYTHON_EGG_CACHE"] = "/var/www/eggs"
 from wsgiref.simple_server import make_server
 import json
 from wsgiref.headers import Headers
-from time import time
+import time
 import sys
 sys.path.append("/opt/elixys/core")
 sys.path.append("/opt/elixys/database")
@@ -33,7 +33,7 @@ def application(pEnvironment, fStartResponse):
     #  2. MySQL will run out of available database connections under heavy loads
     global gCoreServer
     global gDatabase
-    nStart = time()
+    nStart = time.time()
     gDatabase.Connect()
 
     # Extract input variables
@@ -72,7 +72,7 @@ def application(pEnvironment, fStartResponse):
         sResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, gDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID, )
     except Exception as ex:
         # Log the actual error and send the client a generic error
-        gDatabase.SystemLog(LOG_ERROR, sRemoteUser, "Web server encountered an error: " + str(ex))
+        gDatabase.SystemLog(LOG_ERROR, sRemoteUser, str(ex))
         sResponse = {"type":"error","description":"An internal server error occurred"}
 
     # Initialize the return status and headers
@@ -81,7 +81,7 @@ def application(pEnvironment, fStartResponse):
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
 
     # Log the timestamp
-    nElapsed = time() - nStart
+    nElapsed = time.time() - nStart
     gDatabase.SystemLog(LOG_DEBUG, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
     gDatabase.Disconnect()
 

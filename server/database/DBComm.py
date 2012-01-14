@@ -10,11 +10,13 @@ import sys
 import MySQLdb
 import threading
 import Exceptions
+import Utilities
 
 # Suppress MySQLdb's annoying warnings
 import warnings
 warnings.filterwarnings("ignore", "Unknown table.*")
 
+# Error log levels
 LOG_ERROR = 0
 LOG_WARNING = 1
 LOG_INFO = 2
@@ -27,6 +29,7 @@ class DBComm:
   def __init__(self):
     """Initializes the DBComm class"""
     self.__pDatabase = None
+    self.__pDatabaseLock = Utilities.CreateTimedLock()
 
   def Connect(self):
     """Connects to the database"""
@@ -45,15 +48,53 @@ class DBComm:
 
   def SystemLog(self, nLevel, sCurrentUsername, sMessage):
     """Logs a message to the SystemLog table in the database"""
-    self.__CallStoredProcedure("SystemLog", (nLevel, sCurrentUsername, sMessage))
+    if self.__pDatabase != None:
+      self.__CallStoredProcedure("SystemLog", (nLevel, sCurrentUsername, sMessage))
+    else:
+      print sMessage
 
   def RunLog(self, nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage):
     """Logs a message to the RunLog table in the database"""
-    self.__CallStoredProcedure("RunLog", (nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage))
+    if self.__pDatabase != None:
+      self.__CallStoredProcedure("RunLog", (nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage))
+    else:
+      print sMessage
 
-  def StatusLog(self, sSystemState):
+  def StatusLog(self, bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure, fPressureRegulator1ActualPressure,
+      fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen, sReagentRobotPositionSet,
+      sReagentRobotPositionActual, nReagentRobotPositionSetX, nReagentRobotPositionSetY, nReagentRobotPositionActualX, nReagentRobotPositionActualY,
+      sReagentRobotStatusX, sReagentRobotStatusY, nReagentRobotControlX, nReagentRobotControlY, nReagentRobotCheckX, nReagentRobotCheckY, bGripperSetUp,
+      bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp, bGripperDown, bGripperOpen, bGripperClose,
+      bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, sReactor1RobotStatus,
+      nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, sReactor1Stopcock1Position,
+      sReactor1Stopcock2Position, sReactor1Stopcock3Position, bReactor1Collet1On, fReactor1Collet1SetTemperature, fReactor1Collet1ActualTemperature,
+      bReactor1Collet2On, fReactor1Collet2SetTemperature, fReactor1Collet2ActualTemperature, bReactor1Collet3On, fReactor1Collet3SetTemperature,
+      fReactor1Collet3ActualTemperature, nReactor1StirMotor, fReactor1RaditationDetector, sReactor2SetPosition, sReactor2ActualPosition, nReactor2SetY,
+      nReactor2ActualY, sReactor2RobotStatus, nReactor2RobotControl, nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up, bReactor2Down,
+      sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature, fReactor2Collet1ActualTemperature, bReactor2Collet2On,
+      fReactor2Collet2SetTemperature, fReactor2Collet2ActualTemperature, bReactor2Collet3On, fReactor2Collet3SetTemperature, fReactor2Collet3ActualTemperature,
+      nReactor2StirMotor, fReactor2RaditationDetector, sReactor3SetPosition, sReactor3ActualPosition, nReactor3SetY, nReactor3ActualY, sReactor3RobotStatus,
+      nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position, bReactor3Collet1On,
+      fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2ActualTemperature,
+      bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, fReactor3RaditationDetector):
     """Logs the system state to the StatusLog table in the database"""
-    self.__CallStoredProcedure("StatusLog", (sSystemState, ))
+    if self.__pDatabase != None:
+      self.__CallStoredProcedure("StatusLog", (bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure,
+        fPressureRegulator1ActualPressure, fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen,
+        bHPLCLoadValveOpen, sReagentRobotPositionSet, sReagentRobotPositionActual, nReagentRobotPositionSetX, nReagentRobotPositionSetY, nReagentRobotPositionActualX,
+        nReagentRobotPositionActualY, sReagentRobotStatusX, sReagentRobotStatusY, nReagentRobotControlX, nReagentRobotControlY, nReagentRobotCheckX,
+        nReagentRobotCheckY, bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp, bGripperDown,
+        bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, sReactor1RobotStatus,
+        nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, sReactor1Stopcock1Position, sReactor1Stopcock2Position,
+        sReactor1Stopcock3Position, bReactor1Collet1On, fReactor1Collet1SetTemperature, fReactor1Collet1ActualTemperature, bReactor1Collet2On, fReactor1Collet2SetTemperature,
+        fReactor1Collet2ActualTemperature, bReactor1Collet3On, fReactor1Collet3SetTemperature, fReactor1Collet3ActualTemperature, nReactor1StirMotor,
+        fReactor1RaditationDetector, sReactor2SetPosition, sReactor2ActualPosition, nReactor2SetY, nReactor2ActualY, sReactor2RobotStatus, nReactor2RobotControl,
+        nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up, bReactor2Down, sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature,
+        fReactor2Collet1ActualTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature, fReactor2Collet2ActualTemperature, bReactor2Collet3On, fReactor2Collet3SetTemperature, 
+        fReactor2Collet3ActualTemperature, nReactor2StirMotor, fReactor2RaditationDetector, sReactor3SetPosition, sReactor3ActualPosition, nReactor3SetY, nReactor3ActualY,
+        sReactor3RobotStatus, nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position,
+        bReactor3Collet1On, fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature,
+        fReactor3Collet2ActualTemperature, bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, fReactor3RaditationDetector))
 
   def GetRecentLogsByTimestamp(self, sCurrentUsername, nLevel, pTimestamp):
     """Gets any logs in the SystemLog and RunLog tables that are more recent than the timestamp"""
@@ -473,51 +514,75 @@ class DBComm:
 
   def __CallStoredProcedure(self, sProcedureName, pArguments):
     """Calls the given SQL stored procedure"""
-    nCount = 0
-    while True:
-      try:
-        # Call the stored procedure
-        pCursor = self.__pDatabase.cursor()
-        pCursor.callproc(sProcedureName, pArguments)
-        pRows = pCursor.fetchall()
-        pCursor.close()
-        if nCount != 0:
-          self.SystemLog(LOG_WARNING, "System", "MySQL went away in CallStoredProcedure(), connection reestablished")
-        return pRows
-      except MySQLdb.Error, e:
-        # Recycle the database connection if it drops
-        if (e.args[0] == 2006) and (nCount < 3):
-          print "MySQL server has gone away, attempting to recycle connection"
-          self.__pDatabase = None
-          self.Connect()
-          nCount += 1
-        else:
-          raise Exception("SQL Error %d: %s" % (e.args[0], e.args[1]))
+    nReconnectCount = 0
+    pRows = None
+    sError = ""
+    try:
+      Utilities.AcquireLock(self.__pDatabaseLock)
+      while (pRows == None) and (sError == ""):
+        try:
+          # Call the stored procedure
+          pCursor = self.__pDatabase.cursor()
+          pCursor.callproc(sProcedureName, pArguments)
+          pRows = pCursor.fetchall()
+          pCursor.close()
+        except MySQLdb.Error, e:
+          # Try and recycle the database connection on MySQL error
+          if nReconnectCount < 3:
+            self.__pDatabase = None
+            self.Connect()
+            nReconnectCount += 1
+          else:
+            self.__pDatabase = None
+            sError = "SQL Error %d: %s" % (e.args[0], e.args[1])
+        except Exception, ex:
+            sError = str(ex)
+    finally:
+      Utilities.ReleaseLock(self.__pDatabaseLock)
+
+    # Raise an exception on error or warn if the connection dropped
+    if sError != "":
+      self.__pDatabase = None
+      raise Exception(sError)
+    if nReconnectCount != 0:
+      self.SystemLog(LOG_WARNING, "System", "MySQL error in __CallStoredProcedure(), connection reestablished")
+    return pRows
 
   def __ExecuteQuery(self, sQuery):
     """Executes the given SQL query"""
-    nCount = 0
-    while True:
-      try:
-        # Execute the query
-        pCursor = self.__pDatabase.cursor()
-        pCursor.execute(sQuery)
+    nReconnectCount = 0
+    pRows = None
+    sError = ""
+    try:
+      Utilities.AcquireLock(self.__pDatabaseLock)
+      while (pRows == None) and (sError == ""):
+        try:
+          # Execute the query
+          pCursor = self.__pDatabase.cursor()
+          pCursor.execute(sQuery)
+          pRows = pCursor.fetchall()
+          pCursor.close()
+        except MySQLdb.Error, e:
+          # Try and recycle the database connection on MySQL error
+          if nReconnectCount < 3:
+            self.__pDatabase = None
+            self.Connect()
+            nReconnectCount += 1
+          else:
+            self.__pDatabase = None
+            sError = "SQL Error %d: %s" % (e.args[0], e.args[1])
+        except Exception, ex:
+          sError = str(ex)
+    finally:
+      Utilities.ReleaseLock(self.__pDatabaseLock)
 
-        # Fetch and return all rows
-        pRows = pCursor.fetchall()
-        pCursor.close()
-        if nCount != 0:
-          self.SystemLog(LOG_WARNING, "System", "MySQL went away in ExecuteQuery(), connection reestablished")
-        return pRows
-      except MySQLdb.Error, e:
-        # Recycle the database connection if it drops
-        if (e.args[0] == 2006) and (nCount < 3):
-          print "MySQL server has gone away, attempting to recycle connection"
-          self.__pDatabase = None
-          self.Connect()
-          nCount += 1
-        else:
-          raise Exception("SQL Error %d: %s" % (e.args[0], e.args[1]))
+    # Raise an exception on error or warn if the connection dropped
+    if sError != "":
+      self.__pDatabase = None
+      raise Exception(sError)
+    if nReconnectCount != 0:
+      self.SystemLog(LOG_WARNING, "System", "MySQL error in __ExecuteQuery(), connection reestablished")
+    return pRows
 
   def __CreateLog(self, pLogRaw):
     """Packages a log"""

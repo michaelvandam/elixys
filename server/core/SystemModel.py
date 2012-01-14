@@ -10,8 +10,8 @@ import threading
 import os.path
 import json
 import sys
-sys.path.append("../../hardware/")
-sys.path.append("../../core/unitoperations")
+sys.path.append("/opt/elixys/hardware/")
+sys.path.append("/opt/elixys/core/unitoperations")
 from HardwareComm import HardwareComm
 from StateUpdateThread import StateUpdateThread
 from TemperatureControlModel import TemperatureControlModel
@@ -24,7 +24,10 @@ from CoolingSystemModel import CoolingSystemModel
 from VacuumSystemModel import VacuumSystemModel
 from PressureRegulatorModel import PressureRegulatorModel
 from ValvesModel import ValvesModel
+import TimedLock
 import UnitOperation
+import Utilities
+import copy
 
 # Constants
 STATECOMMONCOLUMN1WIDTH = 45
@@ -33,7 +36,7 @@ STATEREACTORCOLUMN1WIDTH = 35
 STATEREACTORCOLUMN2WIDTH = 13
 
 class SystemModel:
-  def __init__(self, pHardwareComm, pDatabase, sSystemModelDirectory):
+  def __init__(self, pHardwareComm, pDatabase):
     """SystemModel constructor"""
     # Remember the hardware and database layers
     self.hardwareComm = pHardwareComm
@@ -44,11 +47,10 @@ class SystemModel:
     
     # Create the empty system model and a lock to protect it
     self.model = {}
-    self.modelLock = threading.Lock()
+    self.modelLock = TimedLock.TimedLock()
 
     # Load the system model from the INI file
-    self.rootDirectory = os.path.join(sSystemModelDirectory, "..")
-    sSystemModel = sSystemModelDirectory + "SystemModel.ini"
+    sSystemModel = "/opt/elixys/core/SystemModel.ini"
     if not os.path.exists(sSystemModel):
         print "Invalid path to INI files"
         return
@@ -93,6 +95,7 @@ class SystemModel:
     self.__pUnitOperation = None
     self.__pStateObject = None
     self.__sStateString = ""
+    self.__pStateLock = TimedLock.TimedLock()
     
   def StartUp(self):
     """Starts the system model"""
@@ -137,18 +140,18 @@ class SystemModel:
     
   def LockSystemModel(self):
     """Acquire the mutex lock and return the system model"""
-    self.modelLock.acquire()
+    self.modelLock.Acquire()
     return self.model
     
   def UnlockSystemModel(self):
     """Release the system model lock"""
-    self.modelLock.release()
+    self.modelLock.Release()
 
   def ModelUpdated(self):
     """Called when the system model has been updated"""
     # Update the system
     if not self.hardwareComm.IsFakePLC():
-      self.__Update()
+      self.__UpdateState()
 
     # Update the state monitor
     if self.__pStateMonitor != None:
@@ -161,22 +164,33 @@ class SystemModel:
 
   def GetStateObject(self):
     """Returns the state as an object"""
-    return self.__pStateObject
+    self.__pStateLock.Acquire()
+    try:
+      pStateObject = copy.deepcopy(self.__pStateObject)
+    finally:
+      self.__pStateLock.Release()
+    return pStateObject
 
   def GetStateString(self):
     """Returns the state to a string"""
-    return self.__sStateString
-
-  def __Update(self):
-    # Initialize variables
-    self.__pStateObject = {"type":"serverstate"}
-    self.__sStateString = ""
-
-    # Acquire a lock on the system model
-    self.LockSystemModel()
-
-    # Perform the state dump in a try/except/finally block to make sure we release our lock on the system model
+    self.__pStateLock.Acquire()
     try:
+      pStateString = copy.copy(self.__sStateString)
+    finally:
+      self.__pStateLock.Release()
+    return pStateString
+
+  def __UpdateState(self):
+    # Acquire a lock on the system model and our state variables
+    self.LockSystemModel()
+    self.__pStateLock.Acquire()
+
+    # Dump the state in a try/except/finally block to make sure we release our locks
+    try:
+      # Initialize variables
+      self.__pStateObject = {"type":"serverstate"}
+      self.__sStateString = ""
+
       # Create hardware state and string header
       self.__pStateObject["hardwarestate"] = {"type":"hardwarestate"}
       self.__sStateString += self.__PadString("Component", STATECOMMONCOLUMN1WIDTH)
@@ -439,19 +453,19 @@ class SystemModel:
       self.__sStateString += "\n"
 
       # Reactor stopcocks
-      nReactor1Stopcock1 = self.model["Reactor1"]["Stopcock1"].getPosition(False)
-      nReactor1Stopcock2 = self.model["Reactor1"]["Stopcock2"].getPosition(False)
-      nReactor1Stopcock3 = self.model["Reactor1"]["Stopcock3"].getPosition(False)
-      nReactor2Stopcock1 = self.model["Reactor2"]["Stopcock1"].getPosition(False)
-      nReactor3Stopcock1 = self.model["Reactor3"]["Stopcock1"].getPosition(False)
-      self.__pStateObject["hardwarestate"]["reactors"][0]["transferposition"] = self.__GetTransferPosition(nReactor1Stopcock1)
-      self.__pStateObject["hardwarestate"]["reactors"][0]["columnposition"] = self.__GetColumnPosition(nReactor1Stopcock2, nReactor1Stopcock3)
-      self.__pStateObject["hardwarestate"]["reactors"][1]["transferposition"] = self.__GetTransferPosition(nReactor2Stopcock1)
-      self.__pStateObject["hardwarestate"]["reactors"][2]["transferposition"] = self.__GetTransferPosition(nReactor3Stopcock1)
+      sReactor1Stopcock1 = self.model["Reactor1"]["Stopcock1"].getPosition(False)
+      sReactor1Stopcock2 = self.model["Reactor1"]["Stopcock2"].getPosition(False)
+      sReactor1Stopcock3 = self.model["Reactor1"]["Stopcock3"].getPosition(False)
+      sReactor2Stopcock1 = self.model["Reactor2"]["Stopcock1"].getPosition(False)
+      sReactor3Stopcock1 = self.model["Reactor3"]["Stopcock1"].getPosition(False)
+      self.__pStateObject["hardwarestate"]["reactors"][0]["transferposition"] = self.__GetTransferPosition(sReactor1Stopcock1)
+      self.__pStateObject["hardwarestate"]["reactors"][0]["columnposition"] = self.__GetColumnPosition(sReactor1Stopcock2, sReactor1Stopcock3)
+      self.__pStateObject["hardwarestate"]["reactors"][1]["transferposition"] = self.__GetTransferPosition(sReactor2Stopcock1)
+      self.__pStateObject["hardwarestate"]["reactors"][2]["transferposition"] = self.__GetTransferPosition(sReactor3Stopcock1)
       self.__sStateString += self.__PadString("Stopcock positions (1/2/3)", STATEREACTORCOLUMN1WIDTH)
-      self.__sStateString += self.__PadString(str(nReactor1Stopcock1) + "/" + str(nReactor1Stopcock2) + "/" + str(nReactor1Stopcock3), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(nReactor2Stopcock1), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(nReactor3Stopcock1), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(sReactor1Stopcock1) + "/" + str(sReactor1Stopcock2) + "/" + str(sReactor1Stopcock3), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(sReactor2Stopcock1), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(sReactor3Stopcock1), STATEREACTORCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Reactor heaters
@@ -540,8 +554,7 @@ class SystemModel:
       self.__sStateString += "\n"
 
       # Reactor video
-      sDemoFile = self.rootDirectory + "demomode"
-      if not os.path.isfile(sDemoFile):
+      if not os.path.isfile("/opt/elixys/demomode"):
         self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "Reactor1"
         self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "Reactor2"
         self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "Reactor3"
@@ -555,13 +568,33 @@ class SystemModel:
         self.__sStateString += "\n"
         self.__sStateString += "\"" + self.__pUnitOperation.__class__.__name__ + "\" unit operation status: " + self.__pUnitOperation.status
         self.__sStateString += "\n"
-    finally:
-        # Release the system model lock
-        self.UnlockSystemModel()
 
-    # Update the database
-    if self.database != None:
-      self.database.StatusLog(json.dumps(self.__pStateObject))
+      # Update the database
+      if self.database != None:
+        self.database.StatusLog(bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure, fPressureRegulator1ActualPressure,
+          fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen,
+          sReagentRobotSetPositionName1 + " " + sReagentRobotSetPositionName2, sReagentRobotCurrentPositionName1 + " " + sReagentRobotCurrentPositionName2,
+          nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawY, nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY,
+          nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY, nReagentRobotXControlWord, nReagentRobotYControlWord, nReagentRobotXCheckWord,
+          nReagentRobotYCheckWord, bGripperActuatorSetUp, bGripperActuatorSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferActuatorSetUp, 
+          bGasTransferActuatorSetDown, bGripperActuatorCurrentUp, bGripperActuatorCurrentDown, bGripperCurrentOpen, bGripperCurrentClose, 
+          bGasTransferActuatorCurrentUp, bGasTransferActuatorCurrentDown, sReactor1SetPosition, sReactor1CurrentPosition, nReactor1SetPositionRaw, 
+          nReactor1CurrentPositionRaw, sReactor1RobotStatus, nReactor1RobotControlWord, nReactor1RobotCheckWord, bReactor1SetUp, bReactor1SetDown, 
+          bReactor1CurrentUp, bReactor1CurrentDown, sReactor1Stopcock1, sReactor1Stopcock2, sReactor1Stopcock3, bReactor1Collet1On, fReactor1Collet1SetTemperature,
+          fReactor1Collet1CurrentTemperature, bReactor1Collet2On, fReactor1Collet2SetTemperature, fReactor1Collet2CurrentTemperature, bReactor1Collet3On, 
+          fReactor1Collet3SetTemperature, fReactor1Collet3CurrentTemperature, nReactor1StirMotorSpeed, fReactor1RadiationDetector, sReactor2SetPosition, 
+          sReactor2CurrentPosition, nReactor2SetPositionRaw, nReactor2CurrentPositionRaw, sReactor2RobotStatus, nReactor2RobotControlWord, nReactor2RobotCheckWord, 
+          bReactor2SetUp, bReactor2SetDown, bReactor2CurrentUp, bReactor2CurrentDown, sReactor2Stopcock1, bReactor2Collet1On, fReactor2Collet1SetTemperature, 
+          fReactor2Collet1CurrentTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature, fReactor2Collet2CurrentTemperature, bReactor2Collet3On, 
+          fReactor2Collet3SetTemperature, fReactor2Collet3CurrentTemperature, nReactor2StirMotorSpeed, fReactor2RadiationDetector, sReactor3SetPosition, 
+          sReactor3CurrentPosition, nReactor3SetPositionRaw, nReactor3CurrentPositionRaw, sReactor3RobotStatus, nReactor3RobotControlWord, nReactor3RobotCheckWord, 
+          bReactor3SetUp, bReactor3SetDown, bReactor3CurrentUp, bReactor3CurrentDown, sReactor3Stopcock1, bReactor3Collet1On, fReactor3Collet1SetTemperature, 
+          fReactor3Collet1CurrentTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2CurrentTemperature, bReactor3Collet3On, 
+          fReactor3Collet3SetTemperature, fReactor3Collet3CurrentTemperature, nReactor3StirMotorSpeed, fReactor3RadiationDetector)
+    finally:
+        # Release the locks
+        self.UnlockSystemModel()
+        self.__pStateLock.Release()
 
   def __PadString(self, sString, nTotalCharacters):
     """Pads a string with whitespace"""
@@ -591,20 +624,20 @@ class SystemModel:
     else:
       return "Indeterminate"
 
-  def __GetTransferPosition(self, nStopcockPosition):
-    """Interprets the integer value to a string"""
-    if nStopcockPosition == UnitOperation.TRANSFERTRAP[0]:
+  def __GetTransferPosition(self, sStopcockPosition):
+    """Interprets the stopcock position to a string"""
+    if sStopcockPosition == UnitOperation.TRANSFERTRAP[0]:
       return "Waste"
-    elif nStopcockPosition == UnitOperation.TRANSFERELUTE[0]:
+    elif sStopcockPosition == UnitOperation.TRANSFERELUTE[0]:
       return "Out"
     else:
       return "Indeterminate"
 
-  def __GetColumnPosition(self, nStopcockPosition1, nStopcockPosition2):
-    """Interprets the integer values to a string"""
-    if (nStopcockPosition1 == UnitOperation.F18TRAP[1]) and (nStopcockPosition1 == UnitOperation.F18TRAP[2]):
+  def __GetColumnPosition(self, sStopcockPosition1, sStopcockPosition2):
+    """Interprets the stopcock positions values to a string"""
+    if (sStopcockPosition1 == UnitOperation.F18TRAP[1]) and (sStopcockPosition1 == UnitOperation.F18TRAP[2]):
       return "Load"
-    elif (nStopcockPosition1 == UnitOperation.F18ELUTE[1]) and (nStopcockPosition1 == UnitOperation.F18ELUTE[2]):
+    elif (sStopcockPosition1 == UnitOperation.F18ELUTE[1]) and (sStopcockPosition1 == UnitOperation.F18ELUTE[2]):
       return "Elute"
     else:
       return "Indeterminate"

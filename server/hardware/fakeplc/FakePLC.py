@@ -7,8 +7,8 @@ import socket
 import configobj
 import select
 import sys
-sys.path.append("../../hardware/")
-sys.path.append("../../core/")
+sys.path.append("/opt/elixys/hardware/")
+sys.path.append("/opt/elixys/core/")
 import HardwareComm
 from SystemModel import SystemModel
 import Utilities
@@ -47,7 +47,7 @@ class FakePLC():
     def StartUp(self):
         """Starts up the fake PLC"""
         # Create the hardware layer
-        self.__pHardwareComm = HardwareComm.HardwareComm("../../")
+        self.__pHardwareComm = HardwareComm.HardwareComm()
   
         # Determine the memory range we need to emulate
         self.__nMemoryLower, self.__nMemoryUpper = self.__pHardwareComm.CalculateMemoryRange()
@@ -64,16 +64,13 @@ class FakePLC():
         self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, self.__nMemoryLower, self.__nMemoryUpper)
         
         # Create the system model
-        self.__pSystemModel = SystemModel(self.__pHardwareComm, None, "../../core/")
+        self.__pSystemModel = SystemModel(self.__pHardwareComm, None)
         self.__pSystemModel.StartUp()
 
         # Create the socket
         self.__pSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.__pSocket.setblocking(False)
         self.__pSocket.bind(("", 9600))
-        
-        # Create the utilities class
-        self.__pUtilities = Utilities.Utilities()
             
     def Run(self):
         """Runs the fake PLC"""
@@ -81,7 +78,7 @@ class FakePLC():
         print "Fake PLC running, type 'q' and press enter to quit..."
         while True:
             # Check if the user pressed 'q' to quit
-            if self.__pUtilities.CheckForQuit():
+            if Utilities.CheckForQuit():
                 return
         
             # Check socket availability
