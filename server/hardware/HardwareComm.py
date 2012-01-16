@@ -222,6 +222,9 @@ class HardwareComm():
         self.__nLoadStateStart = 0
         self.__nLoadTimeoutCount = 0
         self.__pThermocontrollerDecimalPointFlags = {}
+        self.__sLogFile = ""
+        self.__startTime = 0
+        self.__bTempLogging = False
         self.__FakePLC_pMemory = None
         self.__FakePLC_nMemoryLower = 0
         self.__FakePLC_nMemoryUpper = 0
@@ -562,6 +565,14 @@ class HardwareComm():
     def EnableReactorRobot(self, nReactor):
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
 
+    # Begin logging temperatures
+    def StartTempLogging(self):
+        self.__StartTempLogging()
+
+    # Stops logging temperatures
+    def StopTempLogging(self):
+        self.__StopTempLogging()
+
     ### Fake PLC functions ###
     
     # Used by the fake PLC to set the PLC memory
@@ -893,7 +904,7 @@ class HardwareComm():
             self.__nStateOffset = self.__nMemoryLower
             self.__sState = ""
             return
-        
+
         # Acquire a lock on the system model
         pModel = self.__pSystemModel.LockSystemModel()
 
@@ -981,47 +992,9 @@ class HardwareComm():
                 self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2"), self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3"))
             pModel["Reactor3"]["Radiation"].updateState(self.__GetRadiation(3))
 
-            # This chunk of code can be used to log the temperature of a specific thermocouple
-            if True:
-                if sys.platform == "win32":
-                   sLogFile = "temp_profile.txt"
-                else:
-                   sLogFile = "/home/Elixys/Desktop/temp_profile.txt"
-                try:
-                    self.__startTime
-                except Exception, e:
-                    self.__startTime = time.time()
-                    f = open(sLogFile, "w")
-                    f.write("Time,")
-                    f.write("H1C1Set,H1C2Set,H1C3Set,H1C1Actual,H1C2Actual,H1C3Actual,")
-                    f.write("H2C1Set,H2C2Set,H2C3Set,H2C1Actual,H2C2Actual,H2C3Actual,")
-                    f.write("H3C1Set,H3C2Set,H3C3Set,H3C1Actual,H3C2Actual,H3C3Actual\n")
-                    f.flush()
-                    f.close()
-                currentTime = time.time()
-                f = open(sLogFile, "a")
-                f.write("%.1f," % (currentTime - self.__startTime))
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2")) + ",")
-                f.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3")) + "\n")
-                f.flush()
-                f.close()
-            
+            # Log the collet temperatures
+            if self.__bTempLogging:
+                self.__LogTemperatures()
         finally:
             # Release the system model lock
             self.__pSystemModel.UnlockSystemModel()
@@ -1473,4 +1446,52 @@ class HardwareComm():
             for nReactor in range(1, 4):
                 self.HeaterOff(nReactor)
             raise RunawayHeaterException(nReactor)
+
+    # Begin logging temperatures to a file
+    def __StartTempLogging(self):
+        if sys.platform == "win32":
+            self.__sLogFile = "temp_profile.txt"
+        else:
+            self.__sLogFile = os.path.join("/home", os.getenv("USERNAME"), "Desktop/temp_profile.txt")
+        self.__startTime = time.time()
+        pLogFile = open(self.__sLogFile, "w")
+        pLogFile.write("Time,")
+        pLogFile.write("H1C1Set,H1C2Set,H1C3Set,H1C1Actual,H1C2Actual,H1C3Actual,")
+        pLogFile.write("H2C1Set,H2C2Set,H2C3Set,H2C1Actual,H2C2Actual,H2C3Actual,")
+        pLogFile.write("H3C1Set,H3C2Set,H3C3Set,H3C1Actual,H3C2Actual,H3C3Actual\n")
+        pLogFile.flush()
+        pLogFile.close()
+        self.__bTempLogging = True
+
+    # Creates a temperature log file entry
+    def __LogTemperatures(self):
+        if not self.__bTempLogging:
+            return
+        nCurrentTime = time.time()
+        pLogFile = open(self.__sLogFile, "a")
+        pLogFile.write("%.1f," % (nCurrentTime - self.__startTime))
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor1_TemperatureController3")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor1_TemperatureController3")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor2_TemperatureController3")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor2_TemperatureController3")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerSetValue("Reactor3_TemperatureController3")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController1")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController2")) + ",")
+        pLogFile.write(str(self.__GetThermocontrollerActualValue("Reactor3_TemperatureController3")) + "\n")
+        pLogFile.flush()
+        pLogFile.close()
+
+    # Stops logging temperatures
+    def __StopTempLogging(self):
+        self.__bTempLogging = False
 

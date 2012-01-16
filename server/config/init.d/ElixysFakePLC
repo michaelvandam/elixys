@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# ElixysFakePLC        Startup script for the Elixys fake PLC
+#
+# chkconfig: - 85 15
+# description: Starts and stops the Elixys fake PLC
+#
+### BEGIN INIT INFO
+# Provides: ElixysFakePLC
+# Required-Start: $network
+# Required-Stop:
+# Default-Start: 3 5
+# Default-Stop: 0 1 2 6
+# Short-Description: start and stop Elixys fake PLC
+# Description: The Elixys fake PLC emulates the hardware so the software can be
+#    run without the system.
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+fakeplc=${FAKEPLC-python /opt/elixys/hardware/fakeplc/FakePLC.py}
+pidfile=${PIDFILE-/var/run/ElixysFakePLC.pid}
+lockfile=${LOCKFILE-/var/lock/ElixysFakePLC}
+RETVAL=0
+
+start() {
+        echo -n $"Starting Elixys fake PLC: "
+        ${fakeplc} start ${pidfile}
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && touch ${lockfile}
+        return $RETVAL
+}
+
+stop() {
+	echo -n $"Stopping Elixys fake PLC: "
+        ${fakeplc} stop ${pidfile}
+	RETVAL=$?
+	echo
+	[ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart)
+	stop
+	start
+	;;
+  status)
+        status -p ${pidfile} ElixysFakePLC
+	RETVAL=$?
+	;;
+  *)
+	echo $"Usage: service ElixysFakePLC {start|stop|restart|status}"
+	RETVAL=2
+esac
+
+exit $RETVAL
+

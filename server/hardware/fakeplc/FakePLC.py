@@ -20,6 +20,9 @@ from HomeReactorRobotThread import HomeReactorRobotThread
 from MoveReactorLinearThread import MoveReactorLinearThread
 from MoveReactorVerticalThread import MoveReactorVerticalThread
 from HeatingThread import HeatingThread
+import os
+from daemon import daemon
+import signal
 
 # Fake PLC class
 class FakePLC():
@@ -58,7 +61,7 @@ class FakePLC():
             self.__pMemory.append(0)
             
         # Fill the memory buffer from the PLC memory dump
-        self.__FillMemoryBuffer("PLC.MEM")
+        self.__FillMemoryBuffer("/opt/elixys/hardware/fakeplc/PLC.MEM")
 
         # Pass a reference to the memory buffer to the HardwareComm so we can read from it and write to it at a higher level
         self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, self.__nMemoryLower, self.__nMemoryUpper)
@@ -224,6 +227,9 @@ class FakePLC():
 
     def __UpdatePLC(self):
         """Updates the PLC in response to any changes to system changes"""
+        # Check for errors
+        self.__pSystemModel.CheckForError()
+
         # Update the various system components
         self.__UpdateVacuumPressure()
         self.__UpdateCoolingSystem()
@@ -555,11 +561,60 @@ class FakePLC():
                 pThread.Stop()
                 pThread.join()
         
-# Main entry function
+# Fake PLC daemon exit function
+gFakePLCDaemon = None
+def OnExit(pFakePLCDaemon, signal, func = None):
+    if gFakePLCDaemon != None:
+        gFakePLCDaemon.bTerminate = True
+
+# Fake PLC daemon
+class FakePLCDaemon(daemon):
+    def __init__(self, sPidFile):
+        """Initializes the fake PLC daemon"""
+        global gFakePLCDaemon
+        daemon.__init__(self, sPidFile, "/opt/elixys/logs/FakePLC.log")
+        self.bTerminate = False
+        gFakePLCDaemon = self
+
+    def run(self):
+        """Runs the fake PLC daemon"""
+        # Make sure we're in demo mode
+        global gFakePLCDaemon
+        if not os.path.isfile("/opt/elixys/demomode"):
+            self.bTerminate = True
+
+        # Run loop
+        while not self.bTerminate:
+            try:
+                # Create the fake PLC and run
+                pFakePLC = FakePLC()
+                pFakePLC.StartUp()
+                pFakePLC.Run()
+            except Exception as ex:
+                print "Fake PLC error: " + str(ex)
+            finally:
+                pFakePLC.ShutDown()
+
+            # Sleep for a second before we respawn
+            if not self.bTerminate:
+                time.sleep(1)
+        gFakePLCDaemon = None
+
+# Main function
 if __name__ == "__main__":
-    # Create the fake PLC and run
-    pFakePLC = FakePLC()
-    pFakePLC.StartUp()
-    pFakePLC.Run()
-    pFakePLC.ShutDown()
-    
+    if len(sys.argv) == 3:
+        pDaemon = FakePLCDaemon(sys.argv[2])
+        if 'start' == sys.argv[1]:
+            pDaemon.start()
+        elif 'stop' == sys.argv[1]:
+            pDaemon.stop()
+        elif 'restart' == sys.argv[1]:
+            pDaemon.restart()
+        else:
+            print "Unknown command"
+            sys.exit(2)
+        sys.exit(0)
+    else:
+        print "usage: %s start|stop|restart pidfile" % sys.argv[0]
+        sys.exit(2)
+

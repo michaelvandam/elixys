@@ -157,10 +157,11 @@ class BaseCLI(threading.Thread):
             sCommand = sCommand.strip()
         return sCommand
 
-    def Run(self):
+    def Run(self, bDisplayMessage):
         """Main CLI function"""
-        print "Elixys Command Line Interface"
-        print "Type help for available commands."
+        if bDisplayMessage:
+            print "Elixys Command Line Interface"
+            print "Type help for available commands."
         pScriptSteps = []
         bRunningScript = False
         nScriptStep = 0
@@ -380,6 +381,7 @@ class BaseCLI(threading.Thread):
                 print "  * DisableRobots()     * EnableRobots()"
                 print "  * DisableReagentRobots()          * EnableReagentRobots()"
                 print "  * DisableReactorRobot(nReactor)   * EnableReactorRobot(nReactor)"
+                print "  * StartTempLogging()  * StopTempLogging()"
                 print "All values are numbers except sPositionName which is one of the following:"
                 print "      Install, Transfer, React1, Add, React2, Evaporate, Radiation"
             elif sCommand == "help script":

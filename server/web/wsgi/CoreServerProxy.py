@@ -41,9 +41,6 @@ class CoreServerProxy():
     def StopTimer(self, sUsername):
         return self.__pCoreServer.root.StopTimer(sUsername)
 
-    def CLIConnectToStateMonitor(self, sUsername):
-        return self.__pCoreServer.root.CLIConnectToStateMonitor(sUsername)
-
     def CLIExecuteCommand(self, sUsername, sCommand):
         return self.__pCoreServer.root.CLIExecuteCommand(sUsername, sCommand)
 

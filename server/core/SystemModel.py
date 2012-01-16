@@ -28,6 +28,9 @@ import TimedLock
 import UnitOperation
 import Utilities
 import copy
+import socket
+import rpyc
+from DBComm import *
 
 # Constants
 STATECOMMONCOLUMN1WIDTH = 45
@@ -92,6 +95,7 @@ class SystemModel:
     self.stateUpdateThread = None
     self.stateUpdateThreadTerminateEvent = None
     self.__pStateMonitor = None
+    self.__bStateMonitorError = False
     self.__pUnitOperation = None
     self.__pStateObject = None
     self.__sStateString = ""
@@ -123,10 +127,6 @@ class SystemModel:
       if not self.stateUpdateThread.is_alive():
         raise Exception("State update thread died expectedly")
 
-  def SetStateMonitor(self, pStateMonitor):
-    """Set the state monitor"""
-    self.__pStateMonitor = pStateMonitor
-
   def SetUnitOperation(self, pUnitOperation):
     """Sets the current unit operation"""
     self.__pUnitOperation = pUnitOperation
@@ -149,18 +149,32 @@ class SystemModel:
 
   def ModelUpdated(self):
     """Called when the system model has been updated"""
-    # Update the system
+    # Are we a fake PLC?
     if not self.hardwareComm.IsFakePLC():
+      # No, so update the system
       self.__UpdateState()
 
-    # Update the state monitor
-    if self.__pStateMonitor != None:
+      # Attempt to connect to the state monitor
+      if self.__pStateMonitor == None:
+        try:
+          self.__pStateMonitor = rpyc.connect("localhost", 18861)
+          self.database.SystemLog(LOG_INFO, "System", "Connection to state monitor established")
+          self.__bStateMonitorError = False
+        except socket.error, ex:
+          if not self.__bStateMonitorError:
+            self.database.SystemLog(LOG_INFO, "System", "Failed to connect to state monitor")
+          self.__pStateMonitor = None
+          self.__bStateMonitorError = True
+
+      # Update the state monitor
+      if self.__pStateMonitor != None:
         try:
           self.__pStateMonitor.root.UpdateState(self.GetStateString())
         except EOFError, ex:
           # Catch EOFErrors in the event that the state monitor process dies
-          print "Warning: failed to send state to monitor, will not attempt again"
+          self.database.SystemLog(LOG_INFO, "System", "Failed to update state monitor")
           self.__pStateMonitor = None
+          self.__bStateMonitorError = True
 
   def GetStateObject(self):
     """Returns the state as an object"""
@@ -238,7 +252,7 @@ class SystemModel:
       self.__sStateString += "\n"
       self.__sStateString += self.__PadString("Pressure regulator 2", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString("%.1f"%(fPressureRegulator2SetPressure), STATECOMMONCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString("%.1f"%(fPressureRegulator1ActualPressure), STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString("%.1f"%(fPressureRegulator2ActualPressure), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Valves

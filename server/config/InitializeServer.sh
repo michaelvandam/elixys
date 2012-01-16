@@ -29,8 +29,7 @@ cd ../../..
 # Make an application copy of the config directory
 cp -R elixys/server/config /opt/elixys
 
-# Initialize and make an application copy of the rtmpd directory
-### Needs work!
+# Make an application copy of the rtmpd directory
 chmod 711 elixys/server/rtmpd/crtmpserver
 cp -R elixys/server/rtmpd /opt/elixys
 
@@ -64,9 +63,23 @@ python setup.py install
 cd ..
 rm -rf MySQL-python-1.2.3*
 
-# Set Apache and MySQL to start at boot
+# Add the services scripts
+cp config/init/.dElixysCoreServer /etc/init.d
+#cp config/init.d/rtmpd /etc/init.d
+cp config/init.d/FakePLC /etc/init.d
+chkconfig --add ElixysCoreServer
+#chkconfig --add rtmpd
+chkconfig --add FakePLC
+
+# Set the services to start at boot
 echo "service httpd start" >> /etc/rc.local
 echo "service mysqld start" >> /etc/rc.local
+echo "service ElixysCoreServer start" >> /etc/rc.local
+#echo "service rtmpd start" >> /etc/rc.local
+echo "service FakePLC start" >> /etc/rc.local
+
+# Create the log directory
+mkdir /opt/elixys/logs
 
 # Initialize Apache directory tree
 rm -rf /var/www/*

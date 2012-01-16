@@ -25,6 +25,8 @@ import UnitOperation
 import BaseCLI
 from UnitOperationsWrapper import UnitOperationsWrapper
 import os
+from daemon import daemon
+import signal
 
 # Suppress rpyc warning messages
 import logging
@@ -315,21 +317,7 @@ class CoreServerService(rpyc.Service):
         # Deliver the user input to the current unit operation
         pUnitOperation.deliverUserInput()
         return True
-
-    def exposed_CLIConnectToStateMonitor(self, sUsername):
-        """Sets the state monitor"""
-        global gDatabase
-        global gSystemModel
-        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLISetStateMonitor()")
-
-        # Try to connect to the state monitor
-        try:
-            pStateMonitor = rpyc.connect("localhost", 18861)
-            gSystemModel.SetStateMonitor(pStateMonitor)
-            return ""
-        except socket.error, ex:
-            print "Warning: failed to connect to state monitor, no output will be displayed"
-
+ 
     def exposed_CLIExecuteCommand(self, sUsername, sCommand):
         """Executes a command for the CLI"""
         global gDatabase
@@ -369,54 +357,102 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             return "Failed to get system state: " + str(ex)
 
+# Core server daemon exit function
+gCoreServerDaemon = None
+def OnExit(pCoreServerDaemon, signal, func=None):
+    if gCoreServerDaemon != None:
+        gCoreServerDaemon.bTerminate = True
+
+# Core server daemon
+class CoreServerDaemon(daemon):
+    def __init__(self, sPidFile):
+        """Initializes the core server daemon"""
+        global gCoreServerDaemon
+        daemon.__init__(self, sPidFile, "/opt/elixys/logs/CoreServer.log")
+        self.bTerminate = False
+        gCoreServerDaemon = self
+
+    def run(self):
+        """Runs the core server daemon"""
+        global gDatabase
+        global gSequenceManager
+        global gHardwareComm
+        global gSystemModel
+        global gUnitOperationsWrapper
+        global gCoreServerDaemon
+        while not self.bTerminate:
+            try:
+                # Create the database and sequence manager
+                gDatabase = DBComm()
+                gDatabase.Connect()
+                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer starting")
+                gSequenceManager = SequenceManager(gDatabase)
+
+                # Create the hardware layer and system model
+                gHardwareComm = HardwareComm()
+                gHardwareComm.StartUp()
+                gSystemModel = SystemModel(gHardwareComm, gDatabase)
+                gSystemModel.StartUp()
+
+                # Create the unit operations wrapper
+                gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel)
+
+                # Create the core server
+                pCoreServer = ThreadedServer(CoreServerService, port = 18862)
+    
+                # Start the core server thread
+                pCoreServerThread = CoreServerThread()
+                pCoreServerThread.SetParameters(pCoreServer)
+                pCoreServerThread.setDaemon(True)
+                pCoreServerThread.start()
+
+                # Start the background sequence validation thread
+                pSequenceValidationThread = SequenceValidationThread()
+                pSequenceValidationThread.setDaemon(True)
+                pSequenceValidationThread.start()
+
+                # Install the kill signal handler
+                signal.signal(signal.SIGTERM, OnExit)
+                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer started")
+
+                # Run until we get the signal to stop
+                while not self.bTerminate:
+                    gSystemModel.CheckForError()
+                    pCoreServerThread.CheckForError()
+                    try:
+                        pSequenceValidationThread.CheckForError()
+                    except Exception as ex:
+                        gDatabase.SystemLog(LOG_INFO, "System", "Sequence validation thread failed, restarting (" + str(ex) + ")")
+                    time.sleep(0.25)
+                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer received quit signal")
+            except Exception as ex:
+                # Log the error
+                gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
+            finally:
+                pSequenceValidationThread.Terminate()
+                pCoreServerThread.Terminate()
+                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
+
+            # Sleep for a second before we respawn
+            if not self.bTerminate:
+                time.sleep(1)
+        gCoreServerDaemon = None
+
 # Main function
 if __name__ == "__main__":
-    try:
-        # Create the database and sequence manager
-        gDatabase = DBComm()
-        gDatabase.Connect()
-        gDatabase.SystemLog(LOG_INFO, "System", "CoreServer starting")
-        gSequenceManager = SequenceManager(gDatabase)
-
-        # Create the hardware layer and system model
-        gHardwareComm = HardwareComm()
-        gHardwareComm.StartUp()
-        gSystemModel = SystemModel(gHardwareComm, gDatabase)
-        gSystemModel.StartUp()
-
-        # Create the unit operations wrapper
-        gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel)
-
-        # Create the core server
-        pCoreServer = ThreadedServer(CoreServerService, port = 18862)
-    
-        # Start the core server thread
-        pCoreServerThread = CoreServerThread()
-        pCoreServerThread.SetParameters(pCoreServer)
-        pCoreServerThread.setDaemon(True)
-        pCoreServerThread.start()
-
-        # Start the background sequence validation thread
-        pSequenceValidationThread = SequenceValidationThread()
-        pSequenceValidationThreadEvent = threading.Event()
-        pSequenceValidationThread.SetParameters(pSequenceValidationThreadEvent)
-        pSequenceValidationThread.setDaemon(True)
-        pSequenceValidationThread.start()
-
-        gDatabase.SystemLog(LOG_INFO, "System", "CoreServer started")
-        print "CoreServer running, type 'q' and press enter to quit..."
-
-        # Run the server until the user presses 'q' to quit
-        while not Utilities.CheckForQuit():
-            gSystemModel.CheckForError()
-            time.sleep(0.25)
-
-        # Stop the background thread but not the server or it will crash
-        gDatabase.SystemLog(LOG_INFO, "System", "CoreServer received quit signal")
-        pSequenceValidationThreadEvent.set()
-        time.sleep(1)
-        gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
-    except Exception as ex:
-        # Log the error
-        gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
+    if len(sys.argv) == 3:
+        pDaemon = CoreServerDaemon(sys.argv[2])
+        if 'start' == sys.argv[1]:
+            pDaemon.start()
+        elif 'stop' == sys.argv[1]:
+            pDaemon.stop()
+        elif 'restart' == sys.argv[1]:
+            pDaemon.restart()
+        else:
+            print "Unknown command"
+            sys.exit(2)
+        sys.exit(0)
+    else:
+        print "usage: %s start|stop|restart pidfile" % sys.argv[0]
+        sys.exit(2)
 
