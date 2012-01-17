@@ -67,15 +67,15 @@ cd ..
 rm -rf MySQL-python-1.2.3*
 
 # Add the services scripts
-cp config/init.d/ElixysCoreServer /etc/init.d
-cp config/init.d/ElixysFakePLC /etc/init.d
-cp config/init.d/ElixysRtmpd /etc/init.d
+cp elixys/server/config/init.d/ElixysCoreServer /etc/init.d
+cp elixys/server/config/init.d/ElixysFakePLC /etc/init.d
+cp elixys/server/config/init.d/ElixysRtmpd /etc/init.d
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysCoreServer
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysFakePLC
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysRtmpd
-chmod 755 ElixysCoreServer
-chmod 755 ElixysFakePLC
-chmod 755 ElixysRtmpd
+chmod 755 /etc/init.d/ElixysCoreServer
+chmod 755 /etc/init.d/ElixysFakePLC
+chmod 755 /etc/init.d/ElixysRtmpd
 chkconfig --add ElixysCoreServer
 chkconfig --add ElixysFakePLC
 chkconfig --add ElixysRtmpd
