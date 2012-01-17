@@ -33,6 +33,9 @@ cp -R elixys/server/config /opt/elixys
 chmod 711 elixys/server/rtmpd/crtmpserver
 cp -R elixys/server/rtmpd /opt/elixys
 
+# Create the log directory
+mkdir /opt/elixys/logs
+
 # Install mod_wsgi
 yum -y install mod_wsgi
 
@@ -64,28 +67,35 @@ cd ..
 rm -rf MySQL-python-1.2.3*
 
 # Add the services scripts
-cp config/init/.dElixysCoreServer /etc/init.d
-#cp config/init.d/rtmpd /etc/init.d
-cp config/init.d/FakePLC /etc/init.d
+cp config/init.d/ElixysCoreServer /etc/init.d
+cp config/init.d/ElixysFakePLC /etc/init.d
+cp config/init.d/ElixysRtmpd /etc/init.d
+chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysCoreServer
+chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysFakePLC
+chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysRtmpd
+chmod 755 ElixysCoreServer
+chmod 755 ElixysFakePLC
+chmod 755 ElixysRtmpd
 chkconfig --add ElixysCoreServer
-#chkconfig --add rtmpd
-chkconfig --add FakePLC
+chkconfig --add ElixysFakePLC
+chkconfig --add ElixysRtmpd
 
 # Set the services to start at boot
 echo "service httpd start" >> /etc/rc.local
 echo "service mysqld start" >> /etc/rc.local
 echo "service ElixysCoreServer start" >> /etc/rc.local
-#echo "service rtmpd start" >> /etc/rc.local
-echo "service FakePLC start" >> /etc/rc.local
-
-# Create the log directory
-mkdir /opt/elixys/logs
+echo "service ElixysFakePLC start" >> /etc/rc.local
+echo "service ElixysRtmpd start" >> /etc/rc.local
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
 mkdir /var/www/adobepolicyfile
 mkdir /var/www/http
 mkdir /var/www/wsgi
+
+# Install the Apache configuration file
+mv -f elixys/server/config/httpd.conf /etc/httpd/conf
+chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Create a directory where Apache has write permissions for Python Eggs 
 mkdir /var/www/eggs

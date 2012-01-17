@@ -8,12 +8,13 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# Stop the services
+service ElixysCoreServer stop
+service ElixysFakePLC stop
+service httpd stop
+
 # Get the current git repository
 git clone --depth 1 http://github.com/michaelvandam/elixys.git
-
-# Update the Apache configuration file
-mv -f elixys/server/config/httpd.conf /etc/httpd/conf
-chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Update the static web content
 rm -rf /var/www/http/*
@@ -25,9 +26,6 @@ rm -rf /var/www/wsgi/*
 mv -f elixys/server/web/wsgi/* /var/www/wsgi
 chcon --user=user_u --role=object_r --type=httpd_sys_content_t -R /var/www/wsgi/*
 
-# Restart Apache
-service httpd restart
-
 # Update the core server
 rm -rf /opt/elixys/cli
 rm -rf /opt/elixys/core
@@ -37,6 +35,11 @@ cp -R elixys/server/cli /opt/elixys
 cp -R elixys/server/core /opt/elixys
 cp -R elixys/server/hardware /opt/elixys
 cp -R elixys/server/database /opt/elixys
+
+# Start the services
+service httpd start
+service ElixysFakePLC start
+service ElixysCoreServer start
 
 # Remove the git repository
 rm -rf elixys
