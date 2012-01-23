@@ -28,7 +28,7 @@ class TransferToHPLC(UnitOperation):
       ###
       self.beginNextStep("HPLC Transfer Operation Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
       
   """def setParams(self,currentParams):
     expectedParams = ['ReactorID','stopcockPosition']

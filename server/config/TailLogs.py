@@ -85,9 +85,9 @@ if __name__ == '__main__':
                 sLog += "Debug "
             sLog += "(" + pLog["username"] + "): " + pLog["message"]
             if (pLog["sequenceid"] != 0) and (pLog["componentid"] != 0):
-                sLog += "( sequence " + str(pLog["sequenceid"]) + ", component " + str(pLog["componentid"]) + ")"
+                sLog += " (sequence " + str(pLog["sequenceid"]) + ", component " + str(pLog["componentid"]) + ")"
             elif pLog["sequenceid"] != 0:
-                sLog += "( sequence " + str(pLog["sequenceid"]) + ")"
+                sLog += " (sequence " + str(pLog["sequenceid"]) + ")"
             print sLog
             pLastLogTimestamp = pLog["date"]
             nLastLogID = pLog["id"]

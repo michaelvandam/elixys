@@ -3,9 +3,29 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "TRANSFER"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["ReactorID"] = "Reactor" + str(pComponent["sourcereactor"])
+  pParams["transferReactorID"] = "Reactor" + str(pComponent["targetreactor"])
+  pParams["transferType"] = str(pComponent["mode"])
+  pParams["transferTimer"] = pComponent["duration"]
+  pParams["transferPressure"] = pComponent["pressure"]
+  pTransfer = Transfer(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pTransfer.initializeComponent(pComponent)
+  return pTransfer
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pComponent["duration"] = pUnitOperations.transferTimer
+
+# Transfer class
 class Transfer(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     self.setParams(params) 
     #Should have parameters listed below:
     #self.ReactorID
@@ -31,14 +51,14 @@ class Transfer(UnitOperation):
       self.setPressureRegulator(1,self.transferPressure)
       self.setGasTransferValve(ON)
       self.startTimer(self.transferTimer)
-      self.waitForTimer()
+      self.transferTimer = self.waitForTimer()
       self.setGasTransferValve(OFF)
       self.setStopcockPosition(TRANSFERDEFAULT)
       self.setStatus("Moving robot")
       self.removeRobotPosition()
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
       
   def setRobotPosition(self):
     #Make sure the reagent robot is up

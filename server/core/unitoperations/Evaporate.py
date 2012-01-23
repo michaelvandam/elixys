@@ -3,9 +3,30 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "EVAPORATE"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["ReactorID"] =  "Reactor" + str(pComponent["reactor"])
+  pParams["evapTemp"] = pComponent["evaporationtemperature"]
+  pParams["pressure"] = pComponent["evaporationpressure"]
+  pParams["evapTime"] = pComponent["duration"]
+  pParams["coolTemp"] = pComponent["finaltemperature"]
+  pParams["stirSpeed"] = pComponent["stirspeed"]
+  pEvaporate = Evaporate(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pEvaporate.initializeComponent(pComponent)
+  return pEvaporate
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pComponent["duration"] = int(pUnitOperation.reactTime)
+
+# Evaporate class
 class Evaporate(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,PRESSURE:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -30,6 +51,7 @@ class Evaporate(UnitOperation):
       self.setStatus("Starting motor")
       self.setStirSpeed(self.stirSpeed)
       self.setStatus("Moving robot")
+      raise Exception("Woo-hoo!")
       self.setRobotPosition()
       self.setGasTransferValve(ON)
       self.setVacuumSystem(ON)
@@ -39,7 +61,7 @@ class Evaporate(UnitOperation):
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
       self.setPressureRegulator(1,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
-      self.waitForTimer() #Now wait until the rest of the time elapses
+      self.evapTime = self.waitForTimer() #Now wait until the rest of the time elapses
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCool()
@@ -51,7 +73,7 @@ class Evaporate(UnitOperation):
       self.removeRobotPosition()
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
   
   def setRobotPosition(self):
     #Make sure the reagent robot is up

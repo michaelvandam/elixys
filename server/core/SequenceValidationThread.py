@@ -45,7 +45,7 @@ class SequenceValidationThread(threading.Thread):
             while not self.__bTerminate:
                 # Iterate through all the sequences in the database and see if any are marked as dirty
                 bAllSequencesClean = True
-                pSequences = pDatabase.GetAllSequences("ValidationThread", "Saved")
+                pSequences = pDatabase.GetAllSequences("ValidationThread", "")
                 for pSequence in pSequences:
                    if pSequence["dirty"]:
                        # Perform a full validation on the sequence

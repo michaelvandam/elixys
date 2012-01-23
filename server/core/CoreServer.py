@@ -27,10 +27,7 @@ from UnitOperationsWrapper import UnitOperationsWrapper
 import os
 from daemon import daemon
 import signal
-
-# Suppress rpyc warning messages
 import logging
-logging.basicConfig(level=logging.ERROR)
 
 # Initialize global variables
 gDatabase = None
@@ -40,6 +37,25 @@ gSystemModel = None
 gUnitOperationsWrapper = None
 gRunUsername = ""
 gRunSequence = None
+
+# Handler that redirects rpyc error messages to the database
+class RpycLogHandler(logging.StreamHandler):
+    def emit(self, record):
+        """Error message handler"""
+        # Format the multiline message into a single line
+        global gDatabase
+        sMultilineMessage = self.format(record)
+        pMultilineMessageComponents = sMultilineMessage.split("\n")
+        sLogMessage = "rpyc: " + pMultilineMessageComponents[0]
+        nLength = len(pMultilineMessageComponents)
+        if len(pMultilineMessageComponents) > 1:
+            sLogMessage += " (" + pMultilineMessageComponents[nLength - 1] + ")"
+
+        # Log the message
+        if gDatabase != None:
+            gDatabase.SystemLog(LOG_WARNING, "System", sLogMessage)
+        else:
+            print sLogMessage
 
 # Core server service
 class CoreServerService(rpyc.Service):
@@ -65,38 +81,45 @@ class CoreServerService(rpyc.Service):
 
         # Get the server state
         pServerState = gSystemModel.GetStateObject()
+        if pServerState == None:
+            raise Exception("Failed to get the server state")
 
         # Format the run state
         pServerState["runstate"] = {"type":"runstate"}
+        gDatabase.SystemLog(LOG_ERROR, sUsername, "Run sequence = " + str(gRunSequence))
         if (gRunSequence != None) and gRunSequence.running:
+            gDatabase.SystemLog(LOG_ERROR, sUsername, "Run username = " + str(gRunUsername))
             pServerState["runstate"]["status"] = ""
             pServerState["runstate"]["prompt"] = {"type":"promptstate",
                 "show":False}
             pServerState["runstate"]["timerbuttons"] = []
             pServerState["runstate"]["unitoperationbuttons"] = []
+            pServerState["runstate"]["waitingforinputmessage"] = ""
             pUnitOperation = gSystemModel.GetUnitOperation()
             if pUnitOperation != None:
                 pServerState["runstate"]["status"] = pUnitOperation.status
                 sTimerStatus = pUnitOperation.getTimerStatus()
-                if (sTimerStatus == "Running") or (sTimerStatus == "Paused"):
-                    if sTimerStatus == "Running":
+                if sUsername == gRunUsername:
+                    if (sTimerStatus == "Running") or (sTimerStatus == "Paused"):
+                        if sTimerStatus == "Running":
+                            pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                                "text":"Pause",
+                                "id":"PAUSE"})
+                        else:
+                            pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                                "text":"Continue",
+                                "id":"CONTINUE"})
                         pServerState["runstate"]["timerbuttons"].append({"type":"button",
-                            "text":"Pause",
-                            "id":"PAUSE"})
-                    else:
-                        pServerState["runstate"]["timerbuttons"].append({"type":"button",
+                            "text":"Stop",
+                            "id":"STOP"})
+                    if pUnitOperation.waitingForUserInput:
+                        pServerState["runstate"]["unitoperationbuttons"].append({"type":"button",
                             "text":"Continue",
-                            "id":"CONTINUE"})
-                    pServerState["runstate"]["timerbuttons"].append({"type":"button",
-                        "text":"Stop",
-                        "id":"STOP"})
-                if pUnitOperation.waitingForUserInput:
-                    pServerState["runstate"]["unitoperationbuttons"].append({"type":"button",
-                            "text":"OK",
                             "id":"USERINPUT"})
             pServerState["runstate"]["username"] = gRunUsername
-            pServerState["runstate"]["sequenceid"] = gRunSequence.sequenceID
-            pServerState["runstate"]["componentid"] = gRunSequence.componentID
+            nSequenceID, nComponentID = gRunSequence.getIDs()
+            pServerState["runstate"]["sequenceid"] = nSequenceID
+            pServerState["runstate"]["componentid"] = nComponentID
         else:
             gRunSequence = None
             gRunUsername = ""
@@ -126,6 +149,7 @@ class CoreServerService(rpyc.Service):
           if gRunSequence.running:
             gDatabase.SystemLog(LOG_WARNING, sUsername, "A sequence is already running, cannot run another")
             return False
+
         # Create and start the sequence
         gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSequenceManager, gSystemModel)
         gRunSequence.setDaemon(True)
@@ -397,8 +421,12 @@ class CoreServerDaemon(daemon):
                 # Create the unit operations wrapper
                 gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel)
 
-                # Create the core server
-                pCoreServer = ThreadedServer(CoreServerService, port = 18862)
+                # Create the core server and error message handler
+                pLogger = logging.getLogger("rpyc")
+                pLogger.setLevel(logging.ERROR)
+                pLogHandler = RpycLogHandler()
+                pLogger.addHandler(pLogHandler)
+                pCoreServer = ThreadedServer(CoreServerService, port = 18862, logger = pLogger)
     
                 # Start the core server thread
                 pCoreServerThread = CoreServerThread()
@@ -423,6 +451,10 @@ class CoreServerDaemon(daemon):
                         pSequenceValidationThread.CheckForError()
                     except Exception as ex:
                         gDatabase.SystemLog(LOG_INFO, "System", "Sequence validation thread failed, restarting (" + str(ex) + ")")
+                        pSequenceValidationThread.Terminate()
+                        pSequenceValidationThread = SequenceValidationThread()
+                        pSequenceValidationThread.setDaemon(True)
+                        pSequenceValidationThread.start()
                     time.sleep(0.25)
                 gDatabase.SystemLog(LOG_INFO, "System", "CoreServer received quit signal")
             except Exception as ex:
@@ -430,7 +462,11 @@ class CoreServerDaemon(daemon):
                 gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
             finally:
                 pSequenceValidationThread.Terminate()
+                pSequenceValidationThread.join()
                 pCoreServerThread.Terminate()
+                pCoreServerThread.join()
+                gSystemModel.ShutDown()
+                gHardwareComm.ShutDown()
                 gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
 
             # Sleep for a second before we respawn

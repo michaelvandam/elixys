@@ -3,9 +3,25 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "PROMPT"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["userMessage"] = str(pComponent["message"])
+  pPrompt = Prompt(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pPrompt.initializeComponent(pComponent)
+  return pPrompt
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pass
+
+# Prompt class
 class Prompt(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {USERMESSAGE:STR}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -14,10 +30,13 @@ class Prompt(UnitOperation):
       raise UnitOpError(paramError)
 
   def run(self):
-    # Wait for user input
-    self.setStatus("Waiting for user input")
-    self.waitForUserInput(self.userMessage)
-    self.setStatus("Complete")
+    try:
+      # Wait for user input
+      self.setStatus(self.userMessage)
+      self.waitForUserInput()
+      self.setStatus("Complete")
+    except Exception as e:
+      self.abortOperation(str(e), False)
   
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

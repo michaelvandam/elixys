@@ -3,9 +3,32 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "ELUTEF18"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["eluteTime"] = pComponent["elutetime"]
+  pParams["elutePressure"] = pComponent["elutepressure"]
+  pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
+  pParams["ReagentPosition"] = 0             #Ditto
+  pEluteF18 = EluteF18(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pEluteF18.initializeComponent(pComponent)
+  if pComponent["reagent"].has_key("position"):
+    pEluteF18.reagentPosition = int(pComponent["reagent"]["position"])
+  if pComponent["reagent"].has_key("reagentid"):
+    pEluteF18.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
+  return pEluteF18
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pComponent["elutetime"] = int(pUnitOperation.eluteTime)
+
+# EluteF18 class
 class EluteF18(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {ELUTETIME:INT,ELUTEPRESSURE:FLOAT,REAGENTREACTORID:STR,REAGENTPOSITION:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -33,13 +56,13 @@ class EluteF18(UnitOperation):
       self.timerShowInStatus = False
       self.setPressureRegulator(1,self.elutePressure,5)
       self.startTimer(self.eluteTime)
-      self.waitForTimer()
+      self.eluteTime = self.waitForTimer()
       self.setStatus("Returning vial")
       self.removeGripperPlace()
       self.setStopcockPosition(F18DEFAULT)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
       
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

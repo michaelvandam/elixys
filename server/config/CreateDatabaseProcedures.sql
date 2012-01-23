@@ -403,14 +403,21 @@ CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState
  ***************************************************************************************************************************************************************/
 
 /* Get a list of sequences:
- *   IN Type - Type of sequence to return (either "Saved" or "History")
+ *   IN Type - Type of sequence to return (either "Saved", "History" or "" for both)
  */
 DROP PROCEDURE IF EXISTS GetAllSequences;
 CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
     BEGIN
-        -- Filter the sequences based on type and replace the user IDs with names
-        SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
-            Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.Type = iType AND Sequences.UserID = Users.UserID;
+        -- Check if we have a type
+        IF iType != "" THEN
+            -- Yes, so filter the sequences based on type and replace the user IDs with names
+            SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+                Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.Type = iType AND Sequences.UserID = Users.UserID;
+        ELSE
+            -- No, so return all sequences and replace the user IDs with names
+            SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+                Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.UserID = Users.UserID;
+        END IF;
     END //
 
 /* Get a sequence:

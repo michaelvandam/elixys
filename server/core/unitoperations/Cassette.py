@@ -3,9 +3,23 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "CASSETTE"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pCassette = Cassette(systemModel, {}, username, nSequenceID, pComponent["id"], database)
+  pCassette.initializeComponent(pComponent)
+  return pCassette
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pass
+
+# Cassette class
 class Cassette(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
 
   def run(self):
     #This unit operation doesn't do anything when run

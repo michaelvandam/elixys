@@ -3,8 +3,10 @@
 # Imports
 import sys
 sys.path.append("/opt/elixys/core")
+sys.path.append("/opt/elixys/database")
 import SequenceManager
 import copy
+from DBComm import *
 
 class GetHandler:
     # Constructor
@@ -170,23 +172,31 @@ class GetHandler:
 
         # Start with the common return object
         pState = {"navigationbuttons":[{"type":"button",
-                "text":"Edit",
-                "id":"EDIT"},
-                {"type":"button",
                 "text":"Back",
                 "id":"BACK"}],
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 
+        # Add the edit button if this is a saved sequence
+        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, self.__pClientState["sequenceid"])
+        if pSequenceMetadata["sequencetype"] == "Saved":
+            pState["navigationbuttons"].insert(0, {"type":"button",
+                "text":"Edit",
+                "id":"EDIT"})
+            nInsertionOffset = 1
+        else:
+            nInsertionOffset = 0
+
         # Add the run buttons if no one is running the system
         pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
-            pState["navigationbuttons"].insert(1, {"type":"button",
+            pState["navigationbuttons"].insert(nInsertionOffset, {"type":"button",
                 "text":"Run",
                 "id":"RUN"})
+            nInsertionOffset += 1
             pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
             if pComponent["componenttype"] != "CASSETTE":
-                pState["navigationbuttons"].insert(2, {"type":"button",
+                pState["navigationbuttons"].insert(nInsertionOffset, {"type":"button",
                     "text":"Run here",
                     "id":"RUNHERE"})
         return pState

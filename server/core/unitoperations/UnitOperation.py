@@ -8,6 +8,7 @@ import copy
 import sys
 sys.path.append("/opt/elixys/database")
 from DBComm import *
+import urllib
 
 #Reactor Y Positions
 REACT_A    = 'React1'
@@ -62,6 +63,9 @@ TRAPTIME = "trapTime"
 TRAPPRESSURE = "trapPressure"
 ELUTETIME = "eluteTime"
 ELUTEPRESSURE = "elutePressure"
+SUMMARYFLAG = "summaryFlag"
+SUMMARYMESSAGE = "summaryMessage"
+EXTERNALREAGENTNAME = "externalReagentName"
 
 STR   = 'str'
 INT   = 'int'
@@ -100,7 +104,7 @@ class UnitOpError(Exception):
     return str(self.value)
 
 class UnitOperation(threading.Thread):
-  def __init__(self,systemModel,username = "", database = None):
+  def __init__(self,systemModel,username = "",sequenceID = 0, componentID = 0, database = None):
     threading.Thread.__init__(self)
     self.time = time.time()
     self.params = {}
@@ -112,6 +116,8 @@ class UnitOperation(threading.Thread):
       self.systemModel = None
     self.username = username
     self.database = database
+    self.sequenceID = sequenceID
+    self.componentID = componentID
     self.status = ""
     self.delay = 50#50ms delay
     self.abort = False
@@ -122,8 +128,6 @@ class UnitOperation(threading.Thread):
     self.timerPauseTime = 0
     self.timerPausedTime = 0
     self.waitingForUserInput = False
-    self.userInputTitle = ""
-    self.userInputText = ""
     self.error = ""
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
@@ -131,71 +135,86 @@ class UnitOperation(threading.Thread):
       #print "\n%s:\n%s" % (paramname,params[paramname])
       if (paramname=="reactTemp"):
         self.reactTemp = params['reactTemp']
-      if (paramname=="reactTime"):
+      elif (paramname=="reactTime"):
         self.reactTime = params['reactTime']
-      if (paramname=="evapTemp"):
+      elif (paramname=="evapTemp"):
         self.reactTemp = params['evapTemp']
-      if (paramname=="evapTime"):
+      elif (paramname=="evapTime"):
         self.reactTime = params['evapTime']
-      if paramname=="coolTemp":
+      elif paramname=="coolTemp":
         self.coolTemp = params['coolTemp']
-      if paramname=="coolingDelay":
+      elif paramname=="coolingDelay":
         self.coolingDelay = params['coolingDelay']
-      if paramname=="ReactorID":
+      elif paramname=="ReactorID":
         self.ReactorID = params['ReactorID']
-      if paramname=="ReagentReactorID":
+      elif paramname=="ReagentReactorID":
         self.ReagentReactorID = params['ReagentReactorID']
-      if paramname=="stirSpeed":
+      elif paramname=="stirSpeed":
         self.stirSpeed = params['stirSpeed']
-      if paramname=="isCheckbox":
+      elif paramname=="isCheckbox":
         self.isCheckbox = params['isCheckbox']
-      if paramname=="userMessage":
+      elif paramname=="userMessage":
         self.userMessage = params['userMessage']
-      if paramname=="description":
+      elif paramname=="description":
         self.description = params['description']
-      if paramname=="stopcockPosition":
+      elif paramname=="stopcockPosition":
         self.stopcockPosition = params['stopcockPosition']
-      if paramname=="transferReactorID":
+      elif paramname=="transferReactorID":
         self.transferReactorID = params['transferReactorID']
-      if paramname=="reagentLoadPosition":
+      elif paramname=="reagentLoadPosition":
         self.reagentLoadPosition = params['reagentLoadPosition']
-      if paramname=="reactPosition":
+      elif paramname=="reactPosition":
         self.reactPosition = params['reactPosition']
-      if paramname=="ReagentPosition":
+      elif paramname=="ReagentPosition":
         self.reagentPosition = params['ReagentPosition']
-      if paramname=="trapTime":
+      elif paramname=="trapTime":
         self.trapTime = params['trapTime']
-      if paramname=="trapPressure":
+      elif paramname=="trapPressure":
         self.trapPressure = params['trapPressure']
-      if paramname=="eluteTime":
+      elif paramname=="eluteTime":
         self.eluteTime = params['eluteTime']
-      if paramname=="elutePressure":
+      elif paramname=="elutePressure":
         self.elutePressure = params['elutePressure']
-      if paramname=="pressureRegulator":
+      elif paramname=="pressureRegulator":
         self.pressureRegulator = params['pressureRegulator']
-      if paramname=="pressure":
+      elif paramname=="pressure":
         self.pressure = params['pressure']
-      if paramname=="duration":
+      elif paramname=="duration":
         self.duration = params['duration']
-      if paramname=="cyclotronFlag":
+      elif paramname=="cyclotronFlag":
         self.cyclotronFlag = params['cyclotronFlag']
-      if paramname=="transferType":
+      elif paramname=="transferType":
         self.transferType = params['transferType']
-      if paramname=="transferTimer":
+      elif paramname=="transferTimer":
         self.transferTimer = params['transferTimer']
-      if paramname=="transferPressure":
+      elif paramname=="transferPressure":
         self.transferPressure = params['transferPressure']      
-      if paramname=="liquidTCReactor":
+      elif paramname=="liquidTCReactor":
         self.liquidTCReactor = params['liquidTCReactor']      
-      if paramname=="liquidTCCollet":
+      elif paramname=="liquidTCCollet":
         self.liquidTCCollet = params['liquidTCCollet']
+      elif paramname=="summaryFlag":
+        self.summaryFlag = params['summaryFlag']
+      elif paramname=="summaryMessage":
+        self.summaryMessage = params['summaryMessage']
+      elif paramname=="externalReagentName":
+        self.externalReagentName = params['externalReagentName']
+      else:
+        raise Exception("Unknown parameter: " + paramname)
 
-  def logError(self,error):
-    """Logs an error."""
+  def logError(self, sError):
+    """Logs an error string."""
     if self.database != None:
-      self.database.SystemLog(LOG_ERROR, self.username, error)
+      self.database.RunLog(LOG_ERROR, self.username, self.sequenceID, self.componentID, sError)
     else:
-      print error
+      print sError
+
+  def logInfo(self, sInfo):
+    """Logs an information string."""
+    if self.database != None:
+      self.database.RunLog(LOG_INFO, self.username, self.sequenceID, self.componentID, sInfo)
+    else:
+      print sInfo
     
   def validateParams(self,userSetParams,expectedParamDict):
     """Validates parameters before starting unit operation"""
@@ -205,6 +224,8 @@ class UnitOperation(threading.Thread):
     for parameter in expectedParamDict.keys():
       try:
         paramType = userSetParams[parameter].__class__.__name__
+        if paramType == "unicode":
+          paramType = "str"
       except:
         pass
       if not(parameter in userSetParams): #Parameter not entered in CLI
@@ -216,11 +237,14 @@ class UnitOperation(threading.Thread):
       else:
         if not(paramType == expectedParamDict[parameter]):
           valid = False
-          if not(paramType == STR): #As long as it's not a string, check if float/int were mixed up.
-            if (int(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == INT):
-              valid = True
-            if (float(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == FLOAT):
-              valid = True
+          try:
+            if not(paramType == STR): #As long as it's not a string, check if float/int were mixed up.
+              if (int(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == INT):
+                valid = True
+              if (float(userSetParams[parameter]) == userSetParams[parameter]) and (expectedParamDict[parameter] == FLOAT):
+                valid = True
+          except ValueError:
+            pass
           if not(valid):
             self.paramsValid=False
             errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\' (2)." % (parameter,userSetParams[parameter])
@@ -230,18 +254,20 @@ class UnitOperation(threading.Thread):
               self.paramsValid=False
               errorMessage += "Parameter: \'%s\' was set to invalid value: \'%s\' (3)." % (parameter,userSetParams[parameter])
           except ValueError:
-            pass    
+            pass
     return errorMessage
       
-  def setStatus(self,status):
+  def setStatus(self,status,bUpdate=False):
     self.status = status
+    if not bUpdate:
+      self.logInfo(urllib.unquote(status))
 
   def updateStatus(self,status):
     statusComponents = self.status.split(", ")
     if len(statusComponents) > 0:
-       self.setStatus(statusComponents[0] + ", " + status)
+       self.setStatus(statusComponents[0] + ", " + status, True)
     else:
-       self.setStatus(status)
+       self.setStatus(status, True)
 
   def setAbort(self):
     self.abort = True
@@ -466,6 +492,7 @@ class UnitOperation(threading.Thread):
       self.updateTimer()
       self.checkAbort()
       self.stateCheckInterval(50) #Sleep 50ms between checks
+    return (time.time() - self.timerStartTime)
 
   def updateTimer(self):
     if self.timerShowInStatus:
@@ -534,7 +561,7 @@ class UnitOperation(threading.Thread):
     else:
       return "Complete"
 
-  def abortOperation(self,error):
+  def abortOperation(self,error,raiseException=True):
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
     for nReactor in range(1, 4):
       sReactor = "Reactor" + str(nReactor)
@@ -542,7 +569,8 @@ class UnitOperation(threading.Thread):
       self.systemModel[sReactor]['Thermocouple'].setHeaterOff()
     self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
     self.error = error
-    raise UnitOpError(error)
+    if raiseException:
+      raise UnitOpError(error)
     
   def setStopcockPosition(self,stopcockPositions,ReactorID=255,adjustPressure=True):
     if (ReactorID==255):
@@ -820,12 +848,10 @@ class UnitOperation(threading.Thread):
     # Clear the waiting flag
     self.waitingForUserInput = False
 
-  def waitForUserInput(self, sMessage):
+  def waitForUserInput(self):
     """Pauses the unit operation until we get a signal to continue"""
     # Signal that we are waiting for user input
     self.waitingForUserInput = True
-    self.userInputTitle = "Prompt"
-    self.userInputText = sMessage
 
     # Wait until we get the signal to continue
     while self.waitingForUserInput:

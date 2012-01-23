@@ -38,7 +38,7 @@ class TempProfile(UnitOperation):
       self.setStirSpeed(OFF)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
 
   def setCoolLiquid(self):
     self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()

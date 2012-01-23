@@ -3,9 +3,34 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "ADD"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+  pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
+  pParams["ReagentPosition"] = 0             #Ditto
+  pParams["reagentLoadPosition"] = pComponent["deliveryposition"]
+  pParams["duration"] = pComponent["deliverytime"]
+  pParams["pressure"] = pComponent["deliverypressure"]
+  pAdd = Add(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pAdd.initializeComponent(pComponent)
+  if pComponent["reagent"].has_key("position"):
+    pAdd.reagentPosition = int(pComponent["reagent"]["position"])
+  if pComponent["reagent"].has_key("reagentid"):
+    pAdd.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
+  return pAdd
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pComponent["deliverytime"] = int(pUnitOperation.duration)
+
+# Add class
 class Add(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {REACTORID:STR,REAGENTREACTORID:STR,REAGENTPOSITION:INT,REAGENTLOADPOSITION:INT,PRESSURE:FLOAT,DURATION:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -30,13 +55,12 @@ class Add(UnitOperation):
       self.setGripperPlace(0)                         #Move reagent to the addition position
       self.setStatus("Delivering reagent")
       self.startTimer(self.duration)                  #In seconds
-      self.waitForTimer()                             #Wait for Dispense reagent
+      self.duration = self.waitForTimer()             #Wait for Dispense reagent
       self.setStatus("Returning vial")
       self.removeGripperPlace()                       #Return vial to its starting location
       self.setStatus("Complete")
     except Exception as e:
-      print "Error: " + str(e)
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
   
   """def setParams(self,currentParams):
     expectedParams = ['ReactorID','ReagentPosition','reagentLoadPosition']

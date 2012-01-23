@@ -3,9 +3,27 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "TRAPF18"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["cyclotronFlag"] = pComponent["cyclotronflag"]
+  pParams["trapTime"] = pComponent["traptime"]
+  pParams["trapPressure"] = pComponent["trappressure"]
+  pTrapF18 = TrapF18(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pTrapF18.initializeComponent(pComponent)
+  return pTrapF18
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pComponent["traptime"] = int(pUnitOperation.trapTime)
+
+# TrapF18 class
 class TrapF18(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {CYCLOTRONFLAG:INT,TRAPTIME:INT,TRAPPRESSURE:FLOAT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -25,24 +43,26 @@ class TrapF18(UnitOperation):
       self.setPressureRegulator(1,0) #Vent pressure to avoid delivery issues
       self.setStatus("Moving reactor")
       self.setReactorPosition(ADDREAGENT)
-      self.setStatus("Trapping")
+      self.setStatus("Preparing to trap")
       self.setStopcockPosition(F18TRAP)
       if (self.cyclotronFlag):
-        self.setStatus("Trapping, waiting for delivery")
-        self.waitForUserInput("The system is ready for you to deliver F18 from your external source.\n\nClick OK once delivery is complete.")
+        self.setStatus("Waiting for the user to deliver F18 from the external source")
+        self.waitForUserInput()
       else:
+        self.setStatus("Trapping")
         self.systemModel['Valves'].setF18LoadValveOpen(ON)  
         self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,ON,EQUAL,5)
         self.timerShowInStatus = False
         self.setPressureRegulator(1,self.trapPressure,5) #Set pressure after valve is opened
         self.startTimer(self.trapTime)
-        self.waitForTimer()
+        self.trapTime = self.waitForTimer()
         self.systemModel['Valves'].setF18LoadValveOpen(OFF)
         self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,OFF,EQUAL,5)
+      self.setStatus("Completing")
       self.setStopcockPosition(F18DEFAULT)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
 
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

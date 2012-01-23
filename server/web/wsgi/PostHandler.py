@@ -417,7 +417,9 @@ class PostHandler:
                     raise Exception("Sequence name is required")
 
                 # Create the new sequence
-                nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", 3, 10, 2)
+                pConfiguration = self.__pDatabase.GetConfiguration(self.__sRemoteUser)
+                nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"], 
+                    pConfiguration["columnsperreactor"])
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False
@@ -504,6 +506,11 @@ class PostHandler:
         if len(pPathComponents) == 6:
             nInsertionID = int(pPathComponents[5])
 
+        # Make sure we can edit this sequence
+        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, nSequenceID)
+        if pSequenceMetadata["sequencetype"] != "Saved":
+            raise Exception("Cannot edit sequence")
+
         # Parse the component JSON if present
         pComponent = None
         if self.__nBodyLength != 0:
@@ -529,6 +536,11 @@ class PostHandler:
         pPathComponents = self.__sPath.split("/")
         nSequenceID = int(pPathComponents[2])
         nReagentID = int(pPathComponents[4])
+
+        # Make sure we can edit this sequence
+        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, nSequenceID)
+        if pSequenceMetadata["sequencetype"] != "Saved":
+            raise Exception("Cannot edit sequence")
 
         # Save the reagent
         pReagent = json.loads(self.__pBody)

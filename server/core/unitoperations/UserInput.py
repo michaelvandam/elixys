@@ -22,7 +22,7 @@ class UserInput(UnitOperation):
       self.beginNextStep("User input recieved")
       self.beginNextStep("User Input Operation Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
   
   def setMessageBox(self):
     self.setDescription("Waiting for user input")

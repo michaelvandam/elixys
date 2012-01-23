@@ -23,4 +23,4 @@ class RampPressure(UnitOperation):
       self.setPressureRegulator(str(self.pressureRegulator),self.pressure,self.duration)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)

@@ -30,17 +30,19 @@ def HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, s
     # Was it the component that the user is currently on?
     if pClientState["componentid"] == nComponentID:
         # Yes
+        nSequenceID = 0
         try:
             # Get the sequence
-            pSequence = pDatabase.GetSequence(sRemoteUser, pClientState["sequenceid"])
+            nSequenceID = pClientState["sequenceid"]
+            pSequence = pDatabase.GetSequence(sRemoteUser, nSequenceID)
 
             # Move the client to the first unit operation
             pClientState["componentid"] = pSequence["components"][0]["id"]
             pDatabase.UpdateUserClientState(sRemoteUser, sRemoteUser, pClientState)
-            pDatabase.SystemLog(LOG_WARNING, sRemoteUser, "Redirecting user to the first component of sequence " + str(pClientState["sequenceid"]))
+            pDatabase.SystemLog(LOG_WARNING, sRemoteUser, "Redirecting user to the first component of sequence " + str(nSequenceID))
         except Exceptions.SequenceNotFoundException as ex:
             # Sequence not found
-            return HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, nClientStateSequenceID)
+            return HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, nSequenceID)
 
     # Return the state
     pGetHandler = GetHandler.GetHandler(pCoreServer, pDatabase)

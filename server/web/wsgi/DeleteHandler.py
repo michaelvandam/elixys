@@ -37,6 +37,11 @@ class DeleteHandler:
         nSequenceID = int(pPathComponents[2])
         nComponentID = int(pPathComponents[4])
 
+        # Make sure we can edit this sequence
+        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, nSequenceID)
+        if pSequenceMetadata["sequencetype"] != "Saved":
+            raise Exception("Cannot edit sequence")
+
         # Is the user currently viewing this component?
         if (self.__pClientState["sequenceid"] == nSequenceID) and (self.__pClientState["componentid"] == nComponentID):
             # Yes, so move the user to the previous component in the sequence

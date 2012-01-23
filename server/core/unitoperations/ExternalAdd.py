@@ -1,46 +1,45 @@
-# Mix unit operation
+# ExternalAdd unit operation
 
 # Imports
 from UnitOperation import *
 
 # Component type
-componentType = "MIX"
+componentType = "EXTERNALADD"
 
 # Create a unit operation from a component object
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
   pParams = {}
   pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-  pParams["stirSpeed"] = pComponent["stirspeed"]
-  pParams["duration"] = pComponent["mixtime"]
-  pMix = Mix(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
-  pMix.initializeComponent(pComponent)
-  return pMix
+  pParams["externalReagentName"] = pComponent["reagentname"]
+  pExternalAdd = ExternalAdd(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pExternalAdd.initializeComponent(pComponent)
+  return pExternalAdd
 
 # Updates a component object based on a unit operation
 def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
-  pComponent["mixtime"] = int(pUnitOperation.duration)
+  pass
 
-# Mix class
-class Mix(UnitOperation):
+# ExternalAdd class
+class ExternalAdd(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    expectedParams = {REACTORID:STR,STIRSPEED:INT,DURATION:INT}
-    self.validateParams(params,expectedParams)
+    expectedParams = {REACTORID:STR,EXTERNALREAGENTNAME:STR}
+    paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-    # Should have the params listed below:
-    # self.ReactorID
-    # self.stirSpeed
-    # self.duration
+
+    #Should have parameters listed below: 
+    #self.ReactorID
+    #self.externalReagentName
+
   def run(self):
     try:
-      self.setStatus("Mixing")
-      self.setStirSpeed(self.stirSpeed)
-      self.startTimer(self.duration)
-      self.duration = self.waitForTimer()
-      self.setStirSpeed(OFF)
+      self.setStatus("Moving reactor")
+      self.setReactorPosition(ADDREAGENT)             #Move reactor to position
+      self.setStatus("Waiting for the user to externally add " + self.externalReagentName)
+      self.waitForUserInput()                         #Wait until user delivers reagent
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)
@@ -50,18 +49,15 @@ class Mix(UnitOperation):
     self.component = pComponent
     if not self.component.has_key("reactorvalidation"):
       self.component.update({"reactorvalidation":""})
-    if not self.component.has_key("mixtimevalidation"):
-      self.component.update({"mixtimevalidation":""})
-    if not self.component.has_key("stirspeedvalidation"):
-      self.component.update({"stirspeedvalidation":""})
+    if not self.component.has_key("reagentnamevalidation"):
+      self.component.update({"reagentnamevalidation":""})
     self.addComponentDetails()
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Mix"
+    self.component["name"] = "External Add"
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
-    self.component["mixtimevalidation"] = "type=number; min=0; max=7200; required=true"
-    self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+    self.component["reagentnamevalidation"] = "type=string; required=true"
     return self.validateQuick()
 
   def validateQuick(self):
@@ -69,8 +65,7 @@ class Mix(UnitOperation):
     #Validate all fields
     bValidationError = False
     if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
-       not self.validateComponentField(self.component["mixtime"], self.component["mixtimevalidation"]) or \
-       not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]):
+       not self.validateComponentField(self.component["reagentname"], self.component["reagentnamevalidation"]):
       bValidationError = True
 
     # Set the validation error field
@@ -85,18 +80,11 @@ class Mix(UnitOperation):
     # Copy the validation fields
     pDBComponent["name"] = self.component["name"]
     pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
-    pDBComponent["mixtimevalidation"] = self.component["mixtimevalidation"]
-    pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
+    pDBComponent["reagentnamevalidation"] = self.component["reagentnamevalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
     self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
-
-  def addComponentDetails(self):
-    """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
-    # Set the default stir speed
-    if self.component["stirspeed"] == 0:
-      self.component["stirspeed"] = DEFAULT_STIRSPEED
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
@@ -106,6 +94,5 @@ class Mix(UnitOperation):
     # Update the fields we want to save
     pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
-    pTargetComponent["mixtime"] = self.component["mixtime"]
-    pTargetComponent["stirspeed"] = self.component["stirspeed"]
+    pTargetComponent["reagentname"] = self.component["reagentname"]
 

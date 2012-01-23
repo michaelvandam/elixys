@@ -148,7 +148,8 @@ class DBComm:
       "EluteF18",
       "Initialize",
       "Mix",
-      "Move"]
+      "Move",
+      "ExternalAdd"]
 
   def GetReactorPositions(self, sCurrentUsername):
     """Returns the reactor positions"""
@@ -310,6 +311,30 @@ class DBComm:
     # Return
     return pSequences
 
+  def GetSequenceMetadata(self, sCurrentUsername, nSequenceID):
+    """Gets a sequence"""
+    # Log the function call and get the sequence data
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetSequenceMetadata(%i)" % (nSequenceID, ))
+    pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
+    if len(pSequenceRaw) == 0:
+        raise Exceptions.SequenceNotFoundException(nSequenceID)
+
+    # Fill in the sequence metadata
+    pSequenceMetadata = {}
+    pSequenceMetadata["type"] = "sequencemetadata"
+    pSequenceMetadata["id"] = int(pSequenceRaw[0][0])
+    pSequenceMetadata["name"] = pSequenceRaw[0][1]
+    pSequenceMetadata["comment"] = pSequenceRaw[0][2]
+    pSequenceMetadata["sequencetype"] = pSequenceRaw[0][3]
+    pSequenceMetadata["timestamp"] = pSequenceRaw[0][4].strftime("%Y-%m-%d %H:%M:%S")
+    pSequenceMetadata["creator"] = pSequenceRaw[0][5]
+    pSequenceMetadata["components"] = int(pSequenceRaw[0][7])
+    pSequenceMetadata["valid"] = bool(pSequenceRaw[0][8])
+    pSequenceMetadata["dirty"] = bool(pSequenceRaw[0][9])
+
+    # Return
+    return pSequenceMetadata
+
   def GetSequence(self, sCurrentUsername, nSequenceID):
     """Gets a sequence"""
     # Log the function call and get the sequence data
@@ -318,20 +343,9 @@ class DBComm:
     if len(pSequenceRaw) == 0:
         raise Exceptions.SequenceNotFoundException(nSequenceID)
 
-    # Fill in the sequence metadata
+    # Load the sequence
     pSequence = {"type":"sequence"}
-    pSequence["metadata"] = {}
-    pSequence["metadata"]["type"] = "sequencemetadata"
-    pSequence["metadata"]["id"] = int(pSequenceRaw[0][0])
-    pSequence["metadata"]["name"] = pSequenceRaw[0][1]
-    pSequence["metadata"]["comment"] = pSequenceRaw[0][2]
-    pSequence["metadata"]["timestamp"] = pSequenceRaw[0][4].strftime("%Y-%m-%d %H:%M:%S")
-    pSequence["metadata"]["creator"] = pSequenceRaw[0][5]
-    pSequence["metadata"]["components"] = int(pSequenceRaw[0][7])
-    pSequence["metadata"]["valid"] = bool(pSequenceRaw[0][8])
-    pSequence["metadata"]["dirty"] = bool(pSequenceRaw[0][9])
-
-    # Load the components
+    pSequence["metadata"] = self.GetSequenceMetadata(sCurrentUsername, nSequenceID)
     pSequence["components"] = self.GetComponentsBySequence(sCurrentUsername, nSequenceID)
 
     # Return

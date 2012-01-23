@@ -11,6 +11,7 @@ from datetime import datetime
 import sys
 sys.path.append("/opt/elixys/core/")
 import Utilities
+import logging
 
 # The console package we import depends on the OS
 gConsole = None
@@ -60,9 +61,10 @@ def Print(sText):
                 # Ignore any further errors
                 pass
 
-# Suppress rpyc warning messages
-import logging
-logging.basicConfig(level=logging.ERROR)
+# Handler that discards all rpyc error messages
+class RpycLogHandler(logging.StreamHandler):
+    def emit(self, record):
+        pass
 
 # State monitoring service
 class StateMonitorService(rpyc.Service):
@@ -94,8 +96,11 @@ if __name__ == "__main__":
     if gOS == "Linux":
         gConsole = curses.initscr()
 
-    # Create the RPC server
-    pServer = ThreadedServer(StateMonitorService, port = 18861)
+    # Create the RPC server and error handler
+    pLogger = logging.getLogger("rpyc")
+    pLogHandler = RpycLogHandler()
+    pLogger.addHandler(pLogHandler)
+    pServer = ThreadedServer(StateMonitorService, port = 18861, logger = pLogger)
     
     # Start the RPC server thread
     pStateMonitorThread = StateMonitorThread.StateMonitorThread()

@@ -23,7 +23,7 @@ class DetectRadiation(UnitOperation):
       self.getRadiation()
       self.beginNextStep("Radiation Detection Operation Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
       
   def getRadiation(self):
     self.systemModel[self.ReactorID]['radiation_detector'].getCalibratedReading()

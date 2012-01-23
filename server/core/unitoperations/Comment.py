@@ -3,9 +3,25 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "COMMENT"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["userMessage"] = pComponent["comment"]
+  pComment = Comment(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pComment.initializeComponent(pComponent)
+  return pComment
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pass
+
+# Comment class
 class Comment(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
 
   def run(self):
     #This unit operation doesn't do anything when run

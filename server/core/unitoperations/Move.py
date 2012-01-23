@@ -3,9 +3,26 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "MOVE"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pParams = {}
+  pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
+  pParams["reactPosition"] = str(pComponent["position"])
+  pMove = Move(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pMove.initializeComponent(pComponent)
+  return pMove
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pass
+
+# Move class
 class Move(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     expectedParams = {REACTORID:STR,REACTPOSITION:STR}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
@@ -21,7 +38,7 @@ class Move(UnitOperation):
       self.setReactorPosition(self.reactPosition)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
     
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

@@ -2,133 +2,90 @@
 Elixys Unit Operations
 """
 
-#Import unit operations
-from Cassette import Cassette
-from Add import Add
-from Evaporate import Evaporate
-from Transfer import Transfer
-from React import React
-from Prompt import Prompt
-from Install import Install
-from Comment import Comment
-from TrapF18 import TrapF18
-from EluteF18 import EluteF18
-from Initialize import Initialize
-from Mix import Mix
-from Move import Move
+# Import unit operations
+import Cassette
+import Add
+import Evaporate
+import Transfer
+import React
+import Prompt
+import Install
+import Comment
+import TrapF18
+import EluteF18
+import Initialize
+import Mix
+import Move
+import Summary
+import ExternalAdd
 
-#Create a unit operation from a component object
+# Create a unit operation from a component object
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel = None):
-  if pComponent["componenttype"] == "CASSETTE":
-    pCassette = Cassette(systemModel, {}, username, database)
-    pCassette.initializeComponent(pComponent)
-    return pCassette
-  elif pComponent["componenttype"] == "ADD":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
-    pParams["ReagentPosition"] = 0             #Ditto
-    pParams["reagentLoadPosition"] = pComponent["deliveryposition"]
-    pParams["duration"] = pComponent["deliverytime"]
-    pParams["pressure"] = pComponent["deliverypressure"]
-    pAdd = Add(systemModel, pParams, username, database)
-    pAdd.initializeComponent(pComponent)
-    if pComponent["reagent"].has_key("position"):
-      pAdd.reagentPosition = int(pComponent["reagent"]["position"])
-    if pComponent["reagent"].has_key("reagentid"):
-      pAdd.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
-    return pAdd
-  elif pComponent["componenttype"] == "EVAPORATE":
-    pParams = {}
-    pParams["ReactorID"] =  "Reactor" + str(pComponent["reactor"])
-    pParams["evapTemp"] = pComponent["evaporationtemperature"]
-    pParams["pressure"] = pComponent["evaporationpressure"]
-    pParams["evapTime"] = pComponent["duration"]
-    pParams["coolTemp"] = pComponent["finaltemperature"]
-    pParams["stirSpeed"] = pComponent["stirspeed"]
-    pEvaporate = Evaporate(systemModel, pParams, username, database)
-    pEvaporate.initializeComponent(pComponent)
-    return pEvaporate
-  elif pComponent["componenttype"] == "TRANSFER":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["sourcereactor"])
-    pParams["transferReactorID"] = "Reactor" + str(pComponent["targetreactor"])
-    pParams["transferType"] = str(pComponent["mode"])
-    pParams["transferTimer"] = pComponent["duration"]
-    pParams["transferPressure"] = pComponent["pressure"]
-    pTransfer = Transfer(systemModel, pParams, username, database)
-    pTransfer.initializeComponent(pComponent)
-    return pTransfer
-  elif pComponent["componenttype"] == "REACT":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["reactTemp"] = pComponent["reactiontemperature"]
-    pParams["reactTime"] = pComponent["duration"]
-    pParams["coolTemp"] = pComponent["finaltemperature"]
-    pParams["coolingDelay"] = pComponent["coolingdelay"]
-    pParams["reactPosition"] = "React" + str(pComponent["position"])
-    pParams["stirSpeed"] = pComponent["stirspeed"]
-    pReact = React(systemModel, pParams, username, database)
-    pReact.initializeComponent(pComponent)
-    return pReact
-  elif pComponent["componenttype"] == "PROMPT":
-    pParams = {}
-    pParams["userMessage"] = str(pComponent["message"])
-    pPrompt = Prompt(systemModel, pParams, username, database)
-    pPrompt.initializeComponent(pComponent)
-    return pPrompt
-  elif pComponent["componenttype"] == "INSTALL":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["userMessage"] = pComponent["message"]
-    pInstall = Install(systemModel, pParams, username, database)
-    pInstall.initializeComponent(pComponent)
-    return pInstall
-  elif pComponent["componenttype"] == "COMMENT":
-    pParams = {}
-    pParams["userMessage"] = pComponent["comment"]
-    pComment = Comment(systemModel, pParams, username, database)
-    pComment.initializeComponent(pComponent)
-    return pComment
-  elif pComponent["componenttype"] == "TRAPF18":
-    pParams = {}
-    pParams["cyclotronFlag"] = pComponent["cyclotronflag"]
-    pParams["trapTime"] = pComponent["traptime"]
-    pParams["trapPressure"] = pComponent["trappressure"]
-    pTrapF18 = TrapF18(systemModel, pParams, username, database)
-    pTrapF18.initializeComponent(pComponent)
-    return pTrapF18
-  elif pComponent["componenttype"] == "ELUTEF18":
-    pParams = {}
-    pParams["eluteTime"] = pComponent["elutetime"]
-    pParams["elutePressure"] = pComponent["elutepressure"]
-    pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
-    pParams["ReagentPosition"] = 0             #Ditto
-    pEluteF18 = EluteF18(systemModel, pParams, username, database)
-    pEluteF18.initializeComponent(pComponent)
-    if pComponent["reagent"].has_key("position"):
-      pEluteF18.reagentPosition = int(pComponent["reagent"]["position"])
-    if pComponent["reagent"].has_key("reagentid"):
-      pEluteF18.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
-    return pEluteF18
-  elif pComponent["componenttype"] == "INITIALIZE":
-    pInitialize = Initialize(systemModel, {}, username, database)
-    pInitialize.initializeComponent(pComponent)
-    return pInitialize
-  elif pComponent["componenttype"] == "MIX":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["stirSpeed"] = pComponent["stirspeed"]
-    pParams["duration"] = pComponent["mixtime"]
-    pMix = Mix(systemModel, pParams, username, database)
-    pMix.initializeComponent(pComponent)
-    return pMix
-  elif pComponent["componenttype"] == "MOVE":
-    pParams = {}
-    pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-    pParams["reactPosition"] = str(pComponent["position"])
-    pMove = Move(systemModel, pParams, username, database)
-    pMove.initializeComponent(pComponent)
-    return pMove
+  if pComponent["componenttype"] == Cassette.componentType:
+    return Cassette.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Add.componentType:
+    return Add.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Evaporate.componentType:
+    return Evaporate.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Transfer.componentType:
+    return Transfer.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == React.componentType:
+    return React.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Prompt.componentType:
+    return Prompt.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Install.componentType:
+    return Install.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Comment.componentType:
+    return Comment.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == TrapF18.componentType:
+    return TrapF18.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == EluteF18.componentType:
+    return EluteF18.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Initialize.componentType:
+    return Initialize.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Mix.componentType:
+    return Mix.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Move.componentType:
+    return Move.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Summary.componentType:
+    return Summary.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == ExternalAdd.componentType:
+    return ExternalAdd.createFromComponent(nSequenceID, pComponent, username, database, systemModel)
   else:
     raise Exception("Unknown component type: " + pComponent["componenttype"])
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel = None):
+  if pComponent["componenttype"] == Cassette.componentType:
+    return Cassette.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Add.componentType:
+    return Add.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Evaporate.componentType:
+    return Evaporate.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Transfer.componentType:
+    return Transfer.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == React.componentType:
+    return React.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Prompt.componentType:
+    return Prompt.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Install.componentType:
+    return Install.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Comment.componentType:
+    return Comment.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == TrapF18.componentType:
+    return TrapF18.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == EluteF18.componentType:
+    return EluteF18.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Initialize.componentType:
+    return Initialize.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Mix.componentType:
+    return Mix.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Move.componentType:
+    return Move.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == Summary.componentType:
+    return Summary.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  elif pComponent["componenttype"] == ExternalAdd.componentType:
+    return ExternalAdd.updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel)
+  else:
+    raise Exception("Unknown component type: " + pComponent["componenttype"])
+

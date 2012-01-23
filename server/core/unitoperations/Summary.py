@@ -1,41 +1,56 @@
-# Install unit operation
+# Summary unit operation
 
 # Imports
 from UnitOperation import *
 
 # Component type
-componentType = "INSTALL"
+componentType = "SUMMARY"
+
+# Create a unit operation from scratch
+def createNewComponent(sRunError):
+  pComponent = {}
+  pComponent["type"] = "component"
+  pComponent["componenttype"] = "SUMMARY"
+  pComponent["name"] = "Summary"
+  if sRunError == "":
+    pComponent["successflag"] = 1
+  else:
+    pComponent["successflag"] = 0
+  pComponent["message"] = sRunError
+  return pComponent
 
 # Create a unit operation from a component object
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
   pParams = {}
-  pParams["ReactorID"] = "Reactor" + str(pComponent["reactor"])
-  pParams["userMessage"] = pComponent["message"]
-  pInstall = Install(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
-  pInstall.initializeComponent(pComponent)
-  return pInstall
+  pParams["summaryFlag"] = pComponent["successflag"]
+  pParams["summaryMessage"] = pComponent["message"]
+  pSummary = Summary(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
+  pSummary.initializeComponent(pComponent)
+  return pSummary
 
 # Updates a component object based on a unit operation
 def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
   pass
 
-# Install class
-class Install(UnitOperation):
+# Summary class
+class Summary(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    self.setParams(params)
+    expectedParams = {SUMMARYFLAG:INT,SUMMARYMESSAGE:STR}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
 
     #Should have parameters listed below:
-    #self.ReactorID
-    #self.userMessage
+    #self.summaryFlag
+    #self.summaryMessage
     
   def run(self):
     try:
-      self.setStatus("Moving reactor")
-      self.setReactorPosition(INSTALL)
-      if self.userMessage != "":
-        self.setStatus("Waiting for user input")
-        self.waitForUserInput()
+      self.setStatus("Waiting for user input")
+      self.waitForUserInput()
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)
@@ -43,24 +58,24 @@ class Install(UnitOperation):
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent
-    if not self.component.has_key("reactorvalidation"):
-      self.component.update({"reactorvalidation":""})
+    if not self.component.has_key("sucessflagvalidation"):
+      self.component.update({"successflagvalidation":""})
     if not self.component.has_key("messagevalidation"):
       self.component.update({"messagevalidation":""})
     self.addComponentDetails()
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Install"
-    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
-    self.component["messagevalidation"] = "type=string; required=true"
+    self.component["name"] = "Summary"
+    self.component["successflagvalidation"] = "type=enum-number; values=0,1; required=true"
+    self.component["messagevalidation"] = "type=string"
     return self.validateQuick()
 
   def validateQuick(self):
     """Performs a quick validation on the component"""
     #Validate all fields
     bValidationError = False
-    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+    if not self.validateComponentField(self.component["successflag"], self.component["successflagvalidation"]) or \
        not self.validateComponentField(self.component["message"], self.component["messagevalidation"]):
       bValidationError = True
 
@@ -75,7 +90,7 @@ class Install(UnitOperation):
 
     # Copy the validation fields
     pDBComponent["name"] = self.component["name"]
-    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
+    pDBComponent["successflagvalidation"] = self.component["successflagvalidation"]
     pDBComponent["messagevalidation"] = self.component["messagevalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
@@ -89,6 +104,6 @@ class Install(UnitOperation):
 
     # Update the fields we want to save
     pTargetComponent["name"] = self.component["name"]
-    pTargetComponent["reactor"] = self.component["reactor"]
+    pTargetComponent["successflag"] = self.component["successflag"]
     pTargetComponent["message"] = self.component["message"]
 

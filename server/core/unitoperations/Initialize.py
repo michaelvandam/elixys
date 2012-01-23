@@ -3,9 +3,23 @@
 # Imports
 from UnitOperation import *
 
+# Component type
+componentType = "INITIALIZE"
+
+# Create a unit operation from a component object
+def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
+  pInitialize = Initialize(systemModel, {}, username, nSequenceID, pComponent["id"], database)
+  pInitialize.initializeComponent(pComponent)
+  return pInitialize
+
+# Updates a component object based on a unit operation
+def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
+  pass
+
+# Initialize class
 class Initialize(UnitOperation):
-  def __init__(self,systemModel,params,username = "", database = None):
-    UnitOperation.__init__(self,systemModel,username,database)
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     self.ReactorTuple=('Reactor1','Reactor2','Reactor3')
     self.reagentLoadPositionTuple=(1,2)
     
@@ -63,7 +77,7 @@ class Initialize(UnitOperation):
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")
     except Exception as e:
-      self.abortOperation(e)
+      self.abortOperation(str(e), False)
   
   def areRobotsHomed(self):
     self.robotsHomed=True
