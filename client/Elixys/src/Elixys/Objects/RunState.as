@@ -77,6 +77,10 @@ package Elixys.Objects
 			}
 			return m_pUnitOperationButtons;
 		}
+		public function WaitMessage():String
+		{
+			return super.flash_proxy::getProperty("waitmessage");
+		}
 		
 		// Type
 		static public var TYPE:String = "runstate";

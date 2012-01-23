@@ -58,7 +58,7 @@
 			private function Init3_OnCreateChildrenTimer(event:TimerEvent):void
 			{
 				// Initialize the child creation variables
-				m_nTotalChildren = 21;
+				m_nTotalChildren = 23;
 				m_nChildrenLoaded = 0;
 				
 				// Create the first child view
@@ -263,6 +263,14 @@
 					
 					case ComponentMove.TYPE:
 						pSubview = m_pMoveSubview;
+						break;
+					
+					case ComponentExternalAdd.TYPE:
+						pSubview = m_pExternalAddSubview;
+						break;
+					
+					case ComponentSummary.TYPE:
+						pSubview = m_pSummarySubview;
 						break;
 					
 					default:
@@ -533,6 +541,20 @@
 					addChild(m_pMoveSubview);
 					m_pMoveSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
 				}
+				else if (m_pExternalAddSubview == null)
+				{
+					m_pExternalAddSubview = new ExternalAddSubview();
+					m_pExternalAddSubview.SetElixysMain(this);
+					addChild(m_pExternalAddSubview);
+					m_pExternalAddSubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
+				else if (m_pSummarySubview == null)
+				{
+					m_pSummarySubview = new SummarySubview();
+					m_pSummarySubview.SetElixysMain(this);
+					addChild(m_pSummarySubview);
+					m_pSummarySubview.addEventListener(ChildCreationCompleteEvent.CHILDCREATIONCOMPLETE, OnChildCreationCompleteEvent);
+				}
 				else
 				{
 					// All child views have been created
@@ -717,6 +739,8 @@
 			private var m_pEluteF18Subview:SubviewBase = null;
 			private var m_pMixSubview:SubviewBase = null;
 			private var m_pMoveSubview:SubviewBase = null;
+			private var m_pExternalAddSubview:SubviewBase = null;
+			private var m_pSummarySubview:SubviewBase = null;
 
 			// State update timer
 			private var m_pStateTimer:Timer;

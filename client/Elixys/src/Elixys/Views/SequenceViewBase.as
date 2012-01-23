@@ -289,6 +289,10 @@ package Elixys.Views
 					pComponent = new ComponentMove();
 					break;
 				
+				case ComponentExternalAdd.TYPE:
+					pComponent = new ComponentExternalAdd();
+					break;
+				
 				default:
 					throw Error("Unknown component type: " + sUnitOperation);
 			}
