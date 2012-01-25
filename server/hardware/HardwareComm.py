@@ -168,8 +168,10 @@ class HardwareComm():
         # Load the hardware map and robot positions
         sHardwareMap = "/opt/elixys/hardware/HardwareMap.ini"
         sRobotPositions = "/opt/elixys/hardware/RobotPositions.ini"
-        if not os.path.exists(sHardwareMap) or not os.path.exists(sRobotPositions):
-            raise Exception("Invalid path to INI files")
+        if not os.path.exists(sHardwareMap):
+            raise Exception("Hardware map INI file not found")
+        if not os.path.exists(sRobotPositions):
+            raise Exception("Robot positions INI file not found")
         self.__pHardwareMap = ConfigObj(sHardwareMap)
         self.__pRobotPositions = ConfigObj(sRobotPositions)
 

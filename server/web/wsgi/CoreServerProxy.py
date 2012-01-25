@@ -29,6 +29,12 @@ class CoreServerProxy():
     def AbortSequence(self, sUsername):
         return self.__pCoreServer.root.AbortSequence(sUsername)
 
+    def WillSequencePause(self, sUsername):
+        return self.__pCoreServer.root.WillSequencePause(sUsername)
+
+    def IsSequencePaused(self, sUsername):
+        return self.__pCoreServer.root.IsSequencePaused(sUsername)
+
     def DeliverUserInput(self, sUsername):
         return self.__pCoreServer.root.DeliverUserInput(sUsername)
 
@@ -46,6 +52,9 @@ class CoreServerProxy():
 
     def CLISendCommand(self, sUsername, sCommand):
         return self.__pCoreServer.root.CLISendCommand(sUsername, sCommand)
+
+    def CLIAbortUnitOperation(self, sUsername):
+        return self.__pCoreServer.root.CLIAbortUnitOperation(sUsername)
 
     def CLIGetState(self, sUsername):
         return self.__pCoreServer.root.CLIGetState(sUsername)

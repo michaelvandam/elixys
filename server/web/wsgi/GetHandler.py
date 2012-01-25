@@ -258,6 +258,18 @@ class GetHandler:
 
         # Add the button depending on the user running the system
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
+            if self.__pCoreServer.WillSequencePause(self.__sRemoteUser):
+                pState["navigationbuttons"].append({"type":"button",
+                    "text":"Don't Pause",
+                    "id":"CONTINUERUN"})
+            elif self.__pCoreServer.IsSequencePaused(self.__sRemoteUser):
+                pState["navigationbuttons"].append({"type":"button",
+                    "text":"Continue Run",
+                    "id":"CONTINUERUN"})
+            else:
+                pState["navigationbuttons"].append({"type":"button",
+                    "text":"Pause Run",
+                    "id":"PAUSERUN"})
             pState["navigationbuttons"].append({"type":"button",
                 "text":"Abort",
                 "id":"ABORT"})

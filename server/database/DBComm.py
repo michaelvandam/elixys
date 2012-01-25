@@ -11,6 +11,9 @@ import MySQLdb
 import threading
 import Exceptions
 import Utilities
+from configobj import ConfigObj
+import os
+import TimedLock
 
 # Suppress MySQLdb's annoying warnings
 import warnings
@@ -22,14 +25,48 @@ LOG_WARNING = 1
 LOG_INFO = 2
 LOG_DEBUG = 3
 
+# Parse a log level string into an integer
+def ParseLogLevel(sLogLevel):
+    if sLogLevel == "error":
+        return LOG_ERROR
+    elif sLogLevel == "warning":
+        return LOG_WARNING
+    elif sLogLevel == "info":
+        return LOG_INFO
+    elif sLogLevel == "debug":
+        return LOG_DEBUG
+    else:
+        return -1
+
 # Database wrapper class
 class DBComm:
   ### Construction / Destruction ###
 
   def __init__(self):
     """Initializes the DBComm class"""
+    # Initialize variables
     self.__pDatabase = None
-    self.__pDatabaseLock = Utilities.CreateTimedLock()
+    self.__pDatabaseLock = TimedLock.TimedLock()
+
+    # Open the system configuration
+    sSystemConfiguration = "/opt/elixys/config/SystemConfiguration.ini"
+    if not os.path.exists(sSystemConfiguration):
+        raise Exception("System configuration INI file not found")
+    self.__pSystemConfiguration = ConfigObj(sSystemConfiguration)
+
+    # Create the configuration object
+    self.__pConfiguration = {}
+    self.__pConfiguration["name"] = self.__pSystemConfiguration["Name"]
+    self.__pConfiguration["version"] = self.__pSystemConfiguration["Version"]
+    self.__pConfiguration["debug"] = self.__pSystemConfiguration["Debug"] == "True"
+    self.__pConfiguration["reactors"] = int(self.__pSystemConfiguration["Reactors"])
+    self.__pConfiguration["reagentsperreactor"] = int(self.__pSystemConfiguration["ReagentsPerReactor"])
+    self.__pConfiguration["columnsperreactor"] = int(self.__pSystemConfiguration["ColumnsPerReactor"])
+
+    # Interpret the log level
+    self.__nLogLevel = ParseLogLevel(self.__pSystemConfiguration["LogLevel"])
+    if self.__nLogLevel == -1:
+        raise Exception("Invalid log level in system configuration file")
 
   def Connect(self):
     """Connects to the database"""
@@ -46,8 +83,14 @@ class DBComm:
 
   ### Logging functions ###
 
+  def GetLogLevel(self):
+    """Returns the current log level"""
+    return self.__nLogLevel
+
   def SystemLog(self, nLevel, sCurrentUsername, sMessage):
     """Logs a message to the SystemLog table in the database"""
+    if nLevel > self.__nLogLevel:
+      return
     if self.__pDatabase != None:
       self.__CallStoredProcedure("SystemLog", (nLevel, sCurrentUsername, sMessage))
     else:
@@ -55,6 +98,8 @@ class DBComm:
 
   def RunLog(self, nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage):
     """Logs a message to the RunLog table in the database"""
+    if nLevel > self.__nLogLevel:
+      return
     if self.__pDatabase != None:
       self.__CallStoredProcedure("RunLog", (nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage))
     else:
@@ -125,42 +170,17 @@ class DBComm:
   def GetConfiguration(self, sCurrentUsername):
     """Returns the system configuration"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetConfiguration()")
-    # Return hardcoded values for now but this should really come from a combination of the database and a static file
-    return {"name":"Mini cell 3",
-      "version":"2.0",
-      "debug":"false",
-      "reactors":3,
-      "reagentsperreactor":11,
-      "columnsperreactor":2}
+    return self.__pConfiguration
 
   def GetSupportedOperations(self, sCurrentUsername):
     """Returns the supported operations"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetSupportedOperations()")
-    # Return hardcoded values for now but this should really come from a static file
-    return ["Add",
-      "Evaporate",
-      "Transfer",
-      "React",
-      "Prompt",
-      "Install",
-      "Comment",
-      "TrapF18",
-      "EluteF18",
-      "Initialize",
-      "Mix",
-      "Move",
-      "ExternalAdd"]
+    return self.__pSystemConfiguration["UnitOperations"]
 
   def GetReactorPositions(self, sCurrentUsername):
     """Returns the reactor positions"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReactorPositions()")
-    # Return hardcoded values for now but this should really come from a static file
-    return ["Install",
-      "Transfer",
-      "React1",
-      "Add",
-      "React2",
-      "Evaporate"]
+    return self.__pSystemConfiguration["ReactorPositions"]
 
   ### Role functions ###
 
@@ -241,6 +261,7 @@ class DBComm:
       "screen":"HOME",
       "sequenceid":0,
       "componentid":0,
+      "lastselectscreen":"SAVED",
       "prompt":{"type":"promptstate",
         "screen":"",
         "title":"",
@@ -532,7 +553,7 @@ class DBComm:
     pRows = None
     sError = ""
     try:
-      Utilities.AcquireLock(self.__pDatabaseLock)
+      self.__pDatabaseLock.Acquire()
       while (pRows == None) and (sError == ""):
         try:
           # Call the stored procedure
@@ -552,7 +573,7 @@ class DBComm:
         except Exception, ex:
             sError = str(ex)
     finally:
-      Utilities.ReleaseLock(self.__pDatabaseLock)
+      self.__pDatabaseLock.Release()
 
     # Raise an exception on error or warn if the connection dropped
     if sError != "":
@@ -568,7 +589,7 @@ class DBComm:
     pRows = None
     sError = ""
     try:
-      Utilities.AcquireLock(self.__pDatabaseLock)
+      self.__pDatabaseLock.Acquire()
       while (pRows == None) and (sError == ""):
         try:
           # Execute the query
@@ -588,7 +609,7 @@ class DBComm:
         except Exception, ex:
           sError = str(ex)
     finally:
-      Utilities.ReleaseLock(self.__pDatabaseLock)
+      self.__pDatabaseLock.Release()
 
     # Raise an exception on error or warn if the connection dropped
     if sError != "":

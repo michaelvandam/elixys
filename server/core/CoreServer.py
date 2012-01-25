@@ -63,8 +63,6 @@ class CoreServerService(rpyc.Service):
         """Invoked when a client connects"""
         global gDatabase
         gDatabase.SystemLog(LOG_INFO, "System", "CoreServerService.connect()")
-        # Allow pickling on this connection for proper data transfer
-        self._conn._config["allow_pickle"] = True
  
     def on_disconnect(self):
         """Invoked when a client disconnects"""
@@ -86,9 +84,7 @@ class CoreServerService(rpyc.Service):
 
         # Format the run state
         pServerState["runstate"] = {"type":"runstate"}
-        gDatabase.SystemLog(LOG_ERROR, sUsername, "Run sequence = " + str(gRunSequence))
-        if (gRunSequence != None) and gRunSequence.running:
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "Run username = " + str(gRunUsername))
+        if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
             pServerState["runstate"]["status"] = ""
             pServerState["runstate"]["prompt"] = {"type":"promptstate",
                 "show":False}
@@ -183,14 +179,76 @@ class CoreServerService(rpyc.Service):
     def exposed_PauseSequence(self, sUsername):
         """Causes the system to pause after the current unit operation is complete"""
         global gDatabase
-        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.Pause()")
-        return False
+        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.PauseSequence()")
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot pause")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot pause")
+            return False
+
+        # Pause the sequence run
+        gRunSequence.pauseRun()
+        return True
 
     def exposed_ContinueSequence(self, sUsername):
         """Continues a paused run"""
         global gDatabase
-        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.Continue()")
-        return False
+        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.ContinueSequence()")
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot pause")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot pause")
+            return False
+
+        # Continue the sequence run
+        gRunSequence.continueRun()
+        return True
+
+    def exposed_WillSequencePause(self, sUsername):
+        """Returns true if the sequence run is flagged to pause, false otherwise"""
+        global gDatabase
+        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.WillSequencePause()")
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot check if sequence will pause")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot check if sequence will pause")
+            return False
+
+        # Check if the run will pause
+        return gRunSequence.willRunPause()
+
+    def exposed_IsSequencePaused(self, sUsername):
+        """Returns true if the sequence run paused, false otherwise"""
+        global gDatabase
+        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.IsSequencePaused()")
+
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot check if sequence is paused")
+            return False
+
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot check if sequence is paused")
+            return False
+
+        # Check the run is paused
+        return gRunSequence.isRunPaused()
 
     def exposed_AbortSequence(self, sUsername):
         """Quickly turns off the heaters and terminates the run, leaving the system in its current state"""
@@ -200,26 +258,18 @@ class CoreServerService(rpyc.Service):
         global gRunSequence
         gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.AbortSequence()")
 
-        # Perform additional checks if the user is someone other than the CLI
-        if sUsername != "CLI":
-            # Make sure the system is running
-            if (gRunSequence == None) or not gRunSequence.running:
-                gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot abort")
-                return False
-
-            # Make sure we are the user running the system
-            if gRunUsername != sUsername:
-                gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot abort")
-                return False
-
-        # Make sure we have a unit operation
-        pUnitOperation = gSystemModel.GetUnitOperation()
-        if pUnitOperation == None:
-            gDatabase.SystemLog(LOG_WARNING, sUsername, "No unit operation, cannot abort")
+        # Make sure the system is running
+        if (gRunSequence == None) or not gRunSequence.running:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No sequence running, cannot abort")
             return False
 
-        # Deliver the abort signal to the current unit operation
-        pUnitOperation.setAbort()
+        # Make sure we are the user running the system
+        if gRunUsername != sUsername:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "Not the user running the sequence, cannot abort")
+            return False
+
+        # Abort the sequence run
+        gRunSequence.abortRun()
         return True
 
     def exposed_PauseTimer(self, sUsername):
@@ -369,6 +419,22 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             return "Failed to send command: " + str(ex)
 
+    def exposed_CLIAbortUnitOperation(self, sUsername):
+        """Aborts the current unit operation for the CLI"""
+        global gDatabase
+        global gSystemModel
+        gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIAbortUnitOperation()")
+
+        # Make sure we have a unit operation
+        pUnitOperation = gSystemModel.GetUnitOperation()
+        if pUnitOperation == None:
+            gDatabase.SystemLog(LOG_WARNING, sUsername, "No unit operation, cannot abort")
+            return False
+
+        # Deliver the abort signal to the current unit operation
+        pUnitOperation.setAbort()
+        return True
+
     def exposed_CLIGetState(self, sUsername):
         """Gets the state for the CLI"""
         global gDatabase
@@ -404,6 +470,8 @@ class CoreServerDaemon(daemon):
         global gSystemModel
         global gUnitOperationsWrapper
         global gCoreServerDaemon
+        pSequenceValidationThread = None
+        pCoreServerThread = None
         while not self.bTerminate:
             try:
                 # Create the database and sequence manager
@@ -461,13 +529,24 @@ class CoreServerDaemon(daemon):
                 # Log the error
                 gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
             finally:
-                pSequenceValidationThread.Terminate()
-                pSequenceValidationThread.join()
-                pCoreServerThread.Terminate()
-                pCoreServerThread.join()
-                gSystemModel.ShutDown()
-                gHardwareComm.ShutDown()
-                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
+                if pSequenceValidationThread != None:
+                    pSequenceValidationThread.Terminate()
+                    pSequenceValidationThread.join()
+                    pSequenceValidationThread = None
+                if pCoreServerThread != None:
+                    pCoreServerThread.Terminate()
+                    pCoreServerThread.join()
+                    pCoreServerThread = None
+                if gSystemModel != None:
+                    gSystemModel.ShutDown()
+                    gSystemModel = None
+                if gHardwareComm != None:
+                    gHardwareComm.ShutDown()
+                    gHardwareComm = None
+                if gDatabase != None:
+                    gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
+                    gDatabase.Disconnect()
+                    gDatabase = None
 
             # Sleep for a second before we respawn
             if not self.bTerminate:

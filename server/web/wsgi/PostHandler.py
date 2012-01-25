@@ -8,6 +8,15 @@ sys.path.append("/opt/elixys/core")
 import SequenceManager
 import Exceptions
 
+# Directs the user to the appropriate select screen (also used by ExceptionHandler.py)
+def DirectToLastSelectScreen(pClientState):
+    if pClientState["lastselectscreen"] == "SAVED":
+        pClientState["screen"] = "SELECT_SAVEDSEQUENCES"
+    elif pClientState["lastselectscreen"] == "HISTORY":
+        pClientState["screen"] = "SELECT_RUNHISTORY"
+    else:
+        raise Exception("Invalid last select screen value")
+
 class PostHandler:
     # Constructor
     def __init__(self, pCoreServer, pDatabase):
@@ -57,7 +66,7 @@ class PostHandler:
     def __HandlePostHome(self):
         # Make sure we are on the home page
         if self.__pClientState["screen"] != "HOME":
-            raise Exception("State misalignment");
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body
         pJSON = json.loads(self.__pBody)
@@ -67,8 +76,8 @@ class PostHandler:
         sActionTargetID = str(pJSON["action"]["targetid"])
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "CREATE":
-                # Switch states to Select Sequence
-                self.__pClientState["screen"] = "SELECT_SAVEDSEQUENCES"
+                # Switch states to the last Select Sequence screen
+                DirectToLastSelectScreen(self.__pClientState)
                 return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "OBSERVE":
                 # Switch to Run Sequence
@@ -79,13 +88,13 @@ class PostHandler:
                 return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Handle POST /SELECT
     def __HandlePostSelect(self):
         # Make sure we are on Select Sequence
         if not self.__pClientState["screen"].startswith("SELECT"):
-            raise Exception("State misalignment");
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body
         pJSON = json.loads(self.__pBody)
@@ -176,16 +185,18 @@ class PostHandler:
             if sActionTargetID == "SAVEDSEQUENCES":
                 # Switch states to the Saved Sequences tab
                 self.__pClientState["screen"] = "SELECT_SAVEDSEQUENCES"
+                self.__pClientState["lastselectscreen"] = "SAVED"
                 self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "RUNHISTORY":
                 # Switch states to the Run History tab
                 self.__pClientState["screen"] = "SELECT_RUNHISTORY"
+                self.__pClientState["lastselectscreen"] = "HISTORY"
                 self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Show the Run Sequence prompt
     def __ShowRunSequencePrompt(self, nSequenceID):
@@ -248,7 +259,7 @@ class PostHandler:
     def __HandlePostView(self):
         # Make sure we are on View Sequence
         if self.__pClientState["screen"] != "VIEW":
-            raise Exception("State misalignment")
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body and extract the action type and target
         pJSON = json.loads(self.__pBody)
@@ -273,13 +284,13 @@ class PostHandler:
                 return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Handle POST /EDIT
     def __HandlePostEdit(self):
         # Make sure we are on Edit Sequence
         if self.__pClientState["screen"] != "EDIT":
-            raise Exception("State misalignment")
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body and extract the action type and target
         pJSON = json.loads(self.__pBody)
@@ -300,13 +311,13 @@ class PostHandler:
                 return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Handle POST /RUN
     def __HandlePostRun(self):
         # Make sure we are on Run Sequence
         if self.__pClientState["screen"] != "RUN":
-            raise Exception("State misalignment")
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body and extract the action type and target
         pJSON = json.loads(self.__pBody)
@@ -341,17 +352,25 @@ class PostHandler:
                 # Deliver user input
                 self.__pCoreServer.DeliverUserInput(self.__sRemoteUser)
                 return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "PAUSERUN":
+                # Pause the run
+                self.__pCoreServer.PauseSequence(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "CONTINUERUN":
+                # Continue the run
+                self.__pCoreServer.ContinueSequence(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Handle sequence POST requests
     def __HandlePostBaseSequence(self, sActionType, sActionTargetID):
         # Check which option the user selected
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "BACK":
-                # Switch states to Select Sequence
-                self.__pClientState["screen"] = "SELECT_SAVEDSEQUENCES"
+                # Switch states to the last Select Sequence screen
+                DirectToLastSelectScreen(self.__pClientState)
                 return True
             elif sActionTargetID == "PREVIOUS":
                 # Move to the previous component
@@ -460,6 +479,11 @@ class PostHandler:
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_RUNSEQUENCE":
             if sActionTargetID == "YES":
+                # Fetch the sequence from the database and make sure it is valid
+                pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, self.__pClientState["sequenceid"])
+                if not pSequence["metadata"]["valid"]:
+                    raise Exceptions.InvalidSequenceException(self.__pClientState["sequenceid"])
+
                 # Run the sequence
                 self.__pCoreServer.RunSequence(self.__sRemoteUser, self.__pClientState["sequenceid"])
 
@@ -473,6 +497,11 @@ class PostHandler:
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_RUNSEQUENCEFROMCOMPONENT":
             if sActionTargetID == "YES":
+                # Fetch the sequence from the database and make sure it is valid
+                pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, self.__pClientState["sequenceid"])
+                if not pSequence["metadata"]["valid"]:
+                    raise Exceptions.InvalidSequenceException(self.__pClientState["sequenceid"])
+
                 # Run the sequence from the component
                 self.__pCoreServer.RunSequenceFromComponent(self.__sRemoteUser, self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
@@ -489,7 +518,7 @@ class PostHandler:
             return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
-        raise Exception("State misalignment")
+        raise Exceptions.StateMisalignmentException()
 
     # Handle POST /sequence/[sequenceid]
     def __HandlePostSequence(self):

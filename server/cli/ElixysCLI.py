@@ -41,7 +41,7 @@ class ElixysCLI(BaseCLI.BaseCLI):
     def AbortUnitOperation(self):
         """Abort the current unit operation"""
         # Ask the core server to abort the current unit operation by calling AbortSequence
-        bSuccess = self.pCoreServer.AbortSequence("CLI")
+        bSuccess = self.pCoreServer.CLIAbortUnitOperation("CLI")
         if not bSuccess:
             print "Failed to abort unit operation"
 

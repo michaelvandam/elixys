@@ -62,22 +62,23 @@ def application(pEnvironment, fStartResponse):
             raise Exception("Unknown request method: " + sRequestMethod)
 
         # Handle the request
-        sResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
+        pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
     except Exceptions.SequenceNotFoundException as ex:
-        sResponse = ExceptionHandler.HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
+        pResponse = ExceptionHandler.HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
     except Exceptions.ComponentNotFoundException as ex:
-        sResponse = ExceptionHandler.HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
+        pResponse = ExceptionHandler.HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
     except Exceptions.ReagentNotFoundException as ex:
-        sResponse = ExceptionHandler.HandleReagentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID, )
+        pResponse = ExceptionHandler.HandleReagentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
+    except Exceptions.InvalidSequenceException as ex:
+        pResponse = ExceptionHandler.HandleInvalidSequence(pDatabase, sRemoteUser, ex.nSequenceID)
+    except Exceptions.StateMisalignmentException as ex:
+        pResponse = ExceptionHandler.HandleStateMisalignment(pDatabase, sRemoteUser)
     except Exception as ex:
-        # Log the actual error and send the client a generic error
-        if pDatabase != None:
-            pDatabase.SystemLog(LOG_ERROR, sRemoteUser, str(ex))
-        sResponse = {"type":"error","description":"An internal server error occurred"}
+        pResponse = ExceptionHandler.HandleGeneralException(pDatabase, sRemoteUser, str(ex))
 
     # Initialize the return status and headers
     sStatus = "200 OK"
-    sResponseJSON = json.dumps(sResponse)
+    sResponseJSON = json.dumps(pResponse)
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
 
     # Log the timestamp

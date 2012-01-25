@@ -29,16 +29,18 @@ class Sequence(Thread):
     self.sequenceManager = pSequenceManager
     self.database = self.sequenceManager.database
     self.systemModel = pSystemModel
+    self.initializing = True
     self.running = False
     self.startComponentID = 0
     self.userSourceIDs = True
+    self.runWillPause = False
+    self.runIsPaused = False
+    self.runAborted = False
 
-    # Fetch the sequence from the database
-    self.sourceSequence = self.sequenceManager.GetSequence(sRemoteUser, nSourceSequenceID)
-
-    # Make sure the sequence is valid
+    # Fetch the sequence from the database and make sure it is valid
+    self.sourceSequence = self.sequenceManager.GetSequence(self.username, self.sourceSequenceID)
     if not self.sourceSequence["metadata"]["valid"]:
-      raise Exception("Cannot run an invalid sequence")
+      raise Exceptions("Cannot run an invalid sequence (" + self.sourceSequenceID + ")")
 
     # Create a new sequence in the run history
     self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, 0, "Starting run of sequence " + str(self.sourceSequenceID) + " (" + self.sourceSequence["metadata"]["name"] + ")")
@@ -53,14 +55,46 @@ class Sequence(Thread):
         pUnitOperation.copyComponent(self.runSequenceID)
 
   def setStartComponent(self, nComponentID):
+    """Sets the first component of the run"""
     self.startComponentID = nComponentID
 
   def getIDs(self):
-    # Return either the source or run sequence and component IDs
+    """Return the appropriate sequence and component IDs"""
     if self.userSourceIDs:
       return (self.sourceSequenceID, self.sourceComponentID)
     else:
       return (self.runSequenceID, self.runComponentID)
+
+  def pauseRun(self):
+    """Flags the running sequence to pause at the start of the next unit operation"""
+    if not self.running:
+      raise Exception("Sequence not running, cannot pause")
+    if self.runWillPause:
+      raise Exception("Sequence already will paused, cannot pause")
+    if self.runIsPaused:
+      raise Exception("Sequence is already paused, cannot pause")
+    self.runWillPause = True
+
+  def continueRun(self):
+    """Continues a paused sequence"""
+    if not self.running:
+      raise Exception("Sequence not running, cannot continue")
+    if not self.runWillPause and not self.runIsPaused:
+      raise Exception("Sequence run not paused, cannot continue")
+    self.runWillPause = False
+    self.runIsPaused = False
+
+  def willRunPause(self):
+    """Returns true if the sequence run is flagged to pause, false otherwise"""
+    return self.runWillPause
+
+  def isRunPaused(self):
+    """Returns true if the sequence run is paused, false otherwise"""
+    return self.runIsPaused
+
+  def abortRun(self):
+    """Aborts the current sequence run"""
+    self.runAborted = True
 
   def run(self):
     """Thread entry point"""
@@ -69,15 +103,23 @@ class Sequence(Thread):
     try:
       # Main sequence run loop
       self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Run started")
-      for pSourceComponent in self.sourceSequence["components"]:
+      nComponentCount = len(self.sourceSequence["components"])
+      nCurrentComponent = 0
+      while nCurrentComponent < nComponentCount:
+        # Get the next component
+        pSourceComponent = self.sourceSequence["components"][nCurrentComponent]
+
         # Skip components until we find our start component
         self.sourceComponentID = pSourceComponent["id"]
-        if not self.running and (self.startComponentID != 0) and (self.sourceComponentID != self.startComponentID):
+        if self.initializing and (self.startComponentID != 0) and (self.sourceComponentID != self.startComponentID):
           self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
           continue
+
+        # Update our initializing and running flags
+        self.initializing = False
         self.running = True
 
-        # Skip any previous summary component
+        # Ignore any previous summary component
         if pSourceComponent["componenttype"] == Summary.componentType:
           self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
           continue
@@ -93,9 +135,13 @@ class Sequence(Thread):
         pRunUnitOperation.start()
         self.systemModel.SetUnitOperation(pRunUnitOperation)
 
-        # Wait until the operation completes
-        while pRunUnitOperation.is_alive():
+        # Wait until the operation completes or we receive an abort signal
+        while pRunUnitOperation.is_alive() and not self.runAborted:
           time.sleep(0.25)
+        self.systemModel.SetUnitOperation(None)
+        if self.runAborted:
+          pRunUnitOperation.setAbort()
+          raise Exception("Run aborted")
 
         # Check for unit operation error
         sError = pRunUnitOperation.getError()
@@ -109,6 +155,36 @@ class Sequence(Thread):
         self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Completed unit operation (" + pRunComponent["name"] + ")")
         self.sourceComponentID = 0
         self.runComponentID = 0
+
+        # Check if the user paused the sequence for editing
+        if self.runWillPause:
+          # Pause until editing is complete
+          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Pausing run for editing")
+          self.runWillPause = False
+          self.runIsPaused = True
+          while self.runIsPaused and not self.runAborted:
+            time.sleep(0.25)
+          if self.runAborted:
+            raise Exception("Sequence aborted")
+          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Continuing paused run")
+
+          # Reload the sequence and make sure it is still valid
+          self.sourceSequence = self.sequenceManager.GetSequence(self.username, self.sourceSequenceID)
+          if not self.sourceSequence["metadata"]["valid"]:
+            raise Exceptions("Edited sequence is no longer valid (" + self.sourceSequenceID + ")")
+
+          # Scan until we find the unit operation we just executed
+          nComponentCount = len(self.sourceSequence["components"])
+          nCurrentComponent = 0
+          while nCurrentComponent < nComponentCount:
+            if self.sourceSequence["components"][nCurrentComponent]["id"] == pSourceComponent["id"]:
+              break
+            nCurrentComponent += 1
+          if nCurrentComponent == nComponentCount:
+            raise Exception("Failed to find previous component in edited sequence")
+
+        # Advance to the next component
+        nCurrentComponent += 1
     except Exception as ex:
       self.database.SystemLog(LOG_ERROR, self.username, "Sequence run failed: " + str(ex))
       sRunError = str(ex)

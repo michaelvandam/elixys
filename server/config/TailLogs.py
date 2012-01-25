@@ -22,18 +22,6 @@ def PrintUsage():
     print "  debug     Useful to developers"
     print ""
 
-def ParseLogLevel(sLogLevel):
-    if sLogLevel == "error":
-        return LOG_ERROR
-    elif sLogLevel == "warning":
-        return LOG_WARNING
-    elif sLogLevel == "info":
-        return LOG_INFO
-    elif sLogLevel == "debug":
-        return LOG_DEBUG
-    else:
-        return -1
-
 if __name__ == '__main__':
     # Set the logging level
     if len(sys.argv) > 1:
@@ -47,6 +35,10 @@ if __name__ == '__main__':
     # Create the database layer
     pDBComm = DBComm()
     pDBComm.Connect()
+
+    # Warn if the user wants a high level of logging than the system is using
+    if nLogLevel > pDBComm.GetLogLevel():
+        print "Warning: the log level specific is higher than what the system is currently using, you may not see messages all the messages you expect."
 
     # Monitor the logs until the user presses 'q' to quit
     print "Monitoring logs, type 'q' and press enter to quit..."
