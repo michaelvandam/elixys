@@ -458,8 +458,10 @@ class PostHandler:
                 # Create a copy of the sequence in the database
                 nNewSequenceID = self.__pSequenceManager.CopySequence(self.__sRemoteUser, self.__pClientState["sequenceid"], sEdit1, sEdit2)
 
-                # Hide the prompt
+                # Hide the prompt and move the client to the saved sequences screen
                 self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "SELECT_SAVEDSEQUENCES"
+                self.__pClientState["lastselectscreen"] = "SAVED"
                 return self.__SaveClientStateAndReturn()
             if sActionTargetID == "CANCEL":
                 # Hide the prompt

@@ -166,8 +166,8 @@ class EluteF18(UnitOperation):
   def copyComponentImpl(self, nSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""
     if self.component["reagent"] != None:
-      pReagent = self.database.GetReagent(self.username, self.component["reagent"]["reagentid"])
-      pNewReagent = self.database.GetReagentByPosition(self.username, nSequenceID, self.component["reactor"], self.component["reagent"]["position"])
+      nReagentCassette = self.database.GetReagentCassette(self.username, nSequenceID, self.component["reagent"]["reagentid"])
+      pNewReagent = self.database.GetReagentByPosition(self.username, nSequenceID, nReagentCassette, self.component["reagent"]["position"])
       pComponentCopy["reagent"] = pNewReagent["reagentid"]
     else:
       pComponentCopy["reagent"] = 0

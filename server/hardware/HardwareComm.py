@@ -26,25 +26,26 @@ ANALOGIN_SIZE = 0xa
 THERMOCONTROLLER_SIZE = 0x14
 DEVICENET_SIZE = 0x19
 
-# RoboNet constants
+# RoboNet addresses
 ROBONET_MIN = 3201
 ROBONET_MAX = 3312 + (5 * 4)
 ROBONET_ENABLE = 3201
 ROBONET_CONTROL = 3212
 ROBONET_AXISPOSSET = 3209
 ROBONET_AXISPOSREAD = 3309
+ROBONET_ERROR = 3311
 ROBONET_CHECK = 3312
-ROBONET_INIT = 0x4000
-ROBONET_ERROR1 = 0x400A
-ROBONET_SERVOON = 0x4011
-ROBONET_ERROR2 = 0x4013
-ROBONET_HOMING = 0x4014
-ROBONET_DISABLED1 = 0x7002
-ROBONET_DISABLED2 = 0x4002
-ROBONET_ENABLED1 = 0x7012
-ROBONET_ENABLED2 = 0x7013
-ROBONET_MOVING = 0x7016
-ROBONET_ERROR3 = 0x700A
+
+# RoboNet status offsets
+ROBONET_STATUS_HOMECOMPLETE = 1
+ROBONET_STATUS_MOVING = 2
+ROBONET_STATUS_ALARM = 3
+ROBONET_STATUS_READY = 4
+
+# FakePLC RoboNet status values
+FAKEPLC_ROBONET_HOMING = (1 << ROBONET_STATUS_READY) | (1 << ROBONET_STATUS_MOVING)
+FAKEPLC_ROBONET_ENABLED = (1 << ROBONET_STATUS_READY)
+FAKEPLC_ROBONET_DISABLED = (1 << ROBONET_STATUS_HOMECOMPLETE)
 
 # Robot position hit test limit
 ROBOT_POSITION_LIMIT = 60
@@ -650,23 +651,23 @@ class HardwareComm():
         else:
             raise Exception("Invalid reactor")
     def FakePLC_HomeReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_HOMING)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_HomeReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_HOMING)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_HomeReactorRobot(self, nReactor):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_HOMING)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_EnableReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_ENABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReagentRobotX(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), ROBONET_DISABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_EnableReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_ENABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReagentRobotY(self):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), ROBONET_DISABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_EnableReactorRobot(self, nReactor):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_ENABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReactorRobot(self, nReactor):
-        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), ROBONET_DISABLED1)
+        self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_SetReactorLinearSetPosition(self, nReactor, nPositionY):
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4), nPositionY)
     def FakePLC_SetReactorLinearActualPosition(self, nReactor, nPositionY):
@@ -956,12 +957,14 @@ class HardwareComm():
                 self.__GetBinaryValue("ReagentRobot_GripperUp"), self.__GetBinaryValue("ReagentRobot_GripperDown"), 
                 self.__GetBinaryValue("ReagentRobot_GripperOpen"), self.__GetBinaryValue("ReagentRobot_GripperClose"), 
                 self.__GetBinaryValue("ReagentRobot_GasTransferUp"), self.__GetBinaryValue("ReagentRobot_GasTransferDown"), 
-                self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotControlWord(self.__nReagentXAxis), self.__GetRobotCheckWord(self.__nReagentXAxis), 
-                self.__GetRobotStatus(self.__nReagentYAxis), self.__GetRobotControlWord(self.__nReagentYAxis), self.__GetRobotCheckWord(self.__nReagentYAxis))
+                self.__GetRobotStatus(self.__nReagentXAxis), self.__GetRobotError(self.__nReagentXAxis), 
+                self.__GetRobotControlWord(self.__nReagentXAxis), self.__GetRobotCheckWord(self.__nReagentXAxis), 
+                self.__GetRobotStatus(self.__nReagentYAxis), self.__GetRobotError(self.__nReagentYAxis), 
+                self.__GetRobotControlWord(self.__nReagentYAxis), self.__GetRobotCheckWord(self.__nReagentYAxis))
             pModel["Reactor1"]["Motion"].updateState(nReactor1RobotSetPosition, nReactor1RobotActualPosition, nReactor1RobotSetPositionRaw, nReactor1RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor1_SetReactorUp"), self.__GetBinaryValue("Reactor1_SetReactorDown"), self.__GetBinaryValue("Reactor1_ReactorUp"),
-                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotControlWord(self.__LookUpReactorAxis(1)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(1)))
+                self.__GetBinaryValue("Reactor1_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(1)), self.__GetRobotError(self.__LookUpReactorAxis(1)),
+                self.__GetRobotControlWord(self.__LookUpReactorAxis(1)), self.__GetRobotCheckWord(self.__LookUpReactorAxis(1)))
             pModel["Reactor1"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor1_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock1ValveCCW"))
             pModel["Reactor1"]["Stopcock2"].updateState(self.__GetBinaryValue("Reactor1_Stopcock2ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock2ValveCCW"))
             pModel["Reactor1"]["Stopcock3"].updateState(self.__GetBinaryValue("Reactor1_Stopcock3ValveCW"), self.__GetBinaryValue("Reactor1_Stopcock3ValveCCW"))
@@ -973,8 +976,8 @@ class HardwareComm():
             pModel["Reactor1"]["Radiation"].updateState(self.__GetRadiation(1))
             pModel["Reactor2"]["Motion"].updateState(nReactor2RobotSetPosition, nReactor2RobotActualPosition, nReactor2RobotSetPositionRaw, nReactor2RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor2_SetReactorUp"), self.__GetBinaryValue("Reactor2_SetReactorDown"), self.__GetBinaryValue("Reactor2_ReactorUp"),
-                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotControlWord(self.__LookUpReactorAxis(2)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(2)))
+                self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotError(self.__LookUpReactorAxis(2)),
+                self.__GetRobotControlWord(self.__LookUpReactorAxis(2)), self.__GetRobotCheckWord(self.__LookUpReactorAxis(2)))
             pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor2_Stopcock1ValveCCW"))
             pModel["Reactor2"]["Stir"].updateState(self.__GetAnalogValue("Reactor2_StirMotor"))
             pModel["Reactor2"]["Thermocouple"].updateState(self.__GetHeaterOn(2, 1), self.__GetHeaterOn(2, 2), self.__GetHeaterOn(2, 3),
@@ -984,8 +987,8 @@ class HardwareComm():
             pModel["Reactor2"]["Radiation"].updateState(self.__GetRadiation(2))
             pModel["Reactor3"]["Motion"].updateState(nReactor3RobotSetPosition, nReactor3RobotActualPosition, nReactor3RobotSetPositionRaw, nReactor3RobotActualPositionRaw,
                 self.__GetBinaryValue("Reactor3_SetReactorUp"), self.__GetBinaryValue("Reactor3_SetReactorDown"), self.__GetBinaryValue("Reactor3_ReactorUp"),
-                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotControlWord(self.__LookUpReactorAxis(3)), 
-                self.__GetRobotCheckWord(self.__LookUpReactorAxis(3)))
+                self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotError(self.__LookUpReactorAxis(3)),
+                self.__GetRobotControlWord(self.__LookUpReactorAxis(3)), self.__GetRobotCheckWord(self.__LookUpReactorAxis(3)))
             pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor3_Stopcock1ValveCCW"))
             pModel["Reactor3"]["Stir"].updateState(self.__GetAnalogValue("Reactor3_StirMotor"))
             pModel["Reactor3"]["Thermocouple"].updateState(self.__GetHeaterOn(3, 1), self.__GetHeaterOn(3, 2), self.__GetHeaterOn(3, 3),
@@ -1136,25 +1139,40 @@ class HardwareComm():
     def __GetReactorRobotActualPosition(self, nReactor):
         return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4)))
 
-    # Get the robot status
+    # Get the robot status, error code and check and control words (see ACON_PCON_SPEC.PDF, page 89)
     def __GetRobotStatus(self, nAxis):
+        # Get the check word and extract the flags of interest
         nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4))
-        if nCheckWord == ROBONET_INIT:
-            return "Init"
-        elif nCheckWord == ROBONET_SERVOON:
-            return "On"
-        elif nCheckWord == ROBONET_HOMING:
-            return "Homing"
-        elif (nCheckWord == ROBONET_DISABLED1) or (nCheckWord == ROBONET_DISABLED2):
-            return "Disabled"
-        elif (nCheckWord == ROBONET_ENABLED1) or (nCheckWord == ROBONET_ENABLED2):
-            return "Enabled"
-        elif nCheckWord == ROBONET_MOVING:
-            return "Moving"
-        elif (nCheckWord == ROBONET_ERROR1) or (nCheckWord == ROBONET_ERROR2) or (nCheckWord == ROBONET_ERROR3):
+        bHomeComplete = (nCheckWord >> ROBONET_STATUS_HOMECOMPLETE) & 1
+        bMoving = (nCheckWord >> ROBONET_STATUS_MOVING) & 1
+        bAlarm = (nCheckWord >> ROBONET_STATUS_ALARM) & 1
+        bReady = (nCheckWord >> ROBONET_STATUS_READY) & 1
+
+        # Interpret the flags
+        if bAlarm:
             return "Error"
+        if bReady:
+            if bMoving:
+                if bHomeComplete:
+                    return "Moving"
+                else:
+                    return "Homing"
+            else:
+                return "Enabled"
         else:
-            return str(nCheckWord)
+            if bHomeComplete:
+                return "Disabled"
+            else:
+                return "Init"
+    def __GetRobotError(self, nAxis):
+        # See if the alarm bit is set in the check word
+        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4))
+        if ((nCheckWord >> ROBONET_STATUS_ALARM) & 1):
+            # Yes, so get the error code
+            return (self.__GetIntegerValueRaw(ROBONET_ERROR + (nAxis * 4)) & 0x3FF)
+        else:
+            # No, so there is no error code
+            return 0
     def __GetRobotControlWord(self, nAxis):
         return self.__UnsignedToSigned(self.__GetIntegerValueRaw(ROBONET_CONTROL + (nAxis * 4)))
     def __GetRobotCheckWord(self, nAxis):

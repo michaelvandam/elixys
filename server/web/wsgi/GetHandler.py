@@ -117,14 +117,17 @@ class GetHandler:
         pState["optionbuttons"].append({"type":"button",
             "text":"Delete",
             "id":"DELETE"})
-        pState.update({"sequences":self.__pDatabase.GetAllSequences(self.__sRemoteUser, "Saved")})
+        pSavedSequences = self.__pDatabase.GetAllSequences(self.__sRemoteUser, "Saved")
+        pState.update({"sequences":pSavedSequences})
         return pState
 
     # Handle GET /state for Select Sequence (Run history tab)
     def __HandleGetStateSelectRunHistory(self):
         pState = self.__HandleGetStateSelect()
         pState.update({"tabid":"RUNHISTORY"})
-        pState.update({"sequences":self.__pDatabase.GetAllSequences(self.__sRemoteUser, "History")})
+        pRunHistorySequences = self.__pDatabase.GetAllSequences(self.__sRemoteUser, "History")
+        pRunHistorySequences.reverse()
+        pState.update({"sequences":pRunHistorySequences})
         return pState
 
     # Handles GET /state for Select Sequence (both tabs)
@@ -264,7 +267,7 @@ class GetHandler:
                     "id":"CONTINUERUN"})
             elif self.__pCoreServer.IsSequencePaused(self.__sRemoteUser):
                 pState["navigationbuttons"].append({"type":"button",
-                    "text":"Continue Run",
+                    "text":"Resume Run",
                     "id":"CONTINUERUN"})
             else:
                 pState["navigationbuttons"].append({"type":"button",

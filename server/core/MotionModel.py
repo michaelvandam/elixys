@@ -24,6 +24,7 @@ class MotionModel(ComponentModel):
     self.currentReactorUp = False
     self.currentReactorDown = False
     self.robotStatus = 0
+    self.robotError = 0
     self.robotControlWord = 0
     self.robotCheckWord = 0
 
@@ -94,6 +95,13 @@ class MotionModel(ComponentModel):
     else:
       return self.robotStatus
 
+  def getCurrentRobotError(self, bLockModel = True):
+    """Returns the robot error"""
+    if bLockModel:
+      return self.protectedReturn1(self.getCurrentRobotError)
+    else:
+      return self.robotError
+
   def getCurrentRobotControlWords(self, bLockModel = True):
     """Returns the robot control word"""
     if bLockModel:
@@ -125,7 +133,7 @@ class MotionModel(ComponentModel):
     self.hardwareComm.HomeReactorRobot(self.reactor)
     
   def updateState(self, sSetPosition, sCurrentPosition, nSetPositionRaw, nCurrentPositionRaw, bSetReactorUp, bSetReactorDown, bCurrentReactorUp, bCurrentReactorDown, 
-      nRobotStatus, nRobotControlWord, nRobotCheckWord):
+      sRobotStatus, nRobotError, nRobotControlWord, nRobotCheckWord):
     """Updates the internal state"""
     self.setPosition = sSetPosition
     self.currentPosition = sCurrentPosition
@@ -135,7 +143,8 @@ class MotionModel(ComponentModel):
     self.setReactorDown = bSetReactorDown
     self.currentReactorUp = bCurrentReactorUp
     self.currentReactorDown = bCurrentReactorDown
-    self.robotStatus = nRobotStatus
+    self.robotStatus = sRobotStatus
+    self.robotError = nRobotError
     self.robotControlWord = nRobotControlWord
     self.robotCheckWord = nRobotCheckWord
 

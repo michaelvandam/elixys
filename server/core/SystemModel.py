@@ -282,7 +282,8 @@ class SystemModel:
         nReagentRobotCurrentPositionElute = self.model["ReagentDelivery"].getCurrentPosition(False)
       nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY = self.model["ReagentDelivery"].getCurrentPositionRaw(False)
       sReagentRobotCurrentPositionName1, sReagentRobotCurrentPositionName2 = self.model["ReagentDelivery"].getCurrentPositionName(False)
-      nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY = self.model["ReagentDelivery"].getRobotStatus(False)
+      sReagentRobotCurrentStatusX, sReagentRobotCurrentStatusY = self.model["ReagentDelivery"].getRobotStatus(False)
+      nReagentRobotCurrentErrorX, nReagentRobotCurrentErrorY = self.model["ReagentDelivery"].getRobotError(False)
       nReagentRobotXControlWord, nReagentRobotXCheckWord = self.model["ReagentDelivery"].getRobotXControlWords(False)
       nReagentRobotYControlWord, nReagentRobotYCheckWord = self.model["ReagentDelivery"].getRobotYControlWords(False)
       self.__pStateObject["hardwarestate"]["reagentrobot"] = {"type":"reagentrobotstate"}
@@ -304,7 +305,11 @@ class SystemModel:
       self.__sStateString += "\n"
       self.__sStateString += self.__PadString("  Robot status (x/y)", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(nReagentRobotCurrentStatusX) + "/" + str(nReagentRobotCurrentStatusY), STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(sReagentRobotCurrentStatusX + "/" + sReagentRobotCurrentStatusY, STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += "\n"
+      self.__sStateString += self.__PadString("  Robot error (x/y)", STATECOMMONCOLUMN1WIDTH)
+      self.__sStateString += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(nReagentRobotCurrentErrorX) + "/" + str(nReagentRobotCurrentErrorY), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
       self.__sStateString += self.__PadString("  Robot control (x/y)", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
@@ -411,13 +416,21 @@ class SystemModel:
       sReactor1RobotStatus = self.model["Reactor1"]["Motion"].getCurrentRobotStatus(False)
       sReactor2RobotStatus = self.model["Reactor2"]["Motion"].getCurrentRobotStatus(False)
       sReactor3RobotStatus = self.model["Reactor3"]["Motion"].getCurrentRobotStatus(False)
+      nReactor1RobotError = self.model["Reactor1"]["Motion"].getCurrentRobotError(False)
+      nReactor2RobotError = self.model["Reactor2"]["Motion"].getCurrentRobotError(False)
+      nReactor3RobotError = self.model["Reactor3"]["Motion"].getCurrentRobotError(False)
       nReactor1RobotControlWord, nReactor1RobotCheckWord = self.model["Reactor1"]["Motion"].getCurrentRobotControlWords(False)
       nReactor2RobotControlWord, nReactor2RobotCheckWord = self.model["Reactor2"]["Motion"].getCurrentRobotControlWords(False)
       nReactor3RobotControlWord, nReactor3RobotCheckWord = self.model["Reactor3"]["Motion"].getCurrentRobotControlWords(False)
       self.__sStateString += self.__PadString("Robot status", STATEREACTORCOLUMN1WIDTH)
-      self.__sStateString += self.__PadString(str(sReactor1RobotStatus), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(sReactor2RobotStatus), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(sReactor3RobotStatus), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(sReactor1RobotStatus, STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(sReactor2RobotStatus, STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(sReactor3RobotStatus, STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += "\n"
+      self.__sStateString += self.__PadString("Robot error", STATEREACTORCOLUMN1WIDTH)
+      self.__sStateString += self.__PadString(str(nReactor1RobotError), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(nReactor2RobotError), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(nReactor3RobotError), STATEREACTORCOLUMN2WIDTH)
       self.__sStateString += "\n"
       self.__sStateString += self.__PadString("Robot control", STATEREACTORCOLUMN1WIDTH)
       self.__sStateString += self.__PadString(str(nReactor1RobotControlWord), STATEREACTORCOLUMN2WIDTH)
@@ -589,22 +602,22 @@ class SystemModel:
           fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen,
           sReagentRobotSetPositionName1 + " " + sReagentRobotSetPositionName2, sReagentRobotCurrentPositionName1 + " " + sReagentRobotCurrentPositionName2,
           nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawY, nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY,
-          nReagentRobotCurrentStatusX, nReagentRobotCurrentStatusY, nReagentRobotXControlWord, nReagentRobotYControlWord, nReagentRobotXCheckWord,
-          nReagentRobotYCheckWord, bGripperActuatorSetUp, bGripperActuatorSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferActuatorSetUp, 
-          bGasTransferActuatorSetDown, bGripperActuatorCurrentUp, bGripperActuatorCurrentDown, bGripperCurrentOpen, bGripperCurrentClose, 
-          bGasTransferActuatorCurrentUp, bGasTransferActuatorCurrentDown, sReactor1SetPosition, sReactor1CurrentPosition, nReactor1SetPositionRaw, 
-          nReactor1CurrentPositionRaw, sReactor1RobotStatus, nReactor1RobotControlWord, nReactor1RobotCheckWord, bReactor1SetUp, bReactor1SetDown, 
+          sReagentRobotCurrentStatusX, sReagentRobotCurrentStatusY, nReagentRobotCurrentErrorX, nReagentRobotCurrentErrorY, nReagentRobotXControlWord,
+          nReagentRobotYControlWord, nReagentRobotXCheckWord, nReagentRobotYCheckWord, bGripperActuatorSetUp, bGripperActuatorSetDown, bGripperSetOpen,
+          bGripperSetClose, bGasTransferActuatorSetUp, bGasTransferActuatorSetDown, bGripperActuatorCurrentUp, bGripperActuatorCurrentDown, bGripperCurrentOpen,
+          bGripperCurrentClose, bGasTransferActuatorCurrentUp, bGasTransferActuatorCurrentDown, sReactor1SetPosition, sReactor1CurrentPosition, nReactor1SetPositionRaw, 
+          nReactor1CurrentPositionRaw, sReactor1RobotStatus, nReactor1RobotError, nReactor1RobotControlWord, nReactor1RobotCheckWord, bReactor1SetUp, bReactor1SetDown, 
           bReactor1CurrentUp, bReactor1CurrentDown, sReactor1Stopcock1, sReactor1Stopcock2, sReactor1Stopcock3, bReactor1Collet1On, fReactor1Collet1SetTemperature,
           fReactor1Collet1CurrentTemperature, bReactor1Collet2On, fReactor1Collet2SetTemperature, fReactor1Collet2CurrentTemperature, bReactor1Collet3On, 
           fReactor1Collet3SetTemperature, fReactor1Collet3CurrentTemperature, nReactor1StirMotorSpeed, fReactor1RadiationDetector, sReactor2SetPosition, 
-          sReactor2CurrentPosition, nReactor2SetPositionRaw, nReactor2CurrentPositionRaw, sReactor2RobotStatus, nReactor2RobotControlWord, nReactor2RobotCheckWord, 
-          bReactor2SetUp, bReactor2SetDown, bReactor2CurrentUp, bReactor2CurrentDown, sReactor2Stopcock1, bReactor2Collet1On, fReactor2Collet1SetTemperature, 
-          fReactor2Collet1CurrentTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature, fReactor2Collet2CurrentTemperature, bReactor2Collet3On, 
-          fReactor2Collet3SetTemperature, fReactor2Collet3CurrentTemperature, nReactor2StirMotorSpeed, fReactor2RadiationDetector, sReactor3SetPosition, 
-          sReactor3CurrentPosition, nReactor3SetPositionRaw, nReactor3CurrentPositionRaw, sReactor3RobotStatus, nReactor3RobotControlWord, nReactor3RobotCheckWord, 
-          bReactor3SetUp, bReactor3SetDown, bReactor3CurrentUp, bReactor3CurrentDown, sReactor3Stopcock1, bReactor3Collet1On, fReactor3Collet1SetTemperature, 
-          fReactor3Collet1CurrentTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2CurrentTemperature, bReactor3Collet3On, 
-          fReactor3Collet3SetTemperature, fReactor3Collet3CurrentTemperature, nReactor3StirMotorSpeed, fReactor3RadiationDetector)
+          sReactor2CurrentPosition, nReactor2SetPositionRaw, nReactor2CurrentPositionRaw, sReactor2RobotStatus, nReactor2RobotError, nReactor2RobotControlWord,
+          nReactor2RobotCheckWord, bReactor2SetUp, bReactor2SetDown, bReactor2CurrentUp, bReactor2CurrentDown, sReactor2Stopcock1, bReactor2Collet1On, 
+          fReactor2Collet1SetTemperature, fReactor2Collet1CurrentTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature, fReactor2Collet2CurrentTemperature,
+          bReactor2Collet3On, fReactor2Collet3SetTemperature, fReactor2Collet3CurrentTemperature, nReactor2StirMotorSpeed, fReactor2RadiationDetector, sReactor3SetPosition, 
+          sReactor3CurrentPosition, nReactor3SetPositionRaw, nReactor3CurrentPositionRaw, sReactor3RobotStatus, nReactor3RobotError, nReactor3RobotControlWord,
+          nReactor3RobotCheckWord, bReactor3SetUp, bReactor3SetDown, bReactor3CurrentUp, bReactor3CurrentDown, sReactor3Stopcock1, bReactor3Collet1On, 
+          fReactor3Collet1SetTemperature, fReactor3Collet1CurrentTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2CurrentTemperature,
+          bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3CurrentTemperature, nReactor3StirMotorSpeed, fReactor3RadiationDetector)
     finally:
         # Release the locks
         self.UnlockSystemModel()

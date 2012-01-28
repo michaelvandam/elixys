@@ -78,5 +78,7 @@ def HandleGeneralException(pDatabase, sRemoteUser, sError):
     # Log the actual error and send the client a generic error
     if pDatabase != None:
         pDatabase.SystemLog(LOG_ERROR, sRemoteUser, sError)
+    else:
+        print sError
     return {"type":"error", "description":"An internal server error occurred"}
 

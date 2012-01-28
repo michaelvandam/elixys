@@ -78,8 +78,9 @@ class DBComm:
 
   def Disconnect(self):
     """Disconnects from the database"""
-    self.__pDatabase.close()
-    self.__pDatabase = None
+    if self.__pDatabase != None:
+      self.__pDatabase.close()
+      self.__pDatabase = None
 
   ### Logging functions ###
 
@@ -108,38 +109,40 @@ class DBComm:
   def StatusLog(self, bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure, fPressureRegulator1ActualPressure,
       fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen, sReagentRobotPositionSet,
       sReagentRobotPositionActual, nReagentRobotPositionSetX, nReagentRobotPositionSetY, nReagentRobotPositionActualX, nReagentRobotPositionActualY,
-      sReagentRobotStatusX, sReagentRobotStatusY, nReagentRobotControlX, nReagentRobotControlY, nReagentRobotCheckX, nReagentRobotCheckY, bGripperSetUp,
-      bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp, bGripperDown, bGripperOpen, bGripperClose,
-      bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, sReactor1RobotStatus,
-      nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, sReactor1Stopcock1Position,
+      sReagentRobotStatusX, sReagentRobotStatusY, sReagentRobotErrorX, sReagentRobotErrorY, nReagentRobotControlX, nReagentRobotControlY, nReagentRobotCheckX,
+      nReagentRobotCheckY, bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp, bGripperDown,
+      bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, sReactor1RobotStatus,
+      nReactor1RobotError, nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, sReactor1Stopcock1Position,
       sReactor1Stopcock2Position, sReactor1Stopcock3Position, bReactor1Collet1On, fReactor1Collet1SetTemperature, fReactor1Collet1ActualTemperature,
       bReactor1Collet2On, fReactor1Collet2SetTemperature, fReactor1Collet2ActualTemperature, bReactor1Collet3On, fReactor1Collet3SetTemperature,
       fReactor1Collet3ActualTemperature, nReactor1StirMotor, fReactor1RaditationDetector, sReactor2SetPosition, sReactor2ActualPosition, nReactor2SetY,
-      nReactor2ActualY, sReactor2RobotStatus, nReactor2RobotControl, nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up, bReactor2Down,
-      sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature, fReactor2Collet1ActualTemperature, bReactor2Collet2On,
+      nReactor2ActualY, sReactor2RobotStatus, nReactor2RobotError, nReactor2RobotControl, nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up,
+      bReactor2Down, sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature, fReactor2Collet1ActualTemperature, bReactor2Collet2On,
       fReactor2Collet2SetTemperature, fReactor2Collet2ActualTemperature, bReactor2Collet3On, fReactor2Collet3SetTemperature, fReactor2Collet3ActualTemperature,
       nReactor2StirMotor, fReactor2RaditationDetector, sReactor3SetPosition, sReactor3ActualPosition, nReactor3SetY, nReactor3ActualY, sReactor3RobotStatus,
-      nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position, bReactor3Collet1On,
-      fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2ActualTemperature,
-      bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, fReactor3RaditationDetector):
+      nReactor3RobotError, nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position, 
+      bReactor3Collet1On, fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, 
+      fReactor3Collet2ActualTemperature, bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, 
+      fReactor3RaditationDetector):
     """Logs the system state to the StatusLog table in the database"""
     if self.__pDatabase != None:
       self.__CallStoredProcedure("StatusLog", (bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure,
         fPressureRegulator1ActualPressure, fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen,
         bHPLCLoadValveOpen, sReagentRobotPositionSet, sReagentRobotPositionActual, nReagentRobotPositionSetX, nReagentRobotPositionSetY, nReagentRobotPositionActualX,
-        nReagentRobotPositionActualY, sReagentRobotStatusX, sReagentRobotStatusY, nReagentRobotControlX, nReagentRobotControlY, nReagentRobotCheckX,
-        nReagentRobotCheckY, bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp, bGripperDown,
-        bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, sReactor1RobotStatus,
-        nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, sReactor1Stopcock1Position, sReactor1Stopcock2Position,
-        sReactor1Stopcock3Position, bReactor1Collet1On, fReactor1Collet1SetTemperature, fReactor1Collet1ActualTemperature, bReactor1Collet2On, fReactor1Collet2SetTemperature,
-        fReactor1Collet2ActualTemperature, bReactor1Collet3On, fReactor1Collet3SetTemperature, fReactor1Collet3ActualTemperature, nReactor1StirMotor,
-        fReactor1RaditationDetector, sReactor2SetPosition, sReactor2ActualPosition, nReactor2SetY, nReactor2ActualY, sReactor2RobotStatus, nReactor2RobotControl,
-        nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up, bReactor2Down, sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature,
-        fReactor2Collet1ActualTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature, fReactor2Collet2ActualTemperature, bReactor2Collet3On, fReactor2Collet3SetTemperature, 
-        fReactor2Collet3ActualTemperature, nReactor2StirMotor, fReactor2RaditationDetector, sReactor3SetPosition, sReactor3ActualPosition, nReactor3SetY, nReactor3ActualY,
-        sReactor3RobotStatus, nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position,
-        bReactor3Collet1On, fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature,
-        fReactor3Collet2ActualTemperature, bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, fReactor3RaditationDetector))
+        nReagentRobotPositionActualY, sReagentRobotStatusX, sReagentRobotStatusY, sReagentRobotErrorX, sReagentRobotErrorY, nReagentRobotControlX, nReagentRobotControlY, 
+        nReagentRobotCheckX, nReagentRobotCheckY, bGripperSetUp, bGripperSetDown, bGripperSetOpen, bGripperSetClose, bGasTransferSetUp, bGasTransferSetDown, bGripperUp,
+        bGripperDown, bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown, sReactor1SetPosition, sReactor1ActualPosition, nReactor1SetY, nReactor1ActualY, 
+        sReactor1RobotStatus, nReactor1RobotError, nReactor1RobotControl, nReactor1RobotCheck, bReactor1SetUp, bReactor1SetDown, bReactor1Up, bReactor1Down, 
+        sReactor1Stopcock1Position, sReactor1Stopcock2Position, sReactor1Stopcock3Position, bReactor1Collet1On, fReactor1Collet1SetTemperature, fReactor1Collet1ActualTemperature,
+        bReactor1Collet2On, fReactor1Collet2SetTemperature, fReactor1Collet2ActualTemperature, bReactor1Collet3On, fReactor1Collet3SetTemperature, 
+        fReactor1Collet3ActualTemperature, nReactor1StirMotor, fReactor1RaditationDetector, sReactor2SetPosition, sReactor2ActualPosition, nReactor2SetY, nReactor2ActualY, 
+        sReactor2RobotStatus, nReactor2RobotError, nReactor2RobotControl, nReactor2RobotCheck, bReactor2SetUp, bReactor2SetDown, bReactor2Up, bReactor2Down, 
+        sReactor2Stopcock1Position, bReactor2Collet1On, fReactor2Collet1SetTemperature, fReactor2Collet1ActualTemperature, bReactor2Collet2On, fReactor2Collet2SetTemperature,
+        fReactor2Collet2ActualTemperature, bReactor2Collet3On, fReactor2Collet3SetTemperature, fReactor2Collet3ActualTemperature, nReactor2StirMotor, 
+        fReactor2RaditationDetector, sReactor3SetPosition, sReactor3ActualPosition, nReactor3SetY, nReactor3ActualY, sReactor3RobotStatus, nReactor3RobotError,
+        nReactor3RobotControl, nReactor3RobotCheck, bReactor3SetUp, bReactor3SetDown, bReactor3Up, bReactor3Down, sReactor3Stopcock1Position, bReactor3Collet1On,
+        fReactor3Collet1SetTemperature, fReactor3Collet1ActualTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2ActualTemperature, 
+        bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, fReactor3RaditationDetector))
 
   def GetRecentLogsByTimestamp(self, sCurrentUsername, nLevel, pTimestamp):
     """Gets any logs in the SystemLog and RunLog tables that are more recent than the timestamp"""

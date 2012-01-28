@@ -39,9 +39,11 @@ class ReagentDeliveryModel(ComponentModel):
     self.currentGasTransferUp = False
     self.currentGasTransferDown = False
     self.robotXStatus = 0
+    self.robotXError = 0
     self.robotXControlWord = 0
     self.robotXCheckWord = 0
     self.robotYStatus = 0
+    self.robotYError = 0
     self.robotYControlWord = 0
     self.robotYCheckWord = 0
 
@@ -187,6 +189,13 @@ class ReagentDeliveryModel(ComponentModel):
       return self.protectedReturn2(self.getRobotStatus)
     else:
       return self.robotXStatus, self.robotYStatus
+
+  def getRobotError(self, bLockModel = True):
+    """Returns the robot axis status code"""
+    if bLockModel:
+      return self.protectedReturn2(self.getRobotError)
+    else:
+      return self.robotXError, self.robotYError
       
   def getRobotXControlWords(self, bLockModel = True):
     """Returns the robot X axis control words"""
@@ -258,7 +267,7 @@ class ReagentDeliveryModel(ComponentModel):
                   nCurrentPositionDelivery, nCurrentPositionElute, nSetPositionRawX, nSetPositionRawY, nCurrentPositionRawX, nCurrentPositionRawY, bSetGripperUp,
                   bSetGripperDown, bSetGripperOpen, bSetGripperClose, bSetGasTransferUp, bSetGasTransferDown, bCurrentGripperUp, 
                   bCurrentGripperDown, bCurrentGripperOpen, bCurrentGripperClose, bCurrentGasTransferUp, bCurrentGasTransferDown, 
-                  nRobotXStatus, robotXControlWord, robotXCheckWord, nRobotYStatus, robotYControlWord, robotYCheckWord):
+                  sRobotXStatus, nRobotXError, nRobotXControlWord, nRobotXCheckWord, sRobotYStatus, nRobotYError, nRobotYControlWord, nRobotYCheckWord):
     """Updates the internal state"""
     self.setPositionReactor = nSetPositionReactor
     self.setPositionReagent = nSetPositionReagent
@@ -284,12 +293,14 @@ class ReagentDeliveryModel(ComponentModel):
     self.currentGripperClose = bCurrentGripperClose
     self.currentGasTransferUp = bCurrentGasTransferUp
     self.currentGasTransferDown = bCurrentGasTransferDown
-    self.robotXStatus = nRobotXStatus
-    self.robotXControlWord = robotXControlWord
-    self.robotXCheckWord = robotXCheckWord
-    self.robotYStatus = nRobotYStatus
-    self.robotYControlWord = robotYControlWord
-    self.robotYCheckWord = robotYCheckWord
+    self.robotXStatus = sRobotXStatus
+    self.robotXError = nRobotXError
+    self.robotXControlWord = nRobotXControlWord
+    self.robotXCheckWord = nRobotXCheckWord
+    self.robotYStatus = sRobotYStatus
+    self.robotYError = nRobotYError
+    self.robotYControlWord = nRobotYControlWord
+    self.robotYCheckWord = nRobotYCheckWord
 
   def getPositionName(self, nReactor, nReagent, nDelivery, nElute, nRawX, nRawY):
     if (nReagent != 0) or (nDelivery != 0) or (nElute != 0):

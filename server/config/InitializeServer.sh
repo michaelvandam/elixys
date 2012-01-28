@@ -18,16 +18,16 @@ git clone --depth 1 http://github.com/michaelvandam/elixys.git
 # Create the root application directory
 mkdir /opt/elixys
 
+# Make an application copy of the config directory
+cp -R elixys/server/config /opt/elixys
+cd /opt/elixys/config
+chmod 755 *.sh
+
 # Install, start and initialize MySQL
 yum -y install mysql mysql-server apr-util-mysql
 /sbin/service mysqld start
-cd elixys/server/config
-chmod 755 *.sh
 ./InitializeDatabase.sh
-cd ../../..
-
-# Make an application copy of the config directory
-cp -R elixys/server/config /opt/elixys
+cd /root
 
 # Make an application copy of the rtmpd directory
 chmod 711 elixys/server/rtmpd/crtmpserver
@@ -95,7 +95,8 @@ mkdir /var/www/wsgi
 
 # Install the Apache configuration file
 mv -f elixys/server/config/httpd.conf /etc/httpd/conf
-chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
+restorecon /etc/httpd/conf/httpd.conf
+#chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Create a directory where Apache has write permissions for Python Eggs 
 mkdir /var/www/eggs
@@ -114,7 +115,8 @@ chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
 # Update the firewall settings
 mv -f elixys/server/config/iptables /etc/sysconfig/
-chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
+restorecon /etc/sysconfig/iptables
+#chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
 # Put shortcuts on the user's desktop
@@ -126,6 +128,9 @@ echo "ALL ALL=(ALL) NOPASSWD:/opt/elixys/config/UpdateServer.sh" >> /etc/sudoers
 
 # Remove the git repository
 rm -rf /root/elixys
+
+# Restore SELinux permissions
+restorecon -R /opt/elixys
 
 # Run the update script to perform the initial pull of the source code
 cd /home/$USER/Desktop
