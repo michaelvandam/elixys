@@ -97,7 +97,7 @@ class ElixysCLIOld(BaseCLI.BaseCLI):
         self.pHardwareComm.StartUp()
         self.pSystemModel = SystemModel(self.pHardwareComm, None)
         self.pSystemModel.StartUp()
-        self.pUnitOperationsWrapper = UnitOperationsWrapper(self.pSystemModel)
+        self.pUnitOperationsWrapper = UnitOperationsWrapper(self.pSystemModel, None)
     
         # Call the base run function
         BaseCLI.BaseCLI.Run(self, True)

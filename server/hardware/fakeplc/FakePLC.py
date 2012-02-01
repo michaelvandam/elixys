@@ -6,10 +6,11 @@ Behaves like a PLC for testing and demo purposes """
 import socket
 import configobj
 import select
+import time	
 import sys
 sys.path.append("/opt/elixys/hardware/")
 sys.path.append("/opt/elixys/core/")
-import HardwareComm
+from HardwareComm import *
 from SystemModel import SystemModel
 import Utilities
 from CoolingThread import CoolingThread
@@ -50,7 +51,7 @@ class FakePLC():
     def StartUp(self):
         """Starts up the fake PLC"""
         # Create the hardware layer
-        self.__pHardwareComm = HardwareComm.HardwareComm()
+        self.__pHardwareComm = HardwareComm()
   
         # Determine the memory range we need to emulate
         self.__nMemoryLower, self.__nMemoryUpper = self.__pHardwareComm.CalculateMemoryRange()
@@ -335,13 +336,13 @@ class FakePLC():
         nControlWordY, nCheckWordY = self.__pSystemModel.model["ReagentDelivery"].getRobotYControlWords()
 
         # Enable or disable the robots
-        if (nControlWordX == 0x10) and (nCheckWordX != HardwareComm.ROBONET_ENABLED1):
+        if (nControlWordX == 0x10) and not ((nCheckWordX >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_EnableReagentRobotX()
-        elif (nControlWordX == 0x08) and (nCheckWordX != HardwareComm.ROBONET_DISABLED1):
+        elif (nControlWordX == 0x08) and ((nCheckWordX >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_DisableReagentRobotX()
-        if (nControlWordY == 0x10) and (nCheckWordY != HardwareComm.ROBONET_ENABLED1):
+        if (nControlWordY == 0x10) and not ((nCheckWordY >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_EnableReagentRobotY()
-        elif (nControlWordY == 0x08) and (nCheckWordY != HardwareComm.ROBONET_DISABLED1):
+        elif (nControlWordY == 0x08) and ((nCheckWordX >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_DisableReagentRobotY()
 
         # Home the robots
@@ -397,9 +398,9 @@ class FakePLC():
         nControlWord, nCheckWord = self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentRobotControlWords()
 
         # Enable or disable the robot
-        if (nControlWord == 0x10) and (nCheckWord != HardwareComm.ROBONET_ENABLED1):
+        if (nControlWord == 0x10) and not ((nCheckWord >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_EnableReactorRobot(nReactor)
-        elif (nControlWord == 0x08) and (nCheckWord != HardwareComm.ROBONET_DISABLED1):
+        elif (nControlWord == 0x08) and ((nCheckWord >> ROBONET_STATUS_READY) & 1):
             self.__pHardwareComm.FakePLC_DisableReactorRobot(nReactor)
 
         # Home the robots

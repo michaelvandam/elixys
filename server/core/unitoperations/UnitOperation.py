@@ -89,6 +89,10 @@ NOTEQUAL = "!="
 GREATER  = ">"
 LESS     = "<"
 
+# Pressures
+GAS_TRANSFER_PRESSURE = 5
+PNEUMATIC_PRESSURE = 60
+
 # Default component values
 DEFAULT_ADD_DURATION = 15
 DEFAULT_ADD_PRESSURE = 3
@@ -358,11 +362,9 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,3)
     self.setGasTransferValve(ON)
 
-    #Increase the pressure and lower the vial
-    self.setPressureRegulator(2,60)
+    #Lower the vial
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,6)
-    self.setPressureRegulator(2,47)
     
   def removeGripperPlace(self):
     #Make sure we are closed and down
@@ -374,7 +376,6 @@ class UnitOperation(threading.Thread):
     # Remove the vial
     bVialUp = False
     nFailureCount = 0
-    self.setPressureRegulator(2,60)
     time.sleep(1)
     while not bVialUp:
       #Move the vial up
@@ -395,9 +396,7 @@ class UnitOperation(threading.Thread):
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
         nFailureCount += 1
       else:
-        self.setPressureRegulator(2,47)
         raise Exception("Failed to remove vial")
-    self.setPressureRegulator(2,47)
 
     #Turn off and raise the transfer gas
     self.setGasTransferValve(OFF)
@@ -572,11 +571,9 @@ class UnitOperation(threading.Thread):
     if raiseException:
       raise UnitOpError(error)
     
-  def setStopcockPosition(self,stopcockPositions,ReactorID=255,adjustPressure=True):
+  def setStopcockPosition(self,stopcockPositions,ReactorID=255):
     if (ReactorID==255):
       ReactorID = self.ReactorID
-    if (adjustPressure==True):
-      self.setPressureRegulator(2,60)
     for stopcock in range(1,(len(stopcockPositions)+1)):
       if not stopcockPositions[stopcock-1] == NA:
         if stopcockPositions[stopcock-1] == CW:
@@ -587,9 +584,6 @@ class UnitOperation(threading.Thread):
           self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getCCW,True,EQUAL,3) 
         else:
           self.abortOperation("Unknown stopcock position: " + stopcockPosition[stopcock-1])
-    if (adjustPressure==True):
-      time.sleep(1)
-      self.setPressureRegulator(2,47)
  
   def startTransfer(self,state):
     self.systemModel[self.ReactorID]['Valves'].setTransferValveOpen(state)

@@ -20,14 +20,15 @@ from RampPressure import RampPressure
 from Mix import Mix
 
 class UnitOperationsWrapper:
-    def __init__(self, pSystemModel):
+    def __init__(self, pSystemModel, pDatabase):
         """Unit operations wrapper constructor"""
         self.__pSystemModel = pSystemModel
+        self.__pDatabase = pDatabase
     
     def Init(self):
         """Initializes Elixys hardware for use"""
         pParams = {}
-        pInit = Initialize(self.__pSystemModel, pParams)
+        pInit = Initialize(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pInit.setDaemon(True)
         pInit.start()
         return pInit
@@ -41,7 +42,7 @@ class UnitOperationsWrapper:
                    "coolingDelay":nCoolingDelay,
                    "reactPosition":sReactPosition,
                    "stirSpeed":nStirSpeed}
-        pReact = React(self.__pSystemModel, pParams)
+        pReact = React(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pReact.setDaemon(True)
         pReact.start()
         return pReact
@@ -50,7 +51,7 @@ class UnitOperationsWrapper:
         """Performs a move unit operation"""
         pParams = {"ReactorID":sReactor,
                    "reactPosition":sReactPosition}
-        pMove = Move(self.__pSystemModel, pParams)
+        pMove = Move(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pMove.setDaemon(True)
         pMove.start()
         return pMove
@@ -63,7 +64,7 @@ class UnitOperationsWrapper:
                    "reagentLoadPosition":nReagentDeliveryPosition,
                    "duration":DEFAULT_ADD_DURATION,
                    "pressure":DEFAULT_ADD_PRESSURE}
-        pAdd = Add(self.__pSystemModel, pParams)
+        pAdd = Add(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pAdd.setDaemon(True)
         pAdd.start()
         return pAdd
@@ -76,7 +77,7 @@ class UnitOperationsWrapper:
                    "coolTemp":nFinalTemperature,
                    "stirSpeed":nStirSpeed,
                    "pressure":DEFAULT_EVAPORATE_PRESSURE}
-        pEvaporate = Evaporate(self.__pSystemModel, pParams)
+        pEvaporate = Evaporate(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pEvaporate.setDaemon(True)
         pEvaporate.start()
         return pEvaporate
@@ -85,7 +86,7 @@ class UnitOperationsWrapper:
         """Performs an install unit operation"""
         pParams = {"ReactorID":sReactor,
                    "userMessage":""}
-        pInstall = Install(self.__pSystemModel, pParams)
+        pInstall = Install(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pInstall.setDaemon(True)
         pInstall.start()
         return pInstall
@@ -95,7 +96,7 @@ class UnitOperationsWrapper:
         pParams = {"cyclotronFlag":int(bCyclotronFlag),
                    "trapTime":nTrapTime,
                    "trapPressure":nTrapPressure}
-        pTrapF18 = TrapF18(self.__pSystemModel, pParams)
+        pTrapF18 = TrapF18(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pTrapF18.setDaemon(True)
         pTrapF18.start()
         return pTrapF18
@@ -106,7 +107,7 @@ class UnitOperationsWrapper:
                    "elutePressure":nElutePressure,
                    "ReagentReactorID":sReagentReactor,
                    "ReagentPosition":nReagentPosition}
-        pEluteF18 = EluteF18(self.__pSystemModel, pParams)
+        pEluteF18 = EluteF18(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pEluteF18.setDaemon(True)
         pEluteF18.start()
         return pEluteF18
@@ -118,7 +119,7 @@ class UnitOperationsWrapper:
                    "transferType":sTransferType,
                    "transferTimer":nTransferTimer,
                    "transferPressure":nTransferPressure}
-        pTransfer = Transfer(self.__pSystemModel, pParams)
+        pTransfer = Transfer(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pTransfer.setDaemon(True)
         pTransfer.start()
         return pTransfer
@@ -132,7 +133,7 @@ class UnitOperationsWrapper:
                    "liquidTCReactor":nLiquidTCReactor,
                    "liquidTCCollet":nLiquidTCCollet,
                    "stirSpeed":nStirSpeed}
-        pTempProfile = TempProfile(self.__pSystemModel, pParams)
+        pTempProfile = TempProfile(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pTempProfile.setDaemon(True)
         pTempProfile.start()
         return pTempProfile
@@ -142,7 +143,7 @@ class UnitOperationsWrapper:
         pParams = {"pressureRegulator":nPressureRegulator,
                    "pressure":nTargetPressure,
                    "duration":nDuration}
-        pRampPressure = RampPressure(self.__pSystemModel, pParams)
+        pRampPressure = RampPressure(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pRampPressure.setDaemon(True)
         pRampPressure.start()
         return pRampPressure
@@ -152,7 +153,7 @@ class UnitOperationsWrapper:
         pParams = {"ReactorID":sReactor,
                    "stirSpeed":nStirSpeed,
                    "duration":nDuration}
-        pMix = Mix(self.__pSystemModel, pParams)
+        pMix = Mix(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pMix.setDaemon(True)
         pMix.start()
         return pMix

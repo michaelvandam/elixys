@@ -31,8 +31,8 @@ class Initialize(UnitOperation):
       self.setGasTransferValve(OFF)
       for self.ReactorID in self.ReactorTuple:
         self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
-        self.setStopcockPosition(TRANSFERDEFAULT,self.ReactorID,False)
-      self.setStopcockPosition(F18DEFAULT,"Reactor1",False)
+        self.setStopcockPosition(TRANSFERDEFAULT,self.ReactorID)
+      self.setStopcockPosition(F18DEFAULT,"Reactor1")
 
       #Initialize cooling, vacuum, heaters and stir motors
       self.setCoolingSystem(OFF)
@@ -43,10 +43,8 @@ class Initialize(UnitOperation):
 
       #Set pressures
       self.setStatus("Initializing pressures")
-      self.setPressureRegulator(1,5)
-      self.setPressureRegulator(2,60)
-      time.sleep(1)     # Allow the stopcocks to fully turn
-      self.setPressureRegulator(2,47)
+      self.setPressureRegulator(1,GAS_TRANSFER_PRESSURE)
+      self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
       #Raise and open gripper    
       self.setStatus("Initializing robots")

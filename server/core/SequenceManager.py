@@ -109,7 +109,6 @@ class SequenceManager:
     """Exports the specified sequence from the database"""
     # Load the sequence
     pDBSequence = self.GetSequence(sRemoteUser, nSequenceID, False)
-    print "DB sequence = " + str(pDBSequence)
 
     # Get the system configuration
     pConfiguration = self.database.GetConfiguration(sRemoteUser)
@@ -154,7 +153,6 @@ class SequenceManager:
         # Replace any reagent ID with a name
         if pComponent.has_key("reagent"):
             pMinimalComponent["reagent"] = pComponent["reagent"]["name"]
-        print "Minimal component = " + str(pMinimalComponent)
 
         # Append the component
         pSequence["components"].append(pMinimalComponent)

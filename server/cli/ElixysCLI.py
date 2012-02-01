@@ -102,7 +102,6 @@ class ElixysCLI(BaseCLI.BaseCLI):
                 BaseCLI.BaseCLI.Run(self, bStartup)
                 bExit = True
             except Exception as ex:
-                print str(ex)
                 bStartup = False
 
 # Main function

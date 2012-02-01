@@ -54,6 +54,9 @@ ROBOT_POSITION_LIMIT = 60
 STATE_UPDATE_TIMEOUT = 3
 STATE_UPDATE_TIMEOUT_COUNT = 3
 
+# Liquid sensor threshold
+LIQUID_SENSOR_THRESHOLD = 1000
+
 # Constants for PLC command formatting
 MAX_PLC_READLENGTH = 0x350
 ICF = "80"    #Info Ctrl Field - Binary 80 or 81 [1][0=Cmd 1=Resp][00000][0 or 1=Resp Req]                      
@@ -384,9 +387,9 @@ class HardwareComm():
     # Reagent robot
     def MoveRobotToElute(self, nReactor):
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_Elute")
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
@@ -394,25 +397,25 @@ class HardwareComm():
         if ((nReactor == 1) and (nReagent == 1)) or ((nReactor == 3) and (nReagent == 4)):
             raise Exception("Reagent position is not allowed")
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToDelivery(self, nReactor, nPosition):
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToHome(self):
         if self.__pSystemModel != None:
-            if (self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() == False) or \
-               (self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp() == False):
-                raise Exception("Cannot move robot unless gripper and gas transfer are up")
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         self.__SetRobotPosition(self.__nReagentXAxis, 0)
         self.__SetRobotPosition(self.__nReagentYAxis, 0)
     def GripperUp(self):
@@ -451,8 +454,8 @@ class HardwareComm():
     # Reactor
     def MoveReactor(self, nReactor, sPositionName):
         if self.__pSystemModel != None:
-            if self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorUp() == True:
-                raise Exception("Cannot move reactor when it is up")
+            if not self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown():
+                raise Exception("Cannot move reactor robot unless reactor is down")
         nReactorOffset = self.__LookUpReactorOffset(nReactor)
         pPosition = self.__LookUpRobotPosition("Reactors_" + sPositionName)
         self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["y"]))
@@ -510,6 +513,11 @@ class HardwareComm():
         for nReactor in range(1,4):
             self.HomeReactorRobot(nReactor)
     def HomeReactorRobot(self, nReactor):
+        # Make sure the reactor is down
+        if self.__pSystemModel != None:
+            if not self.__pSystemModel.model["Reactor" + str(nReactor)]["MotionModel"].getCurrentReactorDown():
+                raise Exception("Cannot home reactor robot unless reactor is down")
+
         # Turn on the reactor axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
         time.sleep(0.1)
@@ -520,6 +528,12 @@ class HardwareComm():
 
     # Home the reagent robots
     def HomeReagentRobots(self):
+        # Make sure the gripper and gas transfer arms are up
+        if self.__pSystemModel != None:
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot home reagent robot unless gripper and gas transfer are up")
+
         # Turn on and home the X axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
         time.sleep(0.1)
@@ -726,14 +740,14 @@ class HardwareComm():
         # What mode are we in?
         if not self.IsFakePLC():
             # We are in normal mode.  Format and send the raw command to the PLC
-            sCommand = "010230"					            # Write bit to CIO memory
-            sCommand = sCommand + ("%0.4X" % nWordOffset)	# Memory offset (words)
-            sCommand = sCommand + ("%0.2X" % nBitOffset)    # Memory offset (bits)
-            sCommand = sCommand + "0001"				    # Number of bits to write
+            sCommand = "010230"                                 # Write bit to CIO memory
+            sCommand = sCommand + ("%0.4X" % nWordOffset)       # Memory offset (words)
+            sCommand = sCommand + ("%0.2X" % nBitOffset)        # Memory offset (bits)
+            sCommand = sCommand + "0001"                        # Number of bits to write
             if bValue:
-                sCommand = sCommand + "01"				    # Set bit
+                sCommand = sCommand + "01"                      # Set bit
             else:
-                sCommand = sCommand + "00"				    # Clear bit
+                sCommand = sCommand + "00"                      # Clear bit
             self.__SendRawCommand(sCommand)
         else:
             # We are in fake PLC mode.  Validate the address
@@ -764,11 +778,11 @@ class HardwareComm():
         # What mode are we in?
         if not self.IsFakePLC():
             # We are in normal mode.  Format and send the raw command to the PLC
-            sCommand = "0102B0"					                    # Write word to CIO memory
+            sCommand = "0102B0"	                                    # Write word to CIO memory
             sCommand = sCommand + ("%0.4X" % nAddress)              # Memory offset (words)
             sCommand = sCommand + "00"                              # Memory offset (bits)
-            sCommand = sCommand + "0001"				            # Number of words to write
-            sCommand = sCommand + ("%0.4X" % nValue)				# Set word
+            sCommand = sCommand + "0001"                            # Number of words to write
+            sCommand = sCommand + ("%0.4X" % nValue)                # Set word
             self.__SendRawCommand(sCommand)
         else:
             # We are in fake PLC mode.  Validate the address
@@ -946,6 +960,7 @@ class HardwareComm():
             pModel["CoolingSystem"].updateState(self.__GetBinaryValue("CoolingSystemOn"))
             pModel["VacuumSystem"].updateState(self.__GetBinaryValue("VacuumSystemOn"), self.__GetVacuumPressure())
             pModel["Valves"].updateState(self.__GetBinaryValue("Valves_GasTransferValve"), self.__GetBinaryValue("Valves_F18Load"), self.__GetBinaryValue("Valves_HPLCLoad"))
+            pModel["LiquidSensors"].updateState(self.__GetLiquidSensor(1), self.__GetLiquidSensor(2), self.__GetLiquidSensorRaw(1), self.__GetLiquidSensorRaw(2))
             pModel["PressureRegulator1"].updateState(self.__GetPressureRegulatorSetPressure(1), self.__GetPressureRegulatorActualPressure(1))
             pModel["PressureRegulator2"].updateState(self.__GetPressureRegulatorSetPressure(2), self.__GetPressureRegulatorActualPressure(2))
             pModel["ReagentDelivery"].updateState(nReagentRobotSetPositionReactor, nReagentRobotSetPositionReagent, nReagentRobotSetPositionDelivery,
@@ -1109,6 +1124,12 @@ class HardwareComm():
     def __GetVacuumPressure(self):
         nVacuumPLC = float(self.__GetAnalogValue("VacuumPressure"))
         return ((nVacuumPLC * self.__nVacuumGaugeSlope) + self.__nVacuumGaugeIntercept)
+
+    # Get liquid sensor values
+    def __GetLiquidSensor(self, nLiquidSensor):
+        return (self.__GetLiquidSensorRaw(nLiquidSensor) < LIQUID_SENSOR_THRESHOLD)
+    def __GetLiquidSensorRaw(self, nLiquidSensor):
+        return float(self.__GetAnalogValue("LiquidSensor" + str(nLiquidSensor) + "_LiquidValue"))
 
     # Get pressure regulator values
     def __GetPressureRegulatorSetPressure(self, nPressureRegulator):

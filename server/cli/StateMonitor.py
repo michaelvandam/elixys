@@ -78,7 +78,7 @@ class StateMonitorService(rpyc.Service):
         # Clear the screen and notify the user that the client has disconnected
         ClearScreen()
         Print("Elixys state monitoring system")
-        Print("CLI disconnected, waiting for another connection (press 'q' to quit)...")
+        Print("Server disconnected, waiting for another connection (press 'q' to quit)...")
  
     def exposed_UpdateState(self, sState):
         # Clear the screen and print the state
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Clear the screen and notify the user that we are waiting for the CLI to connect
     ClearScreen()
     Print("Elixys state monitoring system")
-    Print("Waiting for CLI to connect (press 'q' to quit)...")
+    Print("Waiting for the server to connect (press 'q' to quit)...")
     
     # Run the server until the user presses 'q' to quit
     while not Utilities.CheckForQuit():

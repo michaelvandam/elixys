@@ -23,6 +23,7 @@ from ReagentDeliveryModel import ReagentDeliveryModel
 from CoolingSystemModel import CoolingSystemModel
 from VacuumSystemModel import VacuumSystemModel
 from PressureRegulatorModel import PressureRegulatorModel
+from LiquidSensorsModel import LiquidSensorsModel
 from ValvesModel import ValvesModel
 import TimedLock
 import UnitOperation
@@ -74,6 +75,9 @@ class SystemModel:
         for nPressureRegulator in range(1, int(value) + 1):
           sPressureRegulator = "PressureRegulator" + str(nPressureRegulator)
           self.model[sPressureRegulator] = PressureRegulatorModel(sPressureRegulator, nPressureRegulator, self.hardwareComm, self.modelLock)
+      elif key == "LiquidSensors":
+        if value == "True":
+          self.model[key] = LiquidSensorsModel(key, self.hardwareComm, self.modelLock)
       elif key == "ReagentDelivery":
         if value == "True":
           self.model[key] = ReagentDeliveryModel(key, self.hardwareComm, self.modelLock)
@@ -253,6 +257,27 @@ class SystemModel:
       self.__sStateString += self.__PadString("Pressure regulator 2", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString("%.1f"%(fPressureRegulator2SetPressure), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += self.__PadString("%.1f"%(fPressureRegulator2ActualPressure), STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += "\n"
+
+      # Liquid sensors
+      bLiquidSensor1 = self.model["LiquidSensors"].getLiquidSensor1(False)
+      bLiquidSensor2 = self.model["LiquidSensors"].getLiquidSensor2(False)
+      fLiquidSensorRaw1 = self.model["LiquidSensors"].getLiquidSensorRaw1(False)
+      fLiquidSensorRaw2 = self.model["LiquidSensors"].getLiquidSensorRaw2(False)
+      self.__pStateObject["hardwarestate"]["liquidsensors"] = []
+      self.__pStateObject["hardwarestate"]["liquidsensors"].append({"type":"liquidsensorstate",
+        "name":"LS1",
+        "liquidpresent":bLiquidSensor1})
+      self.__pStateObject["hardwarestate"]["liquidsensors"].append({"type":"liquidsensorstate",
+        "name":"LS2",
+        "liquidpresent":bLiquidSensor2})
+      self.__sStateString += self.__PadString("Liquid sensor 1 (present/raw)", STATECOMMONCOLUMN1WIDTH)
+      self.__sStateString += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(self.__BoolToString(bLiquidSensor2) + "/%.1f"%(fLiquidSensorRaw1), STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += "\n"
+      self.__sStateString += self.__PadString("Liquid sensor 2 (present/raw)", STATECOMMONCOLUMN1WIDTH)
+      self.__sStateString += self.__PadString("", STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(self.__BoolToString(bLiquidSensor1) + "/%.1f"%(fLiquidSensorRaw2), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Valves

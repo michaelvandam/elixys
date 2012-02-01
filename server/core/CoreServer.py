@@ -487,7 +487,7 @@ class CoreServerDaemon(daemon):
                 gSystemModel.StartUp()
 
                 # Create the unit operations wrapper
-                gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel)
+                gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel, gDatabase)
 
                 # Create the core server and error message handler
                 pLogger = logging.getLogger("rpyc")

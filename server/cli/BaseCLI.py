@@ -9,8 +9,10 @@ import inspect
 import sys
 sys.path.append("/opt/elixys/hardware/")
 sys.path.append("/opt/elixys/core/")
+sys.path.append("/opt/elixys/database")
 from HardwareComm import HardwareComm
 from UnitOperationsWrapper import UnitOperationsWrapper
+from DBComm import *
 
 # ExecuteCommand implementation
 def ExecuteCommandImpl(sCommand, pUnitOperationsWrapper, pSystemModel, pHardwareComm):
@@ -46,8 +48,8 @@ def ExecuteCommandImpl(sCommand, pUnitOperationsWrapper, pSystemModel, pHardware
         nParameters = len(pParameters)
         if (nParameters == 1) and (pParameters[0] == ""):
             nParameters = 0
-        pFunctionParameters = inspect.getargspec(pFunction).args
-        if (nParameters + 1) != len(pFunctionParameters):
+        nFunctionParameters = len(inspect.getargspec(pFunction).args)
+        if (nParameters + 1) != nFunctionParameters:
             raise Exception("Incorrect number of arguments for " + sFunctionName)
 
         # Prepare each function parameter

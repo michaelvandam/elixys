@@ -21,6 +21,13 @@
         "role":"Administrator"},
 
         {"type":"user",
+        "username":"CLI",
+        "firstname":"",
+        "lastname":"",
+        "passwordhash":"",
+        "role":"Administrator"},
+
+        {"type":"user",
         "username":"Administrator",
         "firstname":"first",
         "lastname":"last",
