@@ -20,7 +20,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
 
 # Updates a component object based on a unit operation
 def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
-  pComponent["duration"] = pUnitOperations.transferTimer
+  pComponent["duration"] = int(pUnitOperation.transferTimer)
 
 # Transfer class
 class Transfer(UnitOperation):

@@ -30,9 +30,9 @@ EVAPORATEPOSITION = 3
 NA = ''
 CW = 'CW'
 CCW = 'CCW'
-F18DEFAULT = (NA,CCW,CCW)
-F18TRAP = (NA,CCW,CW)
-F18ELUTE = (NA,CW,CCW)
+F18DEFAULT = (NA,CCW,CW)
+F18TRAP = (NA,CCW,CCW)
+F18ELUTE = (NA,CW,CW)
 TRANSFERDEFAULT = (CCW,NA,NA)
 TRANSFERTRAP = (CW,NA,NA)
 TRANSFERELUTE = (CCW,NA,NA)
@@ -570,6 +570,7 @@ class UnitOperation(threading.Thread):
     self.error = error
     if raiseException:
       raise UnitOpError(error)
+    print error   # We need a way to get the error back to the CLI
     
   def setStopcockPosition(self,stopcockPositions,ReactorID=255):
     if (ReactorID==255):
@@ -818,21 +819,21 @@ class UnitOperation(threading.Thread):
       pTargetComponent["type"] = self.component["type"]
       pTargetComponent["componenttype"] = self.component["componenttype"]
 
-  def copyComponent(self, nSequenceID):
+  def copyComponent(self, nSourceSequenceID, nTargetSequenceID):
     """Creates a copy of the component in the database"""
     # Pull the original component from the database and create a deep copy
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
     pComponentCopy = copy.deepcopy(pDBComponent)
 
     # Allow the derived class a chance to alter the component copy
-    self.copyComponentImpl(nSequenceID, pComponentCopy)
+    self.copyComponentImpl(nSourceSequenceID, nTargetSequenceID, pComponentCopy)
 
     # Add the component to the database and return the ID
-    nComponentCopyID = self.database.CreateComponent(self.username, nSequenceID, pComponentCopy["componenttype"], pComponentCopy["name"], 
+    nComponentCopyID = self.database.CreateComponent(self.username, nTargetSequenceID, pComponentCopy["componenttype"], pComponentCopy["name"], 
       json.dumps(pComponentCopy))
     return nComponentCopyID
 
-  def copyComponentImpl(self, nSequenceID, pComponentCopy):
+  def copyComponentImpl(self, nSourceSequenceID, nTargetSequenceID, pComponentCopy):
     """Performs unit-operation specific copying"""
     # Base handler does nothing
     pass

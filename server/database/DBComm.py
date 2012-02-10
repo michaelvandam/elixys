@@ -14,6 +14,7 @@ import Utilities
 from configobj import ConfigObj
 import os
 import TimedLock
+import datetime
 
 # Suppress MySQLdb's annoying warnings
 import warnings
@@ -71,6 +72,7 @@ class DBComm:
   def Connect(self):
     """Connects to the database"""
     try:
+      # Connect to the database
       self.__pDatabase = MySQLdb.connect(host="localhost", user="Elixys", passwd="devel", db="Elixys")
       self.__pDatabase.autocommit(True)
     except:
@@ -78,6 +80,7 @@ class DBComm:
 
   def Disconnect(self):
     """Disconnects from the database"""
+    # Disconnect from the database
     if self.__pDatabase != None:
       self.__pDatabase.close()
       self.__pDatabase = None
@@ -90,19 +93,31 @@ class DBComm:
 
   def SystemLog(self, nLevel, sCurrentUsername, sMessage):
     """Logs a message to the SystemLog table in the database"""
+    # Drop the log message if it's above our logging level
     if nLevel > self.__nLogLevel:
       return
+
+    print sMessage
+    #return
+
+    # Log the message to the database
     if self.__pDatabase != None:
-      self.__CallStoredProcedure("SystemLog", (nLevel, sCurrentUsername, sMessage))
+      self.__CallStoredProcedure("SystemLog", (datetime.datetime.now(), nLevel, sCurrentUsername, sMessage))
     else:
       print sMessage
 
   def RunLog(self, nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage):
     """Logs a message to the RunLog table in the database"""
+    # Drop the log message if it's above our logging level
     if nLevel > self.__nLogLevel:
       return
+
+    print sMessage
+    #return
+
+    # Log the message to the database
     if self.__pDatabase != None:
-      self.__CallStoredProcedure("RunLog", (nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage))
+      self.__CallStoredProcedure("RunLog", (datetime.datetime.now(), nLevel, sCurrentUsername, nSequenceID, nComponentID, sMessage))
     else:
       print sMessage
 
@@ -125,8 +140,9 @@ class DBComm:
       fReactor3Collet2ActualTemperature, bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3ActualTemperature, nReactor3StirMotor, 
       fReactor3RaditationDetector):
     """Logs the system state to the StatusLog table in the database"""
+    # Log the message to the database
     if self.__pDatabase != None:
-      self.__CallStoredProcedure("StatusLog", (bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure,
+      self.__CallStoredProcedure("StatusLog", (datetime.datetime.now(), bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure,
         fPressureRegulator1ActualPressure, fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen,
         bHPLCLoadValveOpen, sReagentRobotPositionSet, sReagentRobotPositionActual, nReagentRobotPositionSetX, nReagentRobotPositionSetY, nReagentRobotPositionActualX,
         nReagentRobotPositionActualY, sReagentRobotStatusX, sReagentRobotStatusY, sReagentRobotErrorX, sReagentRobotErrorY, nReagentRobotControlX, nReagentRobotControlY, 
@@ -378,9 +394,8 @@ class DBComm:
   def CreateSequence(self, sCurrentUsername, sName, sComment, sType, nCassettes, nReagents, nColumns):
     """Creates a new sequence"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateSequence(%s, %s, %s, %i, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents, nColumns))
-    nSequenceID = 0
-    self.__CallStoredProcedure("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns, nSequenceID))
-    return self.__ExecuteQuery("SELECT @_CreateSequence_7")[0][0]
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns))
+    return pReturn[0][0]
 
   def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment, bValid):
     """Update a sequence"""
@@ -443,9 +458,8 @@ class DBComm:
   def GetReagentCassette(self, sCurrentUsername, nSequenceID, nReagentID):
     """Gets the cassette number that contains the given reagent"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagentCassette(%i, %i)" % (nSequenceID, nReagentID))
-    nCassette = 0
-    pCassetteRaw = self.__CallStoredProcedure("GetReagentCassette", (nSequenceID, nReagentID, nCassette))
-    return self.__ExecuteQuery("SELECT @_GetReagentCassette_2")[0][0]
+    pCassetteRaw, pReturn = self.__CallStoredProcedureWithReturn("GetReagentCassette", (nSequenceID, nReagentID))
+    return pReturn[0][0]
 
   def UpdateReagent(self, sCurrentUsername, nReagentID, bAvailable, sName, sDescription):
     """Updates a existing reagent"""
@@ -495,7 +509,7 @@ class DBComm:
   def GetComponentsBySequence(self, sCurrentUsername, nSequenceID):
     """Gets all of the components associated with the given sequence ID"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetComponentsBySequence(%i)" % (nSequenceID, ))
-    pComponentsRaw = self.__CallStoredProcedure("GetComponentsBySequence", (nSequenceID, ))
+    pComponentsRaw = self.__CallStoredProcedure("GetComponentsBySequence", (nSequenceID, )) 
     pComponents = []
     for pComponentRaw in pComponentsRaw:
         pComponent, nPreviousComponentID, nNextComponentID = self.__CreateComponent(pComponentRaw)
@@ -505,16 +519,14 @@ class DBComm:
   def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
-    nComponentID = 0
-    self.__CallStoredProcedure("CreateComponent", (nSequenceID, sType, sName, sContent, nComponentID))
-    return self.__ExecuteQuery("SELECT @_CreateComponent_4")[0][0]
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateComponent", (nSequenceID, sType, sName, sContent))
+    return pReturn[0][0]
 
   def InsertComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent, nInsertID):
     """Inserts a component into a sequence"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sName, sContent, nInsertID))
-    nComponentID = 0
-    self.__CallStoredProcedure("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID, nComponentID))
-    return self.__ExecuteQuery("SELECT @_InsertComponent_5")[0][0]
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID))
+    return pReturn[0][0]
 
   def UpdateComponent(self, sCurrentUsername, nComponentID, sType, sName, sDetails):
     """Updates the specified component"""
@@ -552,74 +564,128 @@ class DBComm:
 
   def __CallStoredProcedure(self, sProcedureName, pArguments):
     """Calls the given SQL stored procedure"""
-    nReconnectCount = 0
     pRows = None
     sError = ""
+    bLocked = False
     try:
-      self.__pDatabaseLock.Acquire()
-      while (pRows == None) and (sError == ""):
-        try:
-          # Call the stored procedure
-          pCursor = self.__pDatabase.cursor()
-          pCursor.callproc(sProcedureName, pArguments)
-          pRows = pCursor.fetchall()
-          pCursor.close()
-        except MySQLdb.Error, e:
-          # Try and recycle the database connection on MySQL error
-          if nReconnectCount < 3:
-            self.__pDatabase = None
-            self.Connect()
-            nReconnectCount += 1
-          else:
-            self.__pDatabase = None
-            sError = "SQL Error %d: %s" % (e.args[0], e.args[1])
-        except Exception, ex:
-            sError = str(ex)
-    finally:
-      self.__pDatabaseLock.Release()
+      # Acquire the database lock
+      self.__pDatabaseLock.Acquire(10)
+      bLocked = True
 
-    # Raise an exception on error or warn if the connection dropped
+      # Acquire the cursor and internal database reference
+      pCursor = self.__pDatabase.cursor()
+      pInternalDB = pCursor._get_db()
+
+      # Format the argument list
+      sArguments = ""
+      for pArgument in pArguments:
+        if len(sArguments) != 0:
+          sArguments += ", "
+        sArguments += pInternalDB.literal(pArgument)
+
+      # Invoke the stored procedure
+      sQuery = "CALL " + sProcedureName + "(" + sArguments + ")"
+      pCursor._query(sQuery)
+      pCursor._executed = sQuery
+      pRows = pCursor.fetchall()
+      pCursor.close()
+    except Exception, ex:
+      # Remember error
+      sError = str(ex)
+    finally:
+      # Release the database lock
+      if bLocked:
+        self.__pDatabaseLock.Release()
+
+    # Raise an exception if an error occurred
     if sError != "":
       self.__pDatabase = None
       raise Exception(sError)
-    if nReconnectCount != 0:
-      self.SystemLog(LOG_WARNING, "System", "MySQL error in __CallStoredProcedure(), connection reestablished")
+
+    # Return the result
     return pRows
+
+  def __CallStoredProcedureWithReturn(self, sProcedureName, pArguments):
+    """Calls the given SQL stored procedure where the last parameter is a return value"""
+    pRows = None
+    pReturn = None
+    sError = ""
+    bLocked = False
+    try:
+      # Acquire the database lock
+      self.__pDatabaseLock.Acquire(10)
+      bLocked = True
+
+      # Acquire the cursor and internal database reference
+      pCursor = self.__pDatabase.cursor()
+      pInternalDB = pCursor._get_db()
+
+      # Set the return parameter as a server variable
+      sReturnValueName = "@_" + sProcedureName + "_ret"
+      sQuery = "SET " + sReturnValueName + "=0"
+      pCursor._query(sQuery)
+      pCursor.nextset()
+
+      # Format the argument list
+      sArguments = ""
+      for pArgument in pArguments:
+        if len(sArguments) != 0:
+          sArguments += ", "
+        sArguments += pInternalDB.literal(pArgument)
+      sArguments += ", " + sReturnValueName
+
+      # Invoke the stored procedure
+      sQuery = "CALL " + sProcedureName + "(" + sArguments + ")"
+      pCursor._query(sQuery)
+      pCursor._executed = sQuery
+      pRows = pCursor.fetchall()
+      pCursor.close()
+    except Exception, ex:
+      # Remember error
+      sError = str(ex)
+    finally:
+      # Release the database lock
+      if bLocked:
+        self.__pDatabaseLock.Release()
+
+    # Raise an exception if an error occurred
+    if sError != "":
+      self.__pDatabase = None
+      raise Exception(sError)
+
+    # Fetch the return value
+    pReturn = self.__ExecuteQuery("SELECT " + sReturnValueName)
+    return pRows, pReturn
 
   def __ExecuteQuery(self, sQuery):
     """Executes the given SQL query"""
-    nReconnectCount = 0
     pRows = None
     sError = ""
+    bLocked = False
     try:
-      self.__pDatabaseLock.Acquire()
-      while (pRows == None) and (sError == ""):
-        try:
-          # Execute the query
-          pCursor = self.__pDatabase.cursor()
-          pCursor.execute(sQuery)
-          pRows = pCursor.fetchall()
-          pCursor.close()
-        except MySQLdb.Error, e:
-          # Try and recycle the database connection on MySQL error
-          if nReconnectCount < 3:
-            self.__pDatabase = None
-            self.Connect()
-            nReconnectCount += 1
-          else:
-            self.__pDatabase = None
-            sError = "SQL Error %d: %s" % (e.args[0], e.args[1])
-        except Exception, ex:
-          sError = str(ex)
-    finally:
-      self.__pDatabaseLock.Release()
+      # Acquire the database lock
+      self.__pDatabaseLock.Acquire(10)
+      bLocked = True
 
-    # Raise an exception on error or warn if the connection dropped
+      # Execute the query
+      pCursor = self.__pDatabase.cursor()
+      pCursor.execute(sQuery)
+      pRows = pCursor.fetchall()
+      pCursor.close()
+    except Exception, ex:
+      # Remember error
+      sError = str(ex)
+    finally:
+      # Release the database lock
+      if bLocked:
+        self.__pDatabaseLock.Release()
+
+    # Raise an exception if an error occurred
     if sError != "":
       self.__pDatabase = None
       raise Exception(sError)
-    if nReconnectCount != 0:
-      self.SystemLog(LOG_WARNING, "System", "MySQL error in __ExecuteQuery(), connection reestablished")
+
+    # Return the result
     return pRows
 
   def __CreateLog(self, pLogRaw):

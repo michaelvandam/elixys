@@ -13,10 +13,12 @@ from threading import Thread
 import time
 from DBComm import *
 import json
+from SequenceManager import SequenceManager
 
 class Sequence(Thread):
-  def __init__(self, sRemoteUser, nSourceSequenceID, pSequenceManager, pSystemModel):
+  def __init__(self, sRemoteUser, nSourceSequenceID, pSystemModel):
     """Constructor"""
+
     # Call base class init
     Thread.__init__(self)
 
@@ -26,8 +28,6 @@ class Sequence(Thread):
     self.sourceComponentID = 0
     self.runSequenceID = 0
     self.runComponentID = 0
-    self.sequenceManager = pSequenceManager
-    self.database = self.sequenceManager.database
     self.systemModel = pSystemModel
     self.initializing = True
     self.running = False
@@ -36,6 +36,11 @@ class Sequence(Thread):
     self.runWillPause = False
     self.runIsPaused = False
     self.runAborted = False
+
+    # Create database connection and sequence manager
+    self.database = DBComm()
+    self.database.Connect()
+    self.sequenceManager = SequenceManager(self.database)
 
     # Fetch the sequence from the database and make sure it is valid
     self.sourceSequence = self.sequenceManager.GetSequence(self.username, self.sourceSequenceID)
@@ -52,7 +57,7 @@ class Sequence(Thread):
     for pComponent in self.sourceSequence["components"]:
       if pComponent["componenttype"] == Cassette.componentType:
         pUnitOperation = UnitOperations.createFromComponent(self.sourceSequenceID, pComponent, self.username, self.database)
-        pUnitOperation.copyComponent(self.runSequenceID)
+        pUnitOperation.copyComponent(self.sourceSequenceID, self.runSequenceID)
 
   def setStartComponent(self, nComponentID):
     """Sets the first component of the run"""
@@ -113,6 +118,7 @@ class Sequence(Thread):
         self.sourceComponentID = pSourceComponent["id"]
         if self.initializing and (self.startComponentID != 0) and (self.sourceComponentID != self.startComponentID):
           self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
+          nCurrentComponent += 1
           continue
 
         # Update our initializing and running flags
@@ -122,13 +128,14 @@ class Sequence(Thread):
         # Ignore any previous summary component
         if pSourceComponent["componenttype"] == Summary.componentType:
           self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
+          nCurrentComponent += 1
           continue
 
         # Create and run the next unit operation
         self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Starting unit operation " + str(self.sourceComponentID) + " (" + 
           pSourceComponent["name"] + ")")
         pSourceUnitOperation = UnitOperations.createFromComponent(self.sourceSequenceID, pSourceComponent, self.username, self.sequenceManager.database, self.systemModel)
-        self.runComponentID = pSourceUnitOperation.copyComponent(self.runSequenceID)
+        self.runComponentID = pSourceUnitOperation.copyComponent(self.sourceSequenceID, self.runSequenceID)
         pRunComponent = self.sequenceManager.GetComponent(self.username, self.runComponentID, self.runSequenceID)
         pRunUnitOperation = UnitOperations.createFromComponent(self.runSequenceID, pRunComponent, self.username, self.sequenceManager.database, self.systemModel)
         pRunUnitOperation.setDaemon(True)

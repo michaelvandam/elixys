@@ -4,7 +4,6 @@ Elixys Sequence Manager
 """
 
 import json
-import SequenceValidation
 import sys
 sys.path.append("/opt/elixys/core/unitoperations")
 import UnitOperations
@@ -13,7 +12,6 @@ class SequenceManager:
 
   def __init__(self, pDatabase):
     self.database = pDatabase
-    self.validation = SequenceValidation.SequenceValidation(pDatabase, self)
 
   ### Sequence functions ###
 
@@ -42,10 +40,10 @@ class SequenceManager:
     pSequence = self.GetSequence(sRemoteUser, nSequenceID)
     for pComponent in pSequence["components"]:
       pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
-      pUnitOperation.copyComponent(nNewSequenceID)
+      pUnitOperation.copyComponent(nSequenceID, nNewSequenceID)
 
     # Validate the sequence
-    self.validation.ValidateSequenceFull(sRemoteUser, nNewSequenceID)
+    self.ValidateSequenceFull(sRemoteUser, nNewSequenceID)
 
     # Return the ID of the new sequence
     return nNewSequenceID  
@@ -103,7 +101,7 @@ class SequenceManager:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 
     # Validate the sequence
-    self.validation.ValidateSequenceFull(sRemoteUser, nSequenceID)
+    self.ValidateSequenceFull(sRemoteUser, nSequenceID)
 
   def ExportSequence(self, sRemoteUser, nSequenceID, sFilename):
     """Exports the specified sequence from the database"""
@@ -193,8 +191,8 @@ class SequenceManager:
       json.dumps(pDBComponent), nInsertionID)
 
     # Initialize the new component's validation fields
-    self.validation.InitializeComponent(sRemoteUser, nSequenceID, nComponentID)
-    self.validation.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
+    self.InitializeComponent(sRemoteUser, nSequenceID, nComponentID)
+    self.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
     return nComponentID
 
   def UpdateComponent(self, sRemoteUser, nSequenceID, nComponentID, nInsertionID, pComponent):
@@ -210,7 +208,7 @@ class SequenceManager:
       self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
 
     # Do a quick validation of the component
-    self.validation.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
+    self.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
 
     # Move the component as needed
     if nInsertionID != None:
@@ -220,6 +218,58 @@ class SequenceManager:
     """ Deletes a component """
     # Delete the component from the database
     self.database.DeleteComponent(sRemoteUser, nComponentID)
+
+    # Flag the sequence validation as dirty
+    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
+
+  ### Validation functions ###
+
+  def ValidateSequenceFull(self, sRemoteUser, nSequenceID):
+    """Performs a full validation of the sequence"""
+    # Load the sequence and all of the reagents
+    pSequence = self.GetSequence(sRemoteUser, nSequenceID)
+    pAllReagents = self.database.GetReagentsBySequence(sRemoteUser, nSequenceID)
+
+    # Filter reagents to keep only those that are available
+    pAvailableReagents = []
+    for pReagent in pAllReagents:
+      if pReagent["available"]:
+        pAvailableReagents.append(pReagent)
+
+    # Do a full validation of each component
+    bValid = True
+    for pComponent in pSequence["components"]:
+      pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
+      if not pUnitOperation.validateFull(pAvailableReagents):
+        bValid = False
+      pUnitOperation.saveValidation()
+
+    # Update the valid flag in the database and return
+    self.database.UpdateSequence(sRemoteUser, nSequenceID, pSequence["metadata"]["name"], pSequence["metadata"]["comment"], bValid)
+    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, False)
+    return bValid
+
+  def InitializeComponent(self, sRemoteUser, nSequenceID, nComponentID):
+    """Initializes the validation fields of a newly added component"""
+    # Initialize the validation fields of the raw component
+    pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
+    self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pUnitOperation.component["name"], json.dumps(pUnitOperation.component))
+
+    # Flag the sequence validation as dirty
+    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
+
+  def ValidateComponent(self, sRemoteUser, nSequenceID, nComponentID):
+    """Performs a quick validation of the given component"""
+    # Load the component and do a quick validation
+    pComponent = self.GetComponent(sRemoteUser, nComponentID, nSequenceID)
+    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
+    pUnitOperation.validateQuick()
+
+    # Load the raw component and update just the validation field
+    pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
+    pDBComponent["validationerror"] = pUnitOperation.component["validationerror"]
+    self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
 
     # Flag the sequence validation as dirty
     self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)

@@ -3,67 +3,102 @@
 Validates synthesis sequences
 """
 
+### Imports
 import json
 import sys
 sys.path.append("/opt/elixys/core/unitoperations")
+sys.path.append("/opt/elixys/database")
 import UnitOperations
+import threading
+from DBComm import *
+import SequenceManager
+import time
+from daemon import daemon
+import signal
 
-class SequenceValidation:
+# Sequence validation daemon exit function
+gSequenceValidationDaemon = None
+def OnExit(pSequenceValidationDaemon, signal, func=None):
+    global gSequenceValidationDaemon
+    if gSequenceValidationDaemon != None:
+        gSequenceValidationDaemon.bTerminate = True
 
-  def __init__(self, pDatabase, pSequenceManager):
-    """Constructor"""
-    self.database = pDatabase
-    self.sequenceManager = pSequenceManager
+# Sequence validation daemon
+class SequenceValidationDaemon(daemon):
+    def __init__(self, sPidFile):
+        """Initializes the sequence validation daemon"""
+        global gSequenceValidationDaemon
+        daemon.__init__(self, sPidFile, "/opt/elixys/logs/SequenceValidation.log")
+        self.bTerminate = False
+        gSequenceValidationDaemon = self
 
-  ### Validation functions ###
+    def run(self):
+        """Runs the sequence validation daemon"""
+        global gSequenceValidationDaemon
+        pDatabase = None
+        pSequenceManager = None
+        while not self.bTerminate:
+            try:
+                # Connect to the database
+                pDatabase = DBComm()
+                pDatabase.Connect()
+                pDatabase.SystemLog(LOG_INFO, "System", "Validation process starting")
 
-  def ValidateSequenceFull(self, sRemoteUser, nSequenceID):
-    """Performs a full validation of the sequence"""
-    # Load the sequence and all of the reagents
-    pSequence = self.sequenceManager.GetSequence(sRemoteUser, nSequenceID)
-    pAllReagents = self.database.GetReagentsBySequence(sRemoteUser, nSequenceID)
+                # Create the sequence manager
+                pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
-    # Filter reagents to keep only those that are available
-    pAvailableReagents = []
-    for pReagent in pAllReagents:
-      if pReagent["available"]:
-        pAvailableReagents.append(pReagent)
+                # Install the kill signal handler
+                signal.signal(signal.SIGTERM, OnExit)
+                pDatabase.SystemLog(LOG_INFO, "System", "Validation process started")
 
-    # Do a full validation of each component
-    bValid = True
-    for pComponent in pSequence["components"]:
-      pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
-      if not pUnitOperation.validateFull(pAvailableReagents):
-        bValid = False
-      pUnitOperation.saveValidation()
+                # Run until we get the signal to stop
+                while not self.bTerminate:
+                    # Iterate through all the saved sequences in the database and see if any are marked as dirty
+                    bAllSequencesClean = True
+                    pSequences = pDatabase.GetAllSequences("System", "Saved")
+                    for pSequence in pSequences:
+                       if pSequence["dirty"]:
+                           # Perform a full validation on the sequence
+                           pDatabase.SystemLog(LOG_INFO, "System", "Performing full validation on sequence " + str(pSequence["id"]))
+                           pSequenceManager.ValidateSequenceFull("System", pSequence["id"])
+                           bAllSequencesClean = False
 
-    # Update the valid flag in the database and return
-    self.database.UpdateSequence(sRemoteUser, nSequenceID, pSequence["metadata"]["name"], pSequence["metadata"]["comment"], bValid)
-    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, False)
-    return bValid
+                    # Nap for a bit if we didn't find any work to do
+                    if bAllSequencesClean:
+                        time.sleep(0.5)
+                pDatabase.SystemLog(LOG_INFO, "System", "Validation process received quit signal")
+            except Exception as ex:
+                # Log the error
+                pDatabase.SystemLog(LOG_ERROR, "System", "Validation process failed: " + str(ex))
+            finally:
+                if pSequenceManager != None:
+                    pSequenceManager = SequenceManager.SequenceManager(pDatabase)
+                    pSequenceManager = None
+                if pDatabase != None:
+                    pDatabase.SystemLog(LOG_INFO, "System", "Validation process exiting")
+                    pDatabase.Disconnect()
+                    pDatabase = None
 
-  def InitializeComponent(self, sRemoteUser, nSequenceID, nComponentID):
-    """Initializes the validation fields of a newly added component"""
-    # Initialize the validation fields of the raw component
-    pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
-    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
-    self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pUnitOperation.component["name"], json.dumps(pUnitOperation.component))
+            # Sleep for a second before we respawn
+            if not self.bTerminate:
+                time.sleep(1)
+        gSequenceValidationDaemon = None
 
-    # Flag the sequence validation as dirty
-    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
-
-  def ValidateComponent(self, sRemoteUser, nSequenceID, nComponentID):
-    """Performs a quick validation of the given component"""
-    # Load the component and do a quick validation
-    pComponent = self.sequenceManager.GetComponent(sRemoteUser, nComponentID, nSequenceID)
-    pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
-    pUnitOperation.validateQuick()
-
-    # Load the raw component and update just the validation field
-    pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
-    pDBComponent["validationerror"] = pUnitOperation.component["validationerror"]
-    self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
-
-    # Flag the sequence validation as dirty
-    self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
+# Main function
+if __name__ == "__main__":
+    if len(sys.argv) == 3:
+        pDaemon = SequenceValidationDaemon(sys.argv[2])
+        if 'start' == sys.argv[1]:
+            pDaemon.start()
+        elif 'stop' == sys.argv[1]:
+            pDaemon.stop()
+        elif 'restart' == sys.argv[1]:
+            pDaemon.restart()
+        else:
+            print "Unknown command"
+            sys.exit(2)
+        sys.exit(0)
+    else:
+        print "usage: %s start|stop|restart pidfile" % sys.argv[0]
+        sys.exit(2)
 

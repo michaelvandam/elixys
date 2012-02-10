@@ -83,11 +83,11 @@ class Cassette(UnitOperation):
     # Update the field we want to save
     pTargetComponent["available"] = self.component["available"]
 
-  def copyComponent(self, nSequenceID):
+  def copyComponent(self, nSourceSequenceID, nTargetSequenceID):
     """Creates a copy of the component in the database"""
     # Cassettes can only be copied by the database which needs to be done before this function is called.  Locate the cassette in the
     # new sequence which corresponds to this one
-    pNewCassette = self.database.GetCassette(self.username, nSequenceID, self.component["reactor"] - 1)
+    pNewCassette = self.database.GetCassette(self.username, nTargetSequenceID, self.component["reactor"] - 1)
 
     # Update the cassette details
     self.updateComponentDetails(pNewCassette)
@@ -97,13 +97,13 @@ class Cassette(UnitOperation):
     pConfiguration = self.database.GetConfiguration(self.username)
     for nReagent in range(1, pConfiguration["reagentsperreactor"] + 1):
       pReagent = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], str(nReagent))
-      self.database.UpdateReagentByPosition(self.username, nSequenceID, self.component["reactor"], str(nReagent), pReagent["available"], pReagent["name"], pReagent["description"])
+      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], str(nReagent), pReagent["available"], pReagent["name"], pReagent["description"])
 
     # Copy the column details
     for nColumn in range(0, pConfiguration["columnsperreactor"]):
       sPosition = chr(ord("A") + nColumn)
       pColumn = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], sPosition)
-      self.database.UpdateReagentByPosition(self.username, nSequenceID, self.component["reactor"], sPosition, pColumn["available"], pColumn["name"], pColumn["description"])
+      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], sPosition, pColumn["available"], pColumn["name"], pColumn["description"])
 
     # Return the cassette ID
     return pNewCassette["id"]

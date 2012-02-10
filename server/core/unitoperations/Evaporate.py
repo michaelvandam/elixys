@@ -51,7 +51,6 @@ class Evaporate(UnitOperation):
       self.setStatus("Starting motor")
       self.setStirSpeed(self.stirSpeed)
       self.setStatus("Moving robot")
-      raise Exception("Woo-hoo!")
       self.setRobotPosition()
       self.setGasTransferValve(ON)
       self.setVacuumSystem(ON)

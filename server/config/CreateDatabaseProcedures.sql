@@ -8,12 +8,13 @@ DELIMITER //
  ***************************************************************************************************************************************************************/
 
 /* Logs a message to the SystemLog table:
+ *   IN Timestamp - Log message time stamp
  *   IN Level - Log message level
  *   IN Username - Name of the user that generated the log message
  *   IN Message - Log message
  */
 DROP PROCEDURE IF EXISTS SystemLog;
-CREATE PROCEDURE SystemLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iMessage VARCHAR(1024))
+CREATE PROCEDURE SystemLog(IN iTimestamp TIMESTAMP, IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iMessage VARCHAR(1024))
     BEGIN
         DECLARE lUserID INT UNSIGNED;
 
@@ -22,11 +23,12 @@ CREATE PROCEDURE SystemLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN 
 
         -- Insert the entry
         IF lUserID IS NOT NULL THEN
-            INSERT INTO SystemLog VALUES (NULL, NULL, iLevel, lUserID, iMessage);
+            INSERT INTO SystemLog VALUES (NULL, iTimestamp, iLevel, lUserID, iMessage);
         END IF;
     END //
 
 /* Logs a message to the RunLog table:
+ *   IN Timestamp - Log message timestamp
  *   IN Level - Log message level
  *   IN Username - Name of the user that generated the log message
  *   IN SequenceID - ID of the sequence that is currently running
@@ -34,7 +36,7 @@ CREATE PROCEDURE SystemLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN 
  *   IN Message - Log message
  */
 DROP PROCEDURE IF EXISTS RunLog;
-CREATE PROCEDURE RunLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iSequenceID INT UNSIGNED, IN iComponentID INT UNSIGNED, IN iMessage VARCHAR(1024))
+CREATE PROCEDURE RunLog(IN iTimestamp TIMESTAMP, IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iSequenceID INT UNSIGNED, IN iComponentID INT UNSIGNED, IN iMessage VARCHAR(1024))
     BEGIN
         DECLARE lUserID INT UNSIGNED;
 
@@ -43,13 +45,13 @@ CREATE PROCEDURE RunLog(IN iLevel INT UNSIGNED, IN iUsername VARCHAR(30), IN iSe
 
         -- Insert the entry
         IF lUserID IS NOT NULL THEN
-            INSERT INTO RunLog VALUES (NULL, NULL, iLevel, lUserID, iSequenceID, iComponentID, iMessage);
+            INSERT INTO RunLog VALUES (NULL, iTimestamp, iLevel, lUserID, iSequenceID, iComponentID, iMessage);
         END IF;
     END //
 
 /* Logs a message to the StatusLog table containing the current status of the system. */
 DROP PROCEDURE IF EXISTS StatusLog;
-CREATE PROCEDURE StatusLog(IN iVacuumSystemOn BOOL, IN iVacuumSystemPressure FLOAT, IN iCoolingSystemOn BOOL, IN iPressureRegulator1SetPressure FLOAT,
+CREATE PROCEDURE StatusLog(IN iTimestamp TIMESTAMP, IN iVacuumSystemOn BOOL, IN iVacuumSystemPressure FLOAT, IN iCoolingSystemOn BOOL, IN iPressureRegulator1SetPressure FLOAT,
       IN iPressureRegulator1ActualPressure FLOAT, IN iPressureRegulator2SetPressure FLOAT, IN iPressureRegulator2ActualPressure FLOAT, IN iGasTransferValveOpen BOOL,
       IN iF18LoadValveOpen BOOL, IN iHPLCLoadValveOpen BOOL, IN iReagentRobotPositionSet VARCHAR(64), IN iReagentRobotPositionActual VARCHAR(64), IN iReagentRobotPositionSetX INT,
       IN iReagentRobotPositionSetY INT, IN iReagentRobotPositionActualX INT, IN iReagentRobotPositionActualY INT, IN iReagentRobotStatusX VARCHAR(64),
@@ -75,7 +77,7 @@ CREATE PROCEDURE StatusLog(IN iVacuumSystemOn BOOL, IN iVacuumSystemPressure FLO
       IN iReactor3StirMotor INT UNSIGNED, IN iReactor3RaditationDetector FLOAT)
     BEGIN
         -- Insert the entry
-        INSERT INTO StatusLog VALUES (NULL, NULL, iVacuumSystemOn, iVacuumSystemPressure, iCoolingSystemOn, iPressureRegulator1SetPressure, iPressureRegulator1ActualPressure,
+        INSERT INTO StatusLog VALUES (NULL, iTimestamp, iVacuumSystemOn, iVacuumSystemPressure, iCoolingSystemOn, iPressureRegulator1SetPressure, iPressureRegulator1ActualPressure,
             iPressureRegulator2SetPressure, iPressureRegulator2ActualPressure, iGasTransferValveOpen, iF18LoadValveOpen, iHPLCLoadValveOpen, iReagentRobotPositionSet,
             iReagentRobotPositionActual, iReagentRobotPositionSetX, iReagentRobotPositionSetY, iReagentRobotPositionActualX, iReagentRobotPositionActualY, iReagentRobotStatusX,
             iReagentRobotStatusY, iReagentRobotErrorX, iReagentRobotErrorY, iReagentRobotControlX, iReagentRobotControlY, iReagentRobotCheckX, iReagentRobotCheckY, iGripperSetUp,

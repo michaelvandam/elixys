@@ -21,8 +21,12 @@ import CoreServerProxy
 import Exceptions
 from DBComm import *
 
+# Create a RPC connection to the core server
+gCoreServer = CoreServerProxy.CoreServerProxy()
+
 def application(pEnvironment, fStartResponse):
     # Handle the request
+    global gCoreServer
     pDatabase = None
     try:
         # Take a starting timestamp
@@ -39,9 +43,6 @@ def application(pEnvironment, fStartResponse):
         pDatabase = DBComm()
         pDatabase.Connect()
 
-        # Create a RPC connection to the core server
-        pCoreServer = CoreServerProxy.CoreServerProxy()
-
         # Load the client state and log the request
         pClientState = pDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
         pDatabase.SystemLog(LOG_INFO, sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath)
@@ -51,24 +52,24 @@ def application(pEnvironment, fStartResponse):
         pBody = None
         nBodyLength = 0
         if sRequestMethod == "GET":
-            pHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
+            pHandler = GetHandler.GetHandler(gCoreServer, pDatabase)
         elif sRequestMethod == "POST":
             nBodyLength = int(pEnvironment["CONTENT_LENGTH"])
             pBody = pEnvironment["wsgi.input"].read(nBodyLength)
-            pHandler = PostHandler.PostHandler(pCoreServer, pDatabase)
+            pHandler = PostHandler.PostHandler(gCoreServer, pDatabase)
         elif sRequestMethod == "DELETE":
-            pHandler = DeleteHandler.DeleteHandler(pCoreServer, pDatabase)
+            pHandler = DeleteHandler.DeleteHandler(gCoreServer, pDatabase)
         else:
             raise Exception("Unknown request method: " + sRequestMethod)
 
         # Handle the request
         pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
     except Exceptions.SequenceNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
+        pResponse = ExceptionHandler.HandleSequenceNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
     except Exceptions.ComponentNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
+        pResponse = ExceptionHandler.HandleComponentNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
     except Exceptions.ReagentNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleReagentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
+        pResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
     except Exceptions.InvalidSequenceException as ex:
         pResponse = ExceptionHandler.HandleInvalidSequence(pDatabase, sRemoteUser, ex.nSequenceID)
     except Exceptions.StateMisalignmentException as ex:
@@ -84,7 +85,7 @@ def application(pEnvironment, fStartResponse):
     # Log the timestamp
     if pDatabase != None:
         nElapsed = time.time() - nStart
-        pDatabase.SystemLog(LOG_DEBUG, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
+        pDatabase.SystemLog(LOG_INFO, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
         pDatabase.Disconnect()
 
     # Send the response

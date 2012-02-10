@@ -25,6 +25,8 @@ chmod 755 *.sh
 
 # Install, start and initialize MySQL
 yum -y install mysql mysql-server apr-util-mysql
+cp elixys/config/my.cnf /etc
+restorecon /etc/my.cnf
 /sbin/service mysqld start
 ./InitializeDatabase.sh
 cd /root
@@ -70,15 +72,19 @@ rm -rf MySQL-python-1.2.3*
 cp elixys/server/config/init.d/ElixysCoreServer /etc/init.d
 cp elixys/server/config/init.d/ElixysFakePLC /etc/init.d
 cp elixys/server/config/init.d/ElixysRtmpd /etc/init.d
+cp elixys/server/config/init.d/ElixysValidation /etc/init.d
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysCoreServer
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysFakePLC
 chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysRtmpd
+chcon --user=system_u --role=object_r --type=initrc_exec_t /etc/init.d/ElixysValidation
 chmod 755 /etc/init.d/ElixysCoreServer
 chmod 755 /etc/init.d/ElixysFakePLC
 chmod 755 /etc/init.d/ElixysRtmpd
+chmod 755 /etc/init.d/ElixysValidation
 chkconfig --add ElixysCoreServer
 chkconfig --add ElixysFakePLC
 chkconfig --add ElixysRtmpd
+chkconfig --add ElixysValidation
 
 # Set the services to start at boot
 echo "service httpd start" >> /etc/rc.local
@@ -86,6 +92,7 @@ echo "service mysqld start" >> /etc/rc.local
 echo "service ElixysCoreServer start" >> /etc/rc.local
 echo "service ElixysFakePLC start" >> /etc/rc.local
 echo "service ElixysRtmpd start" >> /etc/rc.local
+echo "service ElixysValidation start" >> /etc/rc.local
 
 # Initialize Apache directory tree
 rm -rf /var/www/*
@@ -96,7 +103,6 @@ mkdir /var/www/wsgi
 # Install the Apache configuration file
 mv -f elixys/server/config/httpd.conf /etc/httpd/conf
 restorecon /etc/httpd/conf/httpd.conf
-#chcon --user=system_u --role=object_r --type=httpd_config_t -R /etc/httpd/conf/httpd.conf
 
 # Create a directory where Apache has write permissions for Python Eggs 
 mkdir /var/www/eggs
@@ -116,7 +122,6 @@ chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 # Update the firewall settings
 mv -f elixys/server/config/iptables /etc/sysconfig/
 restorecon /etc/sysconfig/iptables
-#chcon --user=system_u --role=object_r --type=etc_t /etc/sysconfig/iptables
 /sbin/service iptables restart
 
 # Put shortcuts on the user's desktop

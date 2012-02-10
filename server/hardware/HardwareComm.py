@@ -515,7 +515,7 @@ class HardwareComm():
     def HomeReactorRobot(self, nReactor):
         # Make sure the reactor is down
         if self.__pSystemModel != None:
-            if not self.__pSystemModel.model["Reactor" + str(nReactor)]["MotionModel"].getCurrentReactorDown():
+            if not self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown():
                 raise Exception("Cannot home reactor robot unless reactor is down")
 
         # Turn on the reactor axis

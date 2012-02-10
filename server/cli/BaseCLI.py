@@ -112,6 +112,7 @@ def SendCommandImpl(sCommand, pHardware):
     """Parses and sends the raw command"""
     pCommandComponents = sCommand.split(" ")
     self.pHardwareComm._HardwareComm__SendRawCommand(pCommandComponents[1])
+    return ""
 
 # GetState implementation
 def GetStateImpl(pSystemModel):
