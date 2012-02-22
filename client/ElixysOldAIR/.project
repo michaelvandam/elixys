@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ElixysAIR</name>
+	<name>ElixysOldAIR</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -25,7 +25,7 @@
 		<link>
 			<name>[source path] src</name>
 			<type>2</type>
-			<locationURI>DOCUMENTS/Elixys/src</locationURI>
+			<locationURI>DOCUMENTS/ElixysOld/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

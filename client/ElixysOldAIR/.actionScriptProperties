@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="ElixysAIR.mxml" projectUUID="98e57de4-78bb-4d07-8cf6-b6589be9b697" version="10">
+<actionScriptProperties analytics="false" mainApplicationPath="ElixysOldAIR.mxml" projectUUID="98e57de4-78bb-4d07-8cf6-b6589be9b697" version="10">
   <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
     <compilerSourcePath>
-      <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/Elixys/src"/>
+      <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/ElixysOld/src"/>
     </compilerSourcePath>
     <libraryPath defaultLinkType="0">
       <libraryPathEntry kind="4" path="">
@@ -16,7 +16,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="ElixysAIR.mxml">
+    <application path="ElixysOldAIR.mxml">
       <airExcludes/>
     </application>
   </applications>
@@ -25,13 +25,10 @@
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
   <buildTargets>
     <buildTarget buildTargetName="default">
-      <airSettings airCertificatePath="C:/AppleDevCerts/AIRSigningCert.p12" airTimestamp="true" version="1">
+      <airSettings airCertificatePath="C:/AppleDevCerts/AIRSigningCert.p12" airTimestamp="false" version="1">
         <airExcludes/>
       </airSettings>
       <actionScriptSettings version="1"/>
     </buildTarget>
   </buildTargets>
 </actionScriptProperties>
-
-
-

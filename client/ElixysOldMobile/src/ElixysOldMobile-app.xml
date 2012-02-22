@@ -8,7 +8,7 @@
 
 	<!-- Initial window configuration -->
 	<initialWindow>
-		<content>ElixysMobile.swf</content>
+		<content>ElixysOldMobile.swf</content>
 		<aspectRatio>landscape</aspectRatio>
 		<autoOrients>false</autoOrients>
 		<fullScreen>false</fullScreen>
