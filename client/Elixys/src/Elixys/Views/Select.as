@@ -1,13 +1,14 @@
 package Elixys.Views
 {
-	import Elixys.Extended.Form;
-	
 	import com.danielfreeman.madcomponents.*;
+
+	import Elixys.Assets.Styling;
+	import Elixys.Components.Screen;
 	
 	import flash.display.Sprite;
 	
-	// This select view is an extension of our extended Form class
-	public class Select extends Form
+	// This select view is an extension of the Screen class
+	public class Select extends Screen
 	{
 		/***
 		 * Construction
@@ -44,7 +45,14 @@ package Elixys.Views
 		 * Member variables
 		 **/
 
-		// Select view XML
-		protected static const SELECT:XML = <frame background="#00FFFF" />;
+		// Select screen XML
+		protected static const SELECT:XML =
+			<frame background="#FF00FF">
+				<label>
+					<font color={Styling.TEXT_GRAY} size="40">
+						Select page
+					</font>
+				</label>
+			</frame>;
 	}
 }

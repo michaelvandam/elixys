@@ -1,11 +1,13 @@
 package Elixys.Extended
 {
 	import Elixys.Events.TransitionCompleteEvent;
+	import Elixys.Components.*;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
+	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.TimerEvent;
 	import flash.text.AntiAliasType;
@@ -30,10 +32,166 @@ package Elixys.Extended
 		 **/
 		
 		// Creates a new label
-		public function CreateLabel(xml:XML):DisplayObject
+		public function CreateLabel(pXML:XML, pAttributes:Attributes):UILabel
 		{
-			return parseLabel(xml, _attributes);
+			return UILabel(parseLabel(pXML, pAttributes));
 		}
+
+		// Appends a new child to the display list
+		public function AppendChild(pChild:*):void
+		{
+			_children.push(pChild);
+		}
+
+		// Locates the main application in the display tree
+		public function GetMainApplication():Elixys
+		{
+			// Walk the tree and find the main application
+			if (m_pElixys == null)
+			{
+				var pDOC:DisplayObjectContainer = this;
+				while (!(pDOC is Elixys) && (pDOC != null))
+				{
+					pDOC = pDOC.parent;
+				}
+				if (pDOC != null)
+				{
+					m_pElixys = pDOC as Elixys;
+				}
+			}
+			return m_pElixys;
+		}
+		
+		// Walks the display list until a hard width is found
+		public static function FindWidth(pDisplayObject:DisplayObject):int
+		{
+			// Walk the display list until we get a width value
+			while (pDisplayObject.width == 0)
+			{
+				pDisplayObject = pDisplayObject.parent;
+				if (pDisplayObject == null)
+				{
+					throw Error("Failed to determine object width");
+				}
+			}
+			
+			// Return the width
+			return pDisplayObject.width;
+		}
+		
+		// Walks the display list until a hard height is found
+		public static function FindHeight(pDisplayObject:DisplayObject):int
+		{
+			// Walk the display list until we get a height value
+			while (pDisplayObject.height == 0)
+			{
+				pDisplayObject = pDisplayObject.parent;
+				if (pDisplayObject == null)
+				{
+					throw Error("Failed to determine object height");
+				}
+			}
+			
+			// Return the height
+			return pDisplayObject.height;
+		}
+
+		// Set the movie clip position so it covers the entire form
+		public static function PositionSkin(pSkin:MovieClip, nWidth:int, nHeight:int):void
+		{
+			pSkin.x = 0;
+			pSkin.y = 0;
+			pSkin.width = nWidth;
+			pSkin.height = nHeight;
+		}
+
+		// Set the movie clip and text positions so they are centered over the button and scaled to the specified percent
+		// width or height
+		public static function PositionSkinAndLabel(pButton:Button, pSkin:MovieClip, pLabel:UILabel, nSkinWidthPercent:int, 
+			nSkinHeightPercent:int):void
+		{
+			// Determine the skin width and height
+			var nSkinWidth:int, nSkinHeight:int;
+			if (nSkinWidthPercent != 0)
+			{
+				nSkinWidth = pSkin.parent.width * nSkinWidthPercent / 100;
+				nSkinHeight = nSkinWidth * (pSkin.height / pSkin.width);
+			}
+			else
+			{
+				nSkinHeight = pSkin.parent.height * nSkinHeightPercent / 100;
+				nSkinWidth = nSkinHeight * (pSkin.width / pSkin.height);
+			}
+
+			// Determine the scaled skin position
+			var nSkinX:int = ((pButton.width - nSkinWidth) / 2);
+			var nSkinY:int = ((pButton.height - nSkinHeight) / 2);
+			
+			// Set theskin position
+			pSkin.x = nSkinX + pButton.x;
+			pSkin.y = nSkinY + pButton.y;
+			pSkin.width = nSkinWidth;
+			pSkin.height = nSkinHeight;
+			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
+				pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
+		}
+
+		/*
+		// Set the movie clip and text positions so they are centered over the form and scaled to the specified percent
+		// width or height
+		public static function PositionSkinAndLabel(pSkin:MovieClip, pLabel:UILabel, nWidth:int, nHeight:int, 
+													nScaleX:Number, nScaleY:Number, nSkinWidthPercent:int, nSkinHeightPercent:int):void
+		{
+			var nGap:int = 4;
+			trace("Position skin center");
+			trace("  Parent " + pSkin.parent + " is (" + nWidth + ", " + nHeight + ") with scale (" + nScaleX + ", " + nScaleY + ")");
+			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
+			pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
+			
+			
+			// Determine the skin width and height in scaled parent dimensions
+			var nSkinWidthScaled:int, nSkinHeightScaled:int;
+			if (nSkinWidthPercent != 0)
+			{
+				nSkinWidthScaled = nWidth * nSkinWidthPercent / 100;
+				nSkinHeightScaled = nSkinWidthScaled * (pSkin.height / pSkin.scaleY) / (pSkin.width / pSkin.scaleX);
+			}
+			else
+			{
+				nSkinHeightScaled = nHeight * nSkinHeightPercent / 100;
+				nSkinWidthScaled = nSkinHeightScaled * (pSkin.width / pSkin.scaleX) / (pSkin.height / pSkin.scaleY);
+			}
+			
+			if (pLabel.text == "SEQUENCER")
+			{
+				trace("pLabel.textHeight = " + pLabel.textHeight);
+			}
+			// Determine the scaled skin position
+			var nSkinXScaled:int = ((nWidth - nSkinWidthScaled) / 2);
+			var nSkinYScaled:int = ((nHeight - nSkinHeightScaled) / 2) - (pLabel.textHeight / 2) - (nGap / 2);
+			
+			// Set the unscaled skin position
+			pSkin.x = nSkinXScaled / nScaleX;
+			pSkin.y = nSkinYScaled / nScaleY;
+			pSkin.width = nSkinWidthScaled / nScaleX;
+			pSkin.height = nSkinHeightScaled / nScaleY;
+			
+			// Determine the scaled label position
+			var nLabelXScaled:int = ((nWidth - pLabel.textWidth) / 2);
+			var nLabelYScaled:int = nSkinYScaled + nSkinHeightScaled + nGap;
+			
+			// Set the unscaled text position
+			pLabel.x = pSkin.x;	//nLabelXScaled / nScaleX;
+			pLabel.y = pSkin.y;	//nLabelYScaled / nScaleY;
+			pLabel.scaleX = pSkin.width;	//1 / nScaleX;
+			pLabel.scaleY = pSkin.height;	//1 / nScaleY;
+			//pLabel.width = pLabel.textWidth / nScaleX;
+			//pLabel.height = pLabel.textHeight / nScaleY;
+			
+			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
+			pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
+		}
+		*/
 
 		/***
 		 * Overrides
@@ -86,6 +244,26 @@ package Elixys.Extended
 			return button;
 		}
 
+		// Determine if the display object should be included in MadComponent's layout
+		protected override function included(child:DisplayObject):Boolean
+		{
+			// Refer to MadSprite's include flag
+			if (child is MadSprite)
+			{
+				return MadSprite(child).includeInLayout;
+			}
+			
+			// Refer to MovieClip's visibility flag
+			if (child is MovieClip)
+			{
+				return MovieClip(child).visible;
+			}
+			
+			// Include by default
+			return true;
+		}
+
+
 		/***
 		 * Transitions
 		 **/
@@ -132,35 +310,6 @@ package Elixys.Extended
 			// Clear the transition flag and dispatch the completion event
 			m_bInTransition = false;
 			dispatchEvent(new TransitionCompleteEvent(this));
-		}
-		
-		/***
-		 * Member functions
-		 **/
-		
-		// Loads the next child component.  Return true if loading or false if the load is complete
-		public function LoadNext():Boolean
-		{
-			return false;
-		}
-		
-		// Locates the main application in the display tree
-		public function GetMainApplication():Elixys
-		{
-			// Walk the tree and find the main application
-			if (m_pElixys == null)
-			{
-				var pDOC:DisplayObjectContainer = this;
-				while (!(pDOC is Elixys) && (pDOC != null))
-				{
-					pDOC = pDOC.parent;
-				}
-				if (pDOC != null)
-				{
-					m_pElixys = pDOC as Elixys;
-				}
-			}
-			return m_pElixys;
 		}
 		
 		/***

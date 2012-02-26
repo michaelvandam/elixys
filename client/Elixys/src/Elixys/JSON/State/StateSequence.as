@@ -14,12 +14,18 @@ package Elixys.JSON.State
 			super(data, existingcontent);
 			
 			// Validate the object type
-			if ((ClientState != null) && (ClientState.Screen != m_sType))
+			if ((ClientState != null) && !CheckState(ClientState.Screen))
 			{
 				throw new Error("State object mismatch");
 			}
 		}
-		
+
+		// Checks for a state match
+		static public function CheckState(sState:String):Boolean
+		{
+			return ((sState == VIEWTYPE) || (sState == EDITTYPE) || (sState == RUNTYPE));
+		}
+
 		// Types
 		static public var VIEWTYPE:String = "VIEW";
 		static public var EDITTYPE:String = "EDIT";

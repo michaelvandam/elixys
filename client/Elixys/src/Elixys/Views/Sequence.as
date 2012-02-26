@@ -1,13 +1,14 @@
 package Elixys.Views
 {
+	import Elixys.Components.Screen;
 	import Elixys.Extended.Form;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Sprite;
 	
-	// This sequence view is an extension of our extended Form class
-	public class Sequence extends Form
+	// This sequence view is an extension of the screen class
+	public class Sequence extends Screen
 	{
 		/***
 		 * Construction

@@ -21,8 +21,8 @@ package Elixys.Extended
 			}
 
 			// Extend the UI tokens with our custom classes
-			var pNewTokens:Array = ["loading", "login", "logo", "progress"];
-			var pNewClasses:Array = [Loading, Login, Logo, Progress];
+			var pNewTokens:Array = ["loading", "login", "logo", "progress", "navigationbar"];
+			var pNewClasses:Array = [Loading, Login, Logo, Progress, NavigationBar];
 			UI.extend(pNewTokens, pNewClasses);
 		}
 	}

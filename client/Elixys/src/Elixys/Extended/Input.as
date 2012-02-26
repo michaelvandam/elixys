@@ -2,6 +2,7 @@ package Elixys.Extended
 {
 	import Elixys.Assets.Constants;
 	import Elixys.Assets.Styling;
+	import Elixys.Components.*;
 	import Elixys.Interfaces.ITextBox;
 	
 	import com.danielfreeman.madcomponents.*;
@@ -78,17 +79,17 @@ package Elixys.Extended
 		protected function CreateTextBox():ITextBox
 		{
 			// Check where we are running
-			var pTextBoxClass:Class;
 			if (Capabilities.playerType == "Desktop")
 			{
 				// This is the AIR player, use native text
-				pTextBoxClass = getDefinitionByName("com.christiancantrell.nativetext::NativeText") as Class;
+				var pNativeTextClass:Class = getDefinitionByName("com.christiancantrell.nativetext::NativeText") as Class;
+				return (new pNativeTextClass()) as ITextBox;
 			}
 			else
 			{
-				// This is a browser, use basic text
+				// This is a browser, use basic text box
+				return (new TextBox()) as ITextBox;
 			}
-			return (new pTextBoxClass()) as ITextBox;
 		}
 
 		/***
@@ -98,7 +99,7 @@ package Elixys.Extended
 		// Override the default drawOutline
 		protected override function drawOutline(pressed:Boolean = false):void
 		{
-			// Allow NativeText to do the drawing
+			// Allow the text box to do the drawing
 		}
 	}
 }

@@ -26,13 +26,13 @@ package Elixys.JSON.State
 		}
 
 		// Data wrappers
-		public function get Text():String
-		{
-			return super.flash_proxy::getProperty("text");
-		}
 		public function get ID():String
 		{
 			return super.flash_proxy::getProperty("id");
+		}
+		public function get Enabled():Boolean
+		{
+			return super.flash_proxy::getProperty("enabled");
 		}
 	}
 }

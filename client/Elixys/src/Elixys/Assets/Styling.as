@@ -9,6 +9,7 @@ package Elixys.Assets
 		public static var APPLICATION_BACKGROUND:String = "#FFFFFF";
 		public static var TEXT_GRAY:String = "#3B3036";
 		public static var TEXT_LIGHTGRAY:String = "#BBBBBB";
+		public static var TEXT_WHITE:String = "#FFFFFF";
 		
 		// Get the HTML color as an Actionscript value
 		public static function AS3Color(sColor:String):uint

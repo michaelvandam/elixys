@@ -56,7 +56,7 @@ package
 			
 			// Create the initial UI
 			ElixysUI.Initialize();
-			UI.create(this, PAGES, 1024, 768);
+			UI.create(this, PAGES, stage.stageWidth, stage.stageHeight);
 			m_pPages = UIPages(UI.findViewById("Pages"));
 			
 			// Get a reference to the loading view and inform it that creation is complete
@@ -93,7 +93,7 @@ package
 			m_nCurrentLoadStep = 0;
 			
 			// Create the loading timer
-			m_pLoadTimer = new Timer(50, 1);
+			m_pLoadTimer = new Timer(30, 1);
 			m_pLoadTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnLoadTimerComplete);
 			
 			// Kick off the loading process
@@ -118,8 +118,8 @@ package
 			while (nIndex < m_pScreens.length)
 			{
 				// Ask this class to load the next step
-				var pForm:Form = m_pScreens[nIndex] as Form;
-				if (pForm.LoadNext())
+				var pScreen:Screen = m_pScreens[nIndex] as Screen;
+				if (pScreen.LoadNext())
 				{
 					// The next step has loaded
 					++m_nCurrentLoadStep;
@@ -146,7 +146,10 @@ package
 				pPages.push(pNextScreen);
 				m_pPages.attachPages(pPages);
 				m_pPages.xml.appendChild(pNextScreen.xml);
-				
+
+				// Update the layout
+				m_pPages.layout(m_pPages.attributes);
+
 				// The next screen has been loaded
 				++m_nCurrentLoadStep;
 				LoadNext();
@@ -155,6 +158,8 @@ package
 			
 			// Loading is complete.  Set our references to the various pages
 			m_pLogin = m_pScreens[LOGIN_INDEX - 1];
+			m_pHome = m_pScreens[HOME_INDEX - 1];
+			m_pSelect = m_pScreens[SELECT_INDEX - 1];
 			
 			// Inform the loading screen and wait until the transition completes
 			m_pLoading.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoadingFinishedTransitionComplete);
@@ -344,7 +349,8 @@ package
 			// Remove the event listener
 			m_pLogin.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
 			
-			// Slide in the current screen
+			// Show the current screen
+			UpdateState();
 			
 			// Start the state update timer
 		}
@@ -404,13 +410,80 @@ package
 		}
 		
 		/***
+		 * State functions
+		 **/
+		
+		// Update the currently displayed state
+		protected function UpdateState():void
+		{
+			// Handle the pop up window first
+			if (m_pState.ClientState.PromptState.Show)
+			{
+				trace("Show popup");
+				/*
+				// Create and display the pop up window
+				if (_viewPrompt == null)
+				{
+					_viewPrompt = new PromptView();
+					_viewPrompt.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
+					PopUpManager.addPopUp(_viewPrompt, this, true);
+				}
+				
+				// Update the pop up state
+				_viewPrompt.UpdateState(pState);
+				PopUpManager.centerPopUp(_viewPrompt);
+				*/
+			}
+			/*
+			else if (_viewPrompt != null)
+			{
+				// Remove the pop up window
+				PopUpManager.removePopUp(_viewPrompt);
+				_viewPrompt = null;
+			}
+			*/
+			
+			// Determine the screen we should be showing
+			var nPageIndex:uint;
+			var pScreen:Screen;
+			if (m_pState.ClientState.Screen == StateHome.TYPE)
+			{
+				nPageIndex = HOME_INDEX;
+				pScreen = m_pHome;
+			}
+			else if (StateSelect.CheckState(m_pState.ClientState.Screen))
+			{
+				nPageIndex = SELECT_INDEX;
+				pScreen = m_pSelect;
+			}
+			else if (StateSequence.CheckState(m_pState.ClientState.Screen))
+			{
+				nPageIndex = SEQUENCE_INDEX;
+			}
+			else
+			{
+				trace("Unknown client state received from server: " + m_pState.ClientState.Screen);
+			}
+
+			// Update the target screen
+			pScreen.UpdateState(m_pState);
+
+			// Check if the screen has changed
+			if (nPageIndex != m_pPages.pageNumber)
+			{
+				// Show the new screen
+				m_pPages.goToPage(nPageIndex);
+			}
+		}
+
+		/***
 		 * Member variables
 		 **/
 		
 		// XML page list
 		protected static const PAGES:XML = 
-			<pages id="Pages">
-				<loading id="Loading" border="false"/>
+			<pages id="Pages" alignV="fill" alignH="fill">
+				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;
 		
 		// Pages
@@ -423,9 +496,11 @@ package
 		protected var m_nCurrentLoadStep:uint;
 		
 		// Screen variables
-		protected static var m_pScreenClasses:Array = [Login, Home, Select, Sequence];
-		protected static var m_pScreens:Array = new Array;
-		protected static var m_pLogin:Login;
+		protected var m_pScreenClasses:Array = [Login, Home, Select, Sequence];
+		protected var m_pScreens:Array = new Array;
+		protected var m_pLogin:Login;
+		protected var m_pHome:Home;
+		protected var m_pSelect:Select;
 		
 		// Transition update interval (milliseonds)
 		public static var TRANSITION_UPDATE_INTERVAL:uint = 20;

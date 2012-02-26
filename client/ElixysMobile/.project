@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>ElixysMobile</name>
-	<comment/>
+	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
@@ -24,10 +24,14 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>[source path] src</name>
+			<name>[source path] Elixys-src</name>
 			<type>2</type>
 			<locationURI>DOCUMENTS/Elixys/src</locationURI>
 		</link>
+		<link>
+			<name>[source path] ElixysAIR-src</name>
+			<type>2</type>
+			<locationURI>DOCUMENTS/ElixysAIR/src</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
-
