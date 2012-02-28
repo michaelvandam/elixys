@@ -43,25 +43,6 @@ package Elixys.Extended
 			_children.push(pChild);
 		}
 
-		// Locates the main application in the display tree
-		public function GetMainApplication():Elixys
-		{
-			// Walk the tree and find the main application
-			if (m_pElixys == null)
-			{
-				var pDOC:DisplayObjectContainer = this;
-				while (!(pDOC is Elixys) && (pDOC != null))
-				{
-					pDOC = pDOC.parent;
-				}
-				if (pDOC != null)
-				{
-					m_pElixys = pDOC as Elixys;
-				}
-			}
-			return m_pElixys;
-		}
-		
 		// Walks the display list until a hard width is found
 		public static function FindWidth(pDisplayObject:DisplayObject):int
 		{
@@ -95,103 +76,6 @@ package Elixys.Extended
 			// Return the height
 			return pDisplayObject.height;
 		}
-
-		// Set the movie clip position so it covers the entire form
-		public static function PositionSkin(pSkin:MovieClip, nWidth:int, nHeight:int):void
-		{
-			pSkin.x = 0;
-			pSkin.y = 0;
-			pSkin.width = nWidth;
-			pSkin.height = nHeight;
-		}
-
-		// Set the movie clip and text positions so they are centered over the button and scaled to the specified percent
-		// width or height
-		public static function PositionSkinAndLabel(pButton:Button, pSkin:MovieClip, pLabel:UILabel, nSkinWidthPercent:int, 
-			nSkinHeightPercent:int):void
-		{
-			// Determine the skin width and height
-			var nSkinWidth:int, nSkinHeight:int;
-			if (nSkinWidthPercent != 0)
-			{
-				nSkinWidth = pSkin.parent.width * nSkinWidthPercent / 100;
-				nSkinHeight = nSkinWidth * (pSkin.height / pSkin.width);
-			}
-			else
-			{
-				nSkinHeight = pSkin.parent.height * nSkinHeightPercent / 100;
-				nSkinWidth = nSkinHeight * (pSkin.width / pSkin.height);
-			}
-
-			// Determine the scaled skin position
-			var nSkinX:int = ((pButton.width - nSkinWidth) / 2);
-			var nSkinY:int = ((pButton.height - nSkinHeight) / 2);
-			
-			// Set theskin position
-			pSkin.x = nSkinX + pButton.x;
-			pSkin.y = nSkinY + pButton.y;
-			pSkin.width = nSkinWidth;
-			pSkin.height = nSkinHeight;
-			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
-				pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
-		}
-
-		/*
-		// Set the movie clip and text positions so they are centered over the form and scaled to the specified percent
-		// width or height
-		public static function PositionSkinAndLabel(pSkin:MovieClip, pLabel:UILabel, nWidth:int, nHeight:int, 
-													nScaleX:Number, nScaleY:Number, nSkinWidthPercent:int, nSkinHeightPercent:int):void
-		{
-			var nGap:int = 4;
-			trace("Position skin center");
-			trace("  Parent " + pSkin.parent + " is (" + nWidth + ", " + nHeight + ") with scale (" + nScaleX + ", " + nScaleY + ")");
-			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
-			pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
-			
-			
-			// Determine the skin width and height in scaled parent dimensions
-			var nSkinWidthScaled:int, nSkinHeightScaled:int;
-			if (nSkinWidthPercent != 0)
-			{
-				nSkinWidthScaled = nWidth * nSkinWidthPercent / 100;
-				nSkinHeightScaled = nSkinWidthScaled * (pSkin.height / pSkin.scaleY) / (pSkin.width / pSkin.scaleX);
-			}
-			else
-			{
-				nSkinHeightScaled = nHeight * nSkinHeightPercent / 100;
-				nSkinWidthScaled = nSkinHeightScaled * (pSkin.width / pSkin.scaleX) / (pSkin.height / pSkin.scaleY);
-			}
-			
-			if (pLabel.text == "SEQUENCER")
-			{
-				trace("pLabel.textHeight = " + pLabel.textHeight);
-			}
-			// Determine the scaled skin position
-			var nSkinXScaled:int = ((nWidth - nSkinWidthScaled) / 2);
-			var nSkinYScaled:int = ((nHeight - nSkinHeightScaled) / 2) - (pLabel.textHeight / 2) - (nGap / 2);
-			
-			// Set the unscaled skin position
-			pSkin.x = nSkinXScaled / nScaleX;
-			pSkin.y = nSkinYScaled / nScaleY;
-			pSkin.width = nSkinWidthScaled / nScaleX;
-			pSkin.height = nSkinHeightScaled / nScaleY;
-			
-			// Determine the scaled label position
-			var nLabelXScaled:int = ((nWidth - pLabel.textWidth) / 2);
-			var nLabelYScaled:int = nSkinYScaled + nSkinHeightScaled + nGap;
-			
-			// Set the unscaled text position
-			pLabel.x = pSkin.x;	//nLabelXScaled / nScaleX;
-			pLabel.y = pSkin.y;	//nLabelYScaled / nScaleY;
-			pLabel.scaleX = pSkin.width;	//1 / nScaleX;
-			pLabel.scaleY = pSkin.height;	//1 / nScaleY;
-			//pLabel.width = pLabel.textWidth / nScaleX;
-			//pLabel.height = pLabel.textHeight / nScaleY;
-			
-			trace("  Skin " + pSkin + " is (" + pSkin.width + ", " + pSkin.height + ") with scale (" + pSkin.scaleX + ", " +
-			pSkin.scaleY + ") is located at (" + pSkin.x + ", " + pSkin.y + ")");
-		}
-		*/
 
 		/***
 		 * Overrides
@@ -323,8 +207,5 @@ package Elixys.Extended
 		protected var m_fAlphaStep:Number = 0;
 		protected var m_fEndAlpha:Number = 0;
 		protected var m_pFadeTimer:Timer;
-		
-		// Main Elixys application
-		protected var m_pElixys:Elixys;
 	}
 }

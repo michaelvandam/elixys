@@ -23,6 +23,10 @@ package Elixys.Components
 		 * ITextBox interface functions
 		 **/
 
+		public override function set border(border:Boolean):void
+		{
+			super.border = border;
+		}
 		public function set borderThickness(borderThickness:uint):void
 		{
 			// Not supported 

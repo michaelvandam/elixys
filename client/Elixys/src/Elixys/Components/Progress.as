@@ -62,7 +62,7 @@ package Elixys.Components
 					<frame />
 					<rows gapV="0" heights="38,8">
 						<label useEmbedded="true" alignH="left" alignV="top">
-							<font face="GothamMedium" color={Styling.TEXT_GRAY} size="18">
+							<font face="GothamMedium" color={Styling.TEXT_DARKERGRAY} size="18">
 								LOADING
 							</font>
 						</label>

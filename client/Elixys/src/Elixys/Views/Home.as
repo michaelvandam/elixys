@@ -2,7 +2,9 @@ package Elixys.Views
 {
 	import Elixys.Assets.Styling;
 	import Elixys.Components.*;
+	import Elixys.Events.*;
 	import Elixys.Extended.*;
+	import Elixys.JSON.Post.PostHome;
 	import Elixys.JSON.State.State;
 	import Elixys.JSON.State.StateHome;
 	
@@ -20,10 +22,10 @@ package Elixys.Views
 		 * Construction
 		 **/
 		
-		public function Home(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
+		public function Home(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
-			super(screen, HOME, attributes, row, inGroup);
+			super(screen, pElixys, HOME, attributes, row, inGroup);
 		}
 
 		/***
@@ -67,6 +69,7 @@ package Elixys.Views
 			// Load the navigation bar
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
 			m_pNavigationBar = new NavigationBar(pContainer, NAVIGATION, pAttributes);
+			m_pNavigationBar.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			
 			// Append the navigation bar to the XML and refresh
 			pContainer.xml.appendChild(NAVIGATION);
@@ -102,6 +105,22 @@ package Elixys.Views
 			m_pNavigationBar.UpdateButtons(pStateHome.Buttons);
 		}
 
+		// Called when a button on the navigation bar is clicked
+		protected function OnButtonClick(event:ButtonEvent):void
+		{
+			// Handle the log out button
+			if (event.button == "LOGOUT")
+			{
+				m_pElixys.dispatchEvent(new Event(ElixysEvents.LOGOUT));
+				return;
+			}
+			
+			// Send the button click to the server
+			var pPostHome:PostHome = new PostHome();
+			pPostHome.TargetID = event.button;
+			DoPost(pPostHome, "HOME");
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -111,48 +130,53 @@ package Elixys.Views
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
 				<rows gapV="0" border="false" heights="18%,64%" alignH="fill" alignV="fill">
 					<frame id="home_navigationbar_container" alignV="fill" alignH="fill" />
-					<columns id="home_logo_container" gapH="0" widths="50%,40%" alignH="fill" alignV="fill" />
+					<columns id="home_logo_container" gapH="0" widths="34%,66%" alignH="fill" alignV="fill" />
 				</rows>
 			</frame>;
 
 		// Navigation bar XML
 		protected static const NAVIGATION:XML =
-			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)}
-					enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}>
-				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35"
+			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)}>
+				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
-				<navigationbaroption name="MYACCOUNT" foregroundskinheightpercent="35"
+				<navigationbaroption name="MYACCOUNT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_myAccount_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_myAccount_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_myAccount_disabled)}>
 					MY ACCOUNT
 				</navigationbaroption>
-				<navigationbaroption name="MANAGEUSERS" foregroundskinheightpercent="35"
+				<navigationbaroption name="MANAGEUSERS" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_manageUsers_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_manageUsers_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_manageUsers_disabled)}>
 					MANAGE USERS
 				</navigationbaroption>
-				<navigationbaroption name="VIEWLOGS" foregroundskinheightpercent="35"
+				<navigationbaroption name="VIEWLOGS" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_exportData_up)}
-						foregroundskindown={getQualifiedClassName(mainNav_exportData_up)} 
-						foregroundskindisabled={getQualifiedClassName(mainNav_exportData_up)}>
+						foregroundskindown={getQualifiedClassName(mainNav_exportData_down)}
+						foregroundskindisabled={getQualifiedClassName(mainNav_exportData_disabled)}>
 					VIEW LOGS
 				</navigationbaroption>
-				<navigationbaroption name="VIEWRUN" foregroundskinheightpercent="35"
+				<navigationbaroption name="VIEWRUN" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_activeRun_up)}
-						foregroundskindown={getQualifiedClassName(mainNav_activeRun_up)} 
-						foregroundskindisabled={getQualifiedClassName(mainNav_activeRun_up)}>
+						foregroundskindown={getQualifiedClassName(mainNav_activeRun_down)} 
+						foregroundskindisabled={getQualifiedClassName(mainNav_activeRun_disabled)}>
 					VIEW ACTIVE RUN
 				</navigationbaroption>
-				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35"
+				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
 						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}
-						foregroundskindown={getQualifiedClassName(mainNav_logOut_up)} 
-						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_up)}>
+						foregroundskindown={getQualifiedClassName(mainNav_logOut_down)} 
+						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_disabled)}>
 					LOG OUT
 				</navigationbaroption>
 			</navigationbar>;

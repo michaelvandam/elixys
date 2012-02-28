@@ -53,26 +53,26 @@ package Elixys.JSON.State
 			}
 			return m_pClientState;
 		}
-		public function get NavigationButtons():Array
+		public function get Buttons():Array
 		{
 			// Parse the buttons
-			if (m_pNavigationButtons == null)
+			if (m_pButtons == null)
 			{
-				m_pNavigationButtons = new Array();
-				var pButtons:Array = super.flash_proxy::getProperty("navigationbuttons");
+				m_pButtons = new Array();
+				var pButtons:Array = super.flash_proxy::getProperty("buttons");
 				for each (var pButtonObject:Object in pButtons)
 				{
 					var pButton:Button = new Button(null, pButtonObject);
-					m_pNavigationButtons.push(pButton);
+					m_pButtons.push(pButton);
 				}
 			}
-			return m_pNavigationButtons;
+			return m_pButtons;
 		}
 		
 		// State components
-		private var m_pUser:Elixys.JSON.State.User;
-		private var m_pServerState:Elixys.JSON.State.ServerState;
-		private var m_pClientState:Elixys.JSON.State.ClientState;
-		private var m_pNavigationButtons:Array;
+		protected var m_pUser:Elixys.JSON.State.User;
+		protected var m_pServerState:Elixys.JSON.State.ServerState;
+		protected var m_pClientState:Elixys.JSON.State.ClientState;
+		protected var m_pButtons:Array;
 	}
 }

@@ -100,7 +100,7 @@ package Elixys.JSON.State
 		}
 		
 		// Default format
-		private var m_sDefault:String = "{ \"type\":\"sequencemetadata\", \"name\":\"\", \"time\":\"\", \"date\":\"\", " +
+		protected var m_sDefault:String = "{ \"type\":\"sequencemetadata\", \"name\":\"\", \"time\":\"\", \"date\":\"\", " +
 			"\"comment\":\"\", \"id\":\"\", \"creator\":\"\", \"operations\":\"\" }";
 	}
 }

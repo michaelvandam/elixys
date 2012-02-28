@@ -110,11 +110,11 @@ package Elixys.JSON.State
 		}
 
 		// State components
-		private var m_pVacuumState:VacuumState;
-		private var m_pLiquidSensors:Array;
-		private var m_pPressureRegulators:Array;
-		private var m_pValves:Array;
-		private var m_pReagentRobot:ReagentRobotState;
-		private var m_pReactors:Array;
+		protected var m_pVacuumState:VacuumState;
+		protected var m_pLiquidSensors:Array;
+		protected var m_pPressureRegulators:Array;
+		protected var m_pValves:Array;
+		protected var m_pReagentRobot:ReagentRobotState;
+		protected var m_pReactors:Array;
 	}
 }

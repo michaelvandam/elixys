@@ -83,8 +83,8 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pPromptState:Elixys.JSON.State.PromptState;
-		private var m_pTimerButtons:Array;
-		private var m_pUnitOperationButtons:Array;
+		protected var m_pPromptState:Elixys.JSON.State.PromptState;
+		protected var m_pTimerButtons:Array;
+		protected var m_pUnitOperationButtons:Array;
 	}
 }

@@ -14,9 +14,9 @@ package Elixys.Views
 		 * Construction
 		 **/
 		
-		public function Sequence(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
+		public function Sequence(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
-			super(screen, SEQUENCE, attributes, row, inGroup);
+			super(screen, pElixys, SEQUENCE, attributes, row, inGroup);
 		}
 
 		/***

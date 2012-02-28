@@ -40,8 +40,8 @@ package Elixys.JSON
 	 */
 	dynamic public class JSONObject extends Proxy
 	{
-		private var content:Object;
-		private var contentByIndex:Array;
+		protected var content:Object;
+		protected var contentByIndex:Array;
 	
 		public function JSONObject(data:String = null, existingcontent:Object = null)
 		{

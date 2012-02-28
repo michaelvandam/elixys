@@ -38,7 +38,7 @@ package Elixys.Views
 			m_pProgress = Progress(UI.findViewById("Progress"));
 
 			// Fade in the logo component
-			m_pLogo.Fade(0, 1, 600);
+			//m_pLogo.Fade(0, 1, 600);
 
 			// Set a timer to delay the fading in of the progress component
 			m_pProgressDelayTimer = new Timer(450, 1);
@@ -95,13 +95,15 @@ package Elixys.Views
 		 * Member variables
 		 **/
 
+
 		// Loading view XML
 		protected static const LOADING:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND}>
 				<rows gapV="0" border="false" heights="18%,64%,9%,9%" background={Styling.APPLICATION_BACKGROUND}>
 					<frame />
-					<columns gapH="0" widths="50%,50%">
+					<columns gapH="0" widths="34%,66%">
 						<logo id="Logo" visible="false" />
+						<frame />
 					</columns>
 					<frame />
 					<progress id="Progress" />
@@ -109,8 +111,8 @@ package Elixys.Views
 			</frame>;
 		
 		// References to components
-		private var m_pLogo:Logo;
-		private var m_pProgress:Progress;
+		protected var m_pLogo:Logo;
+		protected var m_pProgress:Progress;
 		
 		// Progress delay timer
 		protected var m_pProgressDelayTimer:Timer;

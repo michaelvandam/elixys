@@ -1,6 +1,7 @@
 package Elixys.Components
 {
 	import Elixys.Assets.Styling;
+	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.*;
 	
 	import com.danielfreeman.madcomponents.*;
@@ -31,35 +32,40 @@ package Elixys.Components
 			removeChild(_label);
 
 			// Create a new label that implenents embedded fonts
-			if (screen is Form)
+			if (parent is Form)
 			{
 				_label = UILabel((screen as Form).CreateLabel(xml, new Attributes(0, 0, width, height)));
 				_label.parent.removeChild(_label);
 				addChild(_label);
 			}
-
+			
 			// Disable the hand cursor
 			useHandCursor = false;
 
-			// Determine our current width and height
-			var nWidth:int = Form.FindWidth(screen);
-			var nHeight:int = Form.FindHeight(screen);
-
+			// Determine the width and height of our parent
+			var nWidth:int = 0;
+			var nHeight:int = 0;
+			if (parent is Form)
+			{
+				nWidth = (screen as Form).attributes.width;
+				nHeight = (screen as Form).attributes.height;
+			}
+			
 			// Set the skins
 			if (xml.@skinup.length() > 0)
 			{
 				m_pSkinUp = AddSkin(xml.@skinup[0]);
-				Form.PositionSkin(m_pSkinUp, nWidth, nHeight);
+				PositionSkin(m_pSkinUp, nWidth, nHeight);
 			}
 			if (xml.@skindown.length() > 0)
 			{
 				m_pSkinDown = AddSkin(xml.@skindown[0]);
-				Form.PositionSkin(m_pSkinDown, nWidth, nHeight);
+				PositionSkin(m_pSkinDown, nWidth, nHeight);
 			}
 			if (xml.@skindisabled.length() > 0)
 			{
 				m_pSkinDisabled = AddSkin(xml.@skindisabled[0]);
-				Form.PositionSkin(m_pSkinDisabled, nWidth, nHeight);
+				PositionSkin(m_pSkinDisabled, nWidth, nHeight);
 			}
 			
 			// Set the enabled flag
@@ -78,9 +84,9 @@ package Elixys.Components
 				m_nDisabledTextColor = Styling.AS3Color(xml.@disabledTextColor[0]);
 			}
 
-			// Remember our initial dimensions
-			m_nLastWidth = nWidth;
-			m_nLastHeight = nHeight;
+			// Add event listeners
+			stage.addEventListener(Event.RESIZE, OnResizeEvent);
+			addEventListener(Event.ENTER_FRAME, OnEnterFrame);
 		}
 
 		/***
@@ -106,7 +112,7 @@ package Elixys.Components
 			pSkin.buttonMode = false;
 			pSkin.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
 			pSkin.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
-			addChild(pSkin);
+			addChildAt(pSkin, 0);
 			return pSkin;
 		}
 
@@ -116,36 +122,58 @@ package Elixys.Components
 			pSkin.width = nWidth;
 			pSkin.height = nHeight;
 		}
-		
-		// Refreshes the button
-		public function Refresh():void
+
+		// Resize functions to keep the skin sizes in sync
+		protected function OnResizeEvent(event:Event):void
 		{
-			// Check if our dimensions have changed
-			if ((width != m_nLastWidth) || (height != m_nLastHeight))
-			{
-				// Update the skins
-				if (m_pSkinUp != null)
-				{
-					PositionSkin(m_pSkinUp, width, height);
-				}
-				if (m_pSkinDown != null)
-				{
-					PositionSkin(m_pSkinDown, width, height);
-				}
-				if (m_pSkinDisabled != null)
-				{
-					PositionSkin(m_pSkinDisabled, width, height);
-				}
-				
-				// Remember the new dimensions
-				m_nLastWidth = width;
-				m_nLastHeight = height;
-			}
-			
-			// Draw the button
-			drawButton();
+			UpdateSkins();
 		}
-		
+		protected function OnEnterFrame(event:Event):void
+		{
+			UpdateSkins();
+		}
+		protected function UpdateSkins():void
+		{
+			// Check if our size or position have changed
+			if (parent is Form)
+			{
+				var nWidth:int = (parent as Form).attributes.width;
+				var nHeight:int = (parent as Form).attributes.height;
+				if ((nWidth != m_nLastWidth) || (nHeight != m_nLastHeight) || (x != m_nLastX) || (y != m_nLastY))
+				{
+					// Update the size and position
+					m_nLastX = x;
+					m_nLastY = y;
+					m_nLastWidth = nWidth;
+					m_nLastHeight = nHeight;
+						
+					// Update the skins
+					if (m_pSkinUp != null)
+					{
+						PositionSkin(m_pSkinUp, nWidth, nHeight);
+					}
+					if (m_pSkinDown != null)
+					{
+						PositionSkin(m_pSkinDown, nWidth, nHeight);
+					}
+					if (m_pSkinDisabled != null)
+					{
+						PositionSkin(m_pSkinDisabled, nWidth, nHeight);
+					}
+	
+					// Make sure the text is centered
+					if (m_pSkinUp != null)
+					{
+						_label.x = (m_pSkinUp.width - _label.width) / 2;
+						_label.y = (m_pSkinUp.height - _label.height) / 2;
+					}
+					
+					// Draw the button
+					drawButton();
+				}
+			}
+		}
+
 		// Overridden drawing function
 		protected override function drawButton(pressed:Boolean = false):void
 		{
@@ -187,10 +215,6 @@ package Elixys.Components
 						m_pSkinDown.visible = false;
 					}
 				}
-				
-				// Make sure the text is centered over the skins
-				_label.x = (m_pSkinUp.width - _label.width) / 2;
-				_label.y = (m_pSkinUp.height - _label.height) / 2;
 			}
 			else
 			{
@@ -224,16 +248,13 @@ package Elixys.Components
 			if (m_bEnabled)
 			{
 				drawButton(false);
-				dispatchEvent(new Event(BUTTON_CLICK));
+				dispatchEvent(new ButtonEvent(name));
 			}
 		}
 		
 		/***
 		 * Member variables
 		 **/
-		
-		// Button click event
-		public static var BUTTON_CLICK:String = "ButtonClick";
 
 		// Skins
 		protected var m_pSkinUp:MovieClip;
@@ -247,8 +268,10 @@ package Elixys.Components
 		protected var m_nEnabledTextColor:uint;
 		protected var m_nDisabledTextColor:uint;
 		
-		// Last know dimensions
-		protected var m_nLastWidth:int;
-		protected var m_nLastHeight:int;
+		// Last known size and position
+		protected var m_nLastX:Number = 0;
+		protected var m_nLastY:Number = 0;
+		protected var m_nLastWidth:Number = 0;
+		protected var m_nLastHeight:Number = 0;
 	}
 }

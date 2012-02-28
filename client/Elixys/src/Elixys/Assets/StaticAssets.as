@@ -18,5 +18,13 @@ package Elixys.Assets
 			advancedAntiAliasing="true",
 			embedAsCFF="false")]
 		public static var GothamMedium:Class;
+
+		[Embed(source="../../../../Elixys/res/Gotham-Bold.otf", 
+			fontWeight="bold",
+			fontName="GothamBold",
+    	    fontFamily="Gotham",
+			advancedAntiAliasing="true",
+			embedAsCFF="false")]
+		public static var GothamBold:Class;
 	}
 }

@@ -74,6 +74,9 @@ package com.christiancantrell.nativetext
 		private var _borderCornerSize:uint = 0;
 		private var lineMetric:TextLineMetrics;
 		
+		// Border flag
+		protected var _border:Boolean = true;
+		
 		public function NativeText(numberOfLines:uint = 1)
 		{
 			super();
@@ -209,7 +212,14 @@ package com.christiancantrell.nativetext
 		{
 			this.st.dispose();
 		}
-		
+
+		// Enable or disable the border
+		public function set border(border:Boolean):void
+		{
+			this._border = border;
+			this.render();
+		}
+
 		public function set borderThickness(borderThickness:uint):void
 		{
 			this._borderThickness = borderThickness;
@@ -464,6 +474,7 @@ package com.christiancantrell.nativetext
 		
 		private function drawBorder(s:Sprite):void
 		{
+			// Clear the graphics, then check for border thickness and flag
 			if (this.borderThickness == 0) return;
 			s.graphics.clear();
 			s.graphics.lineStyle(this.borderThickness, this.borderColor);

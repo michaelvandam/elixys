@@ -1,11 +1,14 @@
 package Elixys.Components
 {
+	import Elixys.Events.HTTPRequestEvent;
 	import Elixys.Extended.Form;
+	import Elixys.HTTP.HTTPRequest;
 	import Elixys.JSON.State.State;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Sprite;
+	import flash.utils.ByteArray;
 	
 	// This screen component is an extension of the Form class
 	public class Screen extends Form
@@ -14,10 +17,13 @@ package Elixys.Components
 		 * Construction
 		 **/
 		
-		public function Screen(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
+		public function Screen(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
 			super(screen, xml, attributes, row, inGroup);
+			
+			// Remember the parent
+			m_pElixys = pElixys;
 		}
 		
 		/***
@@ -34,5 +40,31 @@ package Elixys.Components
 		public function UpdateState(pState:State):void
 		{
 		}
+
+		// Posts the object to the server
+		public function DoPost(pPost:Object, sViewName:String):void
+		{
+			// Convert the request to a byte array
+			var pBody:ByteArray = new ByteArray();
+			if (pPost != null)
+			{
+				pBody.writeMultiByte(pPost.toString(), "utf8");
+				pBody.position = 0;
+			}
+			
+			// Pass the request up to be sent to the server
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = "POST";
+			pHTTPRequest.m_sResource = "/Elixys/" + sViewName;
+			pHTTPRequest.m_pBody = pBody;
+			m_pElixys.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
+		
+		/***
+		 * Member variables
+		 **/
+		
+		// Main Elixys application
+		protected var m_pElixys:Elixys;
 	}
 }

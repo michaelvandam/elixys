@@ -49,6 +49,6 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pReagentRobotPosition:ReagentRobotPosition;
+		protected var m_pReagentRobotPosition:ReagentRobotPosition;
 	}
 }

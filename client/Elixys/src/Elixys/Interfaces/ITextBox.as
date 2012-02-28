@@ -2,6 +2,7 @@ package Elixys.Interfaces
 {
 	public interface ITextBox
 	{
+		function set border(border:Boolean):void;
 		function set borderThickness(borderThickness:uint):void;
 		function get borderThickness():uint;
 		function set borderColor(borderColor:uint):void;

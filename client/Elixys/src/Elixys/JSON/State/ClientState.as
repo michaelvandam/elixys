@@ -53,6 +53,6 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pPromptState:Elixys.JSON.State.PromptState;
+		protected var m_pPromptState:Elixys.JSON.State.PromptState;
 	}
 }

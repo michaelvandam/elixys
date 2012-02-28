@@ -69,6 +69,6 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pReactorPosition:ReactorPosition = null;
+		protected var m_pReactorPosition:ReactorPosition = null;
 	}
 }

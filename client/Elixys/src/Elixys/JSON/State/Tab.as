@@ -50,6 +50,6 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pColumns:Array;
+		protected var m_pColumns:Array;
 	}
 }

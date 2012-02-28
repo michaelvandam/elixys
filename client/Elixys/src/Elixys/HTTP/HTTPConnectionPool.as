@@ -141,14 +141,14 @@ package Elixys.HTTP
 		public static var MIME_HTML:String = "text/html";
 		
 		// Connection details
-		private var m_sServer:String = "";
-		private var m_nPort:uint = 80;
-		private var m_sCredentials:String = "";
+		protected var m_sServer:String = "";
+		protected var m_nPort:uint = 80;
+		protected var m_sCredentials:String = "";
 		
 		// Array of connections
-		private var m_pHTTPConnections:Array = new Array();
+		protected var m_pHTTPConnections:Array = new Array();
 
 		// Queue of requests waiting to be sent
-		private var m_pHTTPRequestQueue:Array = new Array();
+		protected var m_pHTTPRequestQueue:Array = new Array();
 	}
 }

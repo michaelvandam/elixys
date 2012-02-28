@@ -37,21 +37,28 @@ package Elixys.Components
 
 		// Logo component XML
 		protected static const LOGO:XML = 
-			<columns gapH="0" widths="15%,85%">
+			<columns gapH="0" widths="24%,76%">
 				<frame />
 				<rows gapV="0" heights="55%,45%">
 					<label useEmbedded="true" alignH="left" alignV="bottom">
-						<font face="GothamLight" color={Styling.TEXT_GRAY} size="64">
+						<font face="GothamLight" color={Styling.TEXT_BLACK} size="60">
 							ELIXYS
 						</font>
 					</label>
 					<columns gapH="0" widths="6,100%">
 						<frame />
-						<label alignH="left" alignV="top">
-							<font color={Styling.TEXT_GRAY} size="16">
-								Automated Radiochemical Synthesis Platform
-							</font>
-						</label>
+						<vertical gapV="0">
+							<label alignH="left" alignV="top">
+								<font color={Styling.TEXT_DARKGRAY} size="18">
+									Automated Radiochemical
+								</font>
+							</label>
+							<label alignH="left" alignV="top">
+								<font color={Styling.TEXT_DARKGRAY} size="18">
+									Synthesis Platform
+								</font>
+							</label>
+						</vertical>
 					</columns>
 				</rows>
 			</columns>

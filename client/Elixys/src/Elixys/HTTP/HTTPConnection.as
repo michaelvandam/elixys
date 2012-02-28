@@ -84,7 +84,7 @@ package Elixys.HTTP
 		 * Request sending functions
 		 **/
 		
-		private function SendRequestInternal(pHTTPRequest:HTTPRequest):void
+		protected function SendRequestInternal(pHTTPRequest:HTTPRequest):void
 		{
 			try
 			{
@@ -177,7 +177,7 @@ package Elixys.HTTP
 		}
 		
 		// Called when the socket is connected
-		private function OnSocketConnectEvent(event:Event):void
+		protected function OnSocketConnectEvent(event:Event):void
 		{
 			// Check our connected flag to make sure we only acknowledge this event once
 			if (!m_bConnected)
@@ -204,7 +204,7 @@ package Elixys.HTTP
 		 **/
 		
 		// Called as the socket receives data
-		private function OnSocketProgressEvent(event:ProgressEvent):void
+		protected function OnSocketProgressEvent(event:ProgressEvent):void
 		{
 			try
 			{
@@ -304,7 +304,7 @@ package Elixys.HTTP
 		}
 		
 		// Extract status code from the HTTP response headers
-		private function ExtractStatusCode():uint
+		protected function ExtractStatusCode():uint
 		{
 			// Scan for the HTTP status code
 			for each (var sHeader:String in m_pHTTPResponseHeaders)
@@ -321,7 +321,7 @@ package Elixys.HTTP
 		}
 		
 		// Extract content length from the HTTP response headers
-		private function ExtractContentLength():uint
+		protected function ExtractContentLength():uint
 		{
 			// Scan for the HTTP content length
 			for each (var sHeader:String in m_pHTTPResponseHeaders)
@@ -342,7 +342,7 @@ package Elixys.HTTP
 		 **/
 		
 		// Called when the response timer completes
-		private function OnResponseTimerComplete(event:TimerEvent):void
+		protected function OnResponseTimerComplete(event:TimerEvent):void
 		{
 			// Have we exceeded out retry limit?
 			if (m_nRetryCount < 3)
@@ -368,12 +368,12 @@ package Elixys.HTTP
 		}
 
 		// Called when a socket IO or security error occurs
-		private function OnSocketIOErrorEvent(event:IOErrorEvent):void
+		protected function OnSocketIOErrorEvent(event:IOErrorEvent):void
 		{
 			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed (IO error)");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}		
-		private function OnSocketSecurityErrorEvent(event:SecurityErrorEvent):void
+		protected function OnSocketSecurityErrorEvent(event:SecurityErrorEvent):void
 		{
 			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed (security error)");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
@@ -384,27 +384,27 @@ package Elixys.HTTP
 		 **/
 		
 		// Connection pool
-		private var m_pHTTPConnectionPool:HTTPConnectionPool;
+		protected var m_pHTTPConnectionPool:HTTPConnectionPool;
 						
 		// Socket classes
-		private var m_pSocket:Socket = null;
-		private var m_bConnected:Boolean = false;
+		protected var m_pSocket:Socket = null;
+		protected var m_bConnected:Boolean = false;
 
 		// HTTP response
-		private var m_pHTTPResponseHeader:ByteArray = new ByteArray();
-		private var m_nHTTPResponseHeader:uint = 0;
-		private var m_pHTTPResponseHeaders:Array = null;
-		private var m_nStatusCode:uint = 0;
-		private var m_nContentLength:uint = 0;
-		private var m_pHTTPResponseBody:ByteArray = new ByteArray();
+		protected var m_pHTTPResponseHeader:ByteArray = new ByteArray();
+		protected var m_nHTTPResponseHeader:uint = 0;
+		protected var m_pHTTPResponseHeaders:Array = null;
+		protected var m_nStatusCode:uint = 0;
+		protected var m_nContentLength:uint = 0;
+		protected var m_pHTTPResponseBody:ByteArray = new ByteArray();
 
 		// Response timer, outstanding HTTP request and retry count
-		private var m_pResponseTimer:Timer = new Timer(3000, 1);
-		private var m_pOutstandingRequest:HTTPRequest;
-		private var m_nRetryCount:uint;
+		protected var m_pResponseTimer:Timer = new Timer(3000, 1);
+		protected var m_pOutstandingRequest:HTTPRequest;
+		protected var m_nRetryCount:uint;
 			
 		// Static HTTP strings
-		private static var HTTP_STATUS:String = "HTTP/1.1 ";
-		private static var HTTP_CONTENTLENGTH:String = "Content-Length: ";
+		protected static var HTTP_STATUS:String = "HTTP/1.1 ";
+		protected static var HTTP_CONTENTLENGTH:String = "Content-Length: ";
 	}
 }

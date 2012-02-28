@@ -2,12 +2,9 @@ package
 {
 	import Elixys.Assets.*;
 	import Elixys.Components.*;
-	import Elixys.Events.ExceptionEvent;
-	import Elixys.Events.HTTPResponseEvent;
-	import Elixys.Events.TransitionCompleteEvent;
+	import Elixys.Events.*;
 	import Elixys.Extended.*;
-	import Elixys.HTTP.HTTPConnectionPool;
-	import Elixys.HTTP.HTTPResponse;
+	import Elixys.HTTP.*;
 	import Elixys.JSON.*;
 	import Elixys.JSON.State.*;
 	import Elixys.Views.*;
@@ -68,6 +65,10 @@ package
 			m_pHTTPConnectionPool = new HTTPConnectionPool(5);
 			m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
 			m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnHTTPExceptionEvent);
+			
+			// Add event listeners
+			addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequest);
+			addEventListener(ElixysEvents.LOGOUT, OnLogOut);
 		}
 		
 		/***
@@ -138,7 +139,7 @@ package
 			{
 				// Create the screen class
 				var pAttributes:Attributes = new Attributes(0, 0, width, height);
-				var pNextScreen:Form = new m_pScreenClasses[nIndex](this, new XML(), pAttributes);
+				var pNextScreen:Form = new m_pScreenClasses[nIndex](this, this, new XML(), pAttributes);
 				m_pScreens.push(pNextScreen);
 				
 				// Append the screen to the page list
@@ -159,7 +160,8 @@ package
 			// Loading is complete.  Set our references to the various pages
 			m_pLogin = m_pScreens[LOGIN_INDEX - 1];
 			m_pHome = m_pScreens[HOME_INDEX - 1];
-			m_pSelect = m_pScreens[SELECT_INDEX - 1];
+			m_pSelectSaved = m_pScreens[SELECTSAVED_INDEX - 1];
+			m_pSelectHistory = m_pScreens[SELECTHISTORY_INDEX - 1];
 			
 			// Inform the loading screen and wait until the transition completes
 			m_pLoading.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoadingFinishedTransitionComplete);
@@ -241,31 +243,32 @@ package
 		 **/
 		
 		// Called when the status of the HTTP request is know
-		private function OnHTTPStatusEvent(event:HTTPStatusEvent):void
+		protected function OnHTTPStatusEvent(event:HTTPStatusEvent):void
 		{
 			// Catch any HTTP errors
 			if (event.status != 200)
 			{
-				// To do: handle error
-				trace("HTTP request failed: " + event.status);
-				
-				// Stop the state update timer
-				
-				// Slide away the current screen
-				
-				// Fade in the login screen
+				// Display the error
+				if (event.status == 401)
+				{
+					ShowLoginScreen("Invalid username or password");
+				}
+				else
+				{
+					ShowLoginScreen("HTTP request failed (" + event.status + ")");
+				}
 			}
 		}
 		
 		// Called when an exception occurs in the HTTP connection
-		public function OnHTTPExceptionEvent(event:ExceptionEvent):void
+		protected function OnHTTPExceptionEvent(event:ExceptionEvent):void
 		{
-			// To do: handle error
-			trace("HTTP exception: " + event.exception);
+			// Display the error
+			ShowLoginScreen("HTTP exception (" + event.exception + ")");
 		}
 		
 		// Catch all unhandled exceptions
-		
+
 		/***
 		 * Connect to server functions
 		 **/
@@ -299,6 +302,12 @@ package
 		// Called when the configuration HTTP response is received
 		protected function OnConnectionHTTPResponseEvent_Configuration(event:HTTPResponseEvent):void
 		{
+			// Ignore failed responses
+			if (event.m_pHTTPResponse.m_nStatusCode != 200)
+			{
+				return;
+			}
+			
 			// Load the configuration
 			try
 			{
@@ -353,25 +362,86 @@ package
 			UpdateState();
 			
 			// Start the state update timer
+			if (m_pUpdateTimer == null)
+			{
+				m_pUpdateTimer = new Timer(500);
+				m_pUpdateTimer.addEventListener(TimerEvent.TIMER, OnUpdateTimer);
+			}
+			m_pUpdateTimer.start();
 		}
+
+		/***
+		 * Disconnect from server functions
+		 **/
+		
+		// Called to terminate the connection to the server
+		protected function OnLogOut(event:Event):void
+		{
+			ShowLoginScreen("");
+		}
+		
+		// Show the log in screen with optional error message
+		protected function ShowLoginScreen(sError:String):void
+		{
+			// Stop the state update timer
+			if ((m_pUpdateTimer != null) && (m_pUpdateTimer.running))
+			{
+				m_pUpdateTimer.stop();
+			}
+			
+			// Set the error text
+			m_pLogin.SetError(sError);
+			
+			// Show the login screen
+			m_pPages.goToPage(LOGIN_INDEX);
+			if (m_pLogin.alpha != 1)
+			{
+				m_pLogin.Fade(0, 1, 350);
+			}
+		}
+
 		
 		/***
 		 * Server communication functions
 		 **/
 		
+		// Called to update the client state
+		protected function OnUpdateTimer(event:TimerEvent):void
+		{
+			// Load the system state
+			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+		}
+
+		// Called when a screen wants to send something to the server
+		protected function OnHTTPRequest(event:HTTPRequestEvent):void
+		{
+			// Send the request to the server
+			m_pHTTPConnectionPool.SendRequestB(event.m_pHTTPRequest);
+		}
+		
 		// Called when an HTTP response is received
 		protected function OnHTTPResponseEvent(event:HTTPResponseEvent):void
 		{
-			// Parse the JSON string
-			var pHTTPResponse:HTTPResponse = event.m_pHTTPResponse;
-			var sResponse:String = pHTTPResponse.m_pBody.readUTFBytes(pHTTPResponse.m_pBody.length);
-			trace("HTTP response: " + sResponse);
-			//var pJSON:JS = new JSONObject(sJSON);
-			// Load the state
-			
-			// Update the appropriate screen
-			
-			// Transition to the new screen if needed
+			try
+			{
+				// Parse the response
+				var pResponse:* = ParseHTTPResponse(event, getQualifiedClassName(State));
+				
+				// Call the appropriate update function
+				if (pResponse is State)
+				{
+					m_pState = pResponse as State;
+					UpdateState();
+				}
+				else
+				{
+					trace("handle other response types");
+				}
+			}
+			catch (err:Error)
+			{
+				// Handle error
+			}
 		}
 		
 		// Parses the HTTP response
@@ -410,10 +480,10 @@ package
 		}
 		
 		/***
-		 * State functions
+		 * Update functions
 		 **/
 		
-		// Update the currently displayed state
+		// Update the current state
 		protected function UpdateState():void
 		{
 			// Handle the pop up window first
@@ -451,10 +521,15 @@ package
 				nPageIndex = HOME_INDEX;
 				pScreen = m_pHome;
 			}
-			else if (StateSelect.CheckState(m_pState.ClientState.Screen))
+			else if (m_pState.ClientState.Screen == StateSelectSaved.TYPE)
 			{
-				nPageIndex = SELECT_INDEX;
-				pScreen = m_pSelect;
+				nPageIndex = SELECTSAVED_INDEX;
+				pScreen = m_pSelectSaved;
+			}
+			else if (m_pState.ClientState.Screen == StateSelectHistory.TYPE)
+			{
+				nPageIndex = SELECTHISTORY_INDEX;
+				pScreen = m_pSelectHistory;
 			}
 			else if (StateSequence.CheckState(m_pState.ClientState.Screen))
 			{
@@ -495,12 +570,16 @@ package
 		protected var m_nTotalLoadSteps:uint;
 		protected var m_nCurrentLoadStep:uint;
 		
+		// Update variables
+		protected var m_pUpdateTimer:Timer;
+		
 		// Screen variables
-		protected var m_pScreenClasses:Array = [Login, Home, Select, Sequence];
+		protected var m_pScreenClasses:Array = [Login, Home, SelectSaved, SelectHistory, Sequence];
 		protected var m_pScreens:Array = new Array;
 		protected var m_pLogin:Login;
 		protected var m_pHome:Home;
-		protected var m_pSelect:Select;
+		protected var m_pSelectSaved:SelectSaved;
+		protected var m_pSelectHistory:SelectHistory;
 		
 		// Transition update interval (milliseonds)
 		public static var TRANSITION_UPDATE_INTERVAL:uint = 20;
@@ -508,8 +587,9 @@ package
 		// Constants to refer to the page indicies (one-based because of loading page)
 		protected static var LOGIN_INDEX:uint = 1;
 		protected static var HOME_INDEX:uint = 2;
-		protected static var SELECT_INDEX:uint = 3;
-		protected static var SEQUENCE_INDEX:uint = 4;
+		protected static var SELECTSAVED_INDEX:uint = 3;
+		protected static var SELECTHISTORY_INDEX:uint = 4;
+		protected static var SEQUENCE_INDEX:uint = 5;
 		
 		// Pan transition variables
 		protected var m_nPanStep:Number = 0;
@@ -517,7 +597,7 @@ package
 		protected var m_pPanTimer:Timer;
 		
 		// HTTP connection pool
-		private var m_pHTTPConnectionPool:HTTPConnectionPool;
+		protected var m_pHTTPConnectionPool:HTTPConnectionPool;
 		
 		// Server configuration and move recent client state
 		protected var m_pConfiguration:Configuration;

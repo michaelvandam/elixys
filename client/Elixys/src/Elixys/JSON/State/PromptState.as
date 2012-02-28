@@ -83,6 +83,6 @@ package Elixys.JSON.State
 		}
 		
 		// State components
-		private var m_pButtons:Array;
+		protected var m_pButtons:Array;
 	}
 }

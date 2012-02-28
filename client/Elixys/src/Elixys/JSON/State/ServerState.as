@@ -46,7 +46,7 @@ package Elixys.JSON.State
 		}
 
 		// State components
-		private var m_pRunState:Elixys.JSON.State.RunState;
-		private var m_pHardwareState:Elixys.JSON.State.HardwareState;
+		protected var m_pRunState:Elixys.JSON.State.RunState;
+		protected var m_pHardwareState:Elixys.JSON.State.HardwareState;
 	}
 }

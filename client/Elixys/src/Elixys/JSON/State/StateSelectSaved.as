@@ -2,10 +2,10 @@ package Elixys.JSON.State
 {
 	import flash.utils.flash_proxy;
 	
-	public class StateHome extends State
+	public class StateSelectSaved extends State
 	{
 		// Constructor
-		public function StateHome(data:String, existingcontent:Object = null)
+		public function StateSelectSaved(data:String, existingcontent:Object = null)
 		{
 			// Call the base constructor
 			super(data, existingcontent);
@@ -16,11 +16,11 @@ package Elixys.JSON.State
 				throw new Error("State object mismatch");
 			}
 		}
-
+		
 		// Static type
 		public static function get TYPE():String
 		{
-			return "HOME";
+			return "SELECT_SAVEDSEQUENCES";
 		}
 	}
 }

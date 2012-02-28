@@ -25,7 +25,7 @@ package
 		 **/
 		
 		// Unused reference to NativeText so it will be compiled into the project
-		private static var m_pNativeText:NativeText;
+		protected static var m_pNativeText:NativeText;
 	}
 }
 

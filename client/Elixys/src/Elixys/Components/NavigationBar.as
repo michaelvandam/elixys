@@ -1,6 +1,7 @@
 package Elixys.Components
 {
 	import Elixys.Assets.Styling;
+	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.*;
 	import Elixys.JSON.State.Button;
 	
@@ -11,6 +12,7 @@ package Elixys.Components
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.geom.Point;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
@@ -42,6 +44,10 @@ package Elixys.Components
 				m_pButtonNames.push(pButtonXML.@name[0]);
 				m_pForegroundSkinHeights.push(pButtonXML.@foregroundskinheightpercent[0]);
 				m_pForegroundSkinWidths.push(pButtonXML.@foregroundskinwidthpercent[0]);
+				m_pButtonFontFaces.push(pButtonXML.@fontFace[0]);
+				m_pButtonFontSizes.push(pButtonXML.@fontSize[0]);
+				m_pButtonFontEnabledColor.push(Styling.AS3Color(pButtonXML.@enabledTextColor[0]));
+				m_pButtonFontDisabledColor.push(Styling.AS3Color(pButtonXML.@disabledTextColor[0]));
 				pForegroundSkinUpName.push(pButtonXML.@foregroundskinup[0]);
 				pForegroundSkinDownName.push(pButtonXML.@foregroundskindown[0]);
 				pForegroundSkinDisabledName.push(pButtonXML.@foregroundskindisabled[0]);
@@ -56,6 +62,12 @@ package Elixys.Components
 				delete xml.children()[pButtonXML.childIndex()];
 			}
 			
+			// Get the right padding
+			if (xml.@rightpadding.length() > 0)
+			{
+				m_nRightPadding = xml.@rightpadding;
+			}
+			
 			// Call the base constructor
 			super(screen, xml, attributes, row, inGroup);
 			
@@ -63,21 +75,11 @@ package Elixys.Components
 			var nWidth:int = FindWidth(screen);
 			var nHeight:int = FindHeight(screen);
 
-			// Get the text colors
-			if (xml.@enabledTextColor.length() > 0)
-			{
-				m_nEnabledText = Styling.AS3Color(xml.@enabledTextColor[0]);
-			}
-			if (xml.@disabledTextColor.length() > 0)
-			{
-				m_nDisabledText = Styling.AS3Color(xml.@disabledTextColor[0]);
-			}
-
 			// Set the background skin
 			if (xml.@skin.length() > 0)
 			{
 				m_pMainSkin = AddSkin(xml.@skin[0]);
-				m_pMainSkin.width = nWidth + MAIN_SKIN_PADDING;
+				m_pMainSkin.width = nWidth;
 				m_pMainSkin.height = nHeight;
 			}
 
@@ -86,7 +88,8 @@ package Elixys.Components
 			for (var nButton:int = 0; nButton < pButtonText.length; ++nButton)
 			{
 				// Create the label
-				m_pButtonLabels.push(AddLabel(pButtonText[nButton]));
+				m_pButtonLabels.push(AddLabel(pButtonText[nButton], m_pButtonFontFaces[nButton], m_pButtonFontSizes[nButton],
+					m_pButtonFontDisabledColor[nButton]));
 
 				// Create the button background skins
 				if (pBackgroundSkinUpName[nButton] != null)
@@ -134,6 +137,10 @@ package Elixys.Components
 			
 			// Listen for resize events
 			stage.addEventListener(Event.RESIZE, OnResize);
+			
+			// Listen for mouse events
+			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
 		}
 
 		/***
@@ -150,11 +157,11 @@ package Elixys.Components
 		}
 		
 		// Add a label
-		protected function AddLabel(sText:String):UILabel
+		protected function AddLabel(sText:String, sFontFace:String, nFontSize:uint, sTextColor:String):UILabel
 		{
 			var pXML:XML =
 				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face="GothamMedium" color={Styling.TEXT_GRAY} size="14">
+					<font face={sFontFace} color={sTextColor} size={nFontSize}>
 						{sText}
 					</font>
 				</label>;
@@ -162,14 +169,13 @@ package Elixys.Components
 			var pTextFormat:TextFormat = pLabel.getTextFormat();
 			pTextFormat.align = TextFormatAlign.CENTER;
 			pLabel.setTextFormat(pTextFormat);
-			pLabel.textColor = m_nDisabledText;
 			return pLabel;
 		}
 
 		// Sets the background skin position
 		protected function SetBackgroundSkinPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, pSkin:MovieClip):void
 		{
-			var nTotalWidth:int = nWidth / nTotal;
+			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
 			pSkin.x = nTotalWidth * nButton;
 			pSkin.y = 0;
 			pSkin.width = nTotalWidth;
@@ -181,7 +187,7 @@ package Elixys.Components
 		{
 			// Determine the skin width and height
 			var nSkinWidth:int, nSkinHeight:int;
-			var nTotalWidth:int = nWidth / nTotal;
+			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
 			if (m_pForegroundSkinWidths[nButton] != null)
 			{
 				nSkinWidth = nTotalWidth * m_pForegroundSkinWidths[nButton] / 100;
@@ -214,13 +220,13 @@ package Elixys.Components
 		protected function SetLabelPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, nForegroundSkinHeight:int):void
 		{
 			var pLabel:UILabel = m_pButtonLabels[nButton];
-			var nTotalWidth:int = nWidth / nTotal;
+			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
 			pLabel.width = nTotalWidth;
 			pLabel.x = nTotalWidth * nButton;
 			pLabel.y = ((nHeight - pLabel.height - nForegroundSkinHeight + BUTTON_GAP) / 2) + nForegroundSkinHeight;
 		}
 		
-		// Called when the nagivation bar resizes
+		// Called when the stage resizes
 		protected function OnResize(event:Event):void
 		{
 			// Update our size based on our parent container
@@ -230,7 +236,7 @@ package Elixys.Components
 			// Update the skin size
 			if (m_pMainSkin != null)
 			{
-				m_pMainSkin.width = width + MAIN_SKIN_PADDING;
+				m_pMainSkin.width = width;
 				m_pMainSkin.height = height;
 			}
 
@@ -323,17 +329,25 @@ package Elixys.Components
 					// Set the enabled or disabled state
 					if (m_pButtonEnabled[nButton])
 					{
-						bUp = true;
-						bDown = false;
+						if (nButton == m_nPressedButton)
+						{
+							bUp = false;
+							bDown = true;
+						}
+						else
+						{
+							bUp = true;
+							bDown = false;
+						}
 						bDisabled = false;
-						nTextColor = m_nEnabledText;
+						nTextColor = m_pButtonFontEnabledColor[nButton];
 					}
 					else
 					{
 						bUp = false;
 						bDown = false;
 						bDisabled = true;
-						nTextColor = m_nDisabledText;
+						nTextColor = m_pButtonFontDisabledColor[nButton];
 					}
 				}
 				else
@@ -342,7 +356,7 @@ package Elixys.Components
 					bUp = false;
 					bDown = false;
 					bDisabled = false;
-					nTextColor = m_nDisabledText;
+					nTextColor = m_pButtonFontDisabledColor[nButton];
 				}
 
 				// Set background skin visibility
@@ -378,6 +392,44 @@ package Elixys.Components
 			}
 		}
 
+		// Called when the user presses the mouse button
+		protected function OnMouseDown(event:MouseEvent):void
+		{
+			// Convert the click coordinates
+			var pNavigationBarPoint:Point = globalToLocal(new Point(event.stageX, event.stageY));
+			
+			// Determine which button was clicked
+			var nButtonWidth:int = (width - m_nRightPadding) / m_pButtonNames.length;
+			var nButton:int = pNavigationBarPoint.x / nButtonWidth;
+
+			// Make sure the button is visible and enabled
+			if (!(m_pButtonLabels[nButton] as UILabel).visible || !(m_pButtonEnabled[nButton] as Boolean))
+			{
+				return;
+			}
+			
+			// Set the pressed index and update
+			m_nPressedButton = nButton;
+			UpdateButtonStates();
+		}
+
+		// Called when the user releases the mouse button
+		protected function OnMouseUp(event:MouseEvent):void
+		{
+			// Make sure we have a pressed button
+			if (m_nPressedButton == -1)
+			{
+				return;
+			}
+			
+			// Dispatch the click event
+			dispatchEvent(new ButtonEvent(m_pButtonNames[m_nPressedButton]));
+			
+			// Clear the pressed index and update
+			m_nPressedButton = -1;
+			UpdateButtonStates();
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -389,6 +441,10 @@ package Elixys.Components
 		protected var m_pButtonNames:Array = new Array();
 		protected var m_pButtonLabels:Array = new Array();
 		protected var m_pButtonEnabled:Array = new Array();
+		protected var m_pButtonFontFaces:Array = new Array();
+		protected var m_pButtonFontSizes:Array = new Array();
+		protected var m_pButtonFontEnabledColor:Array = new Array();
+		protected var m_pButtonFontDisabledColor:Array = new Array();
 		protected var m_pForegroundSkinWidths:Array = new Array();
 		protected var m_pForegroundSkinHeights:Array = new Array();
 		protected var m_pForegroundSkinUp:Array = new Array();
@@ -399,13 +455,12 @@ package Elixys.Components
 		protected var m_pBackgroundSkinDisabled:Array = new Array();
 		
 		// Gap between the foreground skin and text
-		protected static var BUTTON_GAP:int = 5;
+		protected static var BUTTON_GAP:int = 8;
 		
-		// Something is wrong with one of the assets so this is a quick fix
-		protected static var MAIN_SKIN_PADDING:int = 8;
-
-		// Button text colors
-		protected var m_nEnabledText:uint = 0;
-		protected var m_nDisabledText:uint = 0;
+		// Padding to the right of our buttons
+		protected var m_nRightPadding:int = 0;
+		
+		// Index of the currently pressed button or -1
+		protected var m_nPressedButton:int = -1;
 	}
 }
