@@ -31,6 +31,21 @@ package Elixys.JSON.State
 		{
 			return super.flash_proxy::getProperty("tabid");
 		}
+		public function get Columns():Array
+		{
+			// Parse the columns
+			if (m_pColumns == null)
+			{
+				m_pColumns = new Array();
+				var pColumns:Array = super.flash_proxy::getProperty("columns");
+				for each (var pColumnObject:Object in pColumns)
+				{
+					var pColumn:Column = new Column(null, pColumnObject);
+					m_pColumns.push(pColumn);
+				}
+			}
+			return m_pColumns;
+		}
 		public function get Sequences():Array
 		{
 			// Parse the sequences
@@ -49,6 +64,7 @@ package Elixys.JSON.State
 		
 		// State components
 		protected var m_pTabs:Array;
+		protected var m_pColumns:Array;
 		protected var m_pSequences:Array;
 	}
 }

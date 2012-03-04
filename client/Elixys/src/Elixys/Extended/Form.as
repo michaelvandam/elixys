@@ -1,7 +1,7 @@
 package Elixys.Extended
 {
-	import Elixys.Events.TransitionCompleteEvent;
 	import Elixys.Components.*;
+	import Elixys.Events.TransitionCompleteEvent;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -43,38 +43,105 @@ package Elixys.Extended
 			_children.push(pChild);
 		}
 
+		// Forces the height for use when scrolling
+		public function ForceHeight(nHeight:Number):void
+		{
+			_height = nHeight;
+			attributes.height = nHeight;
+		}
+		
 		// Walks the display list until a hard width is found
 		public static function FindWidth(pDisplayObject:DisplayObject):int
 		{
 			// Walk the display list until we get a width value
-			while (pDisplayObject.width == 0)
+			var nWidth:int = 0;
+			var pChild:DisplayObject = null;
+			while (pDisplayObject != null)
 			{
-				pDisplayObject = pDisplayObject.parent;
-				if (pDisplayObject == null)
+				// Get the current width
+				nWidth = pDisplayObject.width;
+				
+				// Handle form objects
+				if (pDisplayObject is Form)
 				{
-					throw Error("Failed to determine object width");
+					var pForm:Form = pDisplayObject as Form;
+					if (!pForm.attributes.fillH && nWidth)
+					{
+						break;
+					}
+					if ((pForm._widths != null) && (pForm._widths.length > 0))
+					{
+						// Determine the child index
+						var nIndex:int = 0;
+						for each (var child:DisplayObject in pForm._children)
+						{
+							if (child == pChild)
+							{
+								break;
+							}
+							++nIndex;
+						}
+						
+						// Set the width
+						nWidth = pForm._widths[nIndex];
+						break;
+					}
 				}
+				
+				// Move to the parent
+				pChild = pDisplayObject;
+				pDisplayObject = pDisplayObject.parent;
 			}
 			
 			// Return the width
-			return pDisplayObject.width;
+			return nWidth;
 		}
 		
 		// Walks the display list until a hard height is found
 		public static function FindHeight(pDisplayObject:DisplayObject):int
 		{
 			// Walk the display list until we get a height value
-			while (pDisplayObject.height == 0)
+			var nHeight:int = 0;
+			var pChild:DisplayObject = null;
+			while (pDisplayObject != null)
 			{
-				pDisplayObject = pDisplayObject.parent;
-				if (pDisplayObject == null)
+				// Get the current height
+				nHeight = pDisplayObject.height;
+				
+				// Handle form objects
+				if (pDisplayObject is Form)
 				{
-					throw Error("Failed to determine object height");
+					var pForm:Form = pDisplayObject as Form;
+					if (!pForm.attributes.fillV && nHeight)
+					{
+						break;
+					}
+					if ((pForm._heights != null) && (pForm._heights.length > 0))
+					{
+						// Determine the child index
+						var nIndex:int = 0;
+						for each (var child:DisplayObject in pForm._children)
+						{
+							if (child == pChild)
+							{
+								break;
+							}
+							++nIndex;
+						}
+							
+						// Set the height
+						nHeight = pForm._heights[nIndex];
+						break;
+					}
 				}
+				
+				// Move to the parent
+				pChild = pDisplayObject;
+				pDisplayObject = pDisplayObject.parent;
 			}
 			
 			// Return the height
-			return pDisplayObject.height;
+			return nHeight;
 		}
 
 		/***

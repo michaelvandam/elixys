@@ -68,11 +68,6 @@ def HandleInvalidSequence(pDatabase, sRemoteUser, nSequenceID):
     pDatabase.SystemLog(LOG_ERROR, sRemoteUser, "Cannot run invalid sequence (" + str(nSequenceID) + ")")
     return {"type":"error", "description":"Invalid sequence"}
 
-def HandleStateMisalignment(pDatabase, sRemoteUser):
-    """Handles the error when the use attempts to perform an action that is invalid for the current state"""
-    pDatabase.SystemLog(LOG_WARNING, sRemoteUser, "State misalignment")
-    return {"type":"error", "description":"State misalignment"}
-
 def HandleGeneralException(pDatabase, sRemoteUser, sError):
     """Handles all other exceptions"""
     # Log the actual error and send the client a generic error

@@ -1,10 +1,10 @@
 package Elixys.Extended
 {
-	import com.danielfreeman.madcomponents.*;
-		
+	import Elixys.Components.*;
 	import Elixys.Extended.Form;
 	import Elixys.Views.*;
-	import Elixys.Components.*;
+	
+	import com.danielfreeman.madcomponents.*;
 
 	// This ElixysUI class is an extension of MadComponent's UI class
 	public class ElixysUI extends com.danielfreeman.madcomponents.UI
@@ -21,8 +21,8 @@ package Elixys.Extended
 			}
 
 			// Extend the UI tokens with our custom classes
-			var pNewTokens:Array = ["loading", "login", "logo", "progress", "navigationbar"];
-			var pNewClasses:Array = [Loading, Login, Logo, Progress, NavigationBar];
+			var pNewTokens:Array = ["loading", "login", "logo", "progressbar", "navigationbar", "tabbar", "datagrid", "datagridbody", "datagridheader"];
+			var pNewClasses:Array = [Loading, Login, Logo, ProgressBar, NavigationBar, TabBar, DataGrid, DataGridBody, DataGridHeader];
 			UI.extend(pNewTokens, pNewClasses);
 		}
 	}

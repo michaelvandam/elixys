@@ -71,7 +71,7 @@ package Elixys.Views
 		protected function LoadLogo():void
 		{
 			// Get the logo container
-			var pContainer:Form = Form(UI.findViewById("login_container"));
+			var pContainer:Form = Form(findViewById("login_container"));
 			
 			// Load the logo
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
@@ -87,7 +87,7 @@ package Elixys.Views
 		protected function LoadLogin():void
 		{
 			// Get the logo container
-			var pContainer:Form = Form(UI.findViewById("login_container"));
+			var pContainer:Form = Form(findViewById("login_container"));
 			
 			// Load the login
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
@@ -100,11 +100,11 @@ package Elixys.Views
 			layout(attributes);
 			
 			// Get references to the view components
-			m_pServer = Input(UI.findViewById("server"));
-			m_pUsername = Input(UI.findViewById("username"));
-			m_pPassword = Input(UI.findViewById("password"));
-			m_pLoginButton = Button(UI.findViewById("login"));
-			m_pErrorText = UILabel(UI.findViewById("login_error_text"));
+			m_pServer = Input(findViewById("server"));
+			m_pUsername = Input(findViewById("username"));
+			m_pPassword = Input(findViewById("password"));
+			m_pLoginButton = Button(findViewById("login"));
+			m_pErrorText = UILabel(findViewById("login_error_text"));
 			
 			// Add event listeners
 			m_pServer.inputField.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE, OnKeyboardChange);
@@ -270,28 +270,28 @@ package Elixys.Views
 			<rows gapV="5" heights="35%,7%,9%,7%,9%,5%,9%,19%">
 				<frame />
 				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face="GothamBold" color={Styling.TEXT_LIGHTERGRAY} size="12">
+					<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
 						SERVER
 					</font>
 				</label>
-				<input id="server" alignH="fill" alignV="fill" color={Styling.TEXT_DARKERGRAY} size="32" 
+				<input id="server" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
 					skin={getQualifiedClassName(login_serverFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
 				<columns gapH="25" widths="50%,50%">
 					<label useEmbedded="true" alignH="left" alignV="bottom">
-						<font face="GothamBold" color={Styling.TEXT_LIGHTERGRAY} size="12">
+						<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
 							USERNAME
 						</font>
 					</label>
 					<label useEmbedded="true" alignH="left" alignV="bottom">
-						<font face="GothamBold" color={Styling.TEXT_LIGHTERGRAY} size="12">
+						<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
 							PASSWORD
 						</font>
 					</label>
 				</columns>
 				<columns gapH="25" widths="50%,50%">
-					<input id="username" alignH="fill" alignV="fill" color={Styling.TEXT_DARKERGRAY} size="32" 
+					<input id="username" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
 						skin={getQualifiedClassName(login_loginFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
-					<input id="password" alignH="fill" alignV="fill" color={Styling.TEXT_DARKERGRAY} size="32" 
+					<input id="password" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
 						skin={getQualifiedClassName(login_loginFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_GO} 
 						displayAsPassword="true" />
 				</columns>
@@ -299,7 +299,7 @@ package Elixys.Views
 				<columns gapH="35" widths="49%,51%">
 					<frame alignH="fill" alignV="fill">
 						<button id="login" alignH="fill" alignV="fill" enabled="false" useEmbedded="true"
-								enabledTextColor={Styling.TEXT_DARKERGRAY} disabledTextColor={Styling.TEXT_LIGHTGRAY}
+								enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY5}
 								skinup={getQualifiedClassName(login_signIn_up)}
 								skindown={getQualifiedClassName(login_signIn_down)}
 								skindisabled={getQualifiedClassName(login_signIn_disabled)}>

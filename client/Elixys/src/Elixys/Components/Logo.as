@@ -49,12 +49,12 @@ package Elixys.Components
 						<frame />
 						<vertical gapV="0">
 							<label alignH="left" alignV="top">
-								<font color={Styling.TEXT_DARKGRAY} size="18">
+								<font color={Styling.TEXT_GRAY2} size="18">
 									Automated Radiochemical
 								</font>
 							</label>
 							<label alignH="left" alignV="top">
-								<font color={Styling.TEXT_DARKGRAY} size="18">
+								<font color={Styling.TEXT_GRAY2} size="18">
 									Synthesis Platform
 								</font>
 							</label>

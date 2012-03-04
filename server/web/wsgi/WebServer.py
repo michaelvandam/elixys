@@ -62,8 +62,13 @@ def application(pEnvironment, fStartResponse):
         else:
             raise Exception("Unknown request method: " + sRequestMethod)
 
-        # Handle the request
-        pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
+        try:
+            # Handle the request
+            pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
+        except Exceptions.StateMisalignmentException as ex:
+            # The client state is misaligned, send the correct state as our response
+            pGetHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
+            pResponse = pGetHandler.HandleRequest(pClientState, sRemoteUser, "/state", None, 0)
     except Exceptions.SequenceNotFoundException as ex:
         pResponse = ExceptionHandler.HandleSequenceNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
     except Exceptions.ComponentNotFoundException as ex:
@@ -72,8 +77,6 @@ def application(pEnvironment, fStartResponse):
         pResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
     except Exceptions.InvalidSequenceException as ex:
         pResponse = ExceptionHandler.HandleInvalidSequence(pDatabase, sRemoteUser, ex.nSequenceID)
-    except Exceptions.StateMisalignmentException as ex:
-        pResponse = ExceptionHandler.HandleStateMisalignment(pDatabase, sRemoteUser)
     except Exception as ex:
         pResponse = ExceptionHandler.HandleGeneralException(pDatabase, sRemoteUser, str(ex))
 

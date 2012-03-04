@@ -9,14 +9,14 @@ package Elixys.Components
 	import flash.display.Sprite;
 	import flash.events.Event;
 	
-	// This progress component is an extension of our extended Form class
-	public class Progress extends Form
+	// This progress bar component is an extension of our extended Form class
+	public class ProgressBar extends Form
 	{
 		/***
 		 * Construction
 		 **/
 		
-		public function Progress(screen:Sprite, xml:XML, attributes:Attributes)
+		public function ProgressBar(screen:Sprite, xml:XML, attributes:Attributes)
 		{
 			// Call the base constructor
 			super(screen, PROGRESS, attributes);
@@ -62,7 +62,7 @@ package Elixys.Components
 					<frame />
 					<rows gapV="0" heights="38,8">
 						<label useEmbedded="true" alignH="left" alignV="top">
-							<font face="GothamMedium" color={Styling.TEXT_DARKERGRAY} size="18">
+							<font face="GothamMedium" color={Styling.TEXT_GRAY1} size="18">
 								LOADING
 							</font>
 						</label>

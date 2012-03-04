@@ -16,7 +16,7 @@ class ValvesModel(ComponentModel):
     ComponentModel.__init__(self, name, hardwareComm, modelLock)
     self.gasTransferValveOpen = False
     self.f18LoadValveOpen = False
-    self.hplcLoadValveOpen  = False
+    self.hplcInjectValveOpen  = False
 
   def getGasTransferValveOpen(self, bLockModel = True):
     """Returns True if the gas transfer valve is open, False otherwise"""
@@ -32,12 +32,12 @@ class ValvesModel(ComponentModel):
     else:
       return self.f18LoadValveOpen
 
-  def getHPLCLoadValveOpen(self, bLockModel = True):
-    """Returns True if the HPLC load valve is open, False otherwise"""
+  def getHPLCInjectValveOpen(self, bLockModel = True):
+    """Returns True if the HPLC inject valve is open, False otherwise"""
     if bLockModel:
-      return self.protectedReturn1(self.getHPLCLoadValveOpen)
+      return self.protectedReturn1(self.hplcInjectValveOpen)
     else:
-      return self.hplcLoadValveOpen
+      return self.hplcInjectValveOpen
 
   def setGasTransferValveOpen(self, bValveOpen):
     """Opens or closes the gas transfer valve"""
@@ -53,15 +53,16 @@ class ValvesModel(ComponentModel):
     else:
       self.hardwareComm.LoadF18Stop()
 
-  def setHPLCLoadValveOpen(self, nReagent, bValveOpen):
-    """Opens or closes the HPLC load value"""
+  def setHPLCInjectValveOpen(self, nReagent, bValveOpen):
+    """Opens or closes the HPLC inject value"""
     if bValveOpen:
-      self.hardwareComm.LoadHPLCStart()
+      self.hardwareComm.HPLCInject()
     else:
-      self.hardwareComm.LoadHPLCStop()
+      self.hardwareComm.HPLCLoad()
 
-  def updateState(self, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen):
+  def updateState(self, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCInjectValveOpen):
     """Update the internal state"""
     self.gasTransferValveOpen = bGasTransferValveOpen
     self.f18LoadValveOpen = bF18LoadValveOpen
-    self.hplcLoadValveOpen  = bHPLCLoadValveOpen
+    self.hplcInjectValveOpen  = bHPLCInjectValveOpen
+

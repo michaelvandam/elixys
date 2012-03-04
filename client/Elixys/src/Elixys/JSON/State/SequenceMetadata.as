@@ -99,6 +99,63 @@ package Elixys.JSON.State
 			super.flash_proxy::setProperty("operations", value);
 		}
 		
+		// Sequence metadata comparison function.  Returns true if the sequences are equal, false otherwise.
+		public static function CompareSequences(pSequenceA:SequenceMetadata, pSequenceB:SequenceMetadata):Boolean
+		{
+			if (pSequenceA.Name != pSequenceB.Name)
+			{
+				return false;
+			}
+			if (pSequenceA.Time != pSequenceB.Time)
+			{
+				return false;
+			}
+			if (pSequenceA.Date != pSequenceB.Date)
+			{
+				return false;
+			}
+			if (pSequenceA.Comment != pSequenceB.Comment)
+			{
+				return false;
+			}
+			if (pSequenceA.ID != pSequenceB.ID)
+			{
+				return false;
+			}
+			if (pSequenceA.Creator != pSequenceB.Creator)
+			{
+				return false;
+			}
+			if (pSequenceA.Operations != pSequenceB.Operations)
+			{
+				return false;
+			}
+			return true;
+		}
+		
+		// Sequence metadata array comparison function.  Returns true if the arrays are equal, false otherwise.
+		public static function CompareSequenceArrays(pSequencesA:Array, pSequencesB:Array):Boolean
+		{
+			if (pSequencesA.length != pSequencesB.length)
+			{
+				return false;
+			}
+			else
+			{
+				var pSequenceA:SequenceMetadata, pSequenceB:SequenceMetadata;
+				for (var i:int = 0; i < pSequencesA.length; ++i)
+				{
+					pSequenceA = pSequencesA[i] as SequenceMetadata;
+					pSequenceB = pSequencesB[i] as SequenceMetadata;
+					if (!CompareSequences(pSequenceA, pSequenceB))
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		
 		// Default format
 		protected var m_sDefault:String = "{ \"type\":\"sequencemetadata\", \"name\":\"\", \"time\":\"\", \"date\":\"\", " +
 			"\"comment\":\"\", \"id\":\"\", \"creator\":\"\", \"operations\":\"\" }";

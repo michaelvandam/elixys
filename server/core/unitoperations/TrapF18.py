@@ -50,7 +50,7 @@ class TrapF18(UnitOperation):
         self.waitForUserInput()
       else:
         self.setStatus("Trapping")
-        self.systemModel['Valves'].setF18LoadValveOpen(ON)  
+        self.systemModel['Valves'].setF18LoadValveOpen(ON)
         self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,ON,EQUAL,5)
         self.timerShowInStatus = False
         self.setPressureRegulator(1,self.trapPressure,5) #Set pressure after valve is opened

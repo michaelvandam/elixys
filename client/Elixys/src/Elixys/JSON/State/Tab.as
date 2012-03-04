@@ -34,22 +34,42 @@ package Elixys.JSON.State
 		{
 			return super.flash_proxy::getProperty("id");
 		}
-		public function get Columns():Array
+		
+		// Tab comparison function.  Returns true if the tabs are equal, false otherwise.
+		public static function CompareTabs(pTabA:Tab, pTabB:Tab):Boolean
 		{
-			// Parse the columns
-			if (m_pColumns == null)
+			if (pTabA.Text != pTabB.Text)
 			{
-				m_pColumns = new Array();
-				var pColumns:Array = super.flash_proxy::getProperty("columns");
-				for each (var sColumn:String in pColumns)
-				{
-					m_pColumns.push(sColumn);
-				}
+				return false;
 			}
-			return m_pColumns;
+			if (pTabA.ID != pTabB.ID)
+			{
+				return false;
+			}
+			return true;
 		}
 		
-		// State components
-		protected var m_pColumns:Array;
+		// Tab array comparison function.  Returns true if the arrays are equal, false otherwise.
+		public static function CompareTabArrays(pTabsA:Array, pTabsB:Array):Boolean
+		{
+			if (pTabsA.length != pTabsB.length)
+			{
+				return false;
+			}
+			else
+			{
+				var pTabA:Tab, pTabB:Tab;
+				for (var i:int = 0; i < pTabsA.length; ++i)
+				{
+					pTabA = pTabsA[i] as Tab;
+					pTabB = pTabsB[i] as Tab;
+					if (!CompareTabs(pTabA, pTabB))
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
 	}
 }

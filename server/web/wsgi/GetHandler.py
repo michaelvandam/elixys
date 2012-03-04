@@ -91,75 +91,143 @@ class GetHandler:
 
     # Handles GET /state request for Home
     def __HandleGetStateHome(self):
-        # Start with the common buttons
-        pState = {"buttons":[{"type":"button",
-            "text":"Create, view or run a sequence",
-            "id":"CREATE"}]}
-
-        # Is someone running the system?
+        # Check if someone running the system
         pServerState = self.__GetServerState()
-        if pServerState["runstate"]["username"] != "":
-            # Yes, so add the observe button
-            pState["buttons"].append({"type":"button",
-               "text":"Observe the current run by " + pServerState["runstate"]["username"],
-                "id":"OBSERVE"})
+        bSystemRunning = (pServerState["runstate"]["username"] != "")
 
-        # Return the state
-        return pState
+        # Return the button array
+        return {"buttons":[{"type":"button",
+            "id":"SEQUENCER",
+            "enabled":True},
+            {"type":"button",
+            "id":"MYACCOUNT",
+            "enabled":False},
+            {"type":"button",
+            "id":"MANAGEUSERS",
+            "enabled":False},
+            {"type":"button",
+            "id":"VIEWLOGS",
+            "enabled":False},
+            {"type":"button",
+            "id":"VIEWRUN",
+            "enabled":bSystemRunning},
+            {"type":"button",
+            "id":"LOGOUT",
+            "enabled":True}]}
 
-    # Handle GET /state for Select Sequence (Saved Sequences tab)
+    # Handle GET /state for Select Saved Sequence
     def __HandleGetStateSelectSavedSequences(self):
-        pState = self.__HandleGetStateSelect()
-        pState.update({"tabid":"SAVEDSEQUENCES"})
-        pState["optionbuttons"].append({"type":"button",
-            "text":"Edit",
-            "id":"EDIT"})
-        pState["optionbuttons"].append({"type":"button",
-            "text":"Delete",
-            "id":"DELETE"})
+        # Check if the system is running
+        pServerState = self.__GetServerState()
+        bSystemAvailable = (pServerState["runstate"]["username"] == "")
+
+        # Format the buttons, tabs and columns
+        pState = {"buttons":[{"type":"button",
+            "id":"SEQUENCER",
+            "enabled":True},
+            {"type":"button",
+            "id":"NEWSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"COPYSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"VIEWSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"EDITSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"RUNSEQUENCE",
+            "enabled":bSystemAvailable},
+            {"type":"button",
+            "id":"DELETESEQUENCE",
+            "enabled":True}],
+            "tabs":[{"type":"tab",
+            "text":"SEQUENCE LIST",
+            "id":"SAVEDSEQUENCES"},
+            {"type":"tab",
+            "text":"RUN HISTORY",
+            "id":"RUNHISTORY"}],
+            "tabid":"SAVEDSEQUENCES",
+            "columns":[{"type":"column",
+            "data":"name",
+            "display":"NAME",
+            "percentwidth":35,
+            "sortable":True,
+            "sortmode":"down"},
+            {"type":"column",
+            "data":"comment",
+            "display":"COMMENT",
+            "percentwidth":65,
+            "sortable":True,
+            "sortmode":"none"}]}
+
+        # Append the saved sequence list
         pSavedSequences = self.__pDatabase.GetAllSequences(self.__sRemoteUser, "Saved")
         pState.update({"sequences":pSavedSequences})
         return pState
 
     # Handle GET /state for Select Sequence (Run history tab)
     def __HandleGetStateSelectRunHistory(self):
-        pState = self.__HandleGetStateSelect()
-        pState.update({"tabid":"RUNHISTORY"})
-        pRunHistorySequences = self.__pDatabase.GetAllSequences(self.__sRemoteUser, "History")
-        pRunHistorySequences.reverse()
-        pState.update({"sequences":pRunHistorySequences})
-        return pState
-
-    # Handles GET /state for Select Sequence (both tabs)
-    def __HandleGetStateSelect(self):
-        # Start with the common state
-        pState = {"tabs":[{"type":"tab",
-                "text":"Saved Sequences",
-                "id":"SAVEDSEQUENCES",
-                "columns":["name:Name", "comment:Comment"]},
-                {"type":"tab",
-                "text":"Run History",
-                "id":"RUNHISTORY",
-                "columns":["date:Date", "creator:User", "name:Name", "comment:Comment"]}],
-            "optionbuttons":[{"type":"button",
-                "text":"View",
-                "id":"VIEW"},
-                {"type":"button",
-                "text":"Copy",
-                "id":"COPY"}],
-            "navigationbuttons":[{"type":"button",
-                "text":"Create",
-                "id":"CREATE"},
-                {"type":"button",
-                "text":"Back",
-                "id":"BACK"}]}
-
-        # Add the run button if no one is running the system
+        # Check if the system is running
         pServerState = self.__GetServerState()
-        if pServerState["runstate"]["username"] == "":
-            pState["optionbuttons"].insert(1, {"type":"button",
-                "text":"Run",
-                "id":"RUN"})
+        bSystemAvailable = (pServerState["runstate"]["username"] == "")
+
+        # Format the buttons, tabs and columns
+        pState = {"buttons":[{"type":"button",
+            "id":"SEQUENCER",
+            "enabled":True},
+            {"type":"button",
+            "id":"COPYSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"VIEWSEQUENCE",
+            "enabled":True},
+            {"type":"button",
+            "id":"RUNSEQUENCE",
+            "enabled":bSystemAvailable},
+            {"type":"button",
+            "id":"VIEWRUNLOGS",
+            "enabled":False},
+            {"type":"button",
+            "id":"VIEWBATCHRECORD",
+            "enabled":False}],
+            "tabs":[{"type":"tab",
+            "text":"SEQUENCE LIST",
+            "id":"SAVEDSEQUENCES"},
+            {"type":"tab",
+            "text":"RUN HISTORY",
+            "id":"RUNHISTORY"}],
+            "tabid":"RUNHISTORY",
+            "columns":[{"type":"column",
+            "data":"name",
+            "display":"NAME",
+            "percentwidth":20,
+            "sortable":True,
+            "sortmode":"none"},
+            {"type":"column",
+            "data":"comment",
+            "display":"COMMENT",
+            "percentwidth":40,
+            "sortable":True,
+            "sortmode":"none"},
+            {"type":"column",
+            "data":"creator",
+            "display":"USER",
+            "percentwidth":15,
+            "sortable":True,
+            "sortmode":"none"},
+            {"type":"column",
+            "data":"date&time",
+            "display":"DATE",
+            "percentwidth":25,
+            "sortable":True,
+            "sortmode":"down"}]}
+
+        # Append the run history list
+        pRunHistorySequences = self.__pDatabase.GetAllSequences(self.__sRemoteUser, "History")
+        pState.update({"sequences":pRunHistorySequences})
         return pState
 
     # Handle GET /state for View Sequence
@@ -174,7 +242,7 @@ class GetHandler:
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Start with the common return object
-        pState = {"navigationbuttons":[{"type":"button",
+        pState = {"buttons":[{"type":"button",
                 "text":"Back",
                 "id":"BACK"}],
             "sequenceid":self.__pClientState["sequenceid"],
@@ -183,7 +251,7 @@ class GetHandler:
         # Add the edit button if this is a saved sequence
         pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, self.__pClientState["sequenceid"])
         if pSequenceMetadata["sequencetype"] == "Saved":
-            pState["navigationbuttons"].insert(0, {"type":"button",
+            pState["buttons"].insert(0, {"type":"button",
                 "text":"Edit",
                 "id":"EDIT"})
             nInsertionOffset = 1
@@ -193,13 +261,13 @@ class GetHandler:
         # Add the run buttons if no one is running the system
         pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
-            pState["navigationbuttons"].insert(nInsertionOffset, {"type":"button",
+            pState["buttons"].insert(nInsertionOffset, {"type":"button",
                 "text":"Run",
                 "id":"RUN"})
             nInsertionOffset += 1
             pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
             if pComponent["componenttype"] != "CASSETTE":
-                pState["navigationbuttons"].insert(nInsertionOffset, {"type":"button",
+                pState["buttons"].insert(nInsertionOffset, {"type":"button",
                     "text":"Run here",
                     "id":"RUNHERE"})
         return pState
@@ -216,7 +284,7 @@ class GetHandler:
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Start with the common return object
-        pState = {"navigationbuttons":[{"type":"button",
+        pState = {"buttons":[{"type":"button",
                 "text":"Back",
                 "id":"BACK"}],
             "sequenceid":self.__pClientState["sequenceid"],
@@ -225,12 +293,12 @@ class GetHandler:
         # Add the run buttons if no one is running the system
         pServerState = self.__GetServerState()
         if pServerState["runstate"]["username"] == "":
-            pState["navigationbuttons"].insert(0, {"type":"button",
+            pState["buttons"].insert(0, {"type":"button",
                 "text":"Run",
                 "id":"RUN"})
             pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
             if pComponent["componenttype"] != "CASSETTE":
-                pState["navigationbuttons"].insert(1, {"type":"button",
+                pState["buttons"].insert(1, {"type":"button",
                     "text":"Run here",
                     "id":"RUNHERE"})
         return pState
@@ -255,29 +323,29 @@ class GetHandler:
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Start with the common return object
-        pState = {"navigationbuttons":[],
+        pState = {"buttons":[],
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 
         # Add the button depending on the user running the system
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
             if self.__pCoreServer.WillSequencePause(self.__sRemoteUser):
-                pState["navigationbuttons"].append({"type":"button",
+                pState["buttons"].append({"type":"button",
                     "text":"Don't Pause",
                     "id":"CONTINUERUN"})
             elif self.__pCoreServer.IsSequencePaused(self.__sRemoteUser):
-                pState["navigationbuttons"].append({"type":"button",
+                pState["buttons"].append({"type":"button",
                     "text":"Resume Run",
                     "id":"CONTINUERUN"})
             else:
-                pState["navigationbuttons"].append({"type":"button",
+                pState["buttons"].append({"type":"button",
                     "text":"Pause Run",
                     "id":"PAUSERUN"})
-            pState["navigationbuttons"].append({"type":"button",
+            pState["buttons"].append({"type":"button",
                 "text":"Abort",
                 "id":"ABORT"})
         else:
-            pState["navigationbuttons"].append({"type":"button",
+            pState["buttons"].append({"type":"button",
                 "text":"Back",
                 "id":"BACK"})
 

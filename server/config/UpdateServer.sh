@@ -11,6 +11,8 @@ fi
 # Stop the services
 service ElixysCoreServer stop
 service ElixysFakePLC stop
+service ElixysValidation stop
+service ElixysRtmpd stop
 service httpd stop
 
 # Get the current git repository
@@ -38,6 +40,8 @@ cp -R elixys/server/database /opt/elixys
 
 # Start the services
 service httpd start
+service ElixysRtmpd start
+service ElixysValidation start
 service ElixysFakePLC start
 service ElixysCoreServer start
 

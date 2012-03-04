@@ -75,7 +75,7 @@ class PostHandler:
         sActionType = str(pJSON["action"]["type"])
         sActionTargetID = str(pJSON["action"]["targetid"])
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "CREATE":
+            if sActionTargetID == "SEQUENCER":
                 # Switch states to the last Select Sequence screen
                 DirectToLastSelectScreen(self.__pClientState)
                 return self.__SaveClientStateAndReturn()
@@ -104,7 +104,11 @@ class PostHandler:
         sActionTargetID = str(pJSON["action"]["targetid"])
         nSequenceID = pJSON["sequenceid"]
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "VIEW":
+            if sActionTargetID == "SEQUENCER":
+                # Switch states to Home
+                self.__pClientState["screen"] = "HOME"
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "VIEW":
                 # Switch states to View Sequence
                 self.__pClientState["screen"] = "VIEW"
                 self.__pClientState["sequenceid"] = nSequenceID
@@ -119,10 +123,6 @@ class PostHandler:
             elif sActionTargetID == "RUN":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(nSequenceID)
-            elif sActionTargetID == "BACK":
-                # Switch states to Home
-                self.__pClientState["screen"] = "HOME"
-                return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "CREATE":
                 # Show the Create Sequence prompt
                 self.__pClientState["prompt"]["screen"] = "PROMPT_CREATESEQUENCE"

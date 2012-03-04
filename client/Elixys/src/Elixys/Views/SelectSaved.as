@@ -1,13 +1,11 @@
 package Elixys.Views
 {
 	import Elixys.Assets.Styling;
-	import Elixys.Components.NavigationBar;
-	import Elixys.Components.Screen;
+	import Elixys.Components.*;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Post.PostSelect;
-	import Elixys.JSON.State.State;
-	import Elixys.JSON.State.StateSelect;
+	import Elixys.JSON.State.*;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -42,9 +40,16 @@ package Elixys.Views
 					LoadNavigationBar();
 				}
 				
-				// Step 2 is loading the sequence grid
+				// Step 2 is loading the tab bar
 				if (m_nChildrenLoaded == 1)
 				{
+					LoadTabBar();
+				}
+				
+				// Step 3 is loading the sequence grid
+				if (m_nChildrenLoaded == 1)
+				{
+					LoadDataGrid();
 				}
 				
 				// Increment and return
@@ -62,7 +67,7 @@ package Elixys.Views
 		protected function LoadNavigationBar():void
 		{
 			// Get the navigation bar container
-			var pContainer:Form = Form(UI.findViewById("selectsaved_navigationbar_container"));
+			var pContainer:Form = Form(findViewById("selectsaved_navigationbar_container"));
 			
 			// Load the navigation bar
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
@@ -75,6 +80,39 @@ package Elixys.Views
 			layout(attributes);
 		}
 		
+		// Load the tab bar
+		protected function LoadTabBar():void
+		{
+			// Get the tab bar container
+			var pContainer:Form = Form(findViewById("selectsaved_tabbar_container"));
+			
+			// Load the tab bar
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pTabBar = new TabBar(pContainer, TAB, pAttributes);
+			m_pTabBar.addEventListener(ButtonEvent.CLICK, OnTabClick);
+			
+			// Append the tab bar to the XML and refresh
+			pContainer.xml.appendChild(TAB);
+			pContainer.AppendChild(m_pTabBar);
+			layout(attributes);
+		}
+		
+		// Load the data grid
+		protected function LoadDataGrid():void
+		{
+			// Get the data grid container
+			var pContainer:Form = Form(findViewById("selectsaved_datagrid_container"));
+			
+			// Load the datagrid
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pDataGrid = new DataGrid(pContainer, DATAGRID, pAttributes);
+			
+			// Append the data grid to the XML and refresh
+			pContainer.xml.appendChild(DATAGRID);
+			pContainer.AppendChild(m_pDataGrid);
+			layout(attributes);
+		}
+		
 		/***
 		 * Member functions
 		 **/
@@ -82,22 +120,64 @@ package Elixys.Views
 		// Updates the state
 		public override function UpdateState(pState:State):void
 		{
-			// Update the navigation bar buttons
+			// Check what has changed since our last update
 			var pStateSelect:StateSelect = new StateSelect(null, pState);
-			m_pNavigationBar.UpdateButtons(pStateSelect.Buttons);
+			var bButtonsChanged:Boolean = true, bTabsChanged:Boolean = true, bTabIDChanged:Boolean = true, bColumnsChanged:Boolean = true,
+				bSequencesChanged:Boolean = true;
+			if (m_pStateSelect != null)
+			{
+				bButtonsChanged = !Elixys.JSON.State.Button.CompareButtonArrays(pStateSelect.Buttons, m_pStateSelect.Buttons);
+				bTabsChanged = !Tab.CompareTabArrays(pStateSelect.Tabs, m_pStateSelect.Tabs);
+				bTabIDChanged = (pStateSelect.TabID != m_pStateSelect.TabID);
+				bColumnsChanged = !Column.CompareColumnArrays(pStateSelect.Columns, m_pStateSelect.Columns);
+				bSequencesChanged = !SequenceMetadata.CompareSequenceArrays(pStateSelect.Sequences, m_pStateSelect.Sequences);
+			}
+			
+			// Update the navigation bar buttons
+			if (bButtonsChanged)
+			{
+				m_pNavigationBar.UpdateButtons(pStateSelect.Buttons);
+			}
+			
+			// Update the tab bar options
+			if (bTabsChanged || bTabIDChanged)
+			{
+				m_pTabBar.UpdateTabs(pStateSelect.Tabs, pStateSelect.TabID);
+			}
+			
+			// Update the data grid
+			if (bTabsChanged || bTabIDChanged || bColumnsChanged || bSequencesChanged)
+			{
+				// Update the grid
+				m_pDataGrid.UpdateDataGrid(pStateSelect.Columns, pStateSelect.Sequences);
+			}
+			
+			// Remember the last state
+			m_pStateSelect = pStateSelect;
 		}
 		
 		// Called when a button on the navigation bar is clicked
 		protected function OnButtonClick(event:ButtonEvent):void
 		{
-			// Send the button click to the server
+			// Send a button click to the server
 			var pPostSelect:PostSelect = new PostSelect();
 			pPostSelect.Type = "BUTTONCLICK";
 			pPostSelect.TargetID = event.button;
 			pPostSelect.SequenceID = 0;
 			DoPost(pPostSelect, "SELECT");
 		}
-		
+
+		// Called when a tab on the tab bar is clicked
+		protected function OnTabClick(event:ButtonEvent):void
+		{
+			// Send a tab click to the server
+			var pPostSelect:PostSelect = new PostSelect();
+			pPostSelect.Type = "TABCLICK";
+			pPostSelect.TargetID = event.button;
+			pPostSelect.SequenceID = 0;
+			DoPost(pPostSelect, "SELECT");
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -105,9 +185,11 @@ package Elixys.Views
 		// Select saved screen XML
 		protected static const SELECTSAVED:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
-				<rows gapV="0" border="false" heights="18%,64%" alignH="fill" alignV="fill">
+				<rows gapV="0" border="false" heights="18%,2%,7%,73%" alignH="fill" alignV="fill">
 					<frame id="selectsaved_navigationbar_container" alignV="fill" alignH="fill" />
-					<frame alignH="fill" alignV="fill" />
+					<frame alignV="fill" alignH="fill" />
+					<frame id="selectsaved_tabbar_container" alignV="fill" alignH="fill" />
+					<frame id="selectsaved_datagrid_container" alignV="fill" alignH="fill" />
 				</rows>
 			</frame>;
 		
@@ -115,49 +197,49 @@ package Elixys.Views
 		protected static const NAVIGATION:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} rightpadding="20">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_GRAY} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_GRAY3} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_disabled)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="NEWSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_newSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_newSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_newSequence_disabled)}>
 					NEW SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="COPYSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_copySequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_copySequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_copySequence_disabled)}>
 					COPY SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="VIEWSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewSequence_disabled)}>
 					VIEW SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="EDITSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_editSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_editSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_editSequence_disabled)}>
 					EDIT SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>
 					RUN SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="DELETESEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
 						foregroundskinup={getQualifiedClassName(seqListNav_deleteSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_deleteSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_deleteSequence_disabled)}>
@@ -165,13 +247,31 @@ package Elixys.Views
 				</navigationbaroption>
 			</navigationbar>;
 		
+		// Tab bar XML
+		protected static const TAB:XML =
+			<tab alignH="fill" alignV="fill" fontFace="GothamMedium" fontSize="18" textColor={Styling.TEXT_GRAY3}
+				selectedTextColor={Styling.TEXT_GRAY1} textpaddingvertical="7" textpaddinghorizontal="18" />;
+
+		// Data grid XML
+		protected static const DATAGRID:XML =
+			<datagrid alignH="fill" alignV="fill" headerfontface="GothamMedium" headerfontsize="14" 
+				headertextcolor={Styling.TEXT_GRAY4} headerpressedcolor={Styling.DATAGRID_HEADERPRESSED}
+				sortupskin={getQualifiedClassName(sortUp_up)} sortdownskin={getQualifiedClassName(sortDown_up)}
+				bodyfontface="GothamMedium" bodyfontsize="18" bodytextcolor={Styling.TEXT_GRAY1}
+				visiblerowcount="9" rowselectedcolor={Styling.DATAGRID_SELECTED} />;
+
 		// Number of steps required to load this object
-		public static var LOAD_STEPS:uint = 2;
+		public static var LOAD_STEPS:uint = 3;
 		
 		// The current step
 		protected var m_nChildrenLoaded:uint = 0;
 		
+		// Currently displayed state
+		protected var m_pStateSelect:StateSelect;
+
 		// Screen components
 		protected var m_pNavigationBar:NavigationBar;
+		protected var m_pTabBar:TabBar;
+		protected var m_pDataGrid:DataGrid;
 	}
 }

@@ -446,10 +446,10 @@ class HardwareComm():
         self.__SetBinaryValue("Valves_F18Load", True)
     def LoadF18Stop(self):
         self.__SetBinaryValue("Valves_F18Load", False)
-    def LoadHPLCStart(self):
-        self.__SetBinaryValue("Valves_HPLCLoad", True)
-    def LoadHPLCStop(self):
-        self.__SetBinaryValue("Valves_HPLCLoad", False)
+    def HPLCLoad(self):
+        self.__SetBinaryValue("Valves_HPLCInject", False)
+    def HPLCInject(self):
+        self.__SetBinaryValue("Valves_HPLCInject", True)
 
     # Reactor
     def MoveReactor(self, nReactor, sPositionName):
@@ -959,7 +959,7 @@ class HardwareComm():
             # Update the system model
             pModel["CoolingSystem"].updateState(self.__GetBinaryValue("CoolingSystemOn"))
             pModel["VacuumSystem"].updateState(self.__GetBinaryValue("VacuumSystemOn"), self.__GetVacuumPressure())
-            pModel["Valves"].updateState(self.__GetBinaryValue("Valves_GasTransferValve"), self.__GetBinaryValue("Valves_F18Load"), self.__GetBinaryValue("Valves_HPLCLoad"))
+            pModel["Valves"].updateState(self.__GetBinaryValue("Valves_GasTransferValve"), self.__GetBinaryValue("Valves_F18Load"), self.__GetBinaryValue("Valves_HPLCInject"))
             pModel["LiquidSensors"].updateState(self.__GetLiquidSensor(1), self.__GetLiquidSensor(2), self.__GetLiquidSensorRaw(1), self.__GetLiquidSensorRaw(2))
             pModel["PressureRegulator1"].updateState(self.__GetPressureRegulatorSetPressure(1), self.__GetPressureRegulatorActualPressure(1))
             pModel["PressureRegulator2"].updateState(self.__GetPressureRegulatorSetPressure(2), self.__GetPressureRegulatorActualPressure(2))

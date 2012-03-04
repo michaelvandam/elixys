@@ -1,8 +1,7 @@
 package Elixys.Views
 {
 	import Elixys.Assets.Styling;
-	import Elixys.Components.Logo;
-	import Elixys.Components.Progress;
+	import Elixys.Components.*;
 	import Elixys.Events.*;
 	import Elixys.Extended.Form;
 
@@ -34,11 +33,11 @@ package Elixys.Views
 		public function InitialDisplay():void
 		{
 			// Get references to the logo and progress
-			m_pLogo = Logo(UI.findViewById("Logo"));
-			m_pProgress = Progress(UI.findViewById("Progress"));
+			m_pLogo = Logo(findViewById("Logo"));
+			m_pProgressBar = ProgressBar(findViewById("Progress"));
 
 			// Fade in the logo component
-			//m_pLogo.Fade(0, 1, 600);
+			m_pLogo.Fade(0, 1, 600);
 
 			// Set a timer to delay the fading in of the progress component
 			m_pProgressDelayTimer = new Timer(450, 1);
@@ -53,15 +52,15 @@ package Elixys.Views
 			m_pProgressDelayTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, OnProgressDelayTimerComplete);
 			
 			// Fade in the progress component
-			m_pProgress.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeInComplete);
-			m_pProgress.Fade(0, 1, 500);
+			m_pProgressBar.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeInComplete);
+			m_pProgressBar.Fade(0, 1, 500);
 		}
 
 		// Called when the progress fade in transition is complete
 		protected function OnProgressFadeInComplete(event:TransitionCompleteEvent):void
 		{
 			// Remove the event listener
-			m_pProgress.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeInComplete);
+			m_pProgressBar.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeInComplete);
 			
 			// Dispatch a transition complete event
 			dispatchEvent(new TransitionCompleteEvent(this));
@@ -70,22 +69,22 @@ package Elixys.Views
 		// Sets the percent complete
 		public function SetProgress(fPercentComplete:Number):void
 		{
-			m_pProgress.SetProgress(fPercentComplete);	
+			m_pProgressBar.SetProgress(fPercentComplete);	
 		}
 
 		// Called when the load is complete
 		public function LoadComplete():void
 		{
 			// Fade out the progress component
-			m_pProgress.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeOutComplete);
-			m_pProgress.Fade(1, 0, 300);
+			m_pProgressBar.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeOutComplete);
+			m_pProgressBar.Fade(1, 0, 300);
 		}
 		
 		// Called when the progress fade out transition is complete
 		protected function OnProgressFadeOutComplete(event:TransitionCompleteEvent):void
 		{
 			// Remove the event listener
-			m_pProgress.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeOutComplete);
+			m_pProgressBar.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnProgressFadeOutComplete);
 
 			// Dispatch a transition complete event
 			dispatchEvent(new TransitionCompleteEvent(this));
@@ -106,13 +105,13 @@ package Elixys.Views
 						<frame />
 					</columns>
 					<frame />
-					<progress id="Progress" />
+					<progressbar id="Progress" />
 				</rows>
 			</frame>;
 		
 		// References to components
 		protected var m_pLogo:Logo;
-		protected var m_pProgress:Progress;
+		protected var m_pProgressBar:ProgressBar;
 		
 		// Progress delay timer
 		protected var m_pProgressDelayTimer:Timer;

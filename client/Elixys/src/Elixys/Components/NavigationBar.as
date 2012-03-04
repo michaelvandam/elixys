@@ -422,7 +422,7 @@ package Elixys.Components
 				return;
 			}
 			
-			// Dispatch the click event
+			// Dispatch a click event
 			dispatchEvent(new ButtonEvent(m_pButtonNames[m_nPressedButton]));
 			
 			// Clear the pressed index and update

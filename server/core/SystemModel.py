@@ -283,19 +283,19 @@ class SystemModel:
       # Valves
       bGasTransferValveOpen = self.model["Valves"].getGasTransferValveOpen(False)
       bF18LoadValveOpen = self.model["Valves"].getF18LoadValveOpen(False)
-      bHPLCLoadValveOpen = self.model["Valves"].getHPLCLoadValveOpen(False)
+      bHPLCInjectValveOpen = self.model["Valves"].getHPLCInjectValveOpen(False)
       self.__pStateObject["hardwarestate"]["valves"] = {"type":"valvesstate"}
       self.__pStateObject["hardwarestate"]["valves"]["gastransfervalve"] = bGasTransferValveOpen
       self.__pStateObject["hardwarestate"]["valves"]["f18loadvalve"] = bF18LoadValveOpen
-      self.__pStateObject["hardwarestate"]["valves"]["hplcloadvalve"] = bHPLCLoadValveOpen
+      self.__pStateObject["hardwarestate"]["valves"]["hplcinjectvalve"] = bHPLCInjectValveOpen
       self.__sStateString += self.__PadString("Gas transfer valve open", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString(self.__BoolToString(bGasTransferValveOpen), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
       self.__sStateString += self.__PadString("F-18 load valve open", STATECOMMONCOLUMN1WIDTH)
       self.__sStateString += self.__PadString(self.__BoolToString(bF18LoadValveOpen), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
-      self.__sStateString += self.__PadString("HPLC load valve open", STATECOMMONCOLUMN1WIDTH)
-      self.__sStateString += self.__PadString(self.__BoolToString(bHPLCLoadValveOpen), STATECOMMONCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString("HPLC inject valve open", STATECOMMONCOLUMN1WIDTH)
+      self.__sStateString += self.__PadString(self.__BoolToString(bHPLCInjectValveOpen), STATECOMMONCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Reagent robot position
@@ -624,7 +624,7 @@ class SystemModel:
       # Update the database
       if self.database != None:
         self.database.StatusLog(bVacuumSystemOn, fVacuumSystemPressure, bCoolingSystemOn, fPressureRegulator1SetPressure, fPressureRegulator1ActualPressure,
-          fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCLoadValveOpen,
+          fPressureRegulator2SetPressure, fPressureRegulator2ActualPressure, bGasTransferValveOpen, bF18LoadValveOpen, bHPLCInjectValveOpen,
           sReagentRobotSetPositionName1 + " " + sReagentRobotSetPositionName2, sReagentRobotCurrentPositionName1 + " " + sReagentRobotCurrentPositionName2,
           nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawY, nReagentRobotCurrentPositionRawX, nReagentRobotCurrentPositionRawY,
           sReagentRobotCurrentStatusX, sReagentRobotCurrentStatusY, nReagentRobotCurrentErrorX, nReagentRobotCurrentErrorY, nReagentRobotXControlWord,
