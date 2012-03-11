@@ -1,6 +1,7 @@
 package Elixys.Components
 {
 	import Elixys.Assets.Styling;
+	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.State.Column;
 	
@@ -11,6 +12,7 @@ package Elixys.Components
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
 	
@@ -44,7 +46,7 @@ package Elixys.Components
 				attributes.height = (parent as Form).attributes.height;
 			}
 			
-			// Call the base constructor
+			// Call the base implementation
 			super.layout(attributes);
 		}
 
@@ -60,22 +62,25 @@ package Elixys.Components
 			{
 				if ((m_pHitAreasGlobal[nIndex] as Rectangle).contains(pGlobalPoint.x, pGlobalPoint.y))
 				{
-					// Set the selected row index and render
+					// Dispatch a selection change event, set the selected row index and render
+					dispatchEvent(new SelectionEvent(m_pData[nIndex][m_sIDField]));
 					m_nSelectedRow = nIndex;
 					Render();
-					break;
+					return;
 				}
 			}
 		}
 
 		// Set data grid header parameters
-		public function SetParameters(sFontFace:String, nFontSize:uint, nTextColor:uint, nVisibleRowCount:uint, nSelectedColor:uint):void
+		public function SetParameters(sFontFace:String, nFontSize:uint, nTextColor:uint, nVisibleRowCount:uint, nSelectedColor:uint,
+									  nIDField:String):void
 		{
 			m_sFontFace = sFontFace;
 			m_nFontSize = nFontSize;
 			m_nTextColor = nTextColor;
 			m_nVisibleRowCount = nVisibleRowCount;
 			m_nSelectedColor = nSelectedColor;
+			m_sIDField = nIDField;
 		}
 
 		// Update the data grid body
@@ -143,7 +148,7 @@ package Elixys.Components
 					while (pLabels.length > pColumns.length)
 					{
 						pLabel = pLabels.pop();
-						removeChild(pLabel);
+						_slider.removeChild(pLabel);
 					}
 				}
 				else
@@ -163,7 +168,25 @@ package Elixys.Components
 				while (pLabels.length)
 				{
 					pLabel = pLabels.pop();
-					removeChild(pLabel);
+					_slider.removeChild(pLabel);
+				}
+			}
+			
+			// Update the current selection
+			if (m_nSelectedRow != -1)
+			{
+				for (nRowIndex = 0; nRowIndex < pData.length; ++nRowIndex)
+				{
+					if (pData[nRowIndex][m_sIDField] == SelectionID)
+					{
+						m_nSelectedRow = nRowIndex;
+						break;
+					}
+				}
+				if (nRowIndex == pData.length)
+				{
+					m_nSelectedRow = -1;
+					dispatchEvent(new SelectionEvent(-1));
 				}
 			}
 			
@@ -224,7 +247,14 @@ package Elixys.Components
 					sFieldName = (m_pColumns[nColumnIndex] as Column).Data;
 					pLabel = m_pLabels[nRowIndex][nColumnIndex] as UILabel;
 					pLabel.text = FormatLabelText(m_pData[nRowIndex], sFieldName);
-					pLabel.width = pLabel.textWidth + 5;
+					if (pLabel.textWidth < (m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2)))
+					{
+						pLabel.width = pLabel.textWidth + 5;
+					}
+					else
+					{
+						AddEllipsis(pLabel, m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2));
+					}
 					pLabel.x = nOffset + DataGrid.TEXT_INDENT;
 					pLabel.y = pHitArea.y + ((nRowHeight - pLabel.textHeight) / 2);
 					nOffset += m_pColumnWidths[nColumnIndex];
@@ -268,13 +298,42 @@ package Elixys.Components
 			return sLabelText;
 		}
 
+		// Reduces the string width and adds ellipsis
+		protected function AddEllipsis(pTextField:TextField, nMaxWidth:int):void
+		{
+			if (pTextField.textWidth > nMaxWidth)
+			{
+				// Append the ellipsis
+				pTextField.appendText("...");
+				
+				// Loop until the string is small enough
+				while (pTextField.textWidth > nMaxWidth)
+				{
+					pTextField.replaceText(pTextField.text.length - 4, pTextField.text.length - 3, "");
+				}
+			}
+		}
+
+		// Returns the ID of the selected item
+		public function get SelectionID():int
+		{
+			if (m_nSelectedRow != -1)
+			{
+				return m_pData[m_nSelectedRow][m_sIDField];
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		
 		/***
 		 * Member variables
 		 **/
 		
 		// Datagrid XML
 		protected static const DATAGRIDBODY:XML = 
-			<frame />;
+			<frame border="false" />;
 
 		// Parameters
 		protected var m_sFontFace:String = "";
@@ -282,6 +341,7 @@ package Elixys.Components
 		protected var m_nTextColor:uint = 0;
 		protected var m_nVisibleRowCount:uint = 0;
 		protected var m_nSelectedColor:uint = 0;
+		protected var m_sIDField:String = "";
 
 		// Column and data
 		protected var m_pColumns:Array;

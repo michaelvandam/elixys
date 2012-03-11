@@ -108,77 +108,79 @@ class PostHandler:
                 # Switch states to Home
                 self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "VIEW":
+            elif sActionTargetID == "VIEWSEQUENCE":
                 # Switch states to View Sequence
                 self.__pClientState["screen"] = "VIEW"
                 self.__pClientState["sequenceid"] = nSequenceID
                 self.__pClientState["componentid"] = 0
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "EDIT":
+            elif sActionTargetID == "EDITSEQUENCE":
                 # Switch states to Edit Sequence
                 self.__pClientState["screen"] = "EDIT"
                 self.__pClientState["sequenceid"] = nSequenceID
                 self.__pClientState["componentid"] = 0
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "RUN":
+            elif sActionTargetID == "RUNSEQUENCE":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(nSequenceID)
-            elif sActionTargetID == "CREATE":
+            elif sActionTargetID == "NEWSEQUENCE":
                 # Show the Create Sequence prompt
                 self.__pClientState["prompt"]["screen"] = "PROMPT_CREATESEQUENCE"
                 self.__pClientState["prompt"]["show"] = True
-                self.__pClientState["prompt"]["title"] = "Create new sequence"
-                self.__pClientState["prompt"]["text1"] = "Enter the name of the new sequence:"
+                self.__pClientState["prompt"]["title"] = "NEW SEQUENCE"
+                self.__pClientState["prompt"]["text1"] = "SEQUENCE NAME"
                 self.__pClientState["prompt"]["edit1"] = True
+                self.__pClientState["prompt"]["edit1default"] = ""
                 self.__pClientState["prompt"]["edit1validation"] = "type=string; required=true"
-                self.__pClientState["prompt"]["text2"] = "Enter optional sequence description:"
+                self.__pClientState["prompt"]["text2"] = "SEQUENCE DESCRIPTION"
                 self.__pClientState["prompt"]["edit2"] = True
                 self.__pClientState["prompt"]["edit2validation"] = "type=string; required=false"
+                self.__pClientState["prompt"]["edit2default"] = ""
                 self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-                    "text":"Cancel",
-                    "id":"CANCEL"},
+                    "text":"OK",
+                    "id":"OK"},
                     {"type":"button",
-                    "text":"Create",
-                    "id":"CREATE"}]
+                    "text":"CANCEL",
+                    "id":"CANCEL"}]
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "COPY":
+            elif sActionTargetID == "COPYSEQUENCE":
                 # Show the Copy Sequence prompt
                 pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
                 self.__pClientState["prompt"]["screen"] = "PROMPT_COPYSEQUENCE"
                 self.__pClientState["prompt"]["show"] = True
-                self.__pClientState["prompt"]["title"] = "Copy sequence"
-                self.__pClientState["prompt"]["text1"] = "Enter the name of the new sequence:"
+                self.__pClientState["prompt"]["title"] = "COPY SEQUENCE"
+                self.__pClientState["prompt"]["text1"] = "SEQUENCE NAME"
                 self.__pClientState["prompt"]["edit1"] = True
                 self.__pClientState["prompt"]["edit1default"] = pSequence["metadata"]["name"] + " Copy"
                 self.__pClientState["prompt"]["edit1validation"] = "type=string; required=true"
-                self.__pClientState["prompt"]["text2"] = "Enter an optional description of the new sequence:"
+                self.__pClientState["prompt"]["text2"] = "SEQUENCE DESCRIPTION"
                 self.__pClientState["prompt"]["edit2"] = True
                 self.__pClientState["prompt"]["edit2default"] = pSequence["metadata"]["comment"]
                 self.__pClientState["prompt"]["edit2validation"] = "type=string; required=false"
                 self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-                    "text":"Cancel",
-                    "id":"CANCEL"},
+                    "text":"OK",
+                    "id":"OK"},
                     {"type":"button",
-                    "text":"Copy",
-                    "id":"COPY"}]
+                    "text":"CANCEL",
+                    "id":"CANCEL"}]
                 self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "DELETE":
+            elif sActionTargetID == "DELETESEQUENCE":
                 # Show the Delete Sequence prompt
                 pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, nSequenceID, False)
                 self.__pClientState["prompt"]["screen"] = "PROMPT_DELETESEQUENCE"
                 self.__pClientState["prompt"]["show"] = True
-                self.__pClientState["prompt"]["title"] = "Delete sequence"
-                self.__pClientState["prompt"]["text1"] = "Are you sure that you want to permanently delete sequence \"" + pSequence["metadata"]["name"] + "\"?"
+                self.__pClientState["prompt"]["title"] = "DELETE SEQUENCE"
+                self.__pClientState["prompt"]["text1"] = "Are you sure that you want to delete the sequence \"" + pSequence["metadata"]["name"] + "\"?"
                 self.__pClientState["prompt"]["edit1"] = False
                 self.__pClientState["prompt"]["text2"] = ""
                 self.__pClientState["prompt"]["edit2"] = False
                 self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-                    "text":"Cancel",
-                    "id":"CANCEL"},
+                    "text":"YES",
+                    "id":"YES"},
                     {"type":"button",
-                    "text":"Delete",
-                    "id":"DELETE"}]
+                    "text":"NO",
+                    "id":"NO"}]
                 self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
         elif sActionType == "TABCLICK":
@@ -194,6 +196,71 @@ class PostHandler:
                 self.__pClientState["lastselectscreen"] = "HISTORY"
                 self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
+        elif sActionType == "HEADERCLICK":
+                if self.__pClientState["screen"] == "SELECT_SAVEDSEQUENCES":
+                    # Change the select sequences sort order
+                    if sActionTargetID == "name":
+                        if self.__pClientState["selectsequencesort"]["column"] == "name":
+                            if self.__pClientState["selectsequencesort"]["mode"] == "down":
+                                self.__pClientState["selectsequencesort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["selectsequencesort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["selectsequencesort"]["column"] = "name"
+                            self.__pClientState["selectsequencesort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
+                    elif sActionTargetID == "comment":
+                        if self.__pClientState["selectsequencesort"]["column"] == "comment":
+                            if self.__pClientState["selectsequencesort"]["mode"] == "down":
+                                self.__pClientState["selectsequencesort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["selectsequencesort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["selectsequencesort"]["column"] = "comment"
+                            self.__pClientState["selectsequencesort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
+                elif self.__pClientState["screen"] == "SELECT_RUNHISTORY":
+                    # Change the run history sort order
+                    if sActionTargetID == "name":
+                        if self.__pClientState["runhistorysort"]["column"] == "name":
+                            if self.__pClientState["runhistorysort"]["mode"] == "down":
+                                self.__pClientState["runhistorysort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["runhistorysort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["runhistorysort"]["column"] = "name"
+                            self.__pClientState["runhistorysort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
+                    elif sActionTargetID == "comment":
+                        if self.__pClientState["runhistorysort"]["column"] == "comment":
+                            if self.__pClientState["runhistorysort"]["mode"] == "down":
+                                self.__pClientState["runhistorysort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["runhistorysort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["runhistorysort"]["column"] = "comment"
+                            self.__pClientState["runhistorysort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
+                    elif sActionTargetID == "creator":
+                        if self.__pClientState["runhistorysort"]["column"] == "creator":
+                            if self.__pClientState["runhistorysort"]["mode"] == "down":
+                                self.__pClientState["runhistorysort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["runhistorysort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["runhistorysort"]["column"] = "creator"
+                            self.__pClientState["runhistorysort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
+                    elif sActionTargetID == "date&time":
+                        if self.__pClientState["runhistorysort"]["column"] == "date&time":
+                            if self.__pClientState["runhistorysort"]["mode"] == "down":
+                                self.__pClientState["runhistorysort"]["mode"] = "up"
+                            else:
+                                self.__pClientState["runhistorysort"]["mode"] = "down"
+                        else:
+                            self.__pClientState["runhistorysort"]["column"] = "date&time"
+                            self.__pClientState["runhistorysort"]["mode"] = "down"
+                        return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
         raise Exceptions.StateMisalignmentException()
@@ -206,17 +273,17 @@ class PostHandler:
         # Fill in the state
         self.__pClientState["prompt"]["screen"] = "PROMPT_RUNSEQUENCE"
         self.__pClientState["prompt"]["show"] = True
-        self.__pClientState["prompt"]["title"] = "Confirm run"
+        self.__pClientState["prompt"]["title"] = "RUN SEQUENCE"
         self.__pClientState["prompt"]["text1"] = "Would you like to run the sequence \"" + pSequence["metadata"]["name"] + "\"?"
         self.__pClientState["prompt"]["edit1"] = False
         self.__pClientState["prompt"]["text2"] = ""
         self.__pClientState["prompt"]["edit2"] = False
         self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-            "text":"No",
-            "id":"NO"},
+            "text":"YES",
+            "id":"YES"},
             {"type":"button",
-            "text":"Yes",
-            "id":"YES"}]
+            "text":"NO",
+            "id":"NO"}]
         self.__pClientState["sequenceid"] = nSequenceID
         return self.__SaveClientStateAndReturn()
 
@@ -240,18 +307,18 @@ class PostHandler:
         # Fill in the state
         self.__pClientState["prompt"]["screen"] = "PROMPT_RUNSEQUENCEFROMCOMPONENT"
         self.__pClientState["prompt"]["show"] = True
-        self.__pClientState["prompt"]["title"] = "Confirm run"
+        self.__pClientState["prompt"]["title"] = "RUN SEQUENCE"
         self.__pClientState["prompt"]["text1"] = "Would you like to run the sequence \"" + pSequence["metadata"]["name"] + \
             "\" starting with unit operation number " + str(nIndex) + " (\"" + pComponent["name"] + "\")?"
         self.__pClientState["prompt"]["edit1"] = False
         self.__pClientState["prompt"]["text2"] = ""
         self.__pClientState["prompt"]["edit2"] = False
         self.__pClientState["prompt"]["buttons"] = [{"type":"button",
-            "text":"No",
-            "id":"NO"},
+            "text":"YES",
+            "id":"YES"},
             {"type":"button",
-            "text":"Yes",
-            "id":"YES"}]
+            "text":"NO",
+            "id":"NO"}]
         self.__pClientState["sequenceid"] = nSequenceID
         return self.__SaveClientStateAndReturn()
 
@@ -272,14 +339,14 @@ class PostHandler:
 
         # Handle View Sequence specific requests
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "EDIT":
+            if sActionTargetID == "EDITSEQUENCE":
                 # Switch states to Edit Sequence
                 self.__pClientState["screen"] = "EDIT"
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "RUN":
+            elif sActionTargetID == "RUNSEQUENCE":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(self.__pClientState["sequenceid"])
-            elif sActionTargetID == "RUNHERE":
+            elif sActionTargetID == "RUNSEQUENCEHERE":
                 # Show the Run Sequence From Component prompt
                 return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
@@ -303,10 +370,14 @@ class PostHandler:
 
         # Handle Edit Sequence specific requests
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "RUN":
+            if sActionTargetID == "VIEWSEQUENCE":
+                # Switch states to View Sequence
+                self.__pClientState["screen"] = "VIEW"
+                return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "RUNSEQUENCE":
                 # Show the Run Sequence prompt
                 return self.__ShowRunSequencePrompt(self.__pClientState["sequenceid"])
-            elif sActionTargetID == "RUNHERE":
+            elif sActionTargetID == "RUNSEQUENCEHERE":
                 # Show the Run Sequence From Component prompt
                 return self.__ShowRunSequenceFromComponentPrompt(self.__pClientState["sequenceid"], self.__pClientState["componentid"])
 
@@ -326,13 +397,13 @@ class PostHandler:
 
         # Check which button the user clicked
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "ABORT":
+            if sActionTargetID == "ABORTRUN":
                 # Abort the run and return to the home page
                 self.__pCoreServer.AbortSequence(self.__sRemoteUser)
                 self.__pClientState["prompt"]["show"] = False
                 self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "BACK":
+            elif sActionTargetID == "SEQUENCER":
                 # Switch states to Home
                 self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()
@@ -368,7 +439,7 @@ class PostHandler:
     def __HandlePostBaseSequence(self, sActionType, sActionTargetID):
         # Check which option the user selected
         if sActionType == "BUTTONCLICK":
-            if sActionTargetID == "BACK":
+            if sActionTargetID == "SEQUENCER":
                 # Switch states to the last Select Sequence screen
                 DirectToLastSelectScreen(self.__pClientState)
                 return True
@@ -430,7 +501,7 @@ class PostHandler:
 
         # Interpret the response in context of the client state
         if self.__pClientState["prompt"]["screen"] == "PROMPT_CREATESEQUENCE":
-            if sActionTargetID == "CREATE":
+            if sActionTargetID == "OK":
                 # Sequence name is required
                 if sEdit1 == "":
                     raise Exception("Sequence name is required")
@@ -442,15 +513,15 @@ class PostHandler:
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False
-                self.__pClientState["screen"] = "EDIT"
-                self.__pClientState["sequenceid"] = nSequenceID
+                #self.__pClientState["screen"] = "EDIT"
+                #self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
             if sActionTargetID == "CANCEL":
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_COPYSEQUENCE":
-            if sActionTargetID == "COPY":
+            if sActionTargetID == "OK":
                 # Sequence name is required
                 if sEdit1 == "":
                     raise Exception("Sequence name is required")
@@ -468,14 +539,14 @@ class PostHandler:
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_DELETESEQUENCE":
-            if sActionTargetID == "DELETE":
+            if sActionTargetID == "YES":
                 # Delete the sequence from the database
                 self.__pDatabase.DeleteSequence(self.__sRemoteUser, self.__pClientState["sequenceid"])
 
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()
-            if sActionTargetID == "CANCEL":
+            if sActionTargetID == "NO":
                 # Hide the prompt
                 self.__pClientState["prompt"]["show"] = False
                 return self.__SaveClientStateAndReturn()

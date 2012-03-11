@@ -26,6 +26,10 @@ package Elixys.JSON.State
 		}
 
 		// Data wrappers
+		public function get Text():String
+		{
+			return super.flash_proxy::getProperty("text");
+		}
 		public function get ID():String
 		{
 			return super.flash_proxy::getProperty("id");
@@ -33,6 +37,10 @@ package Elixys.JSON.State
 		public function get Enabled():Boolean
 		{
 			return super.flash_proxy::getProperty("enabled");
+		}
+		public function get SelectionRequired():Boolean
+		{
+			return super.flash_proxy::getProperty("selectionrequired");
 		}
 
 		// Button comparison function.  Returns true if the buttons are equal, false otherwise.
@@ -42,7 +50,15 @@ package Elixys.JSON.State
 			{
 				return false;
 			}
+			if (pButtonA.Text != pButtonB.Text)
+			{
+				return false;
+			}
 			if (pButtonA.Enabled != pButtonB.Enabled)
+			{
+				return false;
+			}
+			if (pButtonA.SelectionRequired != pButtonB.SelectionRequired)
 			{
 				return false;
 			}

@@ -161,6 +161,19 @@ package Elixys.Extended
 			}
 		}
 
+		// Override visible setter
+		public override function set visible(bVisible:Boolean):void
+		{
+			// Call the base implementation
+			super.visible = bVisible;
+			
+			// Update the skin
+			if (m_pSkin != null)
+			{
+				m_pSkin.visible = bVisible;
+			}
+		}
+		
 		/***
 		 * Member variables
 		 **/

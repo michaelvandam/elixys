@@ -49,12 +49,19 @@ package Elixys.Extended
 			_height = nHeight;
 			attributes.height = nHeight;
 		}
-		
+
+		// Forces the width for use when scrolling
+		public function ForceWidth(nWidth:Number):void
+		{
+			_width = nWidth;
+			attributes.width = nWidth;
+		}
+
 		// Walks the display list until a hard width is found
-		public static function FindWidth(pDisplayObject:DisplayObject):int
+		public static function FindWidth(pDisplayObject:DisplayObject):Number
 		{
 			// Walk the display list until we get a width value
-			var nWidth:int = 0;
+			var nWidth:Number = 0;
 			var pChild:DisplayObject = null;
 			while (pDisplayObject != null)
 			{
@@ -98,10 +105,10 @@ package Elixys.Extended
 		}
 		
 		// Walks the display list until a hard height is found
-		public static function FindHeight(pDisplayObject:DisplayObject):int
+		public static function FindHeight(pDisplayObject:DisplayObject):Number
 		{
 			// Walk the display list until we get a height value
-			var nHeight:int = 0;
+			var nHeight:Number = 0;
 			var pChild:DisplayObject = null;
 			while (pDisplayObject != null)
 			{
@@ -204,16 +211,36 @@ package Elixys.Extended
 				return MadSprite(child).includeInLayout;
 			}
 			
-			// Refer to MovieClip's visibility flag
+			// Refer to the visibility flags of other objects
 			if (child is MovieClip)
 			{
 				return MovieClip(child).visible;
 			}
-			
+			if (child is UILabel)
+			{
+				return UILabel(child).visible;
+			}
+			if (child is Input)
+			{
+				return Input(child).visible;
+			}
+
 			// Include by default
 			return true;
 		}
 
+		// Width override
+		public override function get width():Number
+		{
+			if (_width > 0)
+			{
+				return _width;
+			}
+			else
+			{
+				return super.width;
+			}
+		}
 
 		/***
 		 * Transitions
@@ -274,5 +301,8 @@ package Elixys.Extended
 		protected var m_fAlphaStep:Number = 0;
 		protected var m_fEndAlpha:Number = 0;
 		protected var m_pFadeTimer:Timer;
+
+		// Width override
+		protected var _width:Number = -1;
 	}
 }

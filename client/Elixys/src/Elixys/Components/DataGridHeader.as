@@ -166,7 +166,14 @@ package Elixys.Components
 						addChild(pSortIcon);
 					}
 				}
-				m_pSortIcons.push(pSortIcon);
+				if (nIndex < m_pSortIcons.length)
+				{
+					m_pSortIcons[nIndex] = pSortIcon
+				}
+				else
+				{
+					m_pSortIcons.push(pSortIcon);
+				}
 			}
 			
 			// Set our columns reference and render

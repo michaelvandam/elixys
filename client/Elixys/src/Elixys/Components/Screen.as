@@ -3,6 +3,8 @@ package Elixys.Components
 	import Elixys.Events.HTTPRequestEvent;
 	import Elixys.Extended.Form;
 	import Elixys.HTTP.HTTPRequest;
+	import Elixys.JSON.Components.ComponentBase;
+	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.State;
 	
 	import com.danielfreeman.madcomponents.*;
@@ -40,6 +42,16 @@ package Elixys.Components
 		public function UpdateState(pState:State):void
 		{
 		}
+		
+		// Updates the sequence
+		public function UpdateSequence(pSequence:Sequence):void
+		{
+		}
+
+		// Updates the component
+		public function UpdateComponent(pComponent:ComponentBase):void
+		{
+		}
 
 		// Posts the object to the server
 		public function DoPost(pPost:Object, sViewName:String):void
@@ -59,7 +71,17 @@ package Elixys.Components
 			pHTTPRequest.m_pBody = pBody;
 			m_pElixys.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
-		
+
+		// Gets data from the server
+		public function DoGet(sResource:String):void
+		{
+			// Pass the request up to be sent to the server
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = "GET";
+			pHTTPRequest.m_sResource = sResource;
+			m_pElixys.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
+
 		/***
 		 * Member variables
 		 **/

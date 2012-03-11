@@ -293,7 +293,13 @@ class DBComm:
         "edit2":False,
         "edit2default":"",
         "edit2validation":"",
-        "buttons":[]}}
+        "buttons":[]},
+      "selectsequencesort":{"type":"sort",
+        "column":"name",
+        "mode":"down"},
+      "runhistorysort":{"type":"sort",
+        "column":"date&time",
+        "mode":"down"}}
     return self.__CallStoredProcedure("CreateUser", (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName, json.dumps(pDefaultClientState)))
 
   def UpdateUser(self, sCurrentUsername, sUsername, sFirstName, sLastName, sRoleName):

@@ -67,7 +67,7 @@ def application(pEnvironment, fStartResponse):
             pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
         except Exceptions.StateMisalignmentException as ex:
             # The client state is misaligned, send the correct state as our response
-            pGetHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
+            pGetHandler = GetHandler.GetHandler(gCoreServer, pDatabase)
             pResponse = pGetHandler.HandleRequest(pClientState, sRemoteUser, "/state", None, 0)
     except Exceptions.SequenceNotFoundException as ex:
         pResponse = ExceptionHandler.HandleSequenceNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)

@@ -187,7 +187,7 @@ package Elixys.Views
 		protected function OnServerKeyDown(event:KeyboardEvent):void
 		{
 			// Either tab or return moves the focus to the username field
-			if ((event.keyCode == CHAR_TAB) || (event.keyCode == CHAR_RETURN))
+			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
 			{
 				event.preventDefault();
 				m_pUsername.inputField.assignFocus();
@@ -198,7 +198,7 @@ package Elixys.Views
 		protected function OnUsernameKeyDown(event:KeyboardEvent):void
 		{
 			// Either tab or return moves the focus to the password field
-			if ((event.keyCode == CHAR_TAB) || (event.keyCode == CHAR_RETURN))
+			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
 			{
 				event.preventDefault();
 				m_pPassword.inputField.assignFocus();
@@ -208,10 +208,10 @@ package Elixys.Views
 		// Called when the password field receives a key down event
 		protected function OnPasswordKeyDown(event:KeyboardEvent):void
 		{
-			if ((event.keyCode == CHAR_TAB) || (event.keyCode == CHAR_RETURN))
+			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
 			{
 				// Return logs in if all fields contain text, otherwise move the focus back to the server field
-				if ((event.keyCode == CHAR_RETURN) && (m_pServer.text != "") && (m_pUsername.text != "") && (m_pPassword.text != ""))
+				if ((event.keyCode == Constants.CHAR_RETURN) && (m_pServer.text != "") && (m_pUsername.text != "") && (m_pPassword.text != ""))
 				{
 					LogIn();
 				}
@@ -274,9 +274,11 @@ package Elixys.Views
 						SERVER
 					</font>
 				</label>
-				<input id="server" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
-					skin={getQualifiedClassName(login_serverFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
-				<columns gapH="25" widths="50%,50%">
+				<columns gapH="25" widths="82%,18%">
+					<input id="server" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
+						skin={getQualifiedClassName(login_serverFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+				</columns>
+				<columns gapH="25" widths="41%,41%,18%">
 					<label useEmbedded="true" alignH="left" alignV="bottom">
 						<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
 							USERNAME
@@ -288,7 +290,7 @@ package Elixys.Views
 						</font>
 					</label>
 				</columns>
-				<columns gapH="25" widths="50%,50%">
+				<columns gapH="25" widths="41%,41%,18%">
 					<input id="username" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
 						skin={getQualifiedClassName(login_loginFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
 					<input id="password" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
@@ -296,13 +298,13 @@ package Elixys.Views
 						displayAsPassword="true" />
 				</columns>
 				<frame />
-				<columns gapH="35" widths="49%,51%">
+				<columns gapH="35" widths="41%,41%,18%">
 					<frame alignH="fill" alignV="fill">
 						<button id="login" alignH="fill" alignV="fill" enabled="false" useEmbedded="true"
 								enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY5}
-								skinup={getQualifiedClassName(login_signIn_up)}
-								skindown={getQualifiedClassName(login_signIn_down)}
-								skindisabled={getQualifiedClassName(login_signIn_disabled)}>
+								backgroundskinup={getQualifiedClassName(login_signIn_up)}
+								backgroundskindown={getQualifiedClassName(login_signIn_down)}
+								backgroundskindisabled={getQualifiedClassName(login_signIn_disabled)}>
 							<font face="GothamMedium" size="14">
 								Sign in
 							</font>
@@ -329,10 +331,6 @@ package Elixys.Views
 		// The current step
 		protected var m_nChildrenLoaded:uint = 0;
 
-		// Character codes
-		public static const CHAR_RETURN:uint = 13;
-		public static const CHAR_TAB:uint = 9;
-		
 		// Input area of interest
 		protected var m_nInputAreaOfInterestTop:uint;
 		protected var m_nInputAreaOfInterestBottom:uint;

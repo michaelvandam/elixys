@@ -3,6 +3,7 @@ package Elixys.Views
 	import Elixys.Assets.Styling;
 	import Elixys.Components.*;
 	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Post.PostSelect;
 	import Elixys.JSON.State.*;
@@ -47,7 +48,7 @@ package Elixys.Views
 				}
 				
 				// Step 3 is loading the sequence grid
-				if (m_nChildrenLoaded == 1)
+				if (m_nChildrenLoaded == 2)
 				{
 					LoadDataGrid();
 				}
@@ -106,6 +107,8 @@ package Elixys.Views
 			// Load the datagrid
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
 			m_pDataGrid = new DataGrid(pContainer, DATAGRID, pAttributes);
+			m_pDataGrid.addEventListener(ButtonEvent.CLICK, OnHeaderClick);
+			m_pDataGrid.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
 			
 			// Append the data grid to the XML and refresh
 			pContainer.xml.appendChild(DATAGRID);
@@ -130,7 +133,7 @@ package Elixys.Views
 				bTabsChanged = !Tab.CompareTabArrays(pStateSelect.Tabs, m_pStateSelect.Tabs);
 				bTabIDChanged = (pStateSelect.TabID != m_pStateSelect.TabID);
 				bColumnsChanged = !Column.CompareColumnArrays(pStateSelect.Columns, m_pStateSelect.Columns);
-				bSequencesChanged = !SequenceMetadata.CompareSequenceArrays(pStateSelect.Sequences, m_pStateSelect.Sequences);
+				bSequencesChanged = !SequenceMetadata.CompareSequenceMetadataArrays(pStateSelect.Sequences, m_pStateSelect.Sequences);
 			}
 			
 			// Update the navigation bar buttons
@@ -163,7 +166,7 @@ package Elixys.Views
 			var pPostSelect:PostSelect = new PostSelect();
 			pPostSelect.Type = "BUTTONCLICK";
 			pPostSelect.TargetID = event.button;
-			pPostSelect.SequenceID = 0;
+			pPostSelect.SequenceID = m_pDataGrid.SelectionID;
 			DoPost(pPostSelect, "SELECT");
 		}
 
@@ -174,8 +177,24 @@ package Elixys.Views
 			var pPostSelect:PostSelect = new PostSelect();
 			pPostSelect.Type = "TABCLICK";
 			pPostSelect.TargetID = event.button;
-			pPostSelect.SequenceID = 0;
 			DoPost(pPostSelect, "SELECT");
+		}
+
+		// Called when a header on data grid is clicked
+		protected function OnHeaderClick(event:ButtonEvent):void
+		{
+			// Send a header click to the server
+			var pPostSelect:PostSelect = new PostSelect();
+			pPostSelect.Type = "HEADERCLICK";
+			pPostSelect.TargetID = event.button;
+			DoPost(pPostSelect, "SELECT");
+		}
+		
+		// Called when the grid selection changes
+		protected function OnSelectionChange(event:SelectionEvent):void
+		{
+			// Pass the selection to the navigation bar
+			m_pNavigationBar.UpdateSelection(event.selectionID);
 		}
 
 		/***
@@ -258,7 +277,7 @@ package Elixys.Views
 				headertextcolor={Styling.TEXT_GRAY4} headerpressedcolor={Styling.DATAGRID_HEADERPRESSED}
 				sortupskin={getQualifiedClassName(sortUp_up)} sortdownskin={getQualifiedClassName(sortDown_up)}
 				bodyfontface="GothamMedium" bodyfontsize="18" bodytextcolor={Styling.TEXT_GRAY1}
-				visiblerowcount="9" rowselectedcolor={Styling.DATAGRID_SELECTED} />;
+				visiblerowcount="9" rowselectedcolor={Styling.DATAGRID_SELECTED} idfield="id" />;
 
 		// Number of steps required to load this object
 		public static var LOAD_STEPS:uint = 3;

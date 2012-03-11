@@ -6,6 +6,7 @@ package
 	import Elixys.Extended.*;
 	import Elixys.HTTP.*;
 	import Elixys.JSON.*;
+	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.State.*;
 	import Elixys.Views.*;
 	
@@ -162,6 +163,10 @@ package
 			m_pHome = m_pScreens[HOME_INDEX - 1];
 			m_pSelectSaved = m_pScreens[SELECTSAVED_INDEX - 1];
 			m_pSelectHistory = m_pScreens[SELECTHISTORY_INDEX - 1];
+			m_pSequenceView = m_pScreens[SEQUENCEVIEW_INDEX - 1];
+			m_pSequenceEdit = m_pScreens[SEQUENCEEDIT_INDEX - 1];
+			m_pSequenceRun = m_pScreens[SEQUENCERUN_INDEX - 1];
+			m_pPopup = m_pScreens[POPUP_INDEX - 1];
 			
 			// Inform the loading screen and wait until the transition completes
 			m_pLoading.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoadingFinishedTransitionComplete);
@@ -392,6 +397,13 @@ package
 			// Set the error text
 			m_pLogin.SetError(sError);
 			
+			// Hide the popup screen
+			if (m_pPopup.visible)
+			{
+				m_pPopup.visible = false;
+				m_pPopup.parent.setChildIndex(m_pPopup, 0);
+			}
+			
 			// Show the login screen
 			m_pPages.goToPage(LOGIN_INDEX);
 			if (m_pLogin.alpha != 1)
@@ -425,7 +437,7 @@ package
 			try
 			{
 				// Parse the response
-				var pResponse:* = ParseHTTPResponse(event, getQualifiedClassName(State));
+				var pResponse:* = ParseHTTPResponse(event);
 				
 				// Call the appropriate update function
 				if (pResponse is State)
@@ -433,9 +445,19 @@ package
 					m_pState = pResponse as State;
 					UpdateState();
 				}
+				else if (pResponse is Sequence)
+				{
+					m_pSequence = pResponse as Sequence;
+					UpdateSequence();
+				}
+				else if (pResponse is ComponentBase)
+				{
+					m_pComponent = pResponse as ComponentBase;
+					UpdateComponent();
+				}
 				else
 				{
-					trace("handle other response types");
+					trace("Unhandled response type");
 				}
 			}
 			catch (err:Error)
@@ -486,71 +508,135 @@ package
 		// Update the current state
 		protected function UpdateState():void
 		{
-			// Handle the pop up window first
+			// Check if we are displaying a popup
 			if (m_pState.ClientState.PromptState.Show)
 			{
-				trace("Show popup");
-				/*
-				// Create and display the pop up window
-				if (_viewPrompt == null)
+				// Show the popup and move it to the top of the stack
+				if (!m_pPopup.visible)
 				{
-					_viewPrompt = new PromptView();
-					_viewPrompt.addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequestEvent);
-					PopUpManager.addPopUp(_viewPrompt, this, true);
+					m_pPopup.visible = true;
+					m_pPopup.parent.setChildIndex(m_pPopup, m_pPopup.parent.numChildren - 1);
 				}
 				
-				// Update the pop up state
-				_viewPrompt.UpdateState(pState);
-				PopUpManager.centerPopUp(_viewPrompt);
-				*/
-			}
-			/*
-			else if (_viewPrompt != null)
-			{
-				// Remove the pop up window
-				PopUpManager.removePopUp(_viewPrompt);
-				_viewPrompt = null;
-			}
-			*/
-			
-			// Determine the screen we should be showing
-			var nPageIndex:uint;
-			var pScreen:Screen;
-			if (m_pState.ClientState.Screen == StateHome.TYPE)
-			{
-				nPageIndex = HOME_INDEX;
-				pScreen = m_pHome;
-			}
-			else if (m_pState.ClientState.Screen == StateSelectSaved.TYPE)
-			{
-				nPageIndex = SELECTSAVED_INDEX;
-				pScreen = m_pSelectSaved;
-			}
-			else if (m_pState.ClientState.Screen == StateSelectHistory.TYPE)
-			{
-				nPageIndex = SELECTHISTORY_INDEX;
-				pScreen = m_pSelectHistory;
-			}
-			else if (StateSequence.CheckState(m_pState.ClientState.Screen))
-			{
-				nPageIndex = SEQUENCE_INDEX;
+				// Update the popup state
+				m_pPopup.UpdateState(m_pState);
 			}
 			else
 			{
-				trace("Unknown client state received from server: " + m_pState.ClientState.Screen);
+				// Hide the popup and move it to the bottom of the stack
+				if (m_pPopup.visible)
+				{
+					m_pPopup.visible = false;
+					m_pPopup.parent.setChildIndex(m_pPopup, 0);
+				}
 			}
+			
+			// Determine the screen we should be showing
+			var nPageIndex:int = GetPageIndex(m_pState.ClientState.Screen);
+			var pScreen:Screen = GetScreen(m_pState.ClientState.Screen);
 
 			// Update the target screen
-			pScreen.UpdateState(m_pState);
+			if (pScreen != null)
+			{
+				pScreen.UpdateState(m_pState);
+			}
 
 			// Check if the screen has changed
-			if (nPageIndex != m_pPages.pageNumber)
+			if ((nPageIndex != -1) && (nPageIndex != m_pPages.pageNumber))
 			{
 				// Show the new screen
 				m_pPages.goToPage(nPageIndex);
 			}
 		}
 
+		// Update the current sequence
+		protected function UpdateSequence():void
+		{
+			// Update the current screen's sequence
+			var pScreen:Screen = GetScreen(m_pState.ClientState.Screen);
+			if (pScreen != null)
+			{
+				pScreen.UpdateSequence(m_pSequence);
+			}
+		}
+
+		// Update the current component
+		protected function UpdateComponent():void
+		{
+			// Update the current screen's component
+			var pScreen:Screen = GetScreen(m_pState.ClientState.Screen);
+			if (pScreen != null)
+			{
+				pScreen.UpdateComponent(m_pComponent);
+			}
+		}
+
+		// Returns the page index that corresponds to the screen name
+		protected function GetPageIndex(sScreen:String):int
+		{
+			if (m_pState.ClientState.Screen == StateHome.TYPE)
+			{
+				return HOME_INDEX;
+			}
+			else if (m_pState.ClientState.Screen == StateSelectSaved.TYPE)
+			{
+				return SELECTSAVED_INDEX;
+			}
+			else if (m_pState.ClientState.Screen == StateSelectHistory.TYPE)
+			{
+				return SELECTHISTORY_INDEX;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.VIEWTYPE)
+			{
+				return SEQUENCEVIEW_INDEX;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.EDITTYPE)
+			{
+				return SEQUENCEEDIT_INDEX;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.RUNTYPE)
+			{
+				return SEQUENCERUN_INDEX;
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		
+		// Returns the screen that corresponds to the screen name
+		protected function GetScreen(sScreen:String):Screen
+		{
+			if (m_pState.ClientState.Screen == StateHome.TYPE)
+			{
+				return m_pHome;
+			}
+			else if (m_pState.ClientState.Screen == StateSelectSaved.TYPE)
+			{
+				return m_pSelectSaved;
+			}
+			else if (m_pState.ClientState.Screen == StateSelectHistory.TYPE)
+			{
+				return m_pSelectHistory;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.VIEWTYPE)
+			{
+				return m_pSequenceView;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.EDITTYPE)
+			{
+				return m_pSequenceEdit;
+			}
+			else if (m_pState.ClientState.Screen == StateSequence.RUNTYPE)
+			{
+				return m_pSequenceRun;
+			}
+			else
+			{
+				return null;
+			}
+		}
+		
 		/***
 		 * Member variables
 		 **/
@@ -574,12 +660,16 @@ package
 		protected var m_pUpdateTimer:Timer;
 		
 		// Screen variables
-		protected var m_pScreenClasses:Array = [Login, Home, SelectSaved, SelectHistory, Sequence];
+		protected var m_pScreenClasses:Array = [Login, Home, SelectSaved, SelectHistory, SequenceView, SequenceEdit, SequenceRun, Popup];
 		protected var m_pScreens:Array = new Array;
 		protected var m_pLogin:Login;
 		protected var m_pHome:Home;
 		protected var m_pSelectSaved:SelectSaved;
 		protected var m_pSelectHistory:SelectHistory;
+		protected var m_pSequenceView:SequenceView;
+		protected var m_pSequenceEdit:SequenceEdit;
+		protected var m_pSequenceRun:SequenceRun;
+		protected var m_pPopup:Popup;
 		
 		// Transition update interval (milliseonds)
 		public static var TRANSITION_UPDATE_INTERVAL:uint = 20;
@@ -589,7 +679,10 @@ package
 		protected static var HOME_INDEX:uint = 2;
 		protected static var SELECTSAVED_INDEX:uint = 3;
 		protected static var SELECTHISTORY_INDEX:uint = 4;
-		protected static var SEQUENCE_INDEX:uint = 5;
+		protected static var SEQUENCEVIEW_INDEX:uint = 5;
+		protected static var SEQUENCEEDIT_INDEX:uint = 6;
+		protected static var SEQUENCERUN_INDEX:uint = 7;
+		protected static var POPUP_INDEX:uint = 8;
 		
 		// Pan transition variables
 		protected var m_nPanStep:Number = 0;
@@ -602,9 +695,11 @@ package
 		// Server configuration and move recent client state
 		protected var m_pConfiguration:Configuration;
 		protected var m_pState:State;
+		protected var m_pSequence:Sequence;
+		protected var m_pComponent:ComponentBase;
 		
 		// Array of recognized JSON objects
-		protected static var m_pJSONObjects:Array = [Configuration, State];
+		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase];
 		
 		// Unused reference to our static assets that is required for them to be available at run time
 		protected var m_pAssets:StaticAssets;

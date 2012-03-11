@@ -41,22 +41,44 @@ package Elixys.Components
 				// Extract the details
 				var pButtonXML:XML = xml.navigationbaroption[0];
 				pButtonText.push(pButtonXML.toString());
-				m_pButtonNames.push(pButtonXML.@name[0]);
-				m_pForegroundSkinHeights.push(pButtonXML.@foregroundskinheightpercent[0]);
-				m_pForegroundSkinWidths.push(pButtonXML.@foregroundskinwidthpercent[0]);
-				m_pButtonFontFaces.push(pButtonXML.@fontFace[0]);
-				m_pButtonFontSizes.push(pButtonXML.@fontSize[0]);
-				m_pButtonFontEnabledColor.push(Styling.AS3Color(pButtonXML.@enabledTextColor[0]));
-				m_pButtonFontDisabledColor.push(Styling.AS3Color(pButtonXML.@disabledTextColor[0]));
-				pForegroundSkinUpName.push(pButtonXML.@foregroundskinup[0]);
-				pForegroundSkinDownName.push(pButtonXML.@foregroundskindown[0]);
-				pForegroundSkinDisabledName.push(pButtonXML.@foregroundskindisabled[0]);
-				pBackgroundSkinUpName.push(pButtonXML.@backgroundskinup[0]);
-				pBackgroundSkinDownName.push(pButtonXML.@backgroundskindown[0]);
-				pBackgroundSkinDisabledName.push(pButtonXML.@backgroundskindisabled[0]);
-
-				// Buttons are disabled by default
+				if ((pButtonXML.@blank.length() > 0) && (pButtonXML.@blank[0] == "true"))
+				{
+					m_pButtonNames.push("");
+					m_pForegroundSkinHeights.push(0);
+					m_pForegroundSkinWidths.push(0);
+					m_pButtonFontFaces.push("");
+					m_pButtonFontSizes.push("");
+					m_pButtonFontEnabledColor.push(0);
+					m_pButtonFontDisabledColor.push(0);
+					pForegroundSkinUpName.push("");
+					pForegroundSkinDownName.push("");
+					pForegroundSkinDisabledName.push("");
+					pBackgroundSkinUpName.push("");
+					pBackgroundSkinDownName.push("");
+					pBackgroundSkinDisabledName.push("");
+					m_pButtonBlankFlags.push(true);
+				}
+				else
+				{
+					m_pButtonNames.push(pButtonXML.@name[0]);
+					m_pForegroundSkinHeights.push(pButtonXML.@foregroundskinheightpercent[0]);
+					m_pForegroundSkinWidths.push(pButtonXML.@foregroundskinwidthpercent[0]);
+					m_pButtonFontFaces.push(pButtonXML.@fontFace[0]);
+					m_pButtonFontSizes.push(pButtonXML.@fontSize[0]);
+					m_pButtonFontEnabledColor.push(Styling.AS3Color(pButtonXML.@enabledTextColor[0]));
+					m_pButtonFontDisabledColor.push(Styling.AS3Color(pButtonXML.@disabledTextColor[0]));
+					pForegroundSkinUpName.push(pButtonXML.@foregroundskinup[0]);
+					pForegroundSkinDownName.push(pButtonXML.@foregroundskindown[0]);
+					pForegroundSkinDisabledName.push(pButtonXML.@foregroundskindisabled[0]);
+					pBackgroundSkinUpName.push(pButtonXML.@backgroundskinup[0]);
+					pBackgroundSkinDownName.push(pButtonXML.@backgroundskindown[0]);
+					pBackgroundSkinDisabledName.push(pButtonXML.@backgroundskindisabled[0]);
+					m_pButtonBlankFlags.push(false);
+				}
+				
+				// Buttons are disabled and require no selection by default
 				m_pButtonEnabled.push(false);
+				m_pButtonSelectionRequired.push(false);
 
 				// Remove the node from the XML
 				delete xml.children()[pButtonXML.childIndex()];
@@ -90,6 +112,12 @@ package Elixys.Components
 				// Create the label
 				m_pButtonLabels.push(AddLabel(pButtonText[nButton], m_pButtonFontFaces[nButton], m_pButtonFontSizes[nButton],
 					m_pButtonFontDisabledColor[nButton]));
+
+				// Skip remaining steps for blank buttons
+				if (m_pButtonBlankFlags[nButton])
+				{
+					continue;
+				}
 
 				// Create the button background skins
 				if (pBackgroundSkinUpName[nButton] != null)
@@ -135,12 +163,9 @@ package Elixys.Components
 				SetLabelPosition(nButton, pButtonText.length, nWidth, nHeight, nForegroundSkinHeight);
 			}
 			
-			// Listen for resize events
+			// Add event listners
 			stage.addEventListener(Event.RESIZE, OnResize);
-			
-			// Listen for mouse events
 			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
-			addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
 		}
 
 		/***
@@ -290,22 +315,27 @@ package Elixys.Components
 			var nClientButton:int, nServerButton:int, pLabel:UILabel;
 			for (nClientButton = 0; nClientButton < m_pButtonNames.length; ++nClientButton)
 			{
-				// Walk the server's array of buttons
-				for (nServerButton = 0; nServerButton < pServerButtons.length; ++nServerButton)
+				// Only show buttons that are not blank
+				if (m_pButtonBlankFlags[nClientButton] != "false")
 				{
-					// Check for a match
-					var pServerButton:Elixys.JSON.State.Button = pServerButtons[nServerButton] as Elixys.JSON.State.Button;
-					if (m_pButtonNames[nClientButton] == pServerButton.ID)
+					// Walk the server's array of buttons
+					for (nServerButton = 0; nServerButton < pServerButtons.length; ++nServerButton)
 					{
-						// Show the label and enable or disable the button
-						(m_pButtonLabels[nClientButton] as UILabel).visible = true;
-						m_pButtonEnabled[nClientButton] = pServerButton.Enabled;
-						break;
+						// Check for a match
+						var pServerButton:Elixys.JSON.State.Button = pServerButtons[nServerButton] as Elixys.JSON.State.Button;
+						if (m_pButtonNames[nClientButton] == pServerButton.ID)
+						{
+							// Show the label and enable or disable the button
+							(m_pButtonLabels[nClientButton] as UILabel).visible = true;
+							m_pButtonEnabled[nClientButton] = pServerButton.Enabled;
+							m_pButtonSelectionRequired[nClientButton] = pServerButton.SelectionRequired;
+							break;
+						}
 					}
 				}
 				
-				// Hide the button if no match
-				if (nServerButton == pServerButtons.length)
+				// Hide the button if blank or no match
+				if ((m_pButtonBlankFlags[nClientButton] == "false") || (nServerButton == pServerButtons.length))
 				{
 					(m_pButtonLabels[nClientButton] as UILabel).visible = false;
 				}
@@ -315,6 +345,14 @@ package Elixys.Components
 			UpdateButtonStates();
 		}
 
+		// Updates the selection index
+		public function UpdateSelection(nSelectionID:int):void
+		{
+			// Remember the ID and update the button states
+			m_nSelectionID = nSelectionID;
+			UpdateButtonStates();
+		}
+		
 		// Updates the state of each button
 		protected function UpdateButtonStates():void
 		{
@@ -327,7 +365,7 @@ package Elixys.Components
 				if (pLabel.visible)
 				{
 					// Set the enabled or disabled state
-					if (m_pButtonEnabled[nButton])
+					if ((!m_pButtonSelectionRequired[nButton] || (m_nSelectionID != -1)) && m_pButtonEnabled[nButton])
 					{
 						if (nButton == m_nPressedButton)
 						{
@@ -407,7 +445,10 @@ package Elixys.Components
 			{
 				return;
 			}
-			
+
+			// Listen for mouse up
+			stage.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
+
 			// Set the pressed index and update
 			m_nPressedButton = nButton;
 			UpdateButtonStates();
@@ -416,15 +457,28 @@ package Elixys.Components
 		// Called when the user releases the mouse button
 		protected function OnMouseUp(event:MouseEvent):void
 		{
+			// Remove the event listener
+			stage.removeEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
+			
 			// Make sure we have a pressed button
 			if (m_nPressedButton == -1)
 			{
 				return;
 			}
 			
-			// Dispatch a click event
-			dispatchEvent(new ButtonEvent(m_pButtonNames[m_nPressedButton]));
-			
+			// Check if the mouse was released over the same button that was initially clicked
+			var pNavigationBarPoint:Point = globalToLocal(new Point(event.stageX, event.stageY));
+			if ((pNavigationBarPoint.y > 0) && (pNavigationBarPoint.y < height))
+			{
+				var nButtonWidth:int = (width - m_nRightPadding) / m_pButtonNames.length;
+				if ((pNavigationBarPoint.x > (m_nPressedButton * nButtonWidth)) &&
+					(pNavigationBarPoint.x < ((m_nPressedButton + 1) * nButtonWidth)))
+				{
+					// Dispatch a click event
+					dispatchEvent(new ButtonEvent(m_pButtonNames[m_nPressedButton]));
+				}
+			}
+				
 			// Clear the pressed index and update
 			m_nPressedButton = -1;
 			UpdateButtonStates();
@@ -441,6 +495,7 @@ package Elixys.Components
 		protected var m_pButtonNames:Array = new Array();
 		protected var m_pButtonLabels:Array = new Array();
 		protected var m_pButtonEnabled:Array = new Array();
+		protected var m_pButtonSelectionRequired:Array = new Array();
 		protected var m_pButtonFontFaces:Array = new Array();
 		protected var m_pButtonFontSizes:Array = new Array();
 		protected var m_pButtonFontEnabledColor:Array = new Array();
@@ -453,6 +508,7 @@ package Elixys.Components
 		protected var m_pBackgroundSkinUp:Array = new Array();
 		protected var m_pBackgroundSkinDown:Array = new Array();
 		protected var m_pBackgroundSkinDisabled:Array = new Array();
+		protected var m_pButtonBlankFlags:Array = new Array();
 		
 		// Gap between the foreground skin and text
 		protected static var BUTTON_GAP:int = 8;
@@ -462,5 +518,8 @@ package Elixys.Components
 		
 		// Index of the currently pressed button or -1
 		protected var m_nPressedButton:int = -1;
+
+		// ID of the currently selected item
+		protected var m_nSelectionID:int = -1;
 	}
 }

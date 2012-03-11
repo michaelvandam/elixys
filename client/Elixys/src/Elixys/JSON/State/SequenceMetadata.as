@@ -100,33 +100,33 @@ package Elixys.JSON.State
 		}
 		
 		// Sequence metadata comparison function.  Returns true if the sequences are equal, false otherwise.
-		public static function CompareSequences(pSequenceA:SequenceMetadata, pSequenceB:SequenceMetadata):Boolean
+		public static function CompareSequenceMetadata(pSequenceMetadataA:SequenceMetadata, pSequenceMetadataB:SequenceMetadata):Boolean
 		{
-			if (pSequenceA.Name != pSequenceB.Name)
+			if (pSequenceMetadataA.Name != pSequenceMetadataB.Name)
 			{
 				return false;
 			}
-			if (pSequenceA.Time != pSequenceB.Time)
+			if (pSequenceMetadataA.Time != pSequenceMetadataB.Time)
 			{
 				return false;
 			}
-			if (pSequenceA.Date != pSequenceB.Date)
+			if (pSequenceMetadataA.Date != pSequenceMetadataB.Date)
 			{
 				return false;
 			}
-			if (pSequenceA.Comment != pSequenceB.Comment)
+			if (pSequenceMetadataA.Comment != pSequenceMetadataB.Comment)
 			{
 				return false;
 			}
-			if (pSequenceA.ID != pSequenceB.ID)
+			if (pSequenceMetadataA.ID != pSequenceMetadataB.ID)
 			{
 				return false;
 			}
-			if (pSequenceA.Creator != pSequenceB.Creator)
+			if (pSequenceMetadataA.Creator != pSequenceMetadataB.Creator)
 			{
 				return false;
 			}
-			if (pSequenceA.Operations != pSequenceB.Operations)
+			if (pSequenceMetadataA.Operations != pSequenceMetadataB.Operations)
 			{
 				return false;
 			}
@@ -134,20 +134,20 @@ package Elixys.JSON.State
 		}
 		
 		// Sequence metadata array comparison function.  Returns true if the arrays are equal, false otherwise.
-		public static function CompareSequenceArrays(pSequencesA:Array, pSequencesB:Array):Boolean
+		public static function CompareSequenceMetadataArrays(pSequenceMetadataA:Array, pSequenceMetadataB:Array):Boolean
 		{
-			if (pSequencesA.length != pSequencesB.length)
+			if (pSequenceMetadataA.length != pSequenceMetadataB.length)
 			{
 				return false;
 			}
 			else
 			{
 				var pSequenceA:SequenceMetadata, pSequenceB:SequenceMetadata;
-				for (var i:int = 0; i < pSequencesA.length; ++i)
+				for (var i:int = 0; i < pSequenceMetadataA.length; ++i)
 				{
-					pSequenceA = pSequencesA[i] as SequenceMetadata;
-					pSequenceB = pSequencesB[i] as SequenceMetadata;
-					if (!CompareSequences(pSequenceA, pSequenceB))
+					pSequenceA = pSequenceMetadataA[i] as SequenceMetadata;
+					pSequenceB = pSequenceMetadataB[i] as SequenceMetadata;
+					if (!CompareSequenceMetadata(pSequenceA, pSequenceB))
 					{
 						return false;
 					}

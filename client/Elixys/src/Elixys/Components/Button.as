@@ -11,6 +11,8 @@ package Elixys.Components
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.TextFormatAlign;
 	import flash.utils.*;
 
@@ -34,9 +36,13 @@ package Elixys.Components
 			// Create a new label that implenents embedded fonts
 			if (parent is Form)
 			{
-				_label = UILabel((screen as Form).CreateLabel(xml, new Attributes(0, 0, width, height)));
+				var pAttributes:Attributes = new Attributes(0, 0, width, height);
+				pAttributes.parse(xml);
+				_label = UILabel((screen as Form).CreateLabel(xml, pAttributes));
 				_label.parent.removeChild(_label);
 				addChild(_label);
+				_label.width = _label.textWidth + 5;
+				_label.height = _label.textHeight;
 			}
 			
 			// Disable the hand cursor
@@ -51,21 +57,38 @@ package Elixys.Components
 				nHeight = (screen as Form).attributes.height;
 			}
 			
-			// Set the skins
-			if (xml.@skinup.length() > 0)
+			// Set the foreground skins
+			if (xml.@foregroundskinup.length() > 0)
 			{
-				m_pSkinUp = AddSkin(xml.@skinup[0]);
-				PositionSkin(m_pSkinUp, nWidth, nHeight);
+				m_pForegroundSkinUp = AddSkin(xml.@foregroundskinup[0]);
+				PositionForegroundSkin(m_pForegroundSkinUp, m_pBackgroundSkinUp);
 			}
-			if (xml.@skindown.length() > 0)
+			if (xml.@foregroundskindown.length() > 0)
 			{
-				m_pSkinDown = AddSkin(xml.@skindown[0]);
-				PositionSkin(m_pSkinDown, nWidth, nHeight);
+				m_pForegroundSkinDown = AddSkin(xml.@foregroundskindown[0]);
+				PositionForegroundSkin(m_pForegroundSkinDown, m_pBackgroundSkinDown);
 			}
-			if (xml.@skindisabled.length() > 0)
+			if (xml.@foregroundskindisabled.length() > 0)
 			{
-				m_pSkinDisabled = AddSkin(xml.@skindisabled[0]);
-				PositionSkin(m_pSkinDisabled, nWidth, nHeight);
+				m_pForegroundSkinDisabled = AddSkin(xml.@foregroundskindisabled[0]);
+				PositionForegroundSkin(m_pForegroundSkinDisabled, m_pBackgroundSkinDisabled);
+			}
+
+			// Set the background skins
+			if (xml.@backgroundskinup.length() > 0)
+			{
+				m_pBackgroundSkinUp = AddSkin(xml.@backgroundskinup[0]);
+				PositionBackgroundSkin(m_pBackgroundSkinUp, nWidth, nHeight);
+			}
+			if (xml.@backgroundskindown.length() > 0)
+			{
+				m_pBackgroundSkinDown = AddSkin(xml.@backgroundskindown[0]);
+				PositionBackgroundSkin(m_pBackgroundSkinDown, nWidth, nHeight);
+			}
+			if (xml.@backgroundskindisabled.length() > 0)
+			{
+				m_pBackgroundSkinDisabled = AddSkin(xml.@backgroundskindisabled[0]);
+				PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
 			}
 			
 			// Set the enabled flag
@@ -87,6 +110,12 @@ package Elixys.Components
 			// Add event listeners
 			stage.addEventListener(Event.RESIZE, OnResizeEvent);
 			addEventListener(Event.ENTER_FRAME, OnEnterFrame);
+			
+			// Listen for click events from the base class if we don't have skins
+			if ((m_pBackgroundSkinUp == null) || (m_pBackgroundSkinDown == null))
+			{
+				addEventListener(UIButton.CLICKED, OnBaseClassClick);
+			}
 		}
 
 		/***
@@ -111,16 +140,20 @@ package Elixys.Components
 			var pSkin:MovieClip = new pClass() as MovieClip;
 			pSkin.buttonMode = false;
 			pSkin.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
-			pSkin.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
 			addChildAt(pSkin, 0);
 			return pSkin;
 		}
 
-		// Positions the skin
-		protected function PositionSkin(pSkin:MovieClip, nWidth:int, nHeight:int):void
+		// Positions the background or foreground skin
+		protected function PositionBackgroundSkin(pSkin:MovieClip, nWidth:int, nHeight:int):void
 		{
 			pSkin.width = nWidth;
 			pSkin.height = nHeight;
+		}
+		protected function PositionForegroundSkin(pSkin:MovieClip, pBackgroundSkin:MovieClip):void
+		{
+			pSkin.x = pBackgroundSkin.x + ((pBackgroundSkin.width - pSkin.width) / 2);
+			pSkin.y = pBackgroundSkin.y + ((pBackgroundSkin.height - pSkin.height) / 2);
 		}
 
 		// Resize functions to keep the skin sizes in sync
@@ -147,25 +180,39 @@ package Elixys.Components
 					m_nLastWidth = nWidth;
 					m_nLastHeight = nHeight;
 						
-					// Update the skins
-					if (m_pSkinUp != null)
+					// Update the background skins
+					if (m_pBackgroundSkinUp != null)
 					{
-						PositionSkin(m_pSkinUp, nWidth, nHeight);
+						PositionBackgroundSkin(m_pBackgroundSkinUp, nWidth, nHeight);
 					}
-					if (m_pSkinDown != null)
+					if (m_pBackgroundSkinDown != null)
 					{
-						PositionSkin(m_pSkinDown, nWidth, nHeight);
+						PositionBackgroundSkin(m_pBackgroundSkinDown, nWidth, nHeight);
 					}
-					if (m_pSkinDisabled != null)
+					if (m_pBackgroundSkinDisabled != null)
 					{
-						PositionSkin(m_pSkinDisabled, nWidth, nHeight);
+						PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
 					}
-	
+
+					// Update the foreground skins
+					if (m_pForegroundSkinUp != null)
+					{
+						PositionForegroundSkin(m_pForegroundSkinUp, m_pBackgroundSkinUp);
+					}
+					if (m_pForegroundSkinDown != null)
+					{
+						PositionForegroundSkin(m_pForegroundSkinDown, m_pBackgroundSkinDown);
+					}
+					if (m_pForegroundSkinDisabled != null)
+					{
+						PositionForegroundSkin(m_pForegroundSkinDisabled, m_pBackgroundSkinDisabled);
+					}
+
 					// Make sure the text is centered
-					if (m_pSkinUp != null)
+					if (m_pBackgroundSkinUp != null)
 					{
-						_label.x = (m_pSkinUp.width - _label.width) / 2;
-						_label.y = (m_pSkinUp.height - _label.height) / 2;
+						_label.x = (m_pBackgroundSkinUp.width - _label.width) / 2;
+						_label.y = (m_pBackgroundSkinUp.height - _label.height) / 2;
 					}
 					
 					// Draw the button
@@ -173,31 +220,31 @@ package Elixys.Components
 				}
 			}
 		}
-
+		
 		// Overridden drawing function
 		protected override function drawButton(pressed:Boolean = false):void
 		{
 			// Check if we have background skins
-			if ((m_pSkinUp != null) && (m_pSkinDown != null))
+			if ((m_pBackgroundSkinUp != null) && (m_pBackgroundSkinDown != null))
 			{
 				// Clear anything that may have been drawn
 				graphics.clear();
 				
 				// Check if we have a disabled skin
-				if (m_pSkinDisabled != null)
+				if (m_pBackgroundSkinDisabled != null)
 				{
 					// Check if we are enabled
 					if (!m_bEnabled)
 					{
 						// Set our state to disabled
-						m_pSkinUp.visible = false;
-						m_pSkinDown.visible = false;
-						m_pSkinDisabled.visible = true;
+						m_pBackgroundSkinUp.visible = false;
+						m_pBackgroundSkinDown.visible = false;
+						m_pBackgroundSkinDisabled.visible = true;
 					}
 					else
 					{
 						// Set our state to enabled
-						m_pSkinDisabled.visible = false;
+						m_pBackgroundSkinDisabled.visible = false;
 					}
 				}
 				
@@ -206,14 +253,35 @@ package Elixys.Components
 				{
 					if (pressed)
 					{
-						m_pSkinUp.visible = false;
-						m_pSkinDown.visible = true;
+						m_pBackgroundSkinUp.visible = false;
+						m_pBackgroundSkinDown.visible = true;
 					}
 					else
 					{
-						m_pSkinUp.visible = true;
-						m_pSkinDown.visible = false;
+						m_pBackgroundSkinUp.visible = true;
+						m_pBackgroundSkinDown.visible = false;
 					}
+				}
+				
+				// Set the foreground skin visibility
+				if (m_pForegroundSkinUp != null)
+				{
+					m_pForegroundSkinUp.visible = m_pBackgroundSkinUp.visible;
+				}
+				if (m_pForegroundSkinDown != null)
+				{
+					m_pForegroundSkinDown.visible = m_pBackgroundSkinDown.visible;
+				}
+				if (m_pForegroundSkinDisabled != null)
+				{
+					m_pForegroundSkinDisabled.visible = m_pBackgroundSkinDisabled.visible;
+				}
+				
+				for (var i:int = 0; i < this.numChildren; ++i)
+				{
+					var pChild:DisplayObject = getChildAt(i);
+					trace("Child " + i + ": " + pChild + " (x = " + pChild.x + ", y = " + pChild.y + ", width = " + pChild.width +
+						", height = " + pChild.height + ", visible = " + pChild.visible + ")");
 				}
 			}
 			else
@@ -238,6 +306,20 @@ package Elixys.Components
 		{
 			if (m_bEnabled)
 			{
+				// Remember the hit area in global coordinates
+				var pUpperLeft:Point = new Point(event.target.x, event.target.y);
+				var pLowerRight:Point = new Point(event.target.x + event.target.width, event.target.y + event.target.height);
+				pUpperLeft = localToGlobal(pUpperLeft);
+				pLowerRight = localToGlobal(pLowerRight);
+				m_pMouseHitRect.x = pUpperLeft.x;
+				m_pMouseHitRect.y = pUpperLeft.y;
+				m_pMouseHitRect.width = pLowerRight.x - pUpperLeft.x;
+				m_pMouseHitRect.height = pLowerRight.y - pUpperLeft.y;
+				
+				// Listen for mouse up
+				stage.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
+				
+				// Draw the button as pressed
 				drawButton(true);
 			}
 		}
@@ -245,11 +327,41 @@ package Elixys.Components
 		// Called when the user releases the mouse button
 		protected function OnMouseUp(event:MouseEvent):void
 		{
-			if (m_bEnabled)
+			// Remove the event listener
+			stage.removeEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
+
+			// Check if the mouse was released over the button
+			if (m_pMouseHitRect.contains(event.stageX, event.stageY))
 			{
-				drawButton(false);
+				// Dispatch a click event
 				dispatchEvent(new ButtonEvent(name));
 			}
+
+			// Draw the button as released
+			drawButton(false);
+		}
+		
+		// Called when the base class is doing the rendering and the button is clicked
+		protected function OnBaseClassClick(event:Event):void
+		{
+			dispatchEvent(new ButtonEvent(name));
+		}
+		
+		// Override the text setter
+		public override function set text(value:String):void
+		{
+			// Set the label size to the maximum
+			_label.width = width;
+			_label.height = height;
+			
+			// Call the base setter
+			super.text = value;
+			
+			// Adjust the label size to slightly larger than the text
+			_label.width = _label.textWidth + 5;
+			_label.height = _label.textHeight;
+			_label.x = (width - _label.width) / 2;
+			_label.y = (height - _label.height) / 2;
 		}
 		
 		/***
@@ -257,9 +369,12 @@ package Elixys.Components
 		 **/
 
 		// Skins
-		protected var m_pSkinUp:MovieClip;
-		protected var m_pSkinDown:MovieClip;
-		protected var m_pSkinDisabled:MovieClip;
+		protected var m_pBackgroundSkinUp:MovieClip;
+		protected var m_pBackgroundSkinDown:MovieClip;
+		protected var m_pBackgroundSkinDisabled:MovieClip;
+		protected var m_pForegroundSkinUp:MovieClip;
+		protected var m_pForegroundSkinDown:MovieClip;
+		protected var m_pForegroundSkinDisabled:MovieClip;
 		
 		// Button enabled flag
 		protected var m_bEnabled:Boolean = true;
@@ -273,5 +388,8 @@ package Elixys.Components
 		protected var m_nLastY:Number = 0;
 		protected var m_nLastWidth:Number = 0;
 		protected var m_nLastHeight:Number = 0;
+		
+		// Mouse hit area
+		protected var m_pMouseHitRect:Rectangle = new Rectangle();
 	}
 }

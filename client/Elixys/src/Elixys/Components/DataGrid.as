@@ -1,6 +1,8 @@
 package Elixys.Components
 {
 	import Elixys.Assets.Styling;
+	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	
 	import com.danielfreeman.madcomponents.*;
@@ -64,6 +66,10 @@ package Elixys.Components
 			{
 				m_nRowSelectedColor = Styling.AS3Color(xml.@rowselectedcolor[0]);
 			}
+			if (xml.@idfield.length() > 0)
+			{
+				m_sIDField = xml.@idfield[0];
+			}
 
 			// Call the base constructor
 			super(screen, DATAGRID, attributes);
@@ -75,7 +81,12 @@ package Elixys.Components
 			// Pass parameters to the header and body
 			m_pDataGridHeader.SetParameters(m_sHeaderFontFace, m_nHeaderFontSize, m_nHeaderTextColor, m_nHeaderPressedColor,
 				m_sSortUpSkin, m_sSortDownSkin);
-			m_pDataGridBody.SetParameters(m_sBodyFontFace, m_nBodyFontSize, m_nBodyTextColor, m_nVisibleRowCount, m_nRowSelectedColor);
+			m_pDataGridBody.SetParameters(m_sBodyFontFace, m_nBodyFontSize, m_nBodyTextColor, m_nVisibleRowCount,
+				m_nRowSelectedColor, m_sIDField);
+			
+			// Add event listeners
+			m_pDataGridHeader.addEventListener(ButtonEvent.CLICK, OnHeaderClick);
+			m_pDataGridBody.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
 		}
 		
 		/***
@@ -100,10 +111,30 @@ package Elixys.Components
 				attributes.height = (parent as Form).attributes.height;
 			}
 			
-			// Call the base constructor
+			// Call the base implementation
 			super.layout(attributes);
 		}
 
+		// Called when the user clicks on a header
+		protected function OnHeaderClick(event:ButtonEvent):void
+		{
+			// Pass the event to anyone listening
+			dispatchEvent(new ButtonEvent(event.button));
+		}
+		
+		// Called when the grid selection changes
+		protected function OnSelectionChange(event:SelectionEvent):void
+		{
+			// Pass the event to anyone listening
+			dispatchEvent(new SelectionEvent(event.selectionID));
+		}
+
+		// Returns the ID of the selected item
+		public function get SelectionID():int
+		{
+			return m_pDataGridBody.SelectionID;
+		}
+		
 		/***
 		 * Member functions
 		 **/
@@ -140,6 +171,7 @@ package Elixys.Components
 		protected var m_nBodyTextColor:uint = 0;
 		protected var m_nVisibleRowCount:uint = 0;
 		protected var m_nRowSelectedColor:uint = 0;
+		protected var m_sIDField:String = "";
 		
 		// Constants used by both the header and body
 		public static var TEXT_INDENT:uint = 20;

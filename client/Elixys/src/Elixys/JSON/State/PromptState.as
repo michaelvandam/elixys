@@ -1,7 +1,7 @@
 package Elixys.JSON.State
 {
 	import Elixys.JSON.JSONObject;
-
+	
 	import flash.utils.flash_proxy;
 	
 	public class PromptState extends JSONObject
@@ -82,6 +82,52 @@ package Elixys.JSON.State
 			return m_pButtons;
 		}
 		
+		// Prompt state comparison function.  Returns true if the prompt states are equal, false otherwise.
+		public static function ComparePromptStates(pPromptA:PromptState, pPromptB:PromptState):Boolean
+		{
+			if (pPromptA.Show != pPromptB.Show)
+			{
+				return false;
+			}
+			if (pPromptA.Title != pPromptB.Title)
+			{
+				return false;
+			}
+			if (pPromptA.Text1 != pPromptB.Text1)
+			{
+				return false;
+			}
+			if (pPromptA.Edit1 != pPromptB.Edit1)
+			{
+				return false;
+			}
+			if (pPromptA.Edit1Default != pPromptB.Edit1Default)
+			{
+				return false;
+			}
+			if (pPromptA.Edit1Validation != pPromptB.Edit1Validation)
+			{
+				return false;
+			}
+			if (pPromptA.Text2 != pPromptB.Text2)
+			{
+				return false;
+			}
+			if (pPromptA.Edit2 != pPromptB.Edit2)
+			{
+				return false;
+			}
+			if (pPromptA.Edit2Default != pPromptB.Edit2Default)
+			{
+				return false;
+			}
+			if (pPromptA.Edit2Validation != pPromptB.Edit2Validation)
+			{
+				return false;
+			}
+			return Button.CompareButtonArrays(pPromptA.Buttons, pPromptB.Buttons);
+		}
+
 		// State components
 		protected var m_pButtons:Array;
 	}
