@@ -36,7 +36,7 @@ class Comment(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Comment"
+    self.component["note"] = ""
     self.component["commentvalidation"] = "type=string"
     return self.validateQuick()
 
@@ -55,12 +55,11 @@ class Comment(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["commentvalidation"] = self.component["commentvalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
@@ -68,5 +67,4 @@ class Comment(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the field we want to save
-    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["comment"] = self.component["comment"]

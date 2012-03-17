@@ -55,7 +55,7 @@ class ExternalAdd(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "External Add"
+    self.component["note"] = ""
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["reagentnamevalidation"] = "type=string; required=true"
     return self.validateQuick()
@@ -78,13 +78,15 @@ class ExternalAdd(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
     pDBComponent["reagentnamevalidation"] = self.component["reagentnamevalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
+    # Set the note
+    pDBComponent["note"] = self.component["reagentname"]
+
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
@@ -92,7 +94,6 @@ class ExternalAdd(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
-    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["reagentname"] = self.component["reagentname"]
 

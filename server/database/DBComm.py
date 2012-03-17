@@ -522,22 +522,22 @@ class DBComm:
         pComponents.append(pComponent)
     return pComponents
 
-  def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent):
+  def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sNote, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sName, sContent))
-    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateComponent", (nSequenceID, sType, sName, sContent))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sNote, sContent))
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateComponent", (nSequenceID, sType, sNote, sContent))
     return pReturn[0][0]
 
-  def InsertComponent(self, sCurrentUsername, nSequenceID, sType, sName, sContent, nInsertID):
+  def InsertComponent(self, sCurrentUsername, nSequenceID, sType, sNote, sContent, nInsertID):
     """Inserts a component into a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sName, sContent, nInsertID))
-    pRows, pReturn = self.__CallStoredProcedureWithReturn("InsertComponent", (nSequenceID, sType, sName, sContent, nInsertID))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sNote, sContent, nInsertID))
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("InsertComponent", (nSequenceID, sType, sNote, sContent, nInsertID))
     return pReturn[0][0]
 
-  def UpdateComponent(self, sCurrentUsername, nComponentID, sType, sName, sDetails):
+  def UpdateComponent(self, sCurrentUsername, nComponentID, sType, sNote, sDetails):
     """Updates the specified component"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateComponent(%i, %s, %s, %s)" % (nComponentID, sType, sName, sDetails))
-    self.__CallStoredProcedure("UpdateComponent", (nComponentID, sType, sName, sDetails))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateComponent(%i, %s, %s, %s)" % (nComponentID, sType, sNote, sDetails))
+    self.__CallStoredProcedure("UpdateComponent", (nComponentID, sType, sNote, sDetails))
 
   def MoveComponent(self, sCurrentUsername, nComponentID, nInsertAfterID):
     """Moves the specified component"""
@@ -734,7 +734,7 @@ class DBComm:
     """Packages a component"""
     pComponent = json.loads(pComponentRaw[6])
     pComponent["id"] = int(pComponentRaw[0])
-    pComponent["name"] = pComponentRaw[5]
+    pComponent["note"] = pComponentRaw[5]
     pComponent["sequenceid"] = int(pComponentRaw[1])
     nPreviousComponentID = int(pComponentRaw[2])
     nNextComponentID = int(pComponentRaw[3])

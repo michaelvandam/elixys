@@ -77,14 +77,14 @@ package Elixys.Views
 		protected static const NAVIGATION:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} rightpadding="20">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_GRAY3} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_GRAY4} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_disabled)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="ABORTRUN" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_editSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_editSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_editSequence_disabled)}>

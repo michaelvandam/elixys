@@ -829,7 +829,7 @@ class UnitOperation(threading.Thread):
     self.copyComponentImpl(nSourceSequenceID, nTargetSequenceID, pComponentCopy)
 
     # Add the component to the database and return the ID
-    nComponentCopyID = self.database.CreateComponent(self.username, nTargetSequenceID, pComponentCopy["componenttype"], pComponentCopy["name"], 
+    nComponentCopyID = self.database.CreateComponent(self.username, nTargetSequenceID, pComponentCopy["componenttype"], pComponentCopy["note"], 
       json.dumps(pComponentCopy))
     return nComponentCopyID
 

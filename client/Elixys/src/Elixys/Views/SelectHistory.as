@@ -216,42 +216,42 @@ package Elixys.Views
 		protected static const NAVIGATION:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} rightpadding="20">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_GRAY3} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_GRAY4} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_disabled)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="COPYSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_copySequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_copySequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_copySequence_disabled)}>
 					COPY SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="VIEWSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewSequence_disabled)}>
 					VIEW SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>
 					RUN SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="VIEWRUNLOGS" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_editSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_editSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_editSequence_disabled)}>
 					VIEW RUN LOGS
 				</navigationbaroption>
 				<navigationbaroption name="VIEWBATCHRECORD" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_editSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_editSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_editSequence_disabled)}>
@@ -262,13 +262,13 @@ package Elixys.Views
 				
 		// Tab bar XML
 		protected static const TAB:XML =
-			<tab alignH="fill" alignV="fill" fontFace="GothamMedium" fontSize="18" textColor={Styling.TEXT_GRAY3}
+			<tab alignH="fill" alignV="fill" fontFace="GothamMedium" fontSize="18" textColor={Styling.TEXT_GRAY4}
 				selectedTextColor={Styling.TEXT_GRAY1} textpaddingvertical="7" textpaddinghorizontal="18"/>;
 		
 		// Data grid XML
 		protected static const DATAGRID:XML =
 			<datagrid alignH="fill" alignV="fill" headerfontface="GothamMedium" headerfontsize="14" 
-				headertextcolor={Styling.TEXT_GRAY4} headerpressedcolor={Styling.DATAGRID_HEADERPRESSED}
+				headertextcolor={Styling.TEXT_GRAY5} headerpressedcolor={Styling.DATAGRID_HEADERPRESSED}
 				sortupskin={getQualifiedClassName(sortUp_up)} sortdownskin={getQualifiedClassName(sortDown_up)}
 				bodyfontface="GothamMedium" bodyfontsize="18" bodytextcolor={Styling.TEXT_GRAY1}
 				visiblerowcount="9" rowselectedcolor={Styling.DATAGRID_SELECTED} idfield="id" />;

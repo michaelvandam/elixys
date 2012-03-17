@@ -57,24 +57,21 @@ package Elixys.Components
 				nHeight = (screen as Form).attributes.height;
 			}
 			
-			// Set the foreground skins
+			// Set the foreground skins first
 			if (xml.@foregroundskinup.length() > 0)
 			{
 				m_pForegroundSkinUp = AddSkin(xml.@foregroundskinup[0]);
-				PositionForegroundSkin(m_pForegroundSkinUp, m_pBackgroundSkinUp);
 			}
 			if (xml.@foregroundskindown.length() > 0)
 			{
 				m_pForegroundSkinDown = AddSkin(xml.@foregroundskindown[0]);
-				PositionForegroundSkin(m_pForegroundSkinDown, m_pBackgroundSkinDown);
 			}
 			if (xml.@foregroundskindisabled.length() > 0)
 			{
 				m_pForegroundSkinDisabled = AddSkin(xml.@foregroundskindisabled[0]);
-				PositionForegroundSkin(m_pForegroundSkinDisabled, m_pBackgroundSkinDisabled);
 			}
 
-			// Set the background skins
+			// Set the background skins next
 			if (xml.@backgroundskinup.length() > 0)
 			{
 				m_pBackgroundSkinUp = AddSkin(xml.@backgroundskinup[0]);
@@ -90,7 +87,21 @@ package Elixys.Components
 				m_pBackgroundSkinDisabled = AddSkin(xml.@backgroundskindisabled[0]);
 				PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
 			}
-			
+
+			// Position the foreground skins
+			if (m_pForegroundSkinUp != null)
+			{
+				PositionForegroundSkin(m_pForegroundSkinUp, m_pBackgroundSkinUp);
+			}
+			if (m_pForegroundSkinDown != null)
+			{
+				PositionForegroundSkin(m_pForegroundSkinDown, m_pBackgroundSkinDown);
+			}
+			if (m_pForegroundSkinDisabled != null)
+			{
+				PositionForegroundSkin(m_pForegroundSkinDisabled, m_pBackgroundSkinDisabled);
+			}
+
 			// Set the enabled flag
 			if (xml.@enabled.length() > 0)
 			{
@@ -280,8 +291,6 @@ package Elixys.Components
 				for (var i:int = 0; i < this.numChildren; ++i)
 				{
 					var pChild:DisplayObject = getChildAt(i);
-					trace("Child " + i + ": " + pChild + " (x = " + pChild.x + ", y = " + pChild.y + ", width = " + pChild.width +
-						", height = " + pChild.height + ", visible = " + pChild.visible + ")");
 				}
 			}
 			else

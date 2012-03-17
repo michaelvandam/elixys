@@ -77,28 +77,28 @@ package Elixys.Views
 		protected static const NAVIGATION:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} rightpadding="20">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_GRAY3} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_GRAY4} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_disabled)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="VIEWSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewSequence_disabled)}>
 					VIEW SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>
 					RUN SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCEHERE" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>

@@ -35,6 +35,7 @@ package Elixys.JSON.State
 			Name = pSourceComponent.Name;
 			ID = pSourceComponent.ID;
 			ComponentType = pSourceComponent.ComponentType;
+			Note = pSourceComponent.Note;
 			ValidationError = pSourceComponent.ValidationError;
 		}
 		
@@ -66,6 +67,15 @@ package Elixys.JSON.State
 			super.flash_proxy::setProperty("componenttype", value);
 		}
 
+		public function get Note():String
+		{
+			return super.flash_proxy::getProperty("note");
+		}
+		public function set Note(value:String):void
+		{
+			super.flash_proxy::setProperty("note", value);
+		}
+
 		public function get ValidationError():Boolean
 		{
 			return (super.flash_proxy::getProperty("validationerror") == "true");
@@ -73,15 +83,6 @@ package Elixys.JSON.State
 		public function set ValidationError(value:Boolean):void
 		{
 			super.flash_proxy::setProperty("validationerror", value ? "true" : "false");
-		}
-
-		public function get DisplayIndex():uint
-		{
-			return m_nDisplayIndex;
-		}
-		public function set DisplayIndex(value:uint):void
-		{
-			m_nDisplayIndex = value;
 		}
 
 		// Sequence component comparison function.  Returns true if the sequence components are equal, false otherwise.
@@ -99,11 +100,11 @@ package Elixys.JSON.State
 			{
 				return false;
 			}
-			if (pSequenceComponentA.ValidationError != pSequenceComponentB.ValidationError)
+			if (pSequenceComponentA.Note != pSequenceComponentB.Note)
 			{
 				return false;
 			}
-			if (pSequenceComponentA.DisplayIndex != pSequenceComponentB.DisplayIndex)
+			if (pSequenceComponentA.ValidationError != pSequenceComponentB.ValidationError)
 			{
 				return false;
 			}
@@ -139,9 +140,7 @@ package Elixys.JSON.State
 			"\"name\":\"\"," +
 			"\"id\":\"\"," +
 			"\"componenttype\":\"\"," +
+			"\"note\":\"\"," +
 			"\"validationerror\":\"\"}";
-		
-		// Component index for displaying
-		private var m_nDisplayIndex:uint = 0;
 	}
 }

@@ -11,7 +11,7 @@ def createNewComponent(sRunError):
   pComponent = {}
   pComponent["type"] = "component"
   pComponent["componenttype"] = "SUMMARY"
-  pComponent["name"] = "Summary"
+  pComponent["note"] = ""
   if sRunError == "":
     pComponent["successflag"] = 1
   else:
@@ -66,7 +66,7 @@ class Summary(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Summary"
+    self.component["note"] = ""
     self.component["successflagvalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["messagevalidation"] = "type=string"
     return self.validateQuick()
@@ -89,13 +89,12 @@ class Summary(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["successflagvalidation"] = self.component["successflagvalidation"]
     pDBComponent["messagevalidation"] = self.component["messagevalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
@@ -103,7 +102,6 @@ class Summary(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
-    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["successflag"] = self.component["successflag"]
     pTargetComponent["message"] = self.component["message"]
 

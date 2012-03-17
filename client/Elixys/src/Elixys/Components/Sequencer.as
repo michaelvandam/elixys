@@ -1,5 +1,8 @@
 package Elixys.Components
 {
+	import Elixys.Assets.Styling;
+	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.State.Sequence;
@@ -35,6 +38,10 @@ package Elixys.Components
 			// Get references to our header and body
 			m_pSequencerHeader = findViewById("sequencer_header") as SequencerHeader;
 			m_pSequencerBody = findViewById("sequencer_body") as SequencerBody;
+			
+			// Add event listeners
+			m_pSequencerHeader.addEventListener(ButtonEvent.CLICK, OnButtonClick);
+			m_pSequencerBody.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
 		}
 		
 		/***
@@ -63,17 +70,34 @@ package Elixys.Components
 			return pMovieClip;
 		}
 
-		// Called when the underlying sequence changes
-		public function UpdateSequence(nComponentID:uint, pSequence:Sequence):void
+		// Called when the underlying sequence or component changes
+		public function UpdateSequence(pSequence:Sequence):void
 		{
-			// Update the body
-			m_pSequencerBody.UpdateBody(nComponentID, pSequence);
+			// Update the header and body
+			m_pSequencerHeader.UpdateSequence(pSequence);
+			m_pSequencerBody.UpdateSequence(pSequence);
 		}
 		
 		// Called when the underlying component changes
-		public function UpdateComponent(pComponent:ComponentBase):void
+		public function UpdateSelectedComponent(nComponentID:int):void
 		{
-			trace("Sequencer::UpdateComponent");
+			// Update the header and body
+			m_pSequencerHeader.UpdateSelectedComponent(nComponentID);
+			m_pSequencerBody.UpdateSelectedComponent(nComponentID);
+		}
+
+		// Called when a button is clicked
+		protected function OnButtonClick(event:ButtonEvent):void
+		{
+			// Pass the event to anyone listening
+			dispatchEvent(new ButtonEvent(event.button));
+		}
+
+		// Called when the grid selection changes
+		protected function OnSelectionChange(event:SelectionEvent):void
+		{
+			// Pass the event to anyone listening
+			dispatchEvent(new SelectionEvent(event.selectionID));
 		}
 
 		/***
@@ -84,7 +108,15 @@ package Elixys.Components
 		protected static const SEQUENCER:XML = 
 			<rows heights="23%,77%" gapV="0">
 				<sequencerheader id="sequencer_header" />
-				<sequencerbody id="sequencer_body" />
+				<sequencerbody id="sequencer_body" 
+					unitoperationfontface="GothamBold" unitoperationfontsize="8"
+					unitoperationenabledtextcolor={Styling.TEXT_GRAY2} unitoperationdisabledtextcolor={Styling.TEXT_GRAY7} 
+					unitoperationactivetextcolor={Styling.TEXT_BLUE} unitoperationpressedtextcolor={Styling.TEXT_WHITE} 
+					notefontface="GothamBold" notefontsize="11" noteenabledtextcolor={Styling.TEXT_GRAY2} 
+					notedisabledtextcolor={Styling.TEXT_GRAY7} noteactivetextcolor={Styling.TEXT_BLUE} 
+					numberfontface="GothamBold" numberfontsize="12" numberenabledtextcolor={Styling.TEXT_GRAY2} 
+					numberdisabledtextcolor={Styling.TEXT_GRAY7} numberactivetextcolor={Styling.TEXT_WHITE} 
+					numberactivebackgroundcolor={Styling.SCROLLER_SELECTED} />
 			</rows>;
 		
 		// Components

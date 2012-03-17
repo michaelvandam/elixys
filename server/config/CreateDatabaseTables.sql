@@ -61,7 +61,7 @@ CREATE TABLE Components
     PreviousComponentID INT UNSIGNED NOT NULL,
     NextComponentID INT UNSIGNED NOT NULL,
     Type VARCHAR(20) NOT NULL,
-    Name VARCHAR(64),
+    Note VARCHAR(64),
     Details VARCHAR(2048) NOT NULL,
     PRIMARY KEY (ComponentID)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

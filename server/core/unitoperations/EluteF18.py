@@ -77,7 +77,7 @@ class EluteF18(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Elute F18"
+    self.component["note"] = ""
     self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["elutepressurevalidation"] = "type=number; min=0; max=25"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
@@ -87,7 +87,7 @@ class EluteF18(UnitOperation):
       pReagent = self.getReagentByID(self.component["reagent"]["reagentid"], pAvailableReagents, True)
       if pReagent != None:
         #Set the component name
-        self.component["name"] = "Elute F18 with " + pReagent["name"]
+        self.component["note"] = pReagent["name"]
 
     #Do a quick validation
     return self.validateQuick()
@@ -111,14 +111,13 @@ class EluteF18(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["elutetimevalidation"] = self.component["elutetimevalidation"]
     pDBComponent["elutepressurevalidation"] = self.component["elutepressurevalidation"]
     pDBComponent["reagentvalidation"] = self.component["reagentvalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
@@ -143,21 +142,20 @@ class EluteF18(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
-    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["elutetime"] = self.component["elutetime"]
     pTargetComponent["elutepressure"] = self.component["elutepressure"]
     pTargetComponent["reagent"] = self.component["reagent"]
     if self.isNumber(pTargetComponent["reagent"]):
       if pTargetComponent["reagent"] != 0:
         pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
-        pTargetComponent.update({"name":"Elute F18 with " + pReagent["name"]})
+        pTargetComponent.update({"note":pReagent["name"]})
       else:
-        pTargetComponent.update({"name":"Elute"})
+        pTargetComponent.update({"note":""})
     else:
       if pTargetComponent["reagent"].has_key("name"):
-        pTargetComponent.update({"name":"Elute F18 with " + pTargetComponent["reagent"]["name"]})
+        pTargetComponent.update({"note":pTargetComponent["reagent"]["name"]})
       else:
-        pTargetComponent.update({"name":"Elute"})
+        pTargetComponent.update({"note":""})
       if pTargetComponent["reagent"].has_key("reagentid"):
         pTargetComponent["reagent"] = pTargetComponent["reagent"]["reagentid"]
       else:

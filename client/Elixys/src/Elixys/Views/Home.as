@@ -138,42 +138,42 @@ package Elixys.Views
 		protected static const NAVIGATION:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)}>
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="MYACCOUNT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_myAccount_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_myAccount_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_myAccount_disabled)}>
 					MY ACCOUNT
 				</navigationbaroption>
 				<navigationbaroption name="MANAGEUSERS" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_manageUsers_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_manageUsers_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_manageUsers_disabled)}>
 					MANAGE USERS
 				</navigationbaroption>
 				<navigationbaroption name="VIEWLOGS" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_exportData_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_exportData_down)}
 						foregroundskindisabled={getQualifiedClassName(mainNav_exportData_disabled)}>
 					VIEW LOGS
 				</navigationbaroption>
 				<navigationbaroption name="VIEWRUN" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_activeRun_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_activeRun_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_activeRun_disabled)}>
 					VIEW ACTIVE RUN
 				</navigationbaroption>
 				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY3}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}
 						foregroundskindown={getQualifiedClassName(mainNav_logOut_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_disabled)}>

@@ -88,7 +88,7 @@ class Add(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Add"
+    self.component["note"] = ""
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
     self.component["deliverypositionvalidation"] = "type=enum-number; values=1,2; required=true"
@@ -99,8 +99,8 @@ class Add(UnitOperation):
     if self.component["reagent"].has_key("reagentid"):
       pReagent = self.getReagentByID(self.component["reagent"]["reagentid"], pAvailableReagents, True)
       if pReagent != None:
-        #Set the component name
-        self.component["name"] = "Add " + pReagent["name"]
+        #Set the component note
+        self.component["note"] = pReagent["name"]
 
     #Do a quick validation
     return self.validateQuick()
@@ -126,7 +126,6 @@ class Add(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
     pDBComponent["reagentvalidation"] = self.component["reagentvalidation"]
     pDBComponent["deliverypositionvalidation"] = self.component["deliverypositionvalidation"]
@@ -137,7 +136,7 @@ class Add(UnitOperation):
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
@@ -172,14 +171,14 @@ class Add(UnitOperation):
     if self.isNumber(pTargetComponent["reagent"]):
       if pTargetComponent["reagent"] != 0:
         pReagent = self.database.GetReagent(self.username, pTargetComponent["reagent"])
-        pTargetComponent.update({"name":"Add " + pReagent["name"]})
+        pTargetComponent.update({"note":pReagent["name"]})
       else:
-        pTargetComponent.update({"name":"Add"})
+        pTargetComponent.update({"note":""})
     else:
       if pTargetComponent["reagent"].has_key("name"):
-        pTargetComponent.update({"name":"Add " + pTargetComponent["reagent"]["name"]})
+        pTargetComponent.update({"note":pTargetComponent["reagent"]["name"]})
       else:
-        pTargetComponent.update({"name":"Add"})
+        pTargetComponent.update({"note":""})
       if pTargetComponent["reagent"].has_key("reagentid"):
         pTargetComponent["reagent"] = pTargetComponent["reagent"]["reagentid"]
       else:

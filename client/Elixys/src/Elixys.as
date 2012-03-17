@@ -321,6 +321,7 @@ package
 			catch (err:Error)
 			{
 				// Handle error
+				trace("Error: " + err);
 			}
 			
 			// Set the HTTP response listener

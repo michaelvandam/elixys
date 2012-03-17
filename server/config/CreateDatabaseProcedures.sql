@@ -514,7 +514,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lCassetteJSON = CONCAT(lCassetteJSON, "]}");
 
             -- Update the cassette JSON string
-            CALL UpdateComponent(lCassetteID, "CASSETTE", CONCAT("Cassette ", lCassette + 1), lCassetteJSON);
+            CALL UpdateComponent(lCassetteID, "CASSETTE", "", lCassetteJSON);
 
             -- Increment the cassette counter
             SET lCassette = lCassette + 1;
@@ -715,7 +715,7 @@ CREATE PROCEDURE GetComponentsBySequence(IN iSequenceID INT UNSIGNED)
         DECLARE lPreviousComponentID INT UNSIGNED;
         DECLARE lNextComponentID INT UNSIGNED;
         DECLARE lType VARCHAR(20);
-        DECLARE lName VARCHAR(64);
+        DECLARE lNote VARCHAR(64);
         DECLARE lDetails VARCHAR(2048);
 
         -- Create a temporary table to hold the component data
@@ -727,7 +727,7 @@ CREATE PROCEDURE GetComponentsBySequence(IN iSequenceID INT UNSIGNED)
             PreviousComponentID INT UNSIGNED NOT NULL,
             NextComponentID INT UNSIGNED NOT NULL,
             Type VARCHAR(20) NOT NULL,
-            Name VARCHAR(64),
+            Note VARCHAR(64),
             Details VARCHAR(2048) NOT NULL
         ) ENGINE=Memory COMMENT="Temporary component data";
 
@@ -740,11 +740,11 @@ CREATE PROCEDURE GetComponentsBySequence(IN iSequenceID INT UNSIGNED)
             SELECT PreviousComponentID FROM Components WHERE ComponentID = lComponentID INTO lPreviousComponentID;
             SELECT NextComponentID FROM Components WHERE ComponentID = lComponentID INTO lNextComponentID;
             SELECT Type FROM Components WHERE ComponentID = lComponentID INTO lType;
-            SELECT Name FROM Components WHERE ComponentID = lComponentID INTO lName;
+            SELECT Note FROM Components WHERE ComponentID = lComponentID INTO lNote;
             SELECT Details FROM Components WHERE ComponentID = lComponentID INTO lDetails;
 
             -- Save the component in our temporary table
-            INSERT INTO tmp_Components VALUES (lComponentID, iSequenceID, lPreviousComponentID, lNextComponentID, lType, lName, lDetails);
+            INSERT INTO tmp_Components VALUES (lComponentID, iSequenceID, lPreviousComponentID, lNextComponentID, lType, lNote, lDetails);
 
             -- Get the next component ID
             CALL Internal_GetNextComponent(lComponentID, lComponentID);
@@ -757,12 +757,12 @@ CREATE PROCEDURE GetComponentsBySequence(IN iSequenceID INT UNSIGNED)
 /* Creates a new component and inserts it at the end of a sequence:
  *   IN SequenceID - ID of the sequence
  *   IN Type - Type of the component
- *   IN Name - Name of the component
+ *   IN Note - Note associated with the component
  *   IN Details - Component details
  *   OUT ComponentID - ID of the new component
  */
 DROP PROCEDURE IF EXISTS CreateComponent;
-CREATE PROCEDURE CreateComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(64), IN iDetails VARCHAR(2048), OUT oComponentID INT UNSIGNED)
+CREATE PROCEDURE CreateComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iNote VARCHAR(64), IN iDetails VARCHAR(2048), OUT oComponentID INT UNSIGNED)
     BEGIN
         DECLARE lLastComponentID INT UNSIGNED;
 
@@ -770,19 +770,19 @@ CREATE PROCEDURE CreateComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
         CALL Internal_GetLastComponent(iSequenceID, lLastComponentID);
 
         -- Insert the component
-        CALL InsertComponent(iSequenceID, iType, iName, iDetails, lLastComponentID, oComponentID);
+        CALL InsertComponent(iSequenceID, iType, iNote, iDetails, lLastComponentID, oComponentID);
     END //
 
 /* Creates a new component and inserts it at the desired location in a sequence:
  *   IN SequenceID - ID of the sequence
  *   IN Type - Type of the component
- *   IN Name - Name of the component
+ *   IN Note - Note associated with the component
  *   IN Details - Component details
  *   IN InsertID - ID of the component to insert after
  *   OUT ComponentID - ID of the new component
  */
 DROP PROCEDURE IF EXISTS InsertComponent;
-CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(64), IN iDetails VARCHAR(2048), IN iInsertID INT UNSIGNED, 
+CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(20), IN iNote VARCHAR(64), IN iDetails VARCHAR(2048), IN iInsertID INT UNSIGNED, 
                                  OUT oComponentID INT UNSIGNED)
     BEGIN
         DECLARE lUserID INT UNSIGNED;
@@ -796,7 +796,7 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
         END IF;
 
         -- Add the component
-        INSERT INTO Components VALUES (NULL, iSequenceID, iInsertID, lNextComponentID, iType, iName, iDetails);
+        INSERT INTO Components VALUES (NULL, iSequenceID, iInsertID, lNextComponentID, iType, iNote, iDetails);
         SET oComponentID = LAST_INSERT_ID();
 
         -- Update the previous and next components
@@ -811,14 +811,14 @@ CREATE PROCEDURE InsertComponent(IN iSequenceID INT UNSIGNED, IN iType VARCHAR(2
 /* Updates an existing component:
  *   IN ComponentID - ID of the component to update
  *   IN Type - Type of the component
- *   IN Name - Name of the component
+ *   IN Note - Note associated with the component
  *   IN Details - Component details
  */
 DROP PROCEDURE IF EXISTS UpdateComponent;
-CREATE PROCEDURE UpdateComponent(IN iComponentID INT UNSIGNED, IN iType VARCHAR(20), IN iName VARCHAR(64), IN iDetails VARCHAR(2048))
+CREATE PROCEDURE UpdateComponent(IN iComponentID INT UNSIGNED, IN iType VARCHAR(20), IN iNote VARCHAR(64), IN iDetails VARCHAR(2048))
     BEGIN
         -- Update the component
-        UPDATE Components SET Type = iType, Name = iName, Details = iDetails WHERE ComponentID = iComponentID;
+        UPDATE Components SET Type = iType, Note = iNote, Details = iDetails WHERE ComponentID = iComponentID;
     END //
 
 /* Moves an existing component:

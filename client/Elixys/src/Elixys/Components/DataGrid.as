@@ -145,11 +145,11 @@ package Elixys.Components
 				<frame />
 				<rows heights="8%,6,92%,14,15" gapV="0">
 					<datagridheader id="datagrid_header" />
-					<frame background={Styling.TEXT_GRAY4} />
-					<frame background={Styling.TEXT_GRAY4} alignH="fill">
+					<frame background={Styling.TEXT_GRAY5} />
+					<frame background={Styling.TEXT_GRAY5} alignH="fill">
 						<datagridbody id="datagrid_body" />
 					</frame>
-					<frame background={Styling.TEXT_GRAY4} />
+					<frame background={Styling.TEXT_GRAY5} />
 				</rows>
 			</columns>;
 

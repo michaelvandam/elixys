@@ -424,7 +424,7 @@ class GetHandler:
         pNewComponents = []
         for pOldComponent in pSequence["components"]:
             pNewComponent = {"type":"sequencecomponent",
-                "name":pOldComponent["name"],
+                "note":pOldComponent["note"],
                 "id":pOldComponent["id"],
                 "componenttype":pOldComponent["componenttype"],
                 "validationerror":False}

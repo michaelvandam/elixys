@@ -270,7 +270,7 @@ package Elixys.Views
 			<rows gapV="5" heights="35%,7%,9%,7%,9%,5%,9%,19%">
 				<frame />
 				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
+					<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
 						SERVER
 					</font>
 				</label>
@@ -280,12 +280,12 @@ package Elixys.Views
 				</columns>
 				<columns gapH="25" widths="41%,41%,18%">
 					<label useEmbedded="true" alignH="left" alignV="bottom">
-						<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
+						<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
 							USERNAME
 						</font>
 					</label>
 					<label useEmbedded="true" alignH="left" alignV="bottom">
-						<font face="GothamBold" color={Styling.TEXT_GRAY6} size="12">
+						<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
 							PASSWORD
 						</font>
 					</label>
@@ -299,9 +299,9 @@ package Elixys.Views
 				</columns>
 				<frame />
 				<columns gapH="35" widths="41%,41%,18%">
-					<frame alignH="fill" alignV="fill">
+					<horizontal alignH="fill" alignV="fill">
 						<button id="login" alignH="fill" alignV="fill" enabled="false" useEmbedded="true"
-								enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY5}
+								enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}
 								backgroundskinup={getQualifiedClassName(login_signIn_up)}
 								backgroundskindown={getQualifiedClassName(login_signIn_down)}
 								backgroundskindisabled={getQualifiedClassName(login_signIn_disabled)}>
@@ -309,7 +309,7 @@ package Elixys.Views
 								Sign in
 							</font>
 						</button>
-					</frame>
+					</horizontal>
 					<label id="login_error_text" useEmbedded="true" alignH="fill" alignV="top">
 						<font face="GothamMedium" color={Styling.TEXT_RED} size="14" />
 					</label>

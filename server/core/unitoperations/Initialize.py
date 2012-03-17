@@ -94,7 +94,7 @@ class Initialize(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Initialize"
+    self.component["note"] = ""
     return self.validateQuick()
 
   def validateQuick(self):
@@ -108,17 +108,13 @@ class Initialize(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def updateComponentDetails(self, pTargetComponent):
     """Strips a component down to only the details we want to save in the database"""
     # Call the base handler
     UnitOperation.updateComponentDetails(self, pTargetComponent)
-
-    # Update the fields we want to save
-    pTargetComponent["name"] = self.component["name"]
 

@@ -4,6 +4,7 @@ package Elixys.Views
 	import Elixys.Components.Screen;
 	import Elixys.Components.Sequencer;
 	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Post.PostSequence;
@@ -74,6 +75,8 @@ package Elixys.Views
 			// Load the sequencer
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
 			m_pSequencer = new Sequencer(pContainer, pSequencerXML, pAttributes);
+			m_pSequencer.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
+			m_pSequencer.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			
 			// Append the navigation bar to the XML and refresh
 			pContainer.xml.appendChild(pSequencerXML);
@@ -90,16 +93,23 @@ package Elixys.Views
 		{
 			// Check what has changed since our last update
 			var pStateSequence:StateSequence = new StateSequence(StateSequence.VIEWTYPE, null, pState);
-			var bButtonsChanged:Boolean = true;
+			var bButtonsChanged:Boolean = true, bComponentChanged:Boolean = true;
 			if (m_pStateSequence != null)
 			{
 				bButtonsChanged = !Elixys.JSON.State.Button.CompareButtonArrays(pStateSequence.Buttons, m_pStateSequence.Buttons);
+				bComponentChanged = (pStateSequence.ClientState.ComponentID != m_pStateSequence.ClientState.ComponentID);
 			}
 			
 			// Update the navigation bar buttons
 			if (bButtonsChanged)
 			{
 				m_pNavigationBar.UpdateButtons(pStateSequence.Buttons);
+			}
+
+			// Update the sequencer
+			if (bComponentChanged)
+			{
+				m_pSequencer.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
 			}
 			
 			// Remember the new state
@@ -123,7 +133,7 @@ package Elixys.Views
 			// Update the sequencer
 			if (bSequenceChanged)
 			{
-				m_pSequencer.UpdateSequence(m_pStateSequence.ClientState.ComponentID, pSequence);
+				m_pSequencer.UpdateSequence(pSequence);
 			}
 			
 			// Remember the new sequence
@@ -135,18 +145,12 @@ package Elixys.Views
 		{
 			// Check if the component has changed
 			var bComponentChanged:Boolean = true;
-			if (m_pSequence != null)
+			if (m_pComponent != null)
 			{
 				bComponentChanged = !ComponentBase.CompareComponents(pComponent, m_pComponent);
 			}
 			
-			// Update the sequencer
-			if (bComponentChanged)
-			{
-				m_pSequencer.UpdateComponent(pComponent);
-			}
-			
-			// Remember the new sequence
+			// Remember the new component
 			m_pComponent = pComponent;
 		}
 
@@ -156,6 +160,15 @@ package Elixys.Views
 			// Send a button click to the server
 			var pPostSequence:PostSequence = new PostSequence();
 			pPostSequence.TargetID = event.button;
+			DoPost(pPostSequence, m_sPostString);
+		}
+
+		// Called when the unit operation selection changes
+		protected function OnSelectionChange(event:SelectionEvent):void
+		{
+			// Send the unit operation click to the server
+			var pPostSequence:PostSequence = new PostSequence();
+			pPostSequence.TargetID = event.selectionID.toString();
 			DoPost(pPostSequence, m_sPostString);
 		}
 

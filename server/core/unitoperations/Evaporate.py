@@ -137,7 +137,7 @@ class Evaporate(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
-    self.component["name"] = "Evaporate"
+    self.component["note"] = ""
     self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["evaporationtemperaturevalidation"] = "type=number; min=20; max=200; required=true"
@@ -168,7 +168,6 @@ class Evaporate(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
     pDBComponent["durationvalidation"] = self.component["durationvalidation"]
     pDBComponent["evaporationtemperaturevalidation"] = self.component["evaporationtemperaturevalidation"]
@@ -179,7 +178,7 @@ class Evaporate(UnitOperation):
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
@@ -195,7 +194,6 @@ class Evaporate(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
-    pTargetComponent["name"] = self.component["name"]
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["duration"] = self.component["duration"]
     pTargetComponent["evaporationtemperature"] = self.component["evaporationtemperature"]

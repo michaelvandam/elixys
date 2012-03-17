@@ -32,6 +32,7 @@ class Cassette(UnitOperation):
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
+    self.component["note"] = ""
     return self.validateQuick()
 
   def validateQuick(self):
@@ -54,11 +55,10 @@ class Cassette(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
-    pDBComponent["name"] = self.component["name"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
-    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(self.username, self.component["id"], pDBComponent["componenttype"], self.component["note"], json.dumps(pDBComponent))
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
@@ -91,7 +91,7 @@ class Cassette(UnitOperation):
 
     # Update the cassette details
     self.updateComponentDetails(pNewCassette)
-    self.database.UpdateComponent(self.username, pNewCassette["id"], pNewCassette["componenttype"], pNewCassette["name"], json.dumps(pNewCassette))
+    self.database.UpdateComponent(self.username, pNewCassette["id"], pNewCassette["componenttype"], pNewCassette["note"], json.dumps(pNewCassette))
 
     # Copy the reagent details
     pConfiguration = self.database.GetConfiguration(self.username)

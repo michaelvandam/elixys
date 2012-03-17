@@ -217,7 +217,7 @@ package Elixys.Components
 			}
 			
 			// Draw the column dividers
-			pSlider.graphics.lineStyle(DIVIDER_WIDTH, Styling.AS3Color(Styling.TEXT_GRAY4));
+			pSlider.graphics.lineStyle(DIVIDER_WIDTH, Styling.AS3Color(Styling.TEXT_GRAY5));
 			var nOffset:Number = 0, nIndex:int;
 			for (nIndex = 0; nIndex < (m_pColumns.length - 1); ++nIndex)
 			{

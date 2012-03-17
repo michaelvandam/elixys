@@ -353,11 +353,11 @@ package Elixys.Views
 						skin={getQualifiedClassName(login_serverFieldBackground_mc)}
 						returnKeyLabel={Constants.RETURNKEYLABEL_GO} />
 					<button id="popup_button1" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT} enabled="true"
-							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY5}>
+							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}>
 						<font face="GothamMedium" size="14" />
 					</button>
 					<button id="popup_button2" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT} enabled="true"
-							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY5}>
+							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}>
 						<font face="GothamMedium" size="14" />
 					</button>
 				</frame>
