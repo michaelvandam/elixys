@@ -42,7 +42,7 @@ package Elixys.JSON.Components
 		}
 		public static function get SKINACTIVE():Class
 		{
-			return tools_initialize_up;
+			return tools_initialize_active;
 		}
 
 		// Format additional component details

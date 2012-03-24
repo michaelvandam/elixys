@@ -93,6 +93,11 @@ package Elixys.Extended
 						nWidth = pForm._widths[nIndex];
 						break;
 					}
+					if (pForm.attributes.width)
+					{
+						nWidth = pForm.attributes.width;
+						break;
+					}
 				}
 				
 				// Move to the parent

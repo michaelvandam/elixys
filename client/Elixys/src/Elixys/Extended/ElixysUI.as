@@ -23,10 +23,10 @@ package Elixys.Extended
 			// Extend the UI tokens with our custom classes
 			var pNewTokens:Array = ["loading", "login", "logo", "progressbar", "navigationbar", "tabbar",
 				"datagrid", "datagridbody", "datagridheader", "popup", "sequencer", "sequencerheader",
-				"sequencerbody"];
+				"sequencerbody", "sequencecassette", "sequencetools"];
 			var pNewClasses:Array = [Loading, Login, Logo, ProgressBar, NavigationBar, TabBar,
 				DataGrid, DataGridBody, DataGridHeader, Popup, Sequencer, SequencerHeader,
-				SequencerBody];
+				SequencerBody, SequenceCassettes, SequenceTools];
 			UI.extend(pNewTokens, pNewClasses);
 		}
 	}

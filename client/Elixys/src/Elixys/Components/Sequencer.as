@@ -20,7 +20,8 @@ package Elixys.Components
 		 * Construction
 		 **/
 		
-		public function Sequencer(screen:Sprite, xml:XML, attributes:Attributes)
+		public function Sequencer(screen:Sprite, xml:XML, attributes:Attributes, nUnitOperationWidth:Number,
+								  nButtonSkinWidth:Number)
 		{
 			// Determine our current width and height
 			var nWidth:int = Form.FindWidth(screen);
@@ -31,6 +32,14 @@ package Elixys.Components
 			m_pBackgroundSkin.width = nWidth;
 			m_pBackgroundSkin.height = nHeight;
 
+			// Get our mode
+			if (xml.@mode.length() > 0)
+			{
+				m_sMode = xml.@mode[0];
+				SEQUENCER.sequencerheader[0].@mode = m_sMode;
+				SEQUENCER.sequencerbody[0].@mode = m_sMode;
+			}
+			
 			// Call the base constructor
 			var pAttributes:Attributes = new Attributes(0, 0, nWidth, nHeight);
 			super(screen, SEQUENCER, pAttributes);
@@ -38,6 +47,9 @@ package Elixys.Components
 			// Get references to our header and body
 			m_pSequencerHeader = findViewById("sequencer_header") as SequencerHeader;
 			m_pSequencerBody = findViewById("sequencer_body") as SequencerBody;
+			
+			// Pass the widths to the body
+			m_pSequencerBody.SetWidths(nUnitOperationWidth, nButtonSkinWidth);
 			
 			// Add event listeners
 			m_pSequencerHeader.addEventListener(ButtonEvent.CLICK, OnButtonClick);
@@ -108,16 +120,19 @@ package Elixys.Components
 		protected static const SEQUENCER:XML = 
 			<rows heights="23%,77%" gapV="0">
 				<sequencerheader id="sequencer_header" />
-				<sequencerbody id="sequencer_body" 
+				<sequencerbody id="sequencer_body"
 					unitoperationfontface="GothamBold" unitoperationfontsize="8"
 					unitoperationenabledtextcolor={Styling.TEXT_GRAY2} unitoperationdisabledtextcolor={Styling.TEXT_GRAY7} 
 					unitoperationactivetextcolor={Styling.TEXT_BLUE} unitoperationpressedtextcolor={Styling.TEXT_WHITE} 
 					notefontface="GothamBold" notefontsize="11" noteenabledtextcolor={Styling.TEXT_GRAY2} 
 					notedisabledtextcolor={Styling.TEXT_GRAY7} noteactivetextcolor={Styling.TEXT_BLUE} 
 					numberfontface="GothamBold" numberfontsize="12" numberenabledtextcolor={Styling.TEXT_GRAY2} 
-					numberdisabledtextcolor={Styling.TEXT_GRAY7} numberactivetextcolor={Styling.TEXT_WHITE} 
+					numberdisabledtextcolor={Styling.TEXT_GRAY2} numberactivetextcolor={Styling.TEXT_WHITE} 
 					numberactivebackgroundcolor={Styling.SCROLLER_SELECTED} />
 			</rows>;
+		
+		// Mode
+		protected var m_sMode:String = "";
 		
 		// Components
 		protected var m_pBackgroundSkin:MovieClip;
@@ -126,5 +141,6 @@ package Elixys.Components
 		
 		// Constants
 		public static var VISIBLE_COLUMN_COUNT:int = 9;
+		public static var BUTTON_GAP:int = 20;
 	}
 }

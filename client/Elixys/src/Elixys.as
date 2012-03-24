@@ -320,8 +320,7 @@ package
 			}
 			catch (err:Error)
 			{
-				// Handle error
-				trace("Error: " + err);
+				ShowLoginScreen(err.message);
 			}
 			
 			// Set the HTTP response listener
@@ -339,23 +338,27 @@ package
 			
 			// Close the connecting popup if it is visible
 			
-			// Load the state
 			try
 			{
+				// Load the state
 				m_pState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
+				if (m_pState == null)
+				{
+					throw Error("Unexpected response received from server");
+				}
+
+				// Set the HTTP response listener
+				m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_State);
+				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
+				
+				// Fade out the login screen
+				m_pLogin.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
+				m_pLogin.Fade(1, 0, 350);
 			}
 			catch (err:Error)
 			{
-				// Handle error
+				ShowLoginScreen(err.message);
 			}
-			
-			// Set the HTTP response listener
-			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_State);
-			m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
-			
-			// Fade out the login screen
-			m_pLogin.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
-			m_pLogin.Fade(1, 0, 350);
 		}
 		
 		// Called when the login screen has faded out
@@ -437,9 +440,15 @@ package
 		{
 			try
 			{
+				// Make sure the request succeeded
+				if (event.m_pHTTPResponse.m_nStatusCode != 200)
+				{
+					throw Error("HTTP request failed with status code " + event.m_pHTTPResponse.m_nStatusCode);
+				}
+				
 				// Parse the response
 				var pResponse:* = ParseHTTPResponse(event);
-				
+
 				// Call the appropriate update function
 				if (pResponse is State)
 				{
@@ -456,14 +465,18 @@ package
 					m_pComponent = pResponse as ComponentBase;
 					UpdateComponent();
 				}
+				else if (pResponse is ServerError)
+				{
+					ShowLoginScreen(pResponse.Description);
+				}
 				else
 				{
-					trace("Unhandled response type");
+					ShowLoginScreen("Unhandled response type");
 				}
 			}
 			catch (err:Error)
 			{
-				// Handle error
+				ShowLoginScreen(err.message);
 			}
 		}
 		
@@ -497,7 +510,7 @@ package
 			}
 			catch (err:Error)
 			{
-				trace(err);
+				ShowLoginScreen(err.message);
 			}
 			return null;
 		}
@@ -638,6 +651,12 @@ package
 			}
 		}
 		
+		// Returns the server configuration
+		public function GetConfiguration():Configuration
+		{
+			return m_pConfiguration;
+		}
+		
 		/***
 		 * Member variables
 		 **/
@@ -700,7 +719,7 @@ package
 		protected var m_pComponent:ComponentBase;
 		
 		// Array of recognized JSON objects
-		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase];
+		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase, ServerError];
 		
 		// Unused reference to our static assets that is required for them to be available at run time
 		protected var m_pAssets:StaticAssets;

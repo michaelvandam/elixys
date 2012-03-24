@@ -88,6 +88,12 @@ package Elixys.Components
 				PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
 			}
 
+			// Set any foreground skin scale
+			if (xml.@foregroundskinscale.length() > 0)
+			{
+				m_nForegroundSkinScale = parseFloat(String(xml.@foregroundskinscale[0]));
+			}
+			
 			// Position the foreground skins
 			if (m_pForegroundSkinUp != null)
 			{
@@ -116,6 +122,14 @@ package Elixys.Components
 			if (xml.@disabledTextColor.length() > 0)
 			{
 				m_nDisabledTextColor = Styling.AS3Color(xml.@disabledTextColor[0]);
+			}
+			if (xml.@pressedTextColor.length() > 0)
+			{
+				m_nPressedTextColor = Styling.AS3Color(xml.@pressedTextColor[0]);
+			}
+			else
+			{
+				m_nPressedTextColor = m_nEnabledTextColor;
 			}
 
 			// Add event listeners
@@ -163,6 +177,8 @@ package Elixys.Components
 		}
 		protected function PositionForegroundSkin(pSkin:MovieClip, pBackgroundSkin:MovieClip):void
 		{
+			pSkin.scaleX = m_nForegroundSkinScale;
+			pSkin.scaleY = m_nForegroundSkinScale;
 			pSkin.x = pBackgroundSkin.x + ((pBackgroundSkin.width - pSkin.width) / 2);
 			pSkin.y = pBackgroundSkin.y + ((pBackgroundSkin.height - pSkin.height) / 2);
 		}
@@ -302,7 +318,14 @@ package Elixys.Components
 			// Set the text color
 			if (m_bEnabled)
 			{
-				_label.textColor = m_nEnabledTextColor;
+				if (pressed)
+				{
+					_label.textColor = m_nPressedTextColor;
+				}
+				else
+				{
+					_label.textColor = m_nEnabledTextColor;
+				}
 			}
 			else
 			{
@@ -316,8 +339,8 @@ package Elixys.Components
 			if (m_bEnabled)
 			{
 				// Remember the hit area in global coordinates
-				var pUpperLeft:Point = new Point(event.target.x, event.target.y);
-				var pLowerRight:Point = new Point(event.target.x + event.target.width, event.target.y + event.target.height);
+				var pUpperLeft:Point = new Point(x, y);
+				var pLowerRight:Point = new Point(x + width, y + height);
 				pUpperLeft = localToGlobal(pUpperLeft);
 				pLowerRight = localToGlobal(pLowerRight);
 				m_pMouseHitRect.x = pUpperLeft.x;
@@ -384,6 +407,7 @@ package Elixys.Components
 		protected var m_pForegroundSkinUp:MovieClip;
 		protected var m_pForegroundSkinDown:MovieClip;
 		protected var m_pForegroundSkinDisabled:MovieClip;
+		protected var m_nForegroundSkinScale:Number = 1.0;
 		
 		// Button enabled flag
 		protected var m_bEnabled:Boolean = true;
@@ -391,6 +415,7 @@ package Elixys.Components
 		// Text colors
 		protected var m_nEnabledTextColor:uint;
 		protected var m_nDisabledTextColor:uint;
+		protected var m_nPressedTextColor:uint;
 		
 		// Last known size and position
 		protected var m_nLastX:Number = 0;

@@ -136,7 +136,7 @@ package Elixys.Views
 
 		// Navigation bar XML
 		protected static const NAVIGATION:XML =
-			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)}>
+			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)} verticaloffset="-11">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
 						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_up)}

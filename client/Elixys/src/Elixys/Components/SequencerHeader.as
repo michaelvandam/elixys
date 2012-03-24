@@ -7,6 +7,7 @@ package Elixys.Components
 	import Elixys.JSON.State.Column;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
+	import Elixys.JSON.State.StateSequence;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -29,16 +30,45 @@ package Elixys.Components
 		
 		public function SequencerHeader(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
+			// Get our mode
+			if (xml.@mode.length() > 0)
+			{
+				m_sMode = xml.@mode[0];
+			}
+			
 			// Call the base constructor
 			super(screen, SEQUENCERHEADER, attributes);
 
 			// Get references to view components
+			m_pTrash = Form(findViewById("trash"));
 			m_pPreviousButton = Button(findViewById("previous"));
 			m_pNextButton = Button(findViewById("next"));
-			
-			// Add event listeners
-			m_pPreviousButton.addEventListener(ButtonEvent.CLICK, OnPreviousButton);
-			m_pNextButton.addEventListener(ButtonEvent.CLICK, OnNextButton);
+
+			// Set the buttons according to our mode
+			switch (m_sMode)
+			{
+				case StateSequence.EDITTYPE:
+					// Add the trash skin
+					var pSkin:MovieClip = new sequencer_trashIcon_up() as MovieClip;
+					pSkin.buttonMode = false;
+					m_pTrash.addChild(pSkin);
+					pSkin.width = m_pTrash.attributes.width;
+					pSkin.height = m_pTrash.attributes.height;
+					
+					// Intentional fall-through
+					
+				case StateSequence.VIEWTYPE:
+					// Add event listeners
+					m_pPreviousButton.addEventListener(ButtonEvent.CLICK, OnPreviousButton);
+					m_pNextButton.addEventListener(ButtonEvent.CLICK, OnNextButton);
+					break;
+				
+				case StateSequence.RUNTYPE:
+					// Hide the buttons
+					m_pPreviousButton.visible = false;
+					m_pNextButton.visible = false;
+					break;
+			}
 		}
 
 		/***
@@ -67,40 +97,38 @@ package Elixys.Components
 			// Determine the button states
 			var bPreviousEnabled:Boolean = false;
 			var bNextEnabled:Boolean = false;
-			var pComponent:SequenceComponent;
+			var pComponent:SequenceComponent, nIndex:int;
 			if ((m_pSequence != null) && (m_nSelectedComponentID != -1))
 			{
-				// Start with both button enabled
-				bPreviousEnabled = true;
-				bNextEnabled = true;
-				
-				// Locate the first non-cassette component
-				for (var nIndex:int = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+				// Locate the selected component
+				for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
 				{
 					pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
-					if (pComponent.ComponentType != ComponentCassette.COMPONENTTYPE)
+					if (pComponent.ID == m_nSelectedComponentID)
 					{
-						if (pComponent.ID == m_nSelectedComponentID)
-						{
-							// Disable the previous button
-							bPreviousEnabled = false;
-						}
 						break;
 					}
 				}
 				
-				// Check the last unit operation
-				pComponent = m_pSequence.Components[m_pSequence.Components.length - 1] as SequenceComponent;
-				if (pComponent.ID == m_nSelectedComponentID)
+				// Don't enable anything if we don't have a component or a cassette is selected
+				if ((nIndex != m_pSequence.Components.length) && (pComponent.ComponentType != ComponentCassette.COMPONENTTYPE))
 				{
-					// Disable the next button
-					bNextEnabled = false;
-				}				
-			}
-			else
-			{
-				bPreviousEnabled = false;
-				bNextEnabled = false;
+					// Locate the first non-cassette component and set the state of the previous button
+					for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+					{
+						pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+						if (pComponent.ComponentType != ComponentCassette.COMPONENTTYPE)
+						{
+							// Enable or disable the previous button
+							bPreviousEnabled = (pComponent.ID != m_nSelectedComponentID);
+							break;
+						}
+					}
+				
+					// Check the last unit operation and set the state of the next button
+					pComponent = m_pSequence.Components[m_pSequence.Components.length - 1] as SequenceComponent;
+					bNextEnabled = (pComponent.ID != m_nSelectedComponentID);
+				}
 			}
 			
 			// Enable or disabled the buttons
@@ -128,16 +156,21 @@ package Elixys.Components
 		
 		// Datagrid header XML
 		protected static const SEQUENCERHEADER:XML = 
-			<columns widths="16,90%,5%,5,5%,16" gapH="0">
+			<columns widths="16,86%,20,45,7%,5,7%,16" gapH="0">
 				<frame />
-				<rows heights="15%,85%" gapV="0">
+				<rows heights="25%,75%" gapV="0">
 					<frame />
 					<label useEmbedded="true">
-						<font face="GothamMedium" color={Styling.TEXT_GRAY1} size="20">
+						<font face="GothamBold" color={Styling.TEXT_GRAY1} size="14">
 							SEQUENCER
 						</font>
 					</label>
 				</rows>
+				<rows heights="7,100%,7" gapV="0">
+					<frame />
+					<frame id="trash" />
+				</rows>
+				<frame />
 				<rows heights="8,100%,4" gapV="0">
 					<frame />
 					<horizontal>
@@ -148,7 +181,8 @@ package Elixys.Components
 								backgroundskindisabled={getQualifiedClassName(sequencer_arrowBtn_disabled)}
 								foregroundskinup={getQualifiedClassName(sequencer_arrowLeft)}
 								foregroundskindown={getQualifiedClassName(sequencer_arrowLeft_down)}
-								foregroundskindisabled={getQualifiedClassName(sequencer_arrowLeft_disabled)} />
+								foregroundskindisabled={getQualifiedClassName(sequencer_arrowLeft_disabled)}
+								foregroundskinscale="0.8" />
 					</horizontal>
 				</rows>
 				<frame />
@@ -162,12 +196,17 @@ package Elixys.Components
 								backgroundskindisabled={getQualifiedClassName(sequencer_arrowBtn_disabled)}
 								foregroundskinup={getQualifiedClassName(sequencer_arrowRight)}
 								foregroundskindown={getQualifiedClassName(sequencer_arrowRight_down)}
-								foregroundskindisabled={getQualifiedClassName(sequencer_arrowRight_disabled)} />
+								foregroundskindisabled={getQualifiedClassName(sequencer_arrowRight_disabled)}
+								foregroundskinscale="0.8" />
 					</horizontal>
 				</rows>
 			</columns>;
 		
+		// Mode
+		protected var m_sMode:String = "";
+
 		// View components
+		protected var m_pTrash:Form;
 		protected var m_pPreviousButton:Button;
 		protected var m_pNextButton:Button;
 

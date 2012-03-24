@@ -61,6 +61,8 @@ package Elixys.Components
 				else
 				{
 					m_pButtonNames.push(pButtonXML.@name[0]);
+					m_pBackgroundSkinHeights.push(pButtonXML.@backgroundskinheightpercent[0]);
+					m_pBackgroundSkinWidths.push(pButtonXML.@backgroundskinwidthpercent[0]);
 					m_pForegroundSkinHeights.push(pButtonXML.@foregroundskinheightpercent[0]);
 					m_pForegroundSkinWidths.push(pButtonXML.@foregroundskinwidthpercent[0]);
 					m_pButtonFontFaces.push(pButtonXML.@fontFace[0]);
@@ -84,10 +86,14 @@ package Elixys.Components
 				delete xml.children()[pButtonXML.childIndex()];
 			}
 			
-			// Get the right padding
+			// Get the vertical offset and right padding
+			if (xml.@verticaloffset.length() > 0)
+			{
+				m_nVerticalOffset = xml.@verticaloffset[0];
+			}
 			if (xml.@rightpadding.length() > 0)
 			{
-				m_nRightPadding = xml.@rightpadding;
+				m_nRightPadding = xml.@rightpadding[0];
 			}
 			
 			// Call the base constructor
@@ -200,11 +206,30 @@ package Elixys.Components
 		// Sets the background skin position
 		protected function SetBackgroundSkinPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, pSkin:MovieClip):void
 		{
+			// Determine the skin width and height
+			var nSkinWidth:Number, nSkinHeight:Number;
 			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
-			pSkin.x = nTotalWidth * nButton;
-			pSkin.y = 0;
-			pSkin.width = nTotalWidth;
-			pSkin.height = nHeight;
+			if (m_pBackgroundSkinWidths[nButton] != null)
+			{
+				nSkinWidth = nTotalWidth * m_pBackgroundSkinWidths[nButton] / 100;
+				nSkinHeight = nSkinWidth * (pSkin.height / pSkin.width);
+			}
+			else if (m_pBackgroundSkinHeights[nButton] != null)
+			{
+				nSkinHeight = nHeight * m_pBackgroundSkinHeights[nButton] / 100;
+				nSkinWidth = nSkinHeight * (pSkin.width / pSkin.height);
+			}
+			else
+			{
+				nSkinWidth = nTotalWidth;
+				nSkinHeight = nHeight;
+			}
+
+			// Set the skin position
+			pSkin.x = (nTotalWidth * nButton) + ((nTotalWidth - nSkinWidth) / 2);
+			pSkin.y = m_nVerticalOffset + ((nHeight - nSkinHeight) / 2);
+			pSkin.width = nSkinWidth;
+			pSkin.height = nSkinHeight;
 		}
 
 		// Set the foreground skin position
@@ -233,7 +258,7 @@ package Elixys.Components
 			
 			// Set the skin position
 			pSkin.x = (nTotalWidth * nButton) + (nTotalWidth - nSkinWidth) / 2;
-			pSkin.y = (nHeight - nTextHeight - nSkinHeight - BUTTON_GAP) / 2;
+			pSkin.y = m_nVerticalOffset + ((nHeight - nTextHeight - nSkinHeight - BUTTON_GAP) / 2);
 			pSkin.width = nSkinWidth;
 			pSkin.height = nSkinHeight;
 			
@@ -248,7 +273,8 @@ package Elixys.Components
 			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
 			pLabel.width = nTotalWidth;
 			pLabel.x = nTotalWidth * nButton;
-			pLabel.y = ((nHeight - pLabel.height - nForegroundSkinHeight + BUTTON_GAP) / 2) + nForegroundSkinHeight;
+			pLabel.y = m_nVerticalOffset + nForegroundSkinHeight +
+				((nHeight - pLabel.height - nForegroundSkinHeight + BUTTON_GAP) / 2);
 		}
 		
 		// Called when the stage resizes
@@ -264,7 +290,7 @@ package Elixys.Components
 				m_pMainSkin.width = width;
 				m_pMainSkin.height = height;
 			}
-
+			
 			// Update the visual components
 			var nForegroundSkinHeight:int = 0;
 			for (var nButton:int = 0; nButton < m_pButtonNames.length; ++nButton)
@@ -505,10 +531,15 @@ package Elixys.Components
 		protected var m_pForegroundSkinUp:Array = new Array();
 		protected var m_pForegroundSkinDown:Array = new Array();
 		protected var m_pForegroundSkinDisabled:Array = new Array();
+		protected var m_pBackgroundSkinWidths:Array = new Array();
+		protected var m_pBackgroundSkinHeights:Array = new Array();
 		protected var m_pBackgroundSkinUp:Array = new Array();
 		protected var m_pBackgroundSkinDown:Array = new Array();
 		protected var m_pBackgroundSkinDisabled:Array = new Array();
 		protected var m_pButtonBlankFlags:Array = new Array();
+		
+		// Button vertical offset
+		protected var m_nVerticalOffset:int = 0;
 		
 		// Gap between the foreground skin and text
 		protected static var BUTTON_GAP:int = 8;

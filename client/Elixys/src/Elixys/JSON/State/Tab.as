@@ -35,6 +35,12 @@ package Elixys.JSON.State
 			return super.flash_proxy::getProperty("id");
 		}
 		
+		// Tab creation function
+		public static function CreateTab(sID:String, sText:String):Tab
+		{
+			return new Tab("{\"text\":\"" + sText + "\", \"id\":\"" + sID + "\"}");
+		}
+		
 		// Tab comparison function.  Returns true if the tabs are equal, false otherwise.
 		public static function CompareTabs(pTabA:Tab, pTabB:Tab):Boolean
 		{

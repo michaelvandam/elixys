@@ -78,11 +78,11 @@ package Elixys.JSON.State
 
 		public function get ValidationError():Boolean
 		{
-			return (super.flash_proxy::getProperty("validationerror") == "true");
+			return super.flash_proxy::getProperty("validationerror");
 		}
 		public function set ValidationError(value:Boolean):void
 		{
-			super.flash_proxy::setProperty("validationerror", value ? "true" : "false");
+			super.flash_proxy::setProperty("validationerror", value);
 		}
 
 		// Sequence component comparison function.  Returns true if the sequence components are equal, false otherwise.
@@ -138,9 +138,9 @@ package Elixys.JSON.State
 		private var m_sDefault:String = "{" +
 			"\"type\":\"sequencecomponent\"," +
 			"\"name\":\"\"," +
-			"\"id\":\"\"," +
+			"\"id\":0," +
 			"\"componenttype\":\"\"," +
 			"\"note\":\"\"," +
-			"\"validationerror\":\"\"}";
+			"\"validationerror\":false}";
 	}
 }

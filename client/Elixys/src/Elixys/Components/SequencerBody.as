@@ -8,6 +8,7 @@ package Elixys.Components
 	import Elixys.JSON.State.Column;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
+	import Elixys.JSON.State.StateSequence;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -32,6 +33,12 @@ package Elixys.Components
 		
 		public function SequencerBody(screen:Sprite, xml:XML, attributes:Attributes)
 		{
+			// Get our mode
+			if (xml.@mode.length() > 0)
+			{
+				m_sMode = xml.@mode[0];
+			}
+
 			// Call the base constructor
 			super(screen, SEQUENCERBODY, attributes);
 
@@ -112,17 +119,37 @@ package Elixys.Components
 			{
 				m_nNumberActiveBackgroundColor = Styling.AS3Color(xml.@numberactivebackgroundcolor[0]);
 			}
+			
+			// Create the timer
+			if (m_sMode == StateSequence.EDITTYPE)
+			{
+				m_pHoldTimer = new Timer(500, 1);
+				m_pHoldTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHoldTimer);
+			}
 		}
 		
 		/***
 		 * Member functions
 		 **/
 
+		// Sets the unit operation and button width
+		public function SetWidths(nUnitOperationWidth:Number, nButtonWidth:Number):void
+		{
+			m_nUnitOperationWidth = nUnitOperationWidth;
+			m_nButtonSkinWidth = nButtonWidth;
+		}
+		
 		// Override the hit searching function
 		protected override function doSearchHit():void
 		{
 			// Only process hits if we are clickable
 			if (!_clickable)
+			{
+				return;
+			}
+			
+			// Ignore clicks if we're in run mode
+			if (m_sMode == StateSequence.RUNTYPE)
 			{
 				return;
 			}
@@ -138,7 +165,7 @@ package Elixys.Components
 					continue;
 				}
 
-				// Hit text
+				// Hit test
 				if ((m_pHitAreas[nUnitOperationIndex] as Rectangle).contains(_slider.mouseX, _slider.mouseY))
 				{
 					if (m_nClickState == STATE_CLICKING)
@@ -146,13 +173,25 @@ package Elixys.Components
 						// Draw the button as pressed
 						m_nPressedIndex = nUnitOperationIndex;
 						PressButton(m_nPressedIndex);
+						
+						// Start the hold timer in edit mode
+						if (m_sMode == StateSequence.EDITTYPE)
+						{
+							m_pHoldTimer.start();
+						}
 						return;
 					}
 					else
 					{
+						// Stop the hold timer in edit mode
+						if (m_sMode == StateSequence.EDITTYPE)
+						{
+							m_pHoldTimer.stop();
+						}
+						
+						// Ignore if the mouse was released over different button than it was pressed over
 						if ((m_nPressedIndex != -1) && (m_nPressedIndex != nUnitOperationIndex))
 						{
-							// Mouse released over different button than it was pressed over
 							ReleaseButton(m_nPressedIndex);
 							m_nPressedIndex = -1;
 							return;
@@ -202,7 +241,6 @@ package Elixys.Components
 			}
 			
 			// Calculate the required slider width
-			m_nUnitOperationWidth = attributes.width / Sequencer.VISIBLE_COLUMN_COUNT;
 			var nWidth:Number = (m_nUnitOperationWidth * nUnitOperations) + ((WINDOW_CAP_SIZE + WINDOW_GAP) * 2);
 			if (nWidth < attributes.width)
 			{
@@ -215,17 +253,17 @@ package Elixys.Components
 			doLayout();
 
 			// Update the window skin positions
-			m_pSequencerWindowHeight = attributes.height * WINDOW_PERCENT_HEIGHT / 100;
+			m_nSequencerWindowHeight = attributes.height * WINDOW_PERCENT_HEIGHT / 100;
 			m_pWindowLeftSkin.x = WINDOW_GAP;
 			m_pWindowLeftSkin.y = 0;
-			m_pWindowLeftSkin.height = m_pSequencerWindowHeight;
+			m_pWindowLeftSkin.height = m_nSequencerWindowHeight;
 			m_pWindowRightSkin.x = nWidth - WINDOW_CAP_SIZE - WINDOW_GAP;
 			m_pWindowRightSkin.y = 0;
-			m_pWindowRightSkin.height = m_pSequencerWindowHeight;
+			m_pWindowRightSkin.height = m_nSequencerWindowHeight;
 			m_pWindowCenterSkin.x = WINDOW_GAP + WINDOW_CAP_SIZE;
 			m_pWindowCenterSkin.y = 0;
-			m_pWindowCenterSkin.width = nWidth;
-			m_pWindowCenterSkin.height = m_pSequencerWindowHeight;
+			m_pWindowCenterSkin.width = nWidth - ((WINDOW_CAP_SIZE + WINDOW_GAP) * 2);
+			m_pWindowCenterSkin.height = m_nSequencerWindowHeight;
 
 			// Clear any selected or pressed unit operations
 			m_nSelectedIndex = -1;
@@ -244,7 +282,7 @@ package Elixys.Components
 				}
 				
 				// Create the hit area
-				m_pHitAreas.push(new Rectangle(nOffset, 0, m_nUnitOperationWidth, m_pSequencerWindowHeight));
+				m_pHitAreas.push(new Rectangle(nOffset, 0, m_nUnitOperationWidth, m_nSequencerWindowHeight));
 				nOffset += m_nUnitOperationWidth;
 			}
 
@@ -347,6 +385,37 @@ package Elixys.Components
 				{
 					m_pUnitOperationActiveSkins.push(AddSkin(pClass));
 				}
+				
+				// Add or update the warning icons
+				if (nUnitOperationIndex < m_pUnitOperationWarningIcons.length)
+				{
+					if (pComponent.ValidationError)
+					{
+						if (m_pUnitOperationWarningIcons[nUnitOperationIndex] == null)
+						{
+							m_pUnitOperationWarningIcons[nUnitOperationIndex] = AddSkin(sequencer_invalidMarker);
+						}
+					}
+					else
+					{
+						if (m_pUnitOperationWarningIcons[nUnitOperationIndex] != null)
+						{
+							_slider.removeChild(m_pUnitOperationWarningIcons[nUnitOperationIndex]);
+							m_pUnitOperationWarningIcons[nUnitOperationIndex] = null;
+						}
+					}
+				}
+				else
+				{
+					if (pComponent.ValidationError)
+					{
+						m_pUnitOperationWarningIcons.push(AddSkin(sequencer_invalidMarker));
+					}
+					else
+					{
+						m_pUnitOperationWarningIcons.push(null);
+					}
+				}
 				++nUnitOperationIndex;
 			}
 			while (m_pUnitOperationUpSkins.length > nUnitOperations)
@@ -365,7 +434,25 @@ package Elixys.Components
 			{
 				_slider.removeChild(m_pUnitOperationActiveSkins.pop());
 			}
-
+			while (m_pUnitOperationWarningIcons.length > nUnitOperations)
+			{
+				var pWarningIcon:MovieClip = m_pUnitOperationWarningIcons.pop();
+				if (pWarningIcon != null)
+				{
+					_slider.removeChild(pWarningIcon);
+				}
+			}
+			
+			// Adjust the number of unit operation enabled flags
+			while (m_bUnitOperationEnabled.length < nUnitOperations)
+			{
+				m_bUnitOperationEnabled.push(true);
+			}
+			while (m_bUnitOperationEnabled.length > nUnitOperations)
+			{
+				m_bUnitOperationEnabled.pop();
+			}
+			
 			// Adjust the number of unit operation labels
 			while (m_pUnitOperationLabels.length < nUnitOperations)
 			{
@@ -454,9 +541,9 @@ package Elixys.Components
 		public function UpdateSelectedComponent(nComponentID:int):void
 		{
 			// Remember the component ID but do not update if we don't have a sequence
+			m_nSelectedComponentID = nComponentID;
 			if (m_pSequence == null)
 			{
-				m_nSelectedComponentID = nComponentID;
 				return;
 			}
 
@@ -477,23 +564,110 @@ package Elixys.Components
 				if (pComponent.ID == nComponentID)
 				{
 					m_nSelectedIndex = nUnitOperationIndex;
-					break;
+				}
+				
+				// Enable or disable this unit operation if we're in run mode
+				if (m_sMode == StateSequence.RUNTYPE)
+				{
+					m_bUnitOperationEnabled[nUnitOperationIndex] = (m_nSelectedIndex != -1);
 				}
 				++nUnitOperationIndex;
 			}
 
-			// Update the selected unit operation
+			// Update the selected unit operation if it changed
 			if (m_nSelectedIndex != nOldSelectedIndex)
 			{
-				if (nOldSelectedIndex != -1)
-				{
-					ReleaseButton(nOldSelectedIndex);
-				}
+				// Render the sequencer body
+				Render();
+
+				// Adjust the unit operation visibility depending on our mode
 				if (m_nSelectedIndex != -1)
 				{
-					SelectButton(m_nSelectedIndex);
+					if ((m_sMode == StateSequence.VIEWTYPE) || (m_sMode == StateSequence.EDITTYPE))
+					{
+						// Make sure that the previous and next unit operations are visible for view and edit modes.  First
+						// check if the previous or current unit operations are off the screen to the left
+						var pCurrentUnitOperation:Rectangle = m_pHitAreas[m_nSelectedIndex] as Rectangle;
+						if (m_nSelectedIndex > 0)
+						{
+							var pPreviousUnitOperation:Rectangle = m_pHitAreas[m_nSelectedIndex - 1] as Rectangle;
+							if ((-_slider.x) > (pPreviousUnitOperation.x - WINDOW_GAP))
+							{
+								// Previous unit operation is off the screen to the left
+								_slider.x = (-pCurrentUnitOperation.x + m_nUnitOperationWidth);
+								if (_slider.x > 0)
+								{
+									_slider.x = 0;
+								}
+							}
+						}
+						else if (m_nSelectedIndex == 0)
+						{
+							if ((-_slider.x) > (pCurrentUnitOperation.x - WINDOW_GAP))
+							{
+								// Current unit op off the screen to the left
+								_slider.x = (-pCurrentUnitOperation.x + m_nUnitOperationWidth);
+								if (_slider.x > 0)
+								{
+									_slider.x = 0;
+								}
+							}
+						}
+	
+						// Check if the next or current unit operations are off the screen to the right
+						if ((m_nSelectedIndex + 1) < m_pHitAreas.length)
+						{
+							var pNextUnitOperation:Rectangle = m_pHitAreas[m_nSelectedIndex + 1] as Rectangle;
+							if ((-_slider.x) < (pNextUnitOperation.x + m_nUnitOperationWidth - WINDOW_GAP - attributes.width))
+							{
+								// Next unit operation is off the screen to the right
+								_slider.x = (-pNextUnitOperation.x + (m_nUnitOperationWidth * 2));
+								if ((-_slider.x + attributes.width) > _slider.width)
+								{
+									_slider.x = -_slider.width + attributes.width;
+								}
+							}
+						}
+						else
+						{
+							if ((-_slider.x) < (pCurrentUnitOperation.x + m_nUnitOperationWidth - WINDOW_GAP - attributes.width))
+							{
+								// Current unit op off the screen to the right
+								_slider.x = (-pCurrentUnitOperation.x + (m_nUnitOperationWidth * 2));
+								if ((-_slider.x + attributes.width) > _slider.width)
+								{
+									_slider.x = -_slider.width + attributes.width;
+								}
+							}
+						}
+					}
+					else if (m_sMode == StateSequence.RUNTYPE)
+					{
+						// Adjust the slider position so the two previous unit operations are visible
+						if (m_nSelectedIndex != -1)
+						{
+							if (m_nSelectedIndex > 1)
+							{
+								var pUnitOperation:Rectangle = m_pHitAreas[m_nSelectedIndex - 2] as Rectangle;
+								_slider.x = -pUnitOperation.x;
+								if (_slider.x > 0)
+								{
+									_slider.x = 0;
+								}
+							}
+							else
+							{
+								_slider.x = 0;
+							}
+						}
+	
+						// Make sure the slide is still within the maximum range
+						if ((-_slider.x + attributes.width) > _slider.width)
+						{
+							_slider.x = -_slider.width + attributes.width;
+						}
+					}
 				}
-				Render();
 			}
 		}
 
@@ -502,14 +676,11 @@ package Elixys.Components
 		{
 			// Adjust the visual elements for each unit operation
 			var pLabel:UILabel, pComponent:SequenceComponent, nButtonSkinX:Number, nButtonSkinY:Number,
-			nUnitOpSkinX:Number, nUnitOpSkinY:Number, pUpSkin:MovieClip, pDownSkin:MovieClip,
-			pDisabledSkin:MovieClip, pActiveSkin:MovieClip;
-			var nButtonUpperGap:Number = m_pSequencerWindowHeight * BUTTON_PERCENT_UPPER_GAP / 100;
-			var nButtonLowerGap:Number = m_pSequencerWindowHeight * BUTTON_PERCENT_LOWER_GAP / 100;
-			var nButtonSkinWidth:Number = m_nUnitOperationWidth - BUTTON_GAP;
-			var nButtonSkinHeight:Number = m_pSequencerWindowHeight - nButtonUpperGap - nButtonLowerGap;
-			var nUnitOpSkinHeight:Number = nButtonSkinHeight - (ICON_PADDING * 2) - ICON_GAP - TEXT_HEIGHT;
-			var nOffset:Number = WINDOW_GAP + 10, nUnitOperationIndex:int = 0;
+				nUnitOpSkinX:Number, nUnitOpSkinY:Number, pUpSkin:MovieClip, pDownSkin:MovieClip,
+				pDisabledSkin:MovieClip, pActiveSkin:MovieClip, pWarningIcon:MovieClip;
+			var nButtonUpperGap:Number = m_nSequencerWindowHeight * BUTTON_PERCENT_UPPER_GAP / 100;
+			var nButtonLowerGap:Number = m_nSequencerWindowHeight * BUTTON_PERCENT_LOWER_GAP / 100;
+			var nOffset:Number = WINDOW_GAP + 10, nUnitOperationIndex:int = 0, nButtonSkinHeight:Number = 0;
 			for (var nIndex:int = 0; nIndex < m_pSequence.Components.length; ++nIndex)
 			{
 				// Skip cassettes
@@ -524,36 +695,34 @@ package Elixys.Components
 				pDownSkin = m_pButtonDownSkins[nUnitOperationIndex] as MovieClip;
 				pDisabledSkin = m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip;
 				pActiveSkin = m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip;
-				nButtonSkinX = nOffset + (BUTTON_GAP / 2);
+				nButtonSkinX = nOffset + (Sequencer.BUTTON_GAP / 2);
 				pUpSkin.x = pDownSkin.x = pDisabledSkin.x = pActiveSkin.x = nButtonSkinX;
 				pUpSkin.y = pDownSkin.y = pDisabledSkin.y = pActiveSkin.y = nButtonUpperGap;
-				pUpSkin.width = pDownSkin.width = pDisabledSkin.width = pActiveSkin.width = nButtonSkinWidth;
-				pUpSkin.height = pDownSkin.height = pDisabledSkin.height = pActiveSkin.height = nButtonSkinHeight;
-				
+				pUpSkin.width = pDownSkin.width = pDisabledSkin.width = pActiveSkin.width = m_nButtonSkinWidth;
+				pUpSkin.scaleY = pDownSkin.scaleY = pDisabledSkin.scaleY = pActiveSkin.scaleY = pUpSkin.scaleX;
+				nButtonSkinHeight = pUpSkin.height;
+
+				// Set the positions of the warning icons
+				if (m_pUnitOperationWarningIcons[nUnitOperationIndex] != null)
+				{
+					pWarningIcon = m_pUnitOperationWarningIcons[nUnitOperationIndex] as MovieClip;
+					pWarningIcon.height = WARNING_ICON_HEIGHT;
+					pWarningIcon.scaleX = pWarningIcon.scaleY;
+					pWarningIcon.x = pUpSkin.x + pUpSkin.width - pWarningIcon.width + WARNING_ICON_OFFSETX;
+					pWarningIcon.y = pUpSkin.y + WARNING_ICON_OFFSETY;
+				}
+
 				// Set the positions of the unit operation skins
 				pUpSkin = m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip;
 				pDownSkin = m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip;
 				pDisabledSkin = m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip;
 				pActiveSkin = m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip;
-				pUpSkin.height = pDownSkin.height = pDisabledSkin.height = pActiveSkin.height = nUnitOpSkinHeight;
+				pUpSkin.height = pDownSkin.height = pDisabledSkin.height = pActiveSkin.height = 
+					nButtonSkinHeight - (ICON_PADDING * 2) - ICON_GAP - TEXT_HEIGHT;
 				pUpSkin.scaleX = pDownSkin.scaleX = pDisabledSkin.scaleX = pActiveSkin.scaleX = pUpSkin.scaleY;
-				nUnitOpSkinX = nButtonSkinX + ((nButtonSkinWidth - pUpSkin.width) / 2);
+				nUnitOpSkinX = nButtonSkinX + ((m_nButtonSkinWidth - pUpSkin.width) / 2);
 				pUpSkin.x = pDownSkin.x = pDisabledSkin.x = pActiveSkin.x = nUnitOpSkinX;
 				pUpSkin.y = pDownSkin.y = pDisabledSkin.y = pActiveSkin.y = nButtonUpperGap + ICON_PADDING;
-				
-				// Set the visibility of the button skins
-				if (nUnitOperationIndex == m_nPressedIndex)
-				{
-					PressButton(nUnitOperationIndex);
-				}
-				else if (nUnitOperationIndex == m_nSelectedIndex)
-				{
-					SelectButton(nUnitOperationIndex);
-				}
-				else
-				{
-					ReleaseButton(nUnitOperationIndex);
-				}
 				
 				// Adjust unit operation label
 				pLabel = m_pUnitOperationLabels[nUnitOperationIndex] as UILabel;
@@ -577,7 +746,7 @@ package Elixys.Components
 				pLabel.text = (nUnitOperationIndex + 1).toString();
 				pLabel.width = pLabel.textWidth + 5;
 				pLabel.x = nOffset + ((m_nUnitOperationWidth - pLabel.width) / 2);
-				pLabel.y = m_pSequencerWindowHeight + ((attributes.height - m_pSequencerWindowHeight - pLabel.height - SELECTED_GAP) / 2);
+				pLabel.y = m_nSequencerWindowHeight + ((attributes.height - m_nSequencerWindowHeight - pLabel.height - SELECTED_GAP) / 2);
 				
 				// Increment offset and index
 				nOffset += m_nUnitOperationWidth;
@@ -588,13 +757,40 @@ package Elixys.Components
 		// Updates the rendering
 		protected function Render():void
 		{
+			// Update the visibility of the button skins
+			var nIndex:int, nUnitOperationIndex:int = 0, pComponent:SequenceComponent;
+			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			{
+				// Skip cassettes
+				pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+				if (pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					continue;
+				}
+
+				// Set the visibility of the button skins
+				if (nUnitOperationIndex == m_nPressedIndex)
+				{
+					PressButton(nUnitOperationIndex);
+				}
+				else if (nUnitOperationIndex == m_nSelectedIndex)
+				{
+					SelectButton(nUnitOperationIndex);
+				}
+				else
+				{
+					ReleaseButton(nUnitOperationIndex);
+				}
+				++nUnitOperationIndex;
+			}
+			
 			// Draw the background of the currently selected unit operation
 			_slider.graphics.clear();
 			if (m_nSelectedIndex != -1)
 			{
 				_slider.graphics.beginFill(Styling.AS3Color(Styling.SCROLLER_SELECTED));
 				_slider.graphics.drawRoundRect(WINDOW_GAP + 10 + (m_nSelectedIndex * m_nUnitOperationWidth),
-					m_pSequencerWindowHeight, m_nUnitOperationWidth, attributes.height - m_pSequencerWindowHeight - SELECTED_GAP,
+					m_nSequencerWindowHeight, m_nUnitOperationWidth, attributes.height - m_nSequencerWindowHeight - SELECTED_GAP,
 					SELECTED_NUMBER_CURVE);
 				_slider.graphics.endFill();
 			}
@@ -642,43 +838,63 @@ package Elixys.Components
 		// Renders the specified button as release
 		protected function ReleaseButton(nUnitOperationIndex:int):void
 		{
-			// Show the up or active skin
-			(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).visible = (nUnitOperationIndex != m_nSelectedIndex);
-			(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).visible = (nUnitOperationIndex != m_nSelectedIndex);
-			(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
-			(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
-			(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).visible = false;
-			(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).visible = false;
-			(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).visible = (nUnitOperationIndex == m_nSelectedIndex);
-			(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).visible = (nUnitOperationIndex == m_nSelectedIndex);
-			
-			// Set the unit operation label colors
+			// Determine the visibility of the up, disabled and active skins and the various label colors
+			var bUpVisible:Boolean = false, bDisabledVisible:Boolean = false, bActiveVisible:Boolean = false;
+			var nUnitOperationLabelColor:uint = 0, nNoteLabelColor:uint = 0, nNumberLabelColor:uint = 0;
 			if (nUnitOperationIndex == m_nSelectedIndex)
 			{
-				(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).textColor = m_nUnitOperationActiveTextColor;
-				if (m_pNoteLabels[nUnitOperationIndex] != null)
-				{
-					(m_pNoteLabels[nUnitOperationIndex] as UILabel).textColor = m_nNoteActiveTextColor;
-				}
-				(m_pNumberLabels[nUnitOperationIndex] as UILabel).textColor = m_nNumberActiveTextColor;
+				bActiveVisible = true;
+				nUnitOperationLabelColor = m_nUnitOperationActiveTextColor;
+				nNoteLabelColor = m_nNoteActiveTextColor;
+				nNumberLabelColor = m_nNumberActiveTextColor;
+			}
+			else if (m_bUnitOperationEnabled[nUnitOperationIndex])
+			{
+				bUpVisible = true;
+				nUnitOperationLabelColor = m_nUnitOperationEnabledTextColor;
+				nNoteLabelColor = m_nNoteEnabledTextColor;
+				nNumberLabelColor = m_nNumberEnabledTextColor;
 			}
 			else
 			{
-				(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).textColor = m_nUnitOperationEnabledTextColor;
-				if (m_pNoteLabels[nUnitOperationIndex] != null)
-				{
-					(m_pNoteLabels[nUnitOperationIndex] as UILabel).textColor = m_nNoteEnabledTextColor;
-				}
-				(m_pNumberLabels[nUnitOperationIndex] as UILabel).textColor = m_nNumberEnabledTextColor;
+				bDisabledVisible = true;
+				nUnitOperationLabelColor = m_nUnitOperationDisabledTextColor;
+				nNoteLabelColor = m_nNoteDisabledTextColor;
+				nNumberLabelColor = m_nNumberDisabledTextColor;
 			}
+			
+			// Show the skin
+			(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).visible = bUpVisible;
+			(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).visible = bUpVisible;
+			(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
+			(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
+			(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).visible = bDisabledVisible;
+			(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).visible = bDisabledVisible;
+			(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).visible = bActiveVisible;
+			(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).visible = bActiveVisible;
+
+			// Set the label colors
+			(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).textColor = nUnitOperationLabelColor;
+			if (m_pNoteLabels[nUnitOperationIndex] != null)
+			{
+				(m_pNoteLabels[nUnitOperationIndex] as UILabel).textColor = nNoteLabelColor;
+			}
+			(m_pNumberLabels[nUnitOperationIndex] as UILabel).textColor = nNumberLabelColor;
 		}
 		
 		// Add a skin
-		protected function AddSkin(pClass:Class):MovieClip
+		protected function AddSkin(pClass:Class, pParent:Sprite = null):MovieClip
 		{
 			var pSkin:MovieClip = new pClass() as MovieClip;
 			pSkin.buttonMode = false;
-			(_slider as Form).addChild(pSkin);
+			if (pParent != null)
+			{
+				pParent.addChild(pSkin);
+			}
+			else
+			{
+				(_slider as Form).addChild(pSkin);
+			}
 			return pSkin;
 		}
 
@@ -689,13 +905,18 @@ package Elixys.Components
 		}
 
 		// Create a new text label
-		protected function AddLabel(sFontFace:String, nFontSize:int, nTextColor:uint):UILabel
+		protected function AddLabel(sFontFace:String, nFontSize:int, nTextColor:uint, pParent:Sprite = null):UILabel
 		{
 			var pXML:XML =
 				<label useEmbedded="true" alignH="left" alignV="bottom">
 					<font face={sFontFace} size={nFontSize} />
 				</label>;
 			var pLabel:UILabel = (_slider as Form).CreateLabel(pXML, attributes);
+			if (pParent != null)
+			{
+				_slider.removeChild(pLabel);
+				pParent.addChild(pLabel);
+			}
 			var pTextFormat:TextFormat = pLabel.getTextFormat();
 			pTextFormat.align = TextFormatAlign.CENTER;
 			pLabel.setTextFormat(pTextFormat);
@@ -703,6 +924,100 @@ package Elixys.Components
 			pLabel.multiline = false;
 			pLabel.wordWrap = false;
 			return pLabel;
+		}
+		
+		// Called when the user clicks and holds a unit operation
+		protected function OnHoldTimer(event:TimerEvent):void
+		{
+			// Ignore if a unit operation isn't pressed
+			if (m_nPressedIndex == -1)
+			{
+				return;
+			}
+
+			// Ignore if the mouse is not over the same unit operation that was initially pressed
+			if (!(m_pHitAreas[m_nPressedIndex] as Rectangle).contains(_slider.mouseX, _slider.mouseY))
+			{
+				m_nPressedIndex = -1;
+				return;
+			}
+
+			// Assume control of the user's input from the base class
+			stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUp);
+			_dragTimer.stop();
+			_touchTimer.stop();
+
+			// Delete any existing drag target
+			if (m_pDragTarget != null)
+			{
+				stage.removeChild(m_pDragTarget);
+				m_pDragTarget = null;
+			}
+
+			// Get a reference to the pressed sequence component
+			var nSequenceIndex:int = m_nPressedIndex + (m_pSequence.Components.length - m_pHitAreas.length);
+			var pComponent:SequenceComponent = m_pSequence.Components[nSequenceIndex] as SequenceComponent;
+
+			// Duplicate the pressed unit operation
+			m_pDragTarget = new Sprite();
+			stage.addChild(m_pDragTarget);
+			var pBackgroundSkin:MovieClip, pForegroundSkin:MovieClip, pLabel:UILabel;
+			if (m_nPressedIndex == m_nSelectedIndex)
+			{
+				pBackgroundSkin = AddSkin(tools_btn_delete, m_pDragTarget);
+				pForegroundSkin = AddSkin(Components.GetActiveSkin(pComponent.ComponentType), m_pDragTarget);
+				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationActiveTextColor,
+					m_pDragTarget);
+			}
+			else
+			{
+				pBackgroundSkin = AddSkin(tools_btn_delete, m_pDragTarget);
+				pForegroundSkin = AddSkin(Components.GetUpSkin(pComponent.ComponentType), m_pDragTarget);
+				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationEnabledTextColor,
+					m_pDragTarget);
+			}
+			pBackgroundSkin.width = m_nButtonSkinWidth;
+			pBackgroundSkin.scaleY = pBackgroundSkin.scaleX;
+			pForegroundSkin.x = (m_nButtonSkinWidth - pForegroundSkin.width) / 2;
+			pForegroundSkin.y = ICON_PADDING;
+			pLabel.text = pComponent.ComponentType;
+			pLabel.width = pLabel.textWidth + 5;
+			pLabel.x = (m_nButtonSkinWidth - pLabel.width) / 2;
+			pLabel.y = pForegroundSkin.y + pForegroundSkin.height + ICON_GAP;
+			// Add error callout if the unit operation has one
+
+			// Start dragging
+			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
+			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
+			m_pDragTarget.startDrag();
+			stage.addEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
+			stage.addEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
+			
+			// Clear the pressed index
+			m_nPressedIndex = -1;
+		}
+
+		// Called when the user moves the mouse while holding the button pressed
+		protected function OnHoldMouseMove(event:MouseEvent):void
+		{
+			// Move the drag target
+			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
+			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
+		}
+
+		// Called when the user moves the mouse while holding the button pressed
+		protected function OnHoldMouseUp(event:MouseEvent):void
+		{
+			// Remove the event listeners
+			stage.removeEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
+			stage.removeEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
+			
+			// Delete the drag target
+			if (m_pDragTarget != null)
+			{
+				stage.removeChild(m_pDragTarget);
+				m_pDragTarget = null;
+			}
 		}
 
 		/***
@@ -714,6 +1029,7 @@ package Elixys.Components
 			<frame border="false" />;
 
 		// Input parameters
+		protected var m_sMode:String = "";
 		protected var m_sUnitOperationFontFace:String = "";
 		protected var m_nUnitOperationFontSize:int = 0;
 		protected var m_nUnitOperationEnabledTextColor:uint = 0;
@@ -736,21 +1052,24 @@ package Elixys.Components
 		protected var m_pWindowLeftSkin:MovieClip;
 		protected var m_pWindowCenterSkin:MovieClip;
 		protected var m_pWindowRightSkin:MovieClip;
-		protected var m_pButtonUpSkins:Array = new Array()
-		protected var m_pButtonDownSkins:Array = new Array()
-		protected var m_pButtonDisabledSkins:Array = new Array()
-		protected var m_pButtonActiveSkins:Array = new Array()
-		protected var m_pUnitOperationUpSkins:Array = new Array()
-		protected var m_pUnitOperationDownSkins:Array = new Array()
-		protected var m_pUnitOperationDisabledSkins:Array = new Array()
-		protected var m_pUnitOperationActiveSkins:Array = new Array()
+		protected var m_pButtonUpSkins:Array = new Array();
+		protected var m_pButtonDownSkins:Array = new Array();
+		protected var m_pButtonDisabledSkins:Array = new Array();
+		protected var m_pButtonActiveSkins:Array = new Array();
+		protected var m_pUnitOperationUpSkins:Array = new Array();
+		protected var m_pUnitOperationDownSkins:Array = new Array();
+		protected var m_pUnitOperationDisabledSkins:Array = new Array();
+		protected var m_pUnitOperationActiveSkins:Array = new Array();
+		protected var m_pUnitOperationWarningIcons:Array = new Array();
+		protected var m_bUnitOperationEnabled:Array = new Array();
 		protected var m_pUnitOperationLabels:Array = new Array();
 		protected var m_pNoteLabels:Array = new Array();
 		protected var m_pNumberLabels:Array = new Array();
 		
 		// Dimensions
 		protected var m_nUnitOperationWidth:Number = 0;
-		protected var m_pSequencerWindowHeight:Number = 0;
+		protected var m_nSequencerWindowHeight:Number = 0;
+		protected var m_nButtonSkinWidth:Number = 0
 		
 		// Current sequence and selected component ID
 		protected var m_pSequence:Sequence;
@@ -761,7 +1080,14 @@ package Elixys.Components
 		protected var m_nSelectedIndex:int = -1;
 		protected var m_nPressedIndex:int = -1;
 		
+		// Drag-and-drop variables
+		protected var m_pHoldTimer:Timer;
+		protected var m_pDragTarget:Sprite;
+		
 		// Constants
+		protected static var WARNING_ICON_HEIGHT:int = 15;
+		protected static var WARNING_ICON_OFFSETX:int = 4;
+		protected static var WARNING_ICON_OFFSETY:int = -4;
 		protected static var NOTE_GAP:int = 5;
 		protected static var ICON_PADDING:int = 6;
 		protected static var ICON_GAP:int = 2;
@@ -771,7 +1097,6 @@ package Elixys.Components
 		protected static var WINDOW_PERCENT_HEIGHT:int = 77;
 		protected static var BUTTON_PERCENT_UPPER_GAP:int = 15;
 		protected static var BUTTON_PERCENT_LOWER_GAP:int = 36;
-		protected static var BUTTON_GAP:int = 20;
 		protected static var SELECTED_GAP:int = 3;
 		protected static var SELECTED_NUMBER_CURVE:int = 10;
 	}

@@ -4,10 +4,12 @@ package Elixys.Components
 	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.State.Column;
+	import Elixys.JSON.State.SequenceMetadata;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
+	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
@@ -58,9 +60,9 @@ package Elixys.Components
 			var pGlobalPoint:Point = _slider.localToGlobal(pLocalPoint);
 
 			// Check for a row click
-			for (var nIndex:int = 0; nIndex < m_pHitAreasGlobal.length; ++nIndex)
+			for (var nIndex:int = 0; nIndex < m_pHitAreas.length; ++nIndex)
 			{
-				if ((m_pHitAreasGlobal[nIndex] as Rectangle).contains(pGlobalPoint.x, pGlobalPoint.y))
+				if ((m_pHitAreas[nIndex] as Rectangle).contains(_slider.mouseX, _slider.mouseY))
 				{
 					// Dispatch a selection change event, set the selected row index and render
 					dispatchEvent(new SelectionEvent(m_pData[nIndex][m_sIDField]));
@@ -100,27 +102,18 @@ package Elixys.Components
 			doLayout();
 
 			// Determine the hit areas for the table rows
-			var pUpperLeftLocal:Point = new Point();
-			var pLowerRightLocal:Point = new Point();
-			var pUpperLeftGlobal:Point = new Point();
-			var pLowerRightGlobal:Point = new Point();
-			m_pHitAreasLocal = new Array();
-			m_pHitAreasGlobal = new Array();
-			var pHitAreaLocal:Rectangle, pHitAreaGlobal:Rectangle, nIndex:int, nOffset:Number = 0;
+			var pUpperLeft:Point = new Point();
+			var pLowerRight:Point = new Point();
+			m_pHitAreas = new Array();
+			var pHitArea:Rectangle, nIndex:int, nOffset:Number = 0;
 			for (nIndex = 0; nIndex < pData.length; ++nIndex)
 			{
-				pUpperLeftLocal.x = 0;
-				pUpperLeftLocal.y = nOffset;
-				pLowerRightLocal.x = pSlider.attributes.width;
-				pLowerRightLocal.y = nOffset + nRowHeight;
-				pHitAreaLocal = new Rectangle(pUpperLeftLocal.x, pUpperLeftLocal.y, pLowerRightLocal.x - pUpperLeftLocal.x,
-					pLowerRightLocal.y - pUpperLeftLocal.y);
-				m_pHitAreasLocal.push(pHitAreaLocal);
-				pUpperLeftGlobal = localToGlobal(pUpperLeftLocal);
-				pLowerRightGlobal = localToGlobal(pLowerRightLocal);
-				pHitAreaGlobal = new Rectangle(pUpperLeftGlobal.x, pUpperLeftGlobal.y, pLowerRightGlobal.x - pUpperLeftGlobal.x,
-					pLowerRightGlobal.y - pUpperLeftGlobal.y);
-				m_pHitAreasGlobal.push(pHitAreaGlobal);
+				pUpperLeft.x = 0;
+				pUpperLeft.y = nOffset;
+				pLowerRight.x = pSlider.attributes.width;
+				pLowerRight.y = nOffset + nRowHeight;
+				pHitArea = new Rectangle(pUpperLeft.x, pUpperLeft.y, pLowerRight.x - pUpperLeft.x, pLowerRight.y - pUpperLeft.y);
+				m_pHitAreas.push(pHitArea);
 				nOffset += nRowHeight;
 			}
 
@@ -132,11 +125,11 @@ package Elixys.Components
 				m_pColumnWidths.push(pSlider.attributes.width * pColumn.PercentWidth / 100);
 			}
 			
-			// Adjust the number of labels to match the number of rows and columns
-			var pLabels:Array, pLabel:UILabel, nRowIndex:int, nColumnIndex:int;
+			// Adjust the actual number of labels and warning icons
+			var pLabels:Array, pLabel:UILabel, pWarningIcon:MovieClip, nRowIndex:int, nColumnIndex:int;
 			for (nRowIndex = 0; nRowIndex < pData.length; ++nRowIndex)
 			{
-				// Check if the row exists
+				// Check if the label row exists
 				if (nRowIndex < m_pLabels.length)
 				{
 					// Adjust the number of columns on the existing row
@@ -161,6 +154,15 @@ package Elixys.Components
 					}
 					m_pLabels.push(pLabels);
 				}
+				
+				// Add warning icons as needed
+				if (nRowIndex >= m_pWarningIcons.length)
+				{
+					pWarningIcon = new warningIcon_up() as MovieClip;
+					pWarningIcon.buttonMode = false;
+					_slider.addChild(pWarningIcon);
+					m_pWarningIcons.push(pWarningIcon);
+				}
 			}
 			while (m_pLabels.length > pData.length)
 			{
@@ -170,6 +172,11 @@ package Elixys.Components
 					pLabel = pLabels.pop();
 					_slider.removeChild(pLabel);
 				}
+			}
+			while (m_pWarningIcons.length > pData.length)
+			{
+				pWarningIcon = m_pWarningIcons.pop();
+				_slider.removeChild(pWarningIcon);
 			}
 			
 			// Update the current selection
@@ -210,7 +217,7 @@ package Elixys.Components
 			var pHitArea:Rectangle;
 			if (m_nSelectedRow != -1)
 			{
-				pHitArea = m_pHitAreasLocal[m_nSelectedRow] as Rectangle;
+				pHitArea = m_pHitAreas[m_nSelectedRow] as Rectangle;
 				pSlider.graphics.beginFill(Styling.AS3Color(Styling.DATAGRID_SELECTED));
 				pSlider.graphics.drawRect(pHitArea.x, pHitArea.y, pHitArea.width, pHitArea.height);
 				pSlider.graphics.endFill();
@@ -236,24 +243,46 @@ package Elixys.Components
 				nOffset += nRowHeight;
 			}
 
-			// Adjust the label contents and positions
-			var nRowIndex:int, nColumnIndex:int, pColumn:Column, pLabel:UILabel, sFieldName:String;
+			// Adjust the labels and warning icons
+			var nRowIndex:int, nColumnIndex:int, pColumn:Column, pLabel:UILabel, pWarningIcon:MovieClip,
+				sFieldName:String;
 			for (nRowIndex = 0; nRowIndex < m_pLabels.length; ++nRowIndex)
 			{
-				pHitArea = m_pHitAreasLocal[nRowIndex] as Rectangle;
+				// Adjust the warning icons visibility and positions
+				pHitArea = m_pHitAreas[nRowIndex] as Rectangle;
+				pWarningIcon = m_pWarningIcons[nRowIndex] as MovieClip;
+				if ((m_pData[nRowIndex] as SequenceMetadata).Valid)
+				{
+					pWarningIcon.visible = false;
+				}
+				else
+				{
+					pWarningIcon.visible = true;
+					pWarningIcon.height = pHitArea.height * WARNING_ICON_PERCENT / 100;
+					pWarningIcon.scaleX = pWarningIcon.scaleY;
+					pWarningIcon.x = m_pColumnWidths[0] - pWarningIcon.width - DataGrid.TEXT_INDENT;
+					pWarningIcon.y = pHitArea.y + ((pHitArea.height - pWarningIcon.height) / 2) + WARNING_ICON_OFFSET;
+				}
+
+				// Adjust the label contents and positions
 				nOffset = pHitArea.x;
 				for (nColumnIndex = 0; nColumnIndex < m_pColumns.length; ++nColumnIndex)
 				{
 					sFieldName = (m_pColumns[nColumnIndex] as Column).Data;
 					pLabel = m_pLabels[nRowIndex][nColumnIndex] as UILabel;
 					pLabel.text = FormatLabelText(m_pData[nRowIndex], sFieldName);
-					if (pLabel.textWidth < (m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2)))
+					var nColumnWidth:Number = m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2);
+					if ((nColumnIndex == 0) && !(m_pData[nRowIndex] as SequenceMetadata).Valid)
+					{
+						nColumnWidth -= pWarningIcon.width + (DataGrid.TEXT_INDENT / 2);
+					}
+					if (pLabel.textWidth < nColumnWidth)
 					{
 						pLabel.width = pLabel.textWidth + 5;
 					}
 					else
 					{
-						AddEllipsis(pLabel, m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2));
+						AddEllipsis(pLabel, nColumnWidth);
 					}
 					pLabel.x = nOffset + DataGrid.TEXT_INDENT;
 					pLabel.y = pHitArea.y + ((nRowHeight - pLabel.textHeight) / 2);
@@ -349,14 +378,16 @@ package Elixys.Components
 		protected var m_pData:Array;
 
 		// Row hit areas
-		protected var m_pHitAreasLocal:Array = new Array();
-		protected var m_pHitAreasGlobal:Array = new Array();
+		protected var m_pHitAreas:Array = new Array();
 		protected var m_nSelectedRow:int = -1;
 		
-		// Labels
+		// Labels and warning icons
 		protected var m_pLabels:Array = new Array();
+		protected var m_pWarningIcons:Array = new Array();
 
 		// Constants
 		protected static var DIVIDER_WIDTH:uint = 1;
+		protected static var WARNING_ICON_PERCENT:int = 45;
+		protected static var WARNING_ICON_OFFSET:int = 3;
 	}
 }

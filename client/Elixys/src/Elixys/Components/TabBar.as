@@ -47,8 +47,16 @@ package Elixys.Components
 				m_nSelectedTextColor = Styling.AS3Color(xml.@selectedTextColor[0]);
 			}
 			
-			// Remember the text padding
-			if (xml.@textpaddinghorizontal.length() > 0)
+			// Remember the tab and text padding
+			if (xml.@taboffset.length() > 0)
+			{
+				m_nTabOffset = xml.@taboffset[0];
+			}
+			if (xml.@tabpercentwidth.length() > 0)
+			{
+				m_nTabPercentWidth = xml.@tabpercentwidth[0];
+			}
+			else if (xml.@textpaddinghorizontal.length() > 0)
 			{
 				m_nTextPaddingHorizontal = xml.@textpaddinghorizontal[0];
 			}
@@ -125,8 +133,8 @@ package Elixys.Components
 			if (bFullUpdate || (nWidth != m_nLastWidth) || (nHeight != m_nLastHeight))
 			{
 				// Update the tab label and hit positions
-				var nIndex:int, pTab:Tab, pLabel:UILabel;
-				var nTextX:Number = TABBAR_OFFSET + m_nTextPaddingHorizontal;
+				var nIndex:int, pTab:Tab, pLabel:UILabel, nTabWidth:Number;
+				var nOffsetX:Number = m_nTabOffset;
 				var pUpperLeftLocal:Point = new Point();
 				var pLowerRightLocal:Point = new Point();
 				var pUpperLeftGlobal:Point = new Point();
@@ -139,26 +147,36 @@ package Elixys.Components
 				{
 					m_pTabHitAreasGlobal.pop();
 				}
+				if (m_nTabPercentWidth != 0)
+				{
+					nTabWidth = (nWidth - (m_nTabOffset * 2)) * m_nTabPercentWidth / 100;
+				}
 				for (nIndex = 0; nIndex < m_pTabs.length; ++nIndex)
 				{
 					// Get references to our objects
 					pTab = m_pTabs[nIndex] as Tab;
 					pLabel = m_pLabels[nIndex] as UILabel;
 	
+					// Determine the width of this tab
+					if (m_nTabPercentWidth == 0)
+					{
+						nTabWidth = pLabel.width + (2 * m_nTextPaddingHorizontal);
+					}
+					
 					// Set the text position
-					pLabel.x = nTextX;
+					pLabel.x = nOffsetX + ((nTabWidth - pLabel.width) / 2);
 					pLabel.y = nHeight - pLabel.height - m_nTextPaddingVertical;
 	
 					// Add the local and global hit positions
-					pUpperLeftLocal.x = pLabel.x - m_nTextPaddingHorizontal;
+					pUpperLeftLocal.x = nOffsetX;
 					pUpperLeftLocal.y = pLabel.y - m_nTextPaddingVertical;
-					pLowerRightLocal.x = pLabel.x + pLabel.width + m_nTextPaddingHorizontal;
+					pLowerRightLocal.x = nOffsetX + nTabWidth;
 					pLowerRightLocal.y = nHeight;
 					pHitRectLocal = new Rectangle(pUpperLeftLocal.x, pUpperLeftLocal.y, pLowerRightLocal.x - pUpperLeftLocal.x,
 						pLowerRightLocal.y - pUpperLeftLocal.y);
 					m_pTabHitAreasLocal.push(pHitRectLocal);
-					pUpperLeftGlobal = localToGlobal(pUpperLeftLocal);
-					pLowerRightGlobal = localToGlobal(pLowerRightLocal);
+					pUpperLeftGlobal = parent.localToGlobal(pUpperLeftLocal);
+					pLowerRightGlobal = parent.localToGlobal(pLowerRightLocal);
 					pHitRectGlobal = new Rectangle(pUpperLeftGlobal.x, pUpperLeftGlobal.y, pLowerRightGlobal.x - pUpperLeftGlobal.x,
 						pLowerRightGlobal.y - pUpperLeftGlobal.y);
 					m_pTabHitAreasGlobal.push(pHitRectGlobal);
@@ -174,7 +192,7 @@ package Elixys.Components
 					}
 	
 					// Update our horizontal offset
-					nTextX += pLabel.width + (2 * m_nTextPaddingHorizontal);
+					nOffsetX += nTabWidth;
 				}
 			
 				// Update the size
@@ -182,8 +200,13 @@ package Elixys.Components
 				m_nLastHeight = nHeight;
 			}
 
-			// Draw the pressed tab background
+			// Draw a blank background so we will get mouse down messages everywhere
 			graphics.clear();
+			graphics.beginFill(Styling.AS3Color(Styling.APPLICATION_BACKGROUND));
+			graphics.drawRect(0, 0, nWidth, nHeight);
+			graphics.endFill();
+			
+			// Draw the pressed tab background
 			var nX:Number, nY:Number;
 			if (m_nPressedTab != -1)
 			{
@@ -199,7 +222,7 @@ package Elixys.Components
 			// Draw the tab outline
 			pHitRectLocal = m_pTabHitAreasLocal[m_nSelectedTab] as Rectangle;
 			graphics.lineStyle(LINE_WIDTH, Styling.AS3Color(Styling.TABBAR_LINE));
-			graphics.moveTo(TABBAR_OFFSET, nHeight - LINE_WIDTH);
+			graphics.moveTo(m_nTabOffset, nHeight - LINE_WIDTH);
 			graphics.lineTo(pHitRectLocal.x, nHeight - LINE_WIDTH);
 			graphics.lineTo(pHitRectLocal.x, pHitRectLocal.y + LINE_CURVE);
 			graphics.curveTo(pHitRectLocal.x, pHitRectLocal.y, pHitRectLocal.x + LINE_CURVE, pHitRectLocal.y);
@@ -207,7 +230,7 @@ package Elixys.Components
 			graphics.curveTo(pHitRectLocal.x + pHitRectLocal.width, pHitRectLocal.y, pHitRectLocal.x + pHitRectLocal.width,
 				pHitRectLocal.y + LINE_CURVE);
 			graphics.lineTo(pHitRectLocal.x + pHitRectLocal.width, nHeight - LINE_WIDTH);
-			graphics.lineTo(nWidth - TABBAR_OFFSET, nHeight - LINE_WIDTH);
+			graphics.lineTo(nWidth - m_nTabOffset, nHeight - LINE_WIDTH);
 		}
 
 		// Called when the user presses the mouse button
@@ -263,7 +286,6 @@ package Elixys.Components
 			<frame alignV="fill" alignH="fill" background={Styling.APPLICATION_BACKGROUND}/>;
 
 		// Constants
-		protected var TABBAR_OFFSET:int = 15;
 		protected var LINE_CURVE:int = 5;
 		protected var LINE_WIDTH:int = 3;
 		protected var TABPRESSED_GAP:int = 1;
@@ -279,7 +301,10 @@ package Elixys.Components
 		protected var m_pTabs:Array = new Array();
 		protected var m_pLabels:Array = new Array();
 		
-		// Text padding
+		// Tab width is set one of two ways: either (1) by specifying a percent width for each tab or (2) based on 
+		// the actual text width plus padding.  Tab height is always set based on the actual text height plus padding
+		protected var m_nTabOffset:int = 0;
+		protected var m_nTabPercentWidth:int = 0;
 		protected var m_nTextPaddingHorizontal:int = 0;
 		protected var m_nTextPaddingVertical:int = 0;
 		

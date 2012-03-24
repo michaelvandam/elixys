@@ -1,19 +1,16 @@
 package Elixys.Views
 {
-	import Elixys.Components.NavigationBar;
-	import Elixys.Components.Screen;
-	import Elixys.Components.Sequencer;
-	import Elixys.Events.ButtonEvent;
-	import Elixys.Events.SelectionEvent;
+	import Elixys.Assets.Styling;
+	import Elixys.Components.*;
+	import Elixys.Events.*;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Post.PostSequence;
-	import Elixys.JSON.State.Sequence;
-	import Elixys.JSON.State.State;
-	import Elixys.JSON.State.StateSequence;
+	import Elixys.JSON.State.*;
 	
 	import com.danielfreeman.madcomponents.*;
 	
+	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	
 	// This base sequence view is an extension of the screen class
@@ -27,8 +24,12 @@ package Elixys.Views
 		{
 			// Call the base constructor
 			super(screen, pElixys, xml, attributes, row, inGroup);
+			
+			// Calculate the size of each unit operation button
+			m_nUnitOperationWidth = attributes.width / Sequencer.VISIBLE_COLUMN_COUNT;
+			m_nButtonSkinWidth = m_nUnitOperationWidth - Sequencer.BUTTON_GAP;
 		}
-		
+
 		/***
 		 * Loading functions
 		 **/
@@ -38,6 +39,12 @@ package Elixys.Views
 		{
 			if (m_nChildrenLoaded < nLoadSteps)
 			{
+				// Step 1 is loading the title bar
+				if (m_pTitle == null)
+				{
+					LoadTitle();
+				}
+
 				// Increment and return
 				++m_nChildrenLoaded;
 				return true;
@@ -66,6 +73,87 @@ package Elixys.Views
 			layout(attributes);
 		}
 
+		// Load the title
+		protected function LoadTitle():void
+		{
+			// Get the title bar container
+			var pContainer:Form = Form(findViewById("sequence_title_container"));
+			
+			// Load the title bar
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pTitle = new Form(pContainer, TITLE, pAttributes);
+			
+			// Append the title bar to the XML and refresh
+			pContainer.xml.appendChild(TITLE);
+			pContainer.AppendChild(m_pTitle);
+			layout(attributes);
+			
+			// Add the title background and get a reference to the label
+			m_pTitleBackground = new sequencer_titleBar_mc() as MovieClip;
+			m_pTitle.addChildAt(m_pTitleBackground, 0);
+			m_pTitleLabel = findViewById("titlelabel") as UILabel;
+			
+			// Update the title background position
+			m_pTitleBackground.x = TITLE_PADDING;
+			m_pTitleBackground.width = m_pTitle.attributes.width - (2 * TITLE_PADDING);
+			m_pTitleBackground.height = m_pTitle.attributes.height;
+		}
+
+		// Load the tab bar
+		protected function LoadTabBar(sContainerID:String, pTabs:Array, sCurrentTabID:String):void
+		{
+			// Get the tab bar container
+			var pContainer:Form = Form(findViewById(sContainerID));
+			
+			// Load the tab bar
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pTabBar = new TabBar(pContainer, TABBAR, pAttributes);
+			m_pTabBar.addEventListener(ButtonEvent.CLICK, OnTabClick);
+			
+			// Append the tab bar to the XML and refresh
+			pContainer.xml.appendChild(TABBAR);
+			pContainer.AppendChild(m_pTabBar);
+			layout(attributes);
+			
+			// Update the contents of the tab bar
+			m_pTabBar.UpdateTabs(pTabs, sCurrentTabID);
+		}
+
+		// Load the sequence cassettes component
+		protected function LoadSequenceCassettes(sContainerID:String):void
+		{
+			// Get the cassettes container
+			var pContainer:Form = Form(findViewById(sContainerID));
+			
+			// Load the cassettes component
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pSequenceCassettes = new SequenceCassettes(pContainer, SEQUENCECASSETTES, pAttributes,
+				m_nUnitOperationWidth, m_nButtonSkinWidth, m_pElixys);
+			m_pSequenceCassettes.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
+			
+			// Append the sequence cassettes to the XML and refresh
+			pContainer.xml.appendChild(SEQUENCECASSETTES);
+			pContainer.AppendChild(m_pSequenceCassettes);
+			layout(attributes);
+		}
+		
+		// Load the sequence tools component
+		protected function LoadSequenceTools(sContainerID:String):void
+		{
+			// Get the tools container
+			var pContainer:Form = Form(findViewById(sContainerID));
+			
+			// Load the tools component
+			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			m_pSequenceTools = new SequenceTools(pContainer, SEQUENCETOOLS, pAttributes, m_nUnitOperationWidth,
+				m_nButtonSkinWidth);
+			
+			// Append the sequence tools to the XML and refresh
+			pContainer.xml.appendChild(SEQUENCETOOLS);
+			pContainer.AppendChild(m_pSequenceTools);
+			layout(attributes);
+		}
+		
 		// Load the sequencer
 		protected function LoadSequencer(sContainerID:String, pSequencerXML:XML):void
 		{
@@ -74,7 +162,8 @@ package Elixys.Views
 			
 			// Load the sequencer
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
-			m_pSequencer = new Sequencer(pContainer, pSequencerXML, pAttributes);
+			m_pSequencer = new Sequencer(pContainer, pSequencerXML, pAttributes, m_nUnitOperationWidth,
+				m_nButtonSkinWidth);
 			m_pSequencer.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
 			m_pSequencer.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			
@@ -99,16 +188,20 @@ package Elixys.Views
 				bButtonsChanged = !Elixys.JSON.State.Button.CompareButtonArrays(pStateSequence.Buttons, m_pStateSequence.Buttons);
 				bComponentChanged = (pStateSequence.ClientState.ComponentID != m_pStateSequence.ClientState.ComponentID);
 			}
-			
+
 			// Update the navigation bar buttons
 			if (bButtonsChanged)
 			{
 				m_pNavigationBar.UpdateButtons(pStateSequence.Buttons);
 			}
 
-			// Update the sequencer
+			// Update the cassettes and sequencer
 			if (bComponentChanged)
 			{
+				if (m_pSequenceCassettes != null)
+				{
+					m_pSequenceCassettes.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
+				}
 				m_pSequencer.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
 			}
 			
@@ -129,11 +222,24 @@ package Elixys.Views
 			{
 				bSequenceChanged = !Sequence.CompareSequences(pSequence, m_pSequence);
 			}
-			
-			// Update the sequencer
+
+			// Update the cassettes and sequencer
 			if (bSequenceChanged)
 			{
+				if (m_pSequenceCassettes != null)
+				{
+					m_pSequenceCassettes.UpdateSequence(pSequence);
+				}
 				m_pSequencer.UpdateSequence(pSequence);
+			}
+			
+			// Update the title label
+			if (m_pTitleLabel != null)
+			{
+				m_pTitleLabel.width = m_pTitleBackground.width;
+				m_pTitleLabel.text = pSequence.Metadata.Name.toUpperCase();
+				m_pTitleLabel.x = m_pTitleBackground.x + TITLE_TEXT_OFFSET;
+				m_pTitleLabel.y = (m_pTitle.attributes.height - m_pTitleLabel.height) / 2;
 			}
 			
 			// Remember the new sequence
@@ -149,7 +255,13 @@ package Elixys.Views
 			{
 				bComponentChanged = !ComponentBase.CompareComponents(pComponent, m_pComponent);
 			}
-			
+
+			// Update the cassettes
+			if (bComponentChanged && (m_pSequenceCassettes != null))
+			{
+				m_pSequenceCassettes.UpdateComponent(pComponent);
+			}
+
 			// Remember the new component
 			m_pComponent = pComponent;
 		}
@@ -161,6 +273,12 @@ package Elixys.Views
 			var pPostSequence:PostSequence = new PostSequence();
 			pPostSequence.TargetID = event.button;
 			DoPost(pPostSequence, m_sPostString);
+		}
+
+		// Called when a tab on the tab bar is clicked
+		protected function OnTabClick(event:ButtonEvent):void
+		{
+			// Handle in derived classes
 		}
 
 		// Called when the unit operation selection changes
@@ -176,6 +294,29 @@ package Elixys.Views
 		 * Member variables
 		 **/
 		
+		// Title XML
+		protected static const TITLE:XML =
+			<frame>
+				<label id="titlelabel" useEmbedded="true">
+					<font face="GothamBold" color={Styling.TEXT_WHITE} size="18"/>
+				</label>
+			</frame>;
+
+		// Tab bar XML
+		protected static const TABBAR:XML =
+			<tab alignH="fill" alignV="fill" fontFace="GothamMedium" fontSize="14" textColor={Styling.TEXT_GRAY4}
+				selectedTextColor={Styling.TEXT_GRAY1} textpaddingvertical="7" tabpercentwidth="50" />;
+
+		// Cassettes XML
+		protected static const SEQUENCECASSETTES:XML =
+			<sequencecassette alignH="fill" alignV="fill" fontface="GothamBold" fontsize="34" 
+				enabledtextcolor={Styling.TEXT_GRAY2} activetextcolor={Styling.TEXT_BLUE} 
+				pressedtextcolor={Styling.TEXT_WHITE} />;
+
+		// Tools XML
+		protected static const SEQUENCETOOLS:XML =
+			<sequencetools alignH="fill" alignV="fill" />;
+
 		// Number of steps required to load this object
 		public static var BASE_LOAD_STEPS:uint = 18;
 		
@@ -192,6 +333,20 @@ package Elixys.Views
 		
 		// Screen components
 		protected var m_pNavigationBar:NavigationBar;
+		protected var m_pTitle:Form;
+		protected var m_pTitleLabel:UILabel;
+		protected var m_pTitleBackground:MovieClip;
+		protected var m_pTabBar:TabBar;
+		protected var m_pSequenceCassettes:SequenceCassettes;
+		protected var m_pSequenceTools:SequenceTools;
 		protected var m_pSequencer:Sequencer;
+		
+		// Unit operation and button widths
+		protected var m_nUnitOperationWidth:Number = 0;
+		protected var m_nButtonSkinWidth:Number = 0
+
+		// Constants
+		protected static var TITLE_TEXT_OFFSET:int = 8;
+		protected static var TITLE_PADDING:int = 20;
 	}
 }

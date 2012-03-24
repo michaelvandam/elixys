@@ -42,7 +42,7 @@ package Elixys.JSON.Components
 		}
 		public static function get SKINACTIVE():Class
 		{
-			return tools_react_up;
+			return tools_react_active;
 		}
 
 		// Data wrappers

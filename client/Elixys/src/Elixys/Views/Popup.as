@@ -41,6 +41,8 @@ package Elixys.Views
 			m_pInput1 = findViewById("popup_input1") as Input;
 			m_pText2 = findViewById("popup_text2") as UILabel;
 			m_pInput2 = findViewById("popup_input2") as Input;
+			m_pButton1Container = findViewById("popup_button1_container") as Form;
+			m_pButton2Container = findViewById("popup_button2_container") as Form;
 			m_pButton1 = findViewById("popup_button1") as Elixys.Components.Button;
 			m_pButton2 = findViewById("popup_button2") as Elixys.Components.Button;
 			
@@ -229,17 +231,17 @@ package Elixys.Views
 			if (!m_pButton2.visible)
 			{
 				// Center the single button
-				m_pButton1.x = m_pContents.attributes.width - m_pButton1.width;
-				m_pButton1.y = nOffset;
+				m_pButton1Container.x = m_pContents.attributes.width - m_pButton1.width;
+				m_pButton1Container.y = nOffset;
 				nOffset += m_pButton1.height + POPUP_BORDER;
 			}
 			else
 			{
 				// Center both buttons
-				m_pButton1.x = (m_pContents.attributes.width / 2) - POPUP_GAP_BIG - m_pButton1.width;
-				m_pButton1.y = nOffset;
-				m_pButton2.x = (m_pContents.attributes.width / 2) + POPUP_GAP_BIG;
-				m_pButton2.y = nOffset;
+				m_pButton1Container.x = (m_pContents.attributes.width / 2) - POPUP_GAP_BIG - m_pButton1.width;
+				m_pButton1Container.y = nOffset;
+				m_pButton2Container.x = (m_pContents.attributes.width / 2) + POPUP_GAP_BIG;
+				m_pButton2Container.y = nOffset;
 				nOffset += m_pButton1.height + POPUP_BORDER;
 			}
 			
@@ -352,14 +354,22 @@ package Elixys.Views
 					<input id="popup_input2" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="24" 
 						skin={getQualifiedClassName(login_serverFieldBackground_mc)}
 						returnKeyLabel={Constants.RETURNKEYLABEL_GO} />
-					<button id="popup_button1" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT} enabled="true"
-							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}>
-						<font face="GothamMedium" size="14" />
-					</button>
-					<button id="popup_button2" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT} enabled="true"
-							useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}>
-						<font face="GothamMedium" size="14" />
-					</button>
+					<frame id="popup_button1_container" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT}>
+						<button id="popup_button1" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
+								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
+								backgroundskinup={getQualifiedClassName(popupBtn_up)}
+								backgroundskindown={getQualifiedClassName(popupBtn_down)}>
+							<font face="GothamMedium" size="14" />
+						</button>
+					</frame>
+					<frame id="popup_button2_container" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT}>
+						<button id="popup_button2" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
+								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
+								backgroundskinup={getQualifiedClassName(popupBtn_up)}
+								backgroundskindown={getQualifiedClassName(popupBtn_down)}>
+							<font face="GothamMedium" size="14" />
+						</button>
+					</frame>
 				</frame>
 			</frame>;
 		
@@ -377,6 +387,8 @@ package Elixys.Views
 		protected var m_pInput1:Input;
 		protected var m_pText2:UILabel;
 		protected var m_pInput2:Input;
+		protected var m_pButton1Container:Form;
+		protected var m_pButton2Container:Form;
 		protected var m_pButton1:Elixys.Components.Button;
 		protected var m_pButton2:Elixys.Components.Button;
 		

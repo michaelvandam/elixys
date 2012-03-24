@@ -39,8 +39,10 @@ package Elixys.JSON.State
 			ID = pSourceSequence.ID;
 			Creator = pSourceSequence.Creator;
 			Operations = pSourceSequence.Operations;
+			Valid = pSourceSequence.Valid;
+			Dirty = pSourceSequence.Dirty;
 		}
-		
+
 		// Data wrappers
 		public function get Name():String
 		{
@@ -97,6 +99,22 @@ package Elixys.JSON.State
 		public function set Operations(value:uint):void
 		{
 			super.flash_proxy::setProperty("operations", value);
+		}
+		public function get Valid():Boolean
+		{
+			return super.flash_proxy::getProperty("valid");
+		}
+		public function set Valid(value:Boolean):void
+		{
+			super.flash_proxy::setProperty("valid", value);
+		}
+		public function get Dirty():Boolean
+		{
+			return super.flash_proxy::getProperty("dirty");
+		}
+		public function set Dirty(value:Boolean):void
+		{
+			super.flash_proxy::setProperty("dirty", value);
 		}
 		
 		// Sequence metadata comparison function.  Returns true if the sequences are equal, false otherwise.
