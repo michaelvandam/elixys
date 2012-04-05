@@ -117,7 +117,7 @@ class Sequence(Thread):
         # Skip components until we find our start component
         self.sourceComponentID = pSourceComponent["id"]
         if self.initializing and (self.startComponentID != 0) and (self.sourceComponentID != self.startComponentID):
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
+          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
           nCurrentComponent += 1
           continue
 
@@ -127,13 +127,13 @@ class Sequence(Thread):
 
         # Ignore any previous summary component
         if pSourceComponent["componenttype"] == Summary.componentType:
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["name"] + ")")
+          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
           nCurrentComponent += 1
           continue
 
         # Create and run the next unit operation
         self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Starting unit operation " + str(self.sourceComponentID) + " (" + 
-          pSourceComponent["name"] + ")")
+          pSourceComponent["componenttype"] + ")")
         pSourceUnitOperation = UnitOperations.createFromComponent(self.sourceSequenceID, pSourceComponent, self.username, self.sequenceManager.database, self.systemModel)
         self.runComponentID = pSourceUnitOperation.copyComponent(self.sourceSequenceID, self.runSequenceID)
         pRunComponent = self.sequenceManager.GetComponent(self.username, self.runComponentID, self.runSequenceID)
@@ -159,7 +159,7 @@ class Sequence(Thread):
         # Update the unit operation details in the database
         UnitOperations.updateToComponent(pRunUnitOperation, self.runSequenceID, pRunComponent, self.username, self.sequenceManager.database, self.systemModel)
         self.sequenceManager.UpdateComponent(self.username, self.runSequenceID, self.runComponentID, None, pRunComponent)
-        self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Completed unit operation (" + pRunComponent["name"] + ")")
+        self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Completed unit operation (" + pRunComponent["componenttype"] + ")")
         self.sourceComponentID = 0
         self.runComponentID = 0
 
@@ -198,7 +198,7 @@ class Sequence(Thread):
 
     # Add the Summary unit operation to the sequence
     pSummaryComponent = Summary.createNewComponent(sRunError)
-    self.runComponentID = self.database.CreateComponent(self.username, self.runSequenceID, pSummaryComponent["type"], pSummaryComponent["name"], json.dumps(pSummaryComponent))
+    self.runComponentID = self.database.CreateComponent(self.username, self.runSequenceID, pSummaryComponent["type"], pSummaryComponent["note"], json.dumps(pSummaryComponent))
 
     # Switch to using the run IDs rather than the source because the summary unit operation only exists in the run sequence
     self.userSourceIDs = False

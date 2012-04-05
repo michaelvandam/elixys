@@ -79,7 +79,7 @@ class PostHandler:
                 # Switch states to the last Select Sequence screen
                 DirectToLastSelectScreen(self.__pClientState)
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "OBSERVE":
+            elif sActionTargetID == "VIEWRUN":
                 # Switch to Run Sequence
                 pServerState = self.__GetServerState()
                 self.__pClientState["screen"] = "RUN"
@@ -309,7 +309,7 @@ class PostHandler:
         self.__pClientState["prompt"]["show"] = True
         self.__pClientState["prompt"]["title"] = "RUN SEQUENCE"
         self.__pClientState["prompt"]["text1"] = "Would you like to run the sequence \"" + pSequence["metadata"]["name"] + \
-            "\" starting with unit operation number " + str(nIndex) + " (\"" + pComponent["name"] + "\")?"
+            "\" starting with unit operation number " + str(nIndex) + " (" + pComponent["componenttype"] + ")?"
         self.__pClientState["prompt"]["edit1"] = False
         self.__pClientState["prompt"]["text2"] = ""
         self.__pClientState["prompt"]["edit2"] = False
@@ -513,8 +513,8 @@ class PostHandler:
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False
-                #self.__pClientState["screen"] = "EDIT"
-                #self.__pClientState["sequenceid"] = nSequenceID
+                self.__pClientState["screen"] = "EDIT"
+                self.__pClientState["sequenceid"] = nSequenceID
                 return self.__SaveClientStateAndReturn()
             if sActionTargetID == "CANCEL":
                 # Hide the prompt

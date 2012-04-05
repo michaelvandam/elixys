@@ -59,7 +59,9 @@ class CoreServerProxy():
 
     def DeliverUserInput(self, sUsername):
         pDeliverUserInput = self.__pCoreServer.root.DeliverUserInput(sUsername)
-        if not pDeliverUserInput["success"]:
+        if pDeliverUserInput["success"]:
+            return pDeliverUserInput["return"]
+        else:
             raise Exception("Core server failed to deliver user input")
 
     def PauseTimer(self, sUsername):

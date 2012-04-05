@@ -187,7 +187,7 @@ class SequenceManager:
     pUnitOperation.updateComponentDetails(pDBComponent)
 
     # Insert the new component
-    nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pDBComponent["componenttype"], pDBComponent["name"], 
+    nComponentID = self.database.InsertComponent(sRemoteUser, nSequenceID, pDBComponent["componenttype"], pDBComponent["note"], 
       json.dumps(pDBComponent), nInsertionID)
 
     # Initialize the new component's validation fields
@@ -205,7 +205,7 @@ class SequenceManager:
       pUnitOperation.updateComponentDetails(pDBComponent)
 
       # Update the component
-      self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+      self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["note"], json.dumps(pDBComponent))
 
     # Do a quick validation of the component
     self.ValidateComponent(sRemoteUser, nSequenceID, nComponentID)
@@ -254,7 +254,7 @@ class SequenceManager:
     # Initialize the validation fields of the raw component
     pComponent = self.database.GetComponent(sRemoteUser, nComponentID)
     pUnitOperation = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
-    self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pUnitOperation.component["name"], json.dumps(pUnitOperation.component))
+    self.database.UpdateComponent(sRemoteUser, nComponentID, pComponent["componenttype"], pUnitOperation.component["note"], json.dumps(pUnitOperation.component))
 
     # Flag the sequence validation as dirty
     self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)
@@ -269,7 +269,7 @@ class SequenceManager:
     # Load the raw component and update just the validation field
     pDBComponent = self.database.GetComponent(sRemoteUser, nComponentID)
     pDBComponent["validationerror"] = pUnitOperation.component["validationerror"]
-    self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["name"], json.dumps(pDBComponent))
+    self.database.UpdateComponent(sRemoteUser, nComponentID, pDBComponent["componenttype"], pDBComponent["note"], json.dumps(pDBComponent))
 
     # Flag the sequence validation as dirty
     self.database.UpdateSequenceDirtyFlag(sRemoteUser, nSequenceID, True)

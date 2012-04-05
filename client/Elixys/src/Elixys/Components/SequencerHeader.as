@@ -1,6 +1,6 @@
 package Elixys.Components
 {
-	import Elixys.Assets.Styling;
+	import Elixys.Assets.*;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentCassette;
@@ -47,7 +47,7 @@ package Elixys.Components
 			// Set the buttons according to our mode
 			switch (m_sMode)
 			{
-				case StateSequence.EDITTYPE:
+				case Constants.EDIT:
 					// Add the trash skin
 					var pSkin:MovieClip = new sequencer_trashIcon_up() as MovieClip;
 					pSkin.buttonMode = false;
@@ -57,13 +57,13 @@ package Elixys.Components
 					
 					// Intentional fall-through
 					
-				case StateSequence.VIEWTYPE:
+				case Constants.VIEW:
 					// Add event listeners
 					m_pPreviousButton.addEventListener(ButtonEvent.CLICK, OnPreviousButton);
 					m_pNextButton.addEventListener(ButtonEvent.CLICK, OnNextButton);
 					break;
 				
-				case StateSequence.RUNTYPE:
+				case Constants.RUN:
 					// Hide the buttons
 					m_pPreviousButton.visible = false;
 					m_pNextButton.visible = false;

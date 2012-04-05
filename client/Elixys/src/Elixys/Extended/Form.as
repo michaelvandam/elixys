@@ -179,8 +179,9 @@ package Elixys.Extended
 		// Override the default parseInput function so we can use our version
 		protected override function parseInput(xml:XML, attributes:Attributes):DisplayObject
 		{
-			var inputText:Input = new Input(this, attributes.x, attributes.y, xml, xml.toString());
-			if (attributes.fillH) 
+			var inputText:Input = new Input(this, attributes.x, attributes.y, 
+				xml, xml.toString());
+			if (attributes.fillH)
 			{
 				inputText.fixwidth = attributes.widthH;
 			}

@@ -405,6 +405,10 @@ package com.christiancantrell.nativetext
 		
 		public override function set width(width:Number):void
 		{
+			if (width > 1000)
+			{
+				trace("Setting width: " + width);
+			}
 			this._width = width;
 			this.render();
 
@@ -456,14 +460,15 @@ package com.christiancantrell.nativetext
 		private function getViewPortRectangle():Rectangle
 		{
 			var totalFontHeight:Number = this.getTotalFontHeight();
-			/* The following original block of code has been fixed below to account for the face that the view port is in global (stage)
-			   coordinates, not necessarily the same as our parent object's coordinates.
+			/* The following original block of code has been fixed below to account for the face that the view port is
+			   in global (stage) coordinates, not necessarily the same as our parent object's coordinates.
 			
 			return new Rectangle(this.x + this.borderThickness,
 				 				 this.y + this.borderThickness,
 								 Math.round(this._width - (this.borderThickness * 2.5)),
 								 Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));
 			*/
+
 			var pUpperLeft:Point = new Point(this.x + this.borderThickness, this.y + this.borderThickness);
 			var pLowerRight:Point = new Point(pUpperLeft.x + Math.round(this._width - (this.borderThickness * 2.5)),
 				pUpperLeft.y + Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));

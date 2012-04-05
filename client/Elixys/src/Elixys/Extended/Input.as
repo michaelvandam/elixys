@@ -30,6 +30,10 @@ package Elixys.Extended
 			// Call the base constructor
 			super(screen, xx, yy, text);
 
+			// Set our size
+			width = (screen as Form).attributes.width;
+			height = (screen as Form).attributes.height;
+			
 			// Create the text input field
 			var pTextBox:ITextBox = CreateTextBox();
 			pTextBox.borderColor = 0;
@@ -39,6 +43,8 @@ package Elixys.Extended
 			pTextBox.fontWeight = FontWeight.NORMAL;
 			pTextBox.autoCapitalize = Constants.AUTOCAPITALIZE_NONE;
 			pTextBox.autoCorrect = false;
+			//pTextBox.width = width;
+			//pTextBox.height = height;
 			if (xml.@color.length() > 0)
 			{
 				pTextBox.color = Styling.AS3Color(xml.@color[0]);
@@ -65,8 +71,8 @@ package Elixys.Extended
 				// Load the skin
 				var pClass:Class = getDefinitionByName(xml.@skin[0]) as Class;
 				m_pSkin = new pClass() as MovieClip;
-				m_pSkin.x = x;
-				m_pSkin.y = y;
+				//m_pSkin.x = x;
+				//m_pSkin.y = y;
 				m_pSkin.width = width;
 				m_pSkin.height = height;
 				screen.addChildAt(m_pSkin, 0);
@@ -106,7 +112,7 @@ package Elixys.Extended
 		/***
 		 * Member functions
 		 **/
-		
+
 		// Create the text input field
 		protected function CreateTextBox():ITextBox
 		{
@@ -142,21 +148,30 @@ package Elixys.Extended
 		protected function UpdateSkin():void
 		{
 			// Check if our size or position have changed
+			var nWidth:Number = (parent as Form).attributes.width;
+			var nHeight:Number = (parent as Form).attributes.height;
 			if (m_pSkin != null)
 			{
-				if ((width != m_nLastWidth) || (height != m_nLastHeight) || (x != m_nLastX) || (y != m_nLastY))
+				if ((nWidth != m_nLastWidth) || (nHeight != m_nLastHeight) || (x != m_nLastX) || (y != m_nLastY))
 				{
-					// Update the size and position
+					trace("Fix this");
+					x = 0;
+					y = 0;
+					// Set our size
+					width = nWidth;
+					height = nHeight;
+
+					// Remember the new size and position
 					m_nLastX = x;
 					m_nLastY = y;
-					m_nLastWidth = width;
-					m_nLastHeight = height;
+					m_nLastWidth = nWidth;
+					m_nLastHeight = nHeight;
 
 					// Update the skin
-					m_pSkin.x = x;
-					m_pSkin.y = y;
-					m_pSkin.width = width;
-					m_pSkin.height = height;
+					//m_pSkin.x = x;
+					//m_pSkin.y = y;
+					m_pSkin.width = nWidth;
+					m_pSkin.height = nHeight;
 				}
 			}
 		}

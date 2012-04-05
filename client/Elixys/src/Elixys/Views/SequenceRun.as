@@ -1,6 +1,6 @@
 package Elixys.Views
 {
-	import Elixys.Assets.Styling;
+	import Elixys.Assets.*;
 	import Elixys.JSON.State.State;
 	import Elixys.JSON.State.StateSequence;
 	
@@ -21,8 +21,8 @@ package Elixys.Views
 			// Call the base constructor
 			super(screen, pElixys, SEQUENCERUN, attributes, row, inGroup);
 
-			// Set our post string
-			m_sPostString = "RUN";
+			// Set our mode
+			m_sMode = Constants.RUN;
 		}
 
 		/***
@@ -84,7 +84,7 @@ package Elixys.Views
 								<frame background="#00F000" />
 								<frame background="#FFFF00" />
 							</rows>
-							<frame background="#00FF00" />
+							<frame id="unitoperation_container" background="#00FF00" />
 						</columns>
 					</rows>
 					<frame id="sequencerun_sequencer_container" alignV="fill" alignH="fill" />
@@ -121,7 +121,7 @@ package Elixys.Views
 		
 		// Sequencer XML
 		protected static const SEQUENCER:XML =
-			<sequencer mode={StateSequence.RUNTYPE} alignH="fill" alignV="fill"/>;
+			<sequencer mode={Constants.RUN} alignH="fill" alignV="fill"/>;
 		
 		// Number of steps required to load this object
 		public static var RUN_LOAD_STEPS:uint = 2;

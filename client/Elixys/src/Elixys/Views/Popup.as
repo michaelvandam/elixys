@@ -195,9 +195,10 @@ package Elixys.Views
 			}
 			if (m_pInput1.visible)
 			{
-				m_pInput1.x = POPUP_BORDER;
-				m_pInput1.y = nOffset;
-				m_pInput1.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
+				m_pInput1.parent.x = POPUP_BORDER;
+				m_pInput1.parent.y = nOffset;
+				m_pInput1.parent.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
+				m_pInput1.fixwidth = m_pInput1.parent.width;
 				nOffset += m_pInput1.height;
 			}
 			nOffset += POPUP_GAP_BIG;
@@ -220,9 +221,10 @@ package Elixys.Views
 			}
 			if (m_pInput2.visible)
 			{
-				m_pInput2.x = POPUP_BORDER;
-				m_pInput2.y = nOffset;
-				m_pInput2.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
+				m_pInput2.parent.x = POPUP_BORDER;
+				m_pInput2.parent.y = nOffset;
+				m_pInput2.parent.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
+				m_pInput2.fixwidth = m_pInput2.parent.width;
 				nOffset += m_pInput2.height;
 			}
 			
@@ -345,15 +347,19 @@ package Elixys.Views
 					<label id="popup_text1" useEmbedded="true" width="350" includeInLayout="false">
 						<font face="GothamMedium" size="18" />
 					</label>
-					<input id="popup_input1" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="24" 
-						skin={getQualifiedClassName(login_serverFieldBackground_mc)}
-						returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+					<frame width={INPUT_WIDTH} height={INPUT_HEIGHT}>
+						<input id="popup_input1" color={Styling.TEXT_GRAY1} width={INPUT_WIDTH} height={INPUT_HEIGHT}
+							size="24" skin={getQualifiedClassName(login_serverFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+					</frame>
 					<label id="popup_text2" useEmbedded="true" width="350">
 						<font face="GothamMedium" size="18" />
 					</label>
-					<input id="popup_input2" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="24" 
-						skin={getQualifiedClassName(login_serverFieldBackground_mc)}
-						returnKeyLabel={Constants.RETURNKEYLABEL_GO} />
+					<frame width={INPUT_WIDTH} height={INPUT_HEIGHT}>
+						<input id="popup_input2" color={Styling.TEXT_GRAY1} width={INPUT_WIDTH} height={INPUT_HEIGHT}
+							size="24" skin={getQualifiedClassName(login_serverFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_GO} />
+					</frame>
 					<frame id="popup_button1_container" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT}>
 						<button id="popup_button1" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
 								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
@@ -372,7 +378,7 @@ package Elixys.Views
 					</frame>
 				</frame>
 			</frame>;
-		
+
 		// Number of steps required to load this object
 		public static var LOAD_STEPS:uint = 0;
 		
@@ -404,5 +410,7 @@ package Elixys.Views
 		protected static var POPUP_CURVE:uint = 15;
 		protected static var POPUP_BUTTON_WIDTH:int = 110;
 		protected static var POPUP_BUTTON_HEIGHT:int = 35;
+		protected static var INPUT_WIDTH:int = 200;
+		protected static var INPUT_HEIGHT:int = 40;
 	}
 }

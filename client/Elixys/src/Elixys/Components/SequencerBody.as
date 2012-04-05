@@ -1,6 +1,6 @@
 package Elixys.Components
 {
-	import Elixys.Assets.Styling;
+	import Elixys.Assets.*;
 	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentCassette;
@@ -121,7 +121,7 @@ package Elixys.Components
 			}
 			
 			// Create the timer
-			if (m_sMode == StateSequence.EDITTYPE)
+			if (m_sMode == Constants.EDIT)
 			{
 				m_pHoldTimer = new Timer(500, 1);
 				m_pHoldTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHoldTimer);
@@ -149,7 +149,7 @@ package Elixys.Components
 			}
 			
 			// Ignore clicks if we're in run mode
-			if (m_sMode == StateSequence.RUNTYPE)
+			if (m_sMode == Constants.RUN)
 			{
 				return;
 			}
@@ -175,7 +175,7 @@ package Elixys.Components
 						PressButton(m_nPressedIndex);
 						
 						// Start the hold timer in edit mode
-						if (m_sMode == StateSequence.EDITTYPE)
+						if (m_sMode == Constants.EDIT)
 						{
 							m_pHoldTimer.start();
 						}
@@ -184,7 +184,7 @@ package Elixys.Components
 					else
 					{
 						// Stop the hold timer in edit mode
-						if (m_sMode == StateSequence.EDITTYPE)
+						if (m_sMode == Constants.EDIT)
 						{
 							m_pHoldTimer.stop();
 						}
@@ -567,7 +567,7 @@ package Elixys.Components
 				}
 				
 				// Enable or disable this unit operation if we're in run mode
-				if (m_sMode == StateSequence.RUNTYPE)
+				if (m_sMode == Constants.RUN)
 				{
 					m_bUnitOperationEnabled[nUnitOperationIndex] = (m_nSelectedIndex != -1);
 				}
@@ -583,7 +583,7 @@ package Elixys.Components
 				// Adjust the unit operation visibility depending on our mode
 				if (m_nSelectedIndex != -1)
 				{
-					if ((m_sMode == StateSequence.VIEWTYPE) || (m_sMode == StateSequence.EDITTYPE))
+					if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
 					{
 						// Make sure that the previous and next unit operations are visible for view and edit modes.  First
 						// check if the previous or current unit operations are off the screen to the left
@@ -641,7 +641,7 @@ package Elixys.Components
 							}
 						}
 					}
-					else if (m_sMode == StateSequence.RUNTYPE)
+					else if (m_sMode == Constants.RUN)
 					{
 						// Adjust the slider position so the two previous unit operations are visible
 						if (m_nSelectedIndex != -1)
@@ -961,30 +961,41 @@ package Elixys.Components
 			// Duplicate the pressed unit operation
 			m_pDragTarget = new Sprite();
 			stage.addChild(m_pDragTarget);
-			var pBackgroundSkin:MovieClip, pForegroundSkin:MovieClip, pLabel:UILabel;
+			m_pDragTargetDeleteSkin = AddSkin(tools_btn_delete, m_pDragTarget);
+			m_pDragTargetDeleteSkin.visible = false;
+			var pForegroundSkin:MovieClip, pLabel:UILabel;
 			if (m_nPressedIndex == m_nSelectedIndex)
 			{
-				pBackgroundSkin = AddSkin(tools_btn_delete, m_pDragTarget);
+				m_pDragTargetUpSkin = AddSkin(tools_btn_active, m_pDragTarget);
 				pForegroundSkin = AddSkin(Components.GetActiveSkin(pComponent.ComponentType), m_pDragTarget);
 				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationActiveTextColor,
 					m_pDragTarget);
 			}
 			else
 			{
-				pBackgroundSkin = AddSkin(tools_btn_delete, m_pDragTarget);
+				m_pDragTargetUpSkin = AddSkin(tools_btn_up, m_pDragTarget);
 				pForegroundSkin = AddSkin(Components.GetUpSkin(pComponent.ComponentType), m_pDragTarget);
 				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationEnabledTextColor,
 					m_pDragTarget);
 			}
-			pBackgroundSkin.width = m_nButtonSkinWidth;
-			pBackgroundSkin.scaleY = pBackgroundSkin.scaleX;
+			m_pDragTargetDeleteSkin.width = m_pDragTargetUpSkin.width = m_nButtonSkinWidth;
+			m_pDragTargetDeleteSkin.scaleY = m_pDragTargetUpSkin.scaleY = m_pDragTargetDeleteSkin.scaleX;
 			pForegroundSkin.x = (m_nButtonSkinWidth - pForegroundSkin.width) / 2;
 			pForegroundSkin.y = ICON_PADDING;
 			pLabel.text = pComponent.ComponentType;
 			pLabel.width = pLabel.textWidth + 5;
 			pLabel.x = (m_nButtonSkinWidth - pLabel.width) / 2;
 			pLabel.y = pForegroundSkin.y + pForegroundSkin.height + ICON_GAP;
+			
 			// Add error callout if the unit operation has one
+			if (m_pUnitOperationWarningIcons[m_nPressedIndex] != null)
+			{
+				var pWarningIcon:MovieClip = AddSkin(sequencer_invalidMarker, m_pDragTarget);
+				pWarningIcon.height = WARNING_ICON_HEIGHT;
+				pWarningIcon.scaleX = pWarningIcon.scaleY;
+				pWarningIcon.x = m_pDragTargetUpSkin.width - pWarningIcon.width + WARNING_ICON_OFFSETX;
+				pWarningIcon.y = WARNING_ICON_OFFSETY;
+			}
 
 			// Start dragging
 			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
@@ -1017,6 +1028,8 @@ package Elixys.Components
 			{
 				stage.removeChild(m_pDragTarget);
 				m_pDragTarget = null;
+				m_pDragTargetUpSkin = null;
+				m_pDragTargetDeleteSkin = null;
 			}
 		}
 
@@ -1083,21 +1096,23 @@ package Elixys.Components
 		// Drag-and-drop variables
 		protected var m_pHoldTimer:Timer;
 		protected var m_pDragTarget:Sprite;
+		protected var m_pDragTargetUpSkin:MovieClip;
+		protected var m_pDragTargetDeleteSkin:MovieClip;
 		
 		// Constants
-		protected static var WARNING_ICON_HEIGHT:int = 15;
-		protected static var WARNING_ICON_OFFSETX:int = 4;
-		protected static var WARNING_ICON_OFFSETY:int = -4;
-		protected static var NOTE_GAP:int = 5;
-		protected static var ICON_PADDING:int = 6;
-		protected static var ICON_GAP:int = 2;
-		protected static var TEXT_HEIGHT:int = 12;
-		protected static var WINDOW_CAP_SIZE:int = 10;
-		protected static var WINDOW_GAP:int = 20;
-		protected static var WINDOW_PERCENT_HEIGHT:int = 77;
-		protected static var BUTTON_PERCENT_UPPER_GAP:int = 15;
-		protected static var BUTTON_PERCENT_LOWER_GAP:int = 36;
-		protected static var SELECTED_GAP:int = 3;
-		protected static var SELECTED_NUMBER_CURVE:int = 10;
+		public static var WARNING_ICON_HEIGHT:int = 15;
+		public static var WARNING_ICON_OFFSETX:int = 4;
+		public static var WARNING_ICON_OFFSETY:int = -4;
+		public static var NOTE_GAP:int = 5;
+		public static var ICON_PADDING:int = 6;
+		public static var ICON_GAP:int = 2;
+		public static var TEXT_HEIGHT:int = 12;
+		public static var WINDOW_CAP_SIZE:int = 10;
+		public static var WINDOW_GAP:int = 20;
+		public static var WINDOW_PERCENT_HEIGHT:int = 77;
+		public static var BUTTON_PERCENT_UPPER_GAP:int = 15;
+		public static var BUTTON_PERCENT_LOWER_GAP:int = 36;
+		public static var SELECTED_GAP:int = 3;
+		public static var SELECTED_NUMBER_CURVE:int = 10;
 	}
 }

@@ -131,7 +131,7 @@ package Elixys.Views
 			{
 				m_pUsername.text = m_pLocalData.data.username;
 			}
-			
+
 			// Determine the area of the stage that should remain visible when the soft keyboard is raised
 			m_nInputAreaOfInterestTop = m_pServer.getBounds(stage).top; 
 			m_nInputAreaOfInterestBottom = m_pLoginButton.getBounds(stage).bottom; 
@@ -275,8 +275,11 @@ package Elixys.Views
 					</font>
 				</label>
 				<columns gapH="25" widths="82%,18%">
-					<input id="server" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
-						skin={getQualifiedClassName(login_serverFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+					<frame alignH="fill">
+						<input id="server" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="32" skin={getQualifiedClassName(login_serverFieldBackground_mc)} 
+							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+			`		</frame>
 				</columns>
 				<columns gapH="25" widths="41%,41%,18%">
 					<label useEmbedded="true" alignH="left" alignV="bottom">
@@ -291,11 +294,16 @@ package Elixys.Views
 					</label>
 				</columns>
 				<columns gapH="25" widths="41%,41%,18%">
-					<input id="username" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
-						skin={getQualifiedClassName(login_loginFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
-					<input id="password" alignH="fill" alignV="fill" color={Styling.TEXT_GRAY1} size="32" 
-						skin={getQualifiedClassName(login_loginFieldBackground_mc)} returnKeyLabel={Constants.RETURNKEYLABEL_GO} 
-						displayAsPassword="true" />
+					<frame alignH="fill">
+						<input id="username" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="32" skin={getQualifiedClassName(login_loginFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+					</frame>
+					<frame alignH="fill">
+						<input id="password" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="32" skin={getQualifiedClassName(login_loginFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_GO} displayAsPassword="true" />
+					</frame>
 				</columns>
 				<frame />
 				<columns gapH="35" widths="41%,41%,18%">

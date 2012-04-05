@@ -1,5 +1,7 @@
 package Elixys.JSON.State
 {
+	import Elixys.Assets.Constants;
+	
 	import flash.utils.flash_proxy;
 	
 	public class StateSequence extends State
@@ -23,14 +25,9 @@ package Elixys.JSON.State
 		// Checks for a state match
 		static public function CheckState(sState:String):Boolean
 		{
-			return ((sState == VIEWTYPE) || (sState == EDITTYPE) || (sState == RUNTYPE));
+			return ((sState == Constants.VIEW) || (sState == Constants.EDIT) || (sState == Constants.RUN));
 		}
 
-		// Types
-		static public var VIEWTYPE:String = "VIEW";
-		static public var EDITTYPE:String = "EDIT";
-		static public var RUNTYPE:String = "RUN";
-		
 		// State components
 		protected var m_sType:String;
 	}

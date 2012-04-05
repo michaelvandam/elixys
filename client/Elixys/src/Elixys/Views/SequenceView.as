@@ -1,6 +1,6 @@
 package Elixys.Views
 {
-	import Elixys.Assets.Styling;
+	import Elixys.Assets.*;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.State.Sequence;
@@ -26,8 +26,8 @@ package Elixys.Views
 			// Call the base constructor
 			super(screen, pElixys, SEQUENCEVIEW, attributes, row, inGroup);
 
-			// Set our post string
-			m_sPostString = "VIEW";
+			// Set our mode
+			m_sMode = Constants.VIEW;
 		}
 		
 		/***
@@ -105,13 +105,17 @@ package Elixys.Views
 					<rows heights="8%,3%,89%" gapV="0" alignV="fill" alignH="fill">
 						<frame id="sequence_title_container" />
 						<frame />
-						<columns widths="20,34%,66%" gapH="0" alignV="fill" alignH="fill">
+						<columns widths="20,34%,4,66%" gapH="0" alignV="fill" alignH="fill">
 							<frame />
 							<rows heights="10%,90%" gapV="0" alignV="fill" alignH="fill">
 								<frame id="sequenceview_tabbar_container" />
 								<frame id="sequenceview_cassettes_container" />
 							</rows>
-							<frame />
+							<rows heights="9%,85%,6%" gapV="0" alignV="fill" alignH="fill">
+								<frame />
+								<frame background={Styling.TABBAR_LINE} />
+							</rows>
+							<frame id="unitoperation_container" />
 						</columns>
 					</rows>
 					<frame id="sequenceview_sequencer_container" alignV="fill" alignH="fill" />
@@ -124,9 +128,9 @@ package Elixys.Views
 				<navigationbaroption name="SEQUENCER" backgroundskinheightpercent="72" foregroundskinheightpercent="30"
 						fontSize="12" fontFace="GothamMedium"
 						enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY1}
-						backgroundskinup={getQualifiedClassName(mainNav_activeBtnOutline_down)}
+						backgroundskinup={getQualifiedClassName(mainNav_activeBtnOutline_up)}
 						backgroundskindown={getQualifiedClassName(mainNav_activeBtnOutline_down)}
-						backgroundskindisabled={getQualifiedClassName(mainNav_activeBtnOutline_down)}
+						backgroundskindisabled={getQualifiedClassName(mainNav_activeBtnOutline_up)}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_active)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
@@ -160,7 +164,7 @@ package Elixys.Views
 
 		// Sequencer XML
 		protected static const SEQUENCER:XML =
-			<sequencer mode={StateSequence.VIEWTYPE} alignH="fill" alignV="fill"/>;
+			<sequencer mode={Constants.VIEW} alignH="fill" alignV="fill"/>;
 		
 		// Number of steps required to load this object
 		public static var VIEW_LOAD_STEPS:uint = 4;

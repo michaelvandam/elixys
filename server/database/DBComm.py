@@ -63,6 +63,14 @@ class DBComm:
     self.__pConfiguration["reactors"] = int(self.__pSystemConfiguration["Reactors"])
     self.__pConfiguration["reagentsperreactor"] = int(self.__pSystemConfiguration["ReagentsPerReactor"])
     self.__pConfiguration["columnsperreactor"] = int(self.__pSystemConfiguration["ColumnsPerReactor"])
+    self.__pConfiguration["disallowedreagentpositions"] = []
+    for sDisallowedPosition in self.__pSystemConfiguration["DisallowedPositions"]:
+      pPositionComponents = sDisallowedPosition.split("-")
+      pDisallowedPosition = {}
+      pDisallowedPosition["type"] = "disallowedreagentposition"
+      pDisallowedPosition["cassette"] = int(pPositionComponents[0])
+      pDisallowedPosition["reagent"] = int(pPositionComponents[1])
+      self.__pConfiguration["disallowedreagentpositions"].append(pDisallowedPosition)
 
     # Interpret the log level
     self.__nLogLevel = ParseLogLevel(self.__pSystemConfiguration["LogLevel"])
@@ -97,8 +105,8 @@ class DBComm:
     if nLevel > self.__nLogLevel:
       return
 
+    # Temp
     print sMessage
-    #return
 
     # Log the message to the database
     if self.__pDatabase != None:
@@ -112,8 +120,8 @@ class DBComm:
     if nLevel > self.__nLogLevel:
       return
 
+    # Temp
     print sMessage
-    #return
 
     # Log the message to the database
     if self.__pDatabase != None:

@@ -24,7 +24,8 @@ package Elixys.Assets
 		public static var TEXT_GRAY7:String = "#CCCCCC";
 		public static var TEXT_WHITE:String = "#FFFFFF";
 		public static var TEXT_RED:String = "#FF3333";
-		public static var TEXT_BLUE:String = "#27B3EE";
+		public static var TEXT_BLUE1:String = "#27B3EE";
+		public static var TEXT_BLUE2:String = "#4F94D9";
 
 		// Get the HTML color as an Actionscript value
 		public static function AS3Color(sColor:String):uint

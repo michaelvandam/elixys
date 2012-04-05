@@ -123,9 +123,9 @@ package Elixys.Components
 				<sequencerbody id="sequencer_body"
 					unitoperationfontface="GothamBold" unitoperationfontsize="8"
 					unitoperationenabledtextcolor={Styling.TEXT_GRAY2} unitoperationdisabledtextcolor={Styling.TEXT_GRAY7} 
-					unitoperationactivetextcolor={Styling.TEXT_BLUE} unitoperationpressedtextcolor={Styling.TEXT_WHITE} 
+					unitoperationactivetextcolor={Styling.TEXT_BLUE1} unitoperationpressedtextcolor={Styling.TEXT_WHITE} 
 					notefontface="GothamBold" notefontsize="11" noteenabledtextcolor={Styling.TEXT_GRAY2} 
-					notedisabledtextcolor={Styling.TEXT_GRAY7} noteactivetextcolor={Styling.TEXT_BLUE} 
+					notedisabledtextcolor={Styling.TEXT_GRAY7} noteactivetextcolor={Styling.TEXT_BLUE1} 
 					numberfontface="GothamBold" numberfontsize="12" numberenabledtextcolor={Styling.TEXT_GRAY2} 
 					numberdisabledtextcolor={Styling.TEXT_GRAY2} numberactivetextcolor={Styling.TEXT_WHITE} 
 					numberactivebackgroundcolor={Styling.SCROLLER_SELECTED} />

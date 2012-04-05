@@ -5,6 +5,10 @@ package Elixys.Components
 	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
+	import Elixys.JSON.Components.ComponentCassette;
+	import Elixys.JSON.Configuration.Configuration;
+	import Elixys.JSON.Configuration.DisallowedReagentPosition;
+	import Elixys.JSON.State.Reagent;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
 	
@@ -52,6 +56,18 @@ package Elixys.Components
 			{
 				m_nPressedTextColor = Styling.AS3Color(xml.@pressedtextcolor[0]);
 			}
+			if (xml.@quickviewfontface.length() > 0)
+			{
+				m_sQuickViewFontFace = xml.@quickviewfontface[0];
+			}
+			if (xml.@quickviewfontsize.length() > 0)
+			{
+				m_nQuickViewFontSize = parseInt(xml.@quickviewfontsize[0]);
+			}
+			if (xml.@quickviewcolor.length() > 0)
+			{
+				m_nQuickViewColor = Styling.AS3Color(xml.@quickviewcolor[0]);
+			}
 
 			// Remember the Elixys and button width
 			m_pElixys = pElixys;
@@ -59,6 +75,9 @@ package Elixys.Components
 			
 			// Add event listeners
 			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+
+			// Add the quick view label
+			m_pQuickView = AddLabel(m_sQuickViewFontFace, m_nQuickViewFontSize, false);
 		}
 		
 		/***
@@ -78,17 +97,24 @@ package Elixys.Components
 		{
 			// Remember the sequence
 			m_pSequence = pSequence;
-			
+
+			// Remember the number of cassettes, reagents and disallowed reagent positions
+			if (m_nCassettes == -1)
+			{
+				var pConfiguration:Configuration = m_pElixys.GetConfiguration();
+				m_nCassettes = pConfiguration.Reactors;
+				m_nReagents = pConfiguration.ReagentsPerReactor;
+				m_pDisallowedReagentPositions = pConfiguration.DisallowedReagentPositions;
+			}
+
 			// Adjust the number of cassette skins, labels and hit areas
-			m_nCassettes = m_pElixys.GetConfiguration().Reactors;
 			while (m_pUpSkins.length < m_nCassettes)
 			{
 				m_pUpSkins.push(AddSkin(tools_btn_up));
 				m_pDownSkins.push(AddSkin(tools_btn_down));
 				m_pActiveSkins.push(AddSkin(tools_btn_active));
-				m_pLabels.push(AddLabel());
+				m_pLabels.push(AddLabel(m_sFontFace, m_nFontSize, true));
 				m_pHitAreas.push(new Rectangle());
-				
 			}
 			while (m_pUpSkins.length > m_nCassettes)
 			{
@@ -159,9 +185,59 @@ package Elixys.Components
 					// Update the offset
 					nOffsetX += m_nButtonWidth + BUTTON_HORIZONTAL_GAP;
 				}
+
+				// Update the quick view text
+				if (m_pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					// Set position
+					pHitArea = m_pHitAreas[0] as Rectangle;
+					m_pQuickView.x = QUICKVIEW_HORIZONTAL_GAP;
+					m_pQuickView.y = pHitArea.y + pHitArea.height + QUICKVIEW_VERTICAL_GAP;
+					m_pQuickView.width = attributes.width - m_pQuickView.x - QUICKVIEW_HORIZONTAL_GAP;
+					m_pQuickView.height = attributes.height - m_pQuickView.y - QUICKVIEW_VERTICAL_GAP;
+
+					// Format text
+					var pDisallowedReagentPosition:DisallowedReagentPosition, pReagent:Reagent, bAllowed:Boolean;
+					var pReagents:Array = (new ComponentCassette(null, m_pComponent)).Reagents;
+					var sText:String = "QUICK VIEW\n\n";
+					for (var nReagent:int = 0; nReagent < m_nReagents; ++nReagent)
+					{
+						// Check if the reagent position is disallowed
+						bAllowed = true;
+						for (nIndex = 0; nIndex < m_pDisallowedReagentPositions.length; ++nIndex)
+						{
+							pDisallowedReagentPosition = m_pDisallowedReagentPositions[nIndex] as DisallowedReagentPosition;
+							if ((m_nSelectedIndex == (pDisallowedReagentPosition.Cassette - 1)) &&
+								(nReagent == (pDisallowedReagentPosition.Reagent - 1)))
+							{
+								bAllowed = false;
+								break;
+							}
+						}
+
+						// Format the text
+						if (bAllowed)
+						{
+							pReagent = pReagents[nReagent] as Reagent;
+							sText += (nReagent + 1) + ". " + pReagent.Name + "\n"
+						}
+						else
+						{
+							sText += (nReagent + 1) + ". [Not allowed]\n";
+						}
+					}
+					
+					// Set text and visibility
+					m_pQuickView.text = sText;
+					m_pQuickView.textColor = m_nQuickViewColor;
+					m_pQuickView.visible = true;
+				}
+				else
+				{
+					// Hide text
+					m_pQuickView.visible = false;
+				}
 			}
-			
-			// Update the quick view text
 		}
 
 		// Adds a skin
@@ -174,16 +250,19 @@ package Elixys.Components
 		}
 
 		// Adds a label
-		protected function AddLabel():UILabel
+		protected function AddLabel(sFontFace:String, nFontSize:int, bCenter:Boolean):UILabel
 		{
 			var pXML:XML =
 				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={m_sFontFace} size={m_nFontSize} />
+					<font face={sFontFace} size={nFontSize} />
 				</label>;
 			var pLabel:UILabel = CreateLabel(pXML, attributes);
-			var pTextFormat:TextFormat = pLabel.getTextFormat();
-			pTextFormat.align = TextFormatAlign.CENTER;
-			pLabel.setTextFormat(pTextFormat);
+			if (bCenter)
+			{
+				var pTextFormat:TextFormat = pLabel.getTextFormat();
+				pTextFormat.align = TextFormatAlign.CENTER;
+				pLabel.setTextFormat(pTextFormat);
+			}
 			return pLabel;
 		}
 		
@@ -257,8 +336,10 @@ package Elixys.Components
 		// Elixys reference
 		protected var m_pElixys:Elixys;
 		
-		// Number of cassettes
-		protected var m_nCassettes:int;
+		// Number of cassettes and disallowed positions
+		protected var m_nCassettes:int = -1;
+		protected var m_nReagents:int = -1;
+		protected var m_pDisallowedReagentPositions:Array;
 
 		// Button width
 		protected var m_nButtonWidth:Number;
@@ -269,13 +350,17 @@ package Elixys.Components
 		protected var m_nEnabledTextColor:uint = 0;
 		protected var m_nActiveTextColor:uint = 0;
 		protected var m_nPressedTextColor:uint = 0;
+		protected var m_sQuickViewFontFace:String = "";
+		protected var m_nQuickViewFontSize:int = 0;
+		protected var m_nQuickViewColor:uint = 0;
 
 		// Skin, label and hit test arrays
 		protected var m_pUpSkins:Array = new Array();
 		protected var m_pDownSkins:Array = new Array();
 		protected var m_pActiveSkins:Array = new Array();
 		protected var m_pLabels:Array = new Array();
-		protected var m_pHitAreas:Array = new Array();
+		protected var m_pHitAreas:Array = new Array()
+		protected var m_pQuickView:UILabel;
 
 		// Current state
 		protected var m_nComponentID:int = -1;
@@ -289,5 +374,7 @@ package Elixys.Components
 		// Constants
 		protected static var BUTTON_HORIZONTAL_GAP:int = 10;
 		protected static var BUTTON_VERTICAL_GAP:int = 20;
+		protected static var QUICKVIEW_HORIZONTAL_GAP:int = 10;
+		protected static var QUICKVIEW_VERTICAL_GAP:int = 20;
 	}
 }

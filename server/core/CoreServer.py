@@ -717,7 +717,11 @@ class CoreServerDaemon(daemon):
                 gDatabase.SystemLog(LOG_INFO, "System", "CoreServer received quit signal")
             except Exception as ex:
                 # Log the error
-                gDatabase.SystemLog(LOG_ERROR, "System", "CoreServer failed: " + str(ex))
+                sError = "CoreServer failed: " + str(ex)
+                if gDatabase != None:
+                    gDatabase.SystemLog(LOG_ERROR, "System", sError)
+                else:
+                    print sError
             finally:
                 if pCoreServerThread != None:
                     pCoreServerThread.Terminate()

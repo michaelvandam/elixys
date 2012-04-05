@@ -7,6 +7,7 @@ package
 	import Elixys.HTTP.*;
 	import Elixys.JSON.*;
 	import Elixys.JSON.Components.ComponentBase;
+	import Elixys.JSON.Configuration.Configuration;
 	import Elixys.JSON.State.*;
 	import Elixys.Views.*;
 	
@@ -600,15 +601,15 @@ package
 			{
 				return SELECTHISTORY_INDEX;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.VIEWTYPE)
+			else if (m_pState.ClientState.Screen == Constants.VIEW)
 			{
 				return SEQUENCEVIEW_INDEX;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.EDITTYPE)
+			else if (m_pState.ClientState.Screen == Constants.EDIT)
 			{
 				return SEQUENCEEDIT_INDEX;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.RUNTYPE)
+			else if (m_pState.ClientState.Screen == Constants.RUN)
 			{
 				return SEQUENCERUN_INDEX;
 			}
@@ -633,15 +634,15 @@ package
 			{
 				return m_pSelectHistory;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.VIEWTYPE)
+			else if (m_pState.ClientState.Screen == Constants.VIEW)
 			{
 				return m_pSequenceView;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.EDITTYPE)
+			else if (m_pState.ClientState.Screen == Constants.EDIT)
 			{
 				return m_pSequenceEdit;
 			}
-			else if (m_pState.ClientState.Screen == StateSequence.RUNTYPE)
+			else if (m_pState.ClientState.Screen == Constants.RUN)
 			{
 				return m_pSequenceRun;
 			}

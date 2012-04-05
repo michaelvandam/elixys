@@ -1,5 +1,6 @@
-package Elixys.JSON
+package Elixys.JSON.Configuration
 {
+	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
 	
@@ -54,5 +55,24 @@ package Elixys.JSON
 		{
 			return super.flash_proxy::getProperty("columnsperreactor");
 		}
+		public function get DisallowedReagentPositions():Array
+		{
+			// Parse the disallowed reagent positions
+			if (m_pDisallowedReagentPositions == null)
+			{
+				m_pDisallowedReagentPositions = new Array();
+				var pDisallowedReagentPositions:Array = super.flash_proxy::getProperty("disallowedreagentpositions");
+				for each (var pDisallowedReagentPositionObject:Object in pDisallowedReagentPositions)
+				{
+					var pDisallowedReagentPosition:DisallowedReagentPosition = 
+						new DisallowedReagentPosition(null, pDisallowedReagentPositionObject);
+					m_pDisallowedReagentPositions.push(pDisallowedReagentPosition);
+				}
+			}
+			return m_pDisallowedReagentPositions;
+		}
+		
+		// State components
+		protected var m_pDisallowedReagentPositions:Array;
 	}
 }

@@ -1,12 +1,13 @@
 package Elixys.Views
 {
-	import Elixys.Assets.Styling;
+	import Elixys.Assets.*;
 	import Elixys.Components.*;
 	import Elixys.Events.*;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Post.PostSequence;
 	import Elixys.JSON.State.*;
+	import Elixys.Subviews.*;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -28,6 +29,9 @@ package Elixys.Views
 			// Calculate the size of each unit operation button
 			m_nUnitOperationWidth = attributes.width / Sequencer.VISIBLE_COLUMN_COUNT;
 			m_nButtonSkinWidth = m_nUnitOperationWidth - Sequencer.BUTTON_GAP;
+			
+			// Get a reference to the subview
+			m_pSubviewContainer = Form(findViewById("unitoperation_container"));
 		}
 
 		/***
@@ -45,6 +49,12 @@ package Elixys.Views
 					LoadTitle();
 				}
 
+				// Load the subviews
+				if (m_pSubviews.length < m_pSubviewTypes.length)
+				{
+					m_pSubviews.push(LoadSubview(m_pSubviewTypes[m_pSubviews.length]));
+				}
+				
 				// Increment and return
 				++m_nChildrenLoaded;
 				return true;
@@ -80,7 +90,8 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById("sequence_title_container"));
 			
 			// Load the title bar
-			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
+				pContainer.attributes.height);
 			m_pTitle = new Form(pContainer, TITLE, pAttributes);
 			
 			// Append the title bar to the XML and refresh
@@ -99,6 +110,15 @@ package Elixys.Views
 			m_pTitleBackground.height = m_pTitle.attributes.height;
 		}
 
+		// Load the subview
+		protected function LoadSubview(pSubviewClass:Class):SubviewBase
+		{
+			// Load the subview
+			var pAttributes:Attributes = new Attributes(0, 0, m_pSubviewContainer.attributes.width, 
+				m_pSubviewContainer.attributes.height);
+			return (new pSubviewClass(m_pSubviewContainer, m_sMode, pAttributes)) as SubviewBase;
+		}
+
 		// Load the tab bar
 		protected function LoadTabBar(sContainerID:String, pTabs:Array, sCurrentTabID:String):void
 		{
@@ -106,7 +126,8 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById(sContainerID));
 			
 			// Load the tab bar
-			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
+				pContainer.attributes.height);
 			m_pTabBar = new TabBar(pContainer, TABBAR, pAttributes);
 			m_pTabBar.addEventListener(ButtonEvent.CLICK, OnTabClick);
 			
@@ -126,7 +147,8 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById(sContainerID));
 			
 			// Load the cassettes component
-			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
+				pContainer.attributes.height);
 			m_pSequenceCassettes = new SequenceCassettes(pContainer, SEQUENCECASSETTES, pAttributes,
 				m_nUnitOperationWidth, m_nButtonSkinWidth, m_pElixys);
 			m_pSequenceCassettes.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
@@ -144,9 +166,10 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById(sContainerID));
 			
 			// Load the tools component
-			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
+				pContainer.attributes.height);
 			m_pSequenceTools = new SequenceTools(pContainer, SEQUENCETOOLS, pAttributes, m_nUnitOperationWidth,
-				m_nButtonSkinWidth);
+				m_nButtonSkinWidth, m_pElixys);
 			
 			// Append the sequence tools to the XML and refresh
 			pContainer.xml.appendChild(SEQUENCETOOLS);
@@ -161,7 +184,8 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById(sContainerID));
 			
 			// Load the sequencer
-			var pAttributes:Attributes = new Attributes(0, 0, width, height);
+			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
+				pContainer.attributes.height);
 			m_pSequencer = new Sequencer(pContainer, pSequencerXML, pAttributes, m_nUnitOperationWidth,
 				m_nButtonSkinWidth);
 			m_pSequencer.addEventListener(SelectionEvent.CHANGE, OnSelectionChange);
@@ -181,7 +205,7 @@ package Elixys.Views
 		public override function UpdateState(pState:State):void
 		{
 			// Check what has changed since our last update
-			var pStateSequence:StateSequence = new StateSequence(StateSequence.VIEWTYPE, null, pState);
+			var pStateSequence:StateSequence = new StateSequence(Constants.VIEW, null, pState);
 			var bButtonsChanged:Boolean = true, bComponentChanged:Boolean = true;
 			if (m_pStateSequence != null)
 			{
@@ -204,7 +228,13 @@ package Elixys.Views
 				}
 				m_pSequencer.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
 			}
-			
+
+			// Update the tools
+			if (m_pSequenceTools != null)
+			{
+				m_pSequenceTools.Update();
+			}
+
 			// Remember the new state
 			m_pStateSequence = pStateSequence;
 			
@@ -262,6 +292,25 @@ package Elixys.Views
 				m_pSequenceCassettes.UpdateComponent(pComponent);
 			}
 
+			// Update and show the appropriate subview
+			if (bComponentChanged)
+			{
+				var nIndex:int, pSubview:SubviewBase;
+				for (nIndex = 0; nIndex < m_pSubviews.length; ++nIndex)
+				{
+					pSubview = m_pSubviews[nIndex] as SubviewBase;
+					if (pSubview.SubviewType == pComponent.ComponentType)
+					{
+						pSubview.UpdateComponent(pComponent);
+						pSubview.visible = true;
+					}
+					else
+					{
+						pSubview.visible = false;
+					}
+				}
+			}
+			
 			// Remember the new component
 			m_pComponent = pComponent;
 		}
@@ -272,7 +321,7 @@ package Elixys.Views
 			// Send a button click to the server
 			var pPostSequence:PostSequence = new PostSequence();
 			pPostSequence.TargetID = event.button;
-			DoPost(pPostSequence, m_sPostString);
+			DoPost(pPostSequence, m_sMode);
 		}
 
 		// Called when a tab on the tab bar is clicked
@@ -287,7 +336,7 @@ package Elixys.Views
 			// Send the unit operation click to the server
 			var pPostSequence:PostSequence = new PostSequence();
 			pPostSequence.TargetID = event.selectionID.toString();
-			DoPost(pPostSequence, m_sPostString);
+			DoPost(pPostSequence, m_sMode);
 		}
 
 		/***
@@ -310,21 +359,28 @@ package Elixys.Views
 		// Cassettes XML
 		protected static const SEQUENCECASSETTES:XML =
 			<sequencecassette alignH="fill" alignV="fill" fontface="GothamBold" fontsize="34" 
-				enabledtextcolor={Styling.TEXT_GRAY2} activetextcolor={Styling.TEXT_BLUE} 
-				pressedtextcolor={Styling.TEXT_WHITE} />;
+				enabledtextcolor={Styling.TEXT_GRAY2} activetextcolor={Styling.TEXT_BLUE1}
+				pressedtextcolor={Styling.TEXT_WHITE} quickviewfontface="GothamBold" 
+				quickviewfontsize="16" quickviewcolor={Styling.TEXT_BLACK} />;
 
 		// Tools XML
 		protected static const SEQUENCETOOLS:XML =
-			<sequencetools alignH="fill" alignV="fill" />;
-
-		// Number of steps required to load this object
-		public static var BASE_LOAD_STEPS:uint = 18;
+			<sequencetools alignH="fill" alignV="fill" fontface="GothamBold" fontsize="8" 
+				enabledtextcolor={Styling.TEXT_GRAY2} pressedtextcolor={Styling.TEXT_WHITE} />;
 		
+		// Subviews
+		protected static var m_pSubviewTypes:Array = [SubviewCassette];
+		protected var m_pSubviews:Array = new Array();
+		protected var m_pSubviewContainer:Form;
+
+		// Number of steps required to load the sequence base components
+		public static var BASE_LOAD_STEPS:uint = m_pSubviewTypes.length;
+
 		// The current step
 		protected var m_nChildrenLoaded:uint = 0;
 
-		// Post string
-		protected var m_sPostString:String = "";
+		// Mode
+		protected var m_sMode:String = "";
 		
 		// Currently displayed state, sequence and component
 		protected var m_pStateSequence:StateSequence;
