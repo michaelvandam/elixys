@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -44,6 +45,45 @@ package Elixys.JSON.Components
 		{
 			return tools_evaporate_active;
 		}
+
+		// Static field details
+		public static var FIELDCOUNT:int = 7;
+		public static var FIELDLABELS:Array = [
+			"REACTOR", 
+			"EVAPORATION TEMP", 
+			"DURATION", 
+			"FINAL TEMP",
+			"PRESSURE", 
+			"STIR", 
+			"STOP AT TEMP"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT,
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_CHECKBOXINPUT, 
+			Constants.TYPE_CHECKBOX
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			"CELSIUS", 
+			"SECONDS", 
+			"CELSIUS",
+			"PSI", 
+			"", 
+			""
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
+			"EvaporationTemperature", 
+			"Duration", 
+			"FinalTemperature",
+			"EvaporationPressure", 
+			"Stir|StirSpeed", 
+			"StopAtTemperature"
+		];
 
 		// Data wrappers
 		public function get Reactor():uint
@@ -102,6 +142,20 @@ package Elixys.JSON.Components
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
 		}
 	
+		public function get Stir():uint
+		{
+			return super.flash_proxy::getProperty("stir");
+		}
+		public function set Stir(value:uint):void
+		{
+			super.flash_proxy::setProperty("stir", value);
+		}
+		
+		public function get StirValidation():String
+		{
+			return super.flash_proxy::getProperty("stirvalidation");
+		}
+		
 		public function get StirSpeed():uint
 		{
 			return super.flash_proxy::getProperty("stirspeed");
@@ -113,7 +167,21 @@ package Elixys.JSON.Components
 	
 		public function get StirSpeedValidation():String
 		{
-			return super.flash_proxy::getProperty("stirespeedvalidation");
+			return super.flash_proxy::getProperty("stirspeedvalidation");
+		}
+
+		public function get StopAtTemperature():uint
+		{
+			return super.flash_proxy::getProperty("stopattemperature");
+		}
+		public function set StopAtTemperature(value:uint):void
+		{
+			super.flash_proxy::setProperty("stopattemperature", value);
+		}
+		
+		public function get StopAtTemperatureValidation():String
+		{
+			return super.flash_proxy::getProperty("stopattemperaturevalidation");
 		}
 
 		public function get EvaporationPressure():Number
@@ -137,11 +205,100 @@ package Elixys.JSON.Components
 			sEvaporateDetails += JSONDataObject("duration", Duration);
 			sEvaporateDetails += JSONDataObject("evaporationtemperature", EvaporationTemperature);
 			sEvaporateDetails += JSONDataObject("finaltemperature", FinalTemperature);
+			sEvaporateDetails += JSONDataObject("stir", Stir);
 			sEvaporateDetails += JSONDataObject("stirspeed", StirSpeed);
+			sEvaporateDetails += JSONDataObject("stopattemperature", StopAtTemperature);
 			sEvaporateDetails += JSONDataObject("evaporationpressure", EvaporationPressure, false);
 			return sEvaporateDetails;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentEvaporateA:ComponentEvaporate = new ComponentEvaporate(null, pComponentA);
+			var pComponentEvaporateB:ComponentEvaporate = new ComponentEvaporate(null, pComponentB);
+			if (pComponentEvaporateA.Reactor != pComponentEvaporateB.Reactor)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.Duration != pComponentEvaporateB.Duration)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.EvaporationTemperature != pComponentEvaporateB.EvaporationTemperature)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.FinalTemperature != pComponentEvaporateB.FinalTemperature)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.Stir != pComponentEvaporateB.Stir)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.StirSpeed != pComponentEvaporateB.StirSpeed)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.StopAtTemperature != pComponentEvaporateB.StopAtTemperature)
+			{
+				return false;
+			}
+			if (pComponentEvaporateA.EvaporationPressure != pComponentEvaporateB.EvaporationPressure)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
+			m_sDurationError = ValidateField(Duration, DurationValidation);
+			m_sEvaporationTemperatureError = ValidateField(EvaporationTemperature, EvaporationTemperatureValidation);
+			m_sFinalTemperatureError = ValidateField(FinalTemperature, FinalTemperatureValidation);
+			m_sStirError = ValidateField(Stir, StirValidation);
+			m_sStirSpeedError = ValidateField(StirSpeed, StirSpeedValidation);
+			m_sStopAtTemperatureError = ValidateField(StopAtTemperature, StopAtTemperatureValidation);
+			m_sEvaporationPressureError = ValidateField(EvaporationPressure, EvaporationPressureValidation);
+		}
+		
+		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
+		public function get DurationError():String
+		{
+			return m_sDurationError;
+		}
+		public function get EvaporationTemperatureError():String
+		{
+			return m_sEvaporationTemperatureError;
+		}
+		public function get FinalTemperatureError():String
+		{
+			return m_sFinalTemperatureError;
+		}
+		public function get StirError():String
+		{
+			return m_sStirError;
+		}
+		public function get StirSpeedError():String
+		{
+			return m_sStirSpeedError;
+		}
+		public function get StopAtTemperatureError():String
+		{
+			return m_sStopAtTemperatureError;
+		}
+		public function get EvaporationPressureError():String
+		{
+			return m_sEvaporationPressureError;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
@@ -152,7 +309,19 @@ package Elixys.JSON.Components
 			"\"duration\":0," +
 			"\"evaporationtemperature\":0," +
 			"\"finaltemperature\":0," +
+			"\"stir\":0," + 
 			"\"stirspeed\":0," + 
+			"\"stopattemperature\":0," + 
 			"\"evaporationpressure\":0}";
+		
+		// Validation errors
+		protected var m_sReactorError:String = "";
+		protected var m_sDurationError:String = "";
+		protected var m_sEvaporationTemperatureError:String = "";
+		protected var m_sFinalTemperatureError:String = "";
+		protected var m_sStirError:String = "";
+		protected var m_sStirSpeedError:String = "";
+		protected var m_sStopAtTemperatureError:String = "";
+		protected var m_sEvaporationPressureError:String = "";
 	}
 }

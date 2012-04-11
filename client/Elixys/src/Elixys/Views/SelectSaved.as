@@ -218,9 +218,9 @@ package Elixys.Views
 				<navigationbaroption name="SEQUENCER" backgroundskinheightpercent="72" foregroundskinheightpercent="30"
 						fontSize="12" fontFace="GothamMedium"
 						enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY1}
-						backgroundskinup={getQualifiedClassName(mainNav_activeBtnOutline_down)}
+						backgroundskinup={getQualifiedClassName(mainNav_activeBtnOutline_up)}
 						backgroundskindown={getQualifiedClassName(mainNav_activeBtnOutline_down)}
-						backgroundskindisabled={getQualifiedClassName(mainNav_activeBtnOutline_down)}
+						backgroundskindisabled={getQualifiedClassName(mainNav_activeBtnOutline_up)}
 						foregroundskinup={getQualifiedClassName(mainNav_sequencer_active)}
 						foregroundskindown={getQualifiedClassName(mainNav_sequencer_down)} 
 						foregroundskindisabled={getQualifiedClassName(mainNav_sequencer_disabled)}>
@@ -281,7 +281,8 @@ package Elixys.Views
 				headertextcolor={Styling.TEXT_GRAY5} headerpressedcolor={Styling.DATAGRID_HEADERPRESSED}
 				sortupskin={getQualifiedClassName(sortUp_up)} sortdownskin={getQualifiedClassName(sortDown_up)}
 				bodyfontface="GothamMedium" bodyfontsize="18" bodytextcolor={Styling.TEXT_GRAY1}
-				visiblerowcount="9" rowselectedcolor={Styling.DATAGRID_SELECTED} idfield="id" />;
+				bodytextselectedcolor={Styling.TEXT_WHITE} visiblerowcount="9" 
+				rowselectedcolor={Styling.DATAGRID_SELECTED} idfield="id" />;
 
 		// Number of steps required to load this object
 		public static var LOAD_STEPS:uint = 3;

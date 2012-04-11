@@ -64,6 +64,22 @@ package Elixys.JSON.Components
 			return sCassetteDetails;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentCassetteA:ComponentCassette = new ComponentCassette(null, pComponentA);
+			var pComponentCassetteB:ComponentCassette = new ComponentCassette(null, pComponentB);
+			if (pComponentCassetteA.Reactor != pComponentCassetteB.Reactor)
+			{
+				return false;
+			}
+			if (pComponentCassetteA.Available != pComponentCassetteB.Available)
+			{
+				return false;
+			}
+			return Reagent.CompareReagentArrays(pComponentCassetteA.Reagents, pComponentCassetteB.Reagents);
+		}
+		
 		// State components
 		private var m_pReagents:Array;
 	}

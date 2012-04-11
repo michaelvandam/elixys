@@ -2,6 +2,9 @@ package Elixys.Interfaces
 {
 	public interface ITextBox
 	{
+		function addEventListener(type:String, listener:Function, useCapture:Boolean=false, priority:int=0, 
+								  useWeakReference:Boolean=false):void;
+		function removeEventListener(type:String, listener:Function, useCapture:Boolean=false):void;
 		function set border(border:Boolean):void;
 		function set borderThickness(borderThickness:uint):void;
 		function get borderThickness():uint;
@@ -12,6 +15,7 @@ package Elixys.Interfaces
 		function set autoCapitalize(autoCapitalize:String):void;
 		function set autoCorrect(autoCorrect:Boolean):void;
 		function set color(color:uint):void;
+		function containsInternally(object:*):Boolean;
 		function set displayAsPassword(displayAsPassword:Boolean):void;
 		function set editable(editable:Boolean):void;
 		function set fontFamily(fontFamily:String):void;

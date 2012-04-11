@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -44,15 +45,30 @@ package Elixys.JSON.Components
 		{
 			return tools_prompt_active;
 		}
+		
+		// Static field details
+		public static var FIELDCOUNT:int = 1;
+		public static var FIELDLABELS:Array = [
+			"MESSAGE"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_MULTILINEINPUT
+		];
+		public static var FIELDUNITS:Array = [
+			""
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"Message"
+		];
 
 		// Data wrappers
 		public function get Message():String
 		{
-			return super.flash_proxy::getProperty("message");
+			return unescape(super.flash_proxy::getProperty("message"));
 		}
 		public function set Message(value:String):void
 		{
-			super.flash_proxy::setProperty("message", value);
+			super.flash_proxy::setProperty("message", escape(value));
 		}
 		
 		public function get MessageValidation():String
@@ -66,6 +82,30 @@ package Elixys.JSON.Components
 			return JSONDataString("message", Message, false);
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentPromptA:ComponentPrompt = new ComponentPrompt(null, pComponentA);
+			var pComponentPromptB:ComponentPrompt = new ComponentPrompt(null, pComponentB);
+			if (pComponentPromptA.Message != pComponentPromptB.Message)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sMessageError = ValidateField(Message, MessageValidation);
+		}
+		
+		// Validation fields
+		public function get MessageError():String
+		{
+			return m_sMessageError;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
@@ -73,5 +113,8 @@ package Elixys.JSON.Components
 			"\"id\":0," +
 			"\"name\":\"Prompt\"," +
 			"\"message\":\"\"}";
+		
+		// Validation errors
+		protected var m_sMessageError:String = "";
 	}
 }

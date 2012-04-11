@@ -8,7 +8,7 @@ package Elixys.Assets
 		public static var POPUP_BACKGROUND:String = "#FFFFFF";
 		public static var DATAGRID_HEADERLINE:String = "#EBEBEB";
 		public static var DATAGRID_HEADERPRESSED:String = "#E3E9EE";
-		public static var DATAGRID_SELECTED:String = "#B2E6F3";
+		public static var DATAGRID_SELECTED:String = "#3399FF";
 		public static var TABBAR_LINE:String = "#EBEBEB";
 		public static var TABBAR_PRESSED:String = "#E3E9EE";
 		public static var PROGRESS_BACKGROUND:String = "#CCCCCC";

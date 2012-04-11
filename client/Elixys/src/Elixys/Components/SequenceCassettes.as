@@ -185,9 +185,9 @@ package Elixys.Components
 					// Update the offset
 					nOffsetX += m_nButtonWidth + BUTTON_HORIZONTAL_GAP;
 				}
-
+				
 				// Update the quick view text
-				if (m_pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				if ((m_pComponent != null) && (m_pComponent.ComponentType == ComponentCassette.COMPONENTTYPE))
 				{
 					// Set position
 					pHitArea = m_pHitAreas[0] as Rectangle;
@@ -223,7 +223,7 @@ package Elixys.Components
 						}
 						else
 						{
-							sText += (nReagent + 1) + ". [Not allowed]\n";
+							sText += (nReagent + 1) + ". [Position not allowed]\n";
 						}
 					}
 					

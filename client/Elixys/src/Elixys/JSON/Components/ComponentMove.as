@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -45,6 +46,25 @@ package Elixys.JSON.Components
 			return tools_move_active;
 		}
 
+		// Static field details
+		public static var FIELDCOUNT:int = 2;
+		public static var FIELDLABELS:Array = [
+			"REACTOR", 
+			"POSITION"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			""
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
+			"Position"
+		];
+		
 		// Data wrappers
 		public function get Reactor():uint
 		{
@@ -82,6 +102,39 @@ package Elixys.JSON.Components
 			return sMoveDetails;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentMoveA:ComponentMove = new ComponentMove(null, pComponentA);
+			var pComponentMoveB:ComponentMove = new ComponentMove(null, pComponentB);
+			if (pComponentMoveA.Reactor != pComponentMoveB.Reactor)
+			{
+				return false;
+			}
+			if (pComponentMoveA.Position != pComponentMoveB.Position)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
+			m_sPositionError = ValidateField(Position, PositionValidation);
+		}
+		
+		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
+		public function get PositionError():String
+		{
+			return m_sPositionError;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
@@ -90,5 +143,9 @@ package Elixys.JSON.Components
 			"\"name\":\"Move\"," +
 			"\"reactor\":0," +
 			"\"position\":0}";
+		
+		// Validation errors
+		protected var m_sReactorError:String = "";
+		protected var m_sPositionError:String = "";
 	}
 }

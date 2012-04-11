@@ -270,6 +270,11 @@ package com.christiancantrell.nativetext
 			this.st.color = color;
 		}
 		
+		public function containsInternally(object:*):Boolean
+		{
+			return (this.st == object);
+		}
+
 		public function set displayAsPassword(displayAsPassword:Boolean):void
 		{
 			this.st.displayAsPassword = displayAsPassword;
@@ -405,10 +410,6 @@ package com.christiancantrell.nativetext
 		
 		public override function set width(width:Number):void
 		{
-			if (width > 1000)
-			{
-				trace("Setting width: " + width);
-			}
 			this._width = width;
 			this.render();
 

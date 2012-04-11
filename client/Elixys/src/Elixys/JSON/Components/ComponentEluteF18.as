@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	import Elixys.JSON.State.Reagent;
 	
@@ -46,6 +47,29 @@ package Elixys.JSON.Components
 			return tools_elute_active;
 		}
 
+		// Static field details
+		public static var FIELDCOUNT:int = 3;
+		public static var FIELDLABELS:Array = [
+			"REAGENT", 
+			"DURATION", 
+			"PRESSURE"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			"SECONDS", 
+			"PSI"
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"EluteReagent", 
+			"EluteTime", 
+			"ElutePressure"
+		];
+		
 		// Data wrappers
 		public function get EluteTime():uint
 		{
@@ -103,6 +127,44 @@ package Elixys.JSON.Components
 			return sEluteF18Details;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentEluteF18A:ComponentEluteF18 = new ComponentEluteF18(null, pComponentA);
+			var pComponentEluteF18B:ComponentEluteF18 = new ComponentEluteF18(null, pComponentB);
+			if (pComponentEluteF18A.EluteTime != pComponentEluteF18B.EluteTime)
+			{
+				return false;
+			}
+			if (pComponentEluteF18A.ElutePressure != pComponentEluteF18B.ElutePressure)
+			{
+				return false;
+			}
+			return Reagent.CompareReagents(pComponentEluteF18A.EluteReagent, pComponentEluteF18B.EluteReagent);
+		}
+
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sEluteTimeError = ValidateField(EluteTime, EluteTimeValidation);
+			m_sElutePressureError = ValidateField(ElutePressure, ElutePressureValidation);
+			m_sEluteReagentError = ValidateField(EluteReagent, EluteReagentError);
+		}
+		
+		// Validation fields
+		public function get EluteTimeError():String
+		{
+			return m_sEluteTimeError;
+		}
+		public function get ElutePressureError():String
+		{
+			return m_sElutePressureError;
+		}
+		public function get EluteReagentError():String
+		{
+			return m_sEluteReagentError;
+		}
+		
 		// State components
 		private var m_pReagent:Reagent;
 
@@ -115,5 +177,10 @@ package Elixys.JSON.Components
 			"\"elutetime\":0," +
 			"\"elutepressure\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "}";
+		
+		// Validation errors
+		protected var m_sEluteTimeError:String = "";
+		protected var m_sElutePressureError:String = "";
+		protected var m_sEluteReagentError:String = "";
 	}
 }

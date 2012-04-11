@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	import Elixys.JSON.State.Reagent;
 	
@@ -45,6 +46,37 @@ package Elixys.JSON.Components
 		{
 			return tools_add_active;
 		}
+
+		// Static field details
+		public static var FIELDCOUNT:int = 5;
+		public static var FIELDLABELS:Array = [
+			"REACTOR", 
+			"REAGENT", 
+			"POSITION", 
+			"DURATION", 
+			"PRESSURE"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			"", 
+			"", 
+			"SECONDS", 
+			"PSI"
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
+			"AddReagent", 
+			"DeliveryPosition", 
+			"DeliveryTime",
+			"DeliveryPressure"
+		];
 
 		// Data wrappers
 		public function get Reactor():uint
@@ -133,6 +165,66 @@ package Elixys.JSON.Components
 			return sAddDetails;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentAddA:ComponentAdd = new ComponentAdd(null, pComponentA);
+			var pComponentAddB:ComponentAdd = new ComponentAdd(null, pComponentB);
+			if (pComponentAddA.Reactor != pComponentAddB.Reactor)
+			{
+				return false;
+			}
+			if (!Reagent.CompareReagents(pComponentAddA.AddReagent, pComponentAddB.AddReagent))
+			{
+				return false;
+			}
+			if (pComponentAddA.DeliveryPosition != pComponentAddB.DeliveryPosition)
+			{
+				return false;
+			}
+			if (pComponentAddA.DeliveryTime != pComponentAddB.DeliveryTime)
+			{
+				return false;
+			}
+			if (pComponentAddA.DeliveryPressure != pComponentAddB.DeliveryPressure)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		// Validates the add component
+		public override function Validate():void
+		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
+			m_sAddReagentError = ValidateField(AddReagent, AddReagentValidation);
+			m_sDeliveryPositionError = ValidateField(DeliveryPosition, DeliveryPositionValidation);
+			m_sDeliveryTimeError = ValidateField(DeliveryTime, DeliveryTimeValidation);
+			m_sDeliveryPressureError = ValidateField(DeliveryPressure, DeliveryPressureValidation);
+		}
+		
+		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
+		public function get AddReagentError():String
+		{
+			return m_sAddReagentError;
+		}
+		public function get DeliveryPositionError():String
+		{
+			return m_sDeliveryPositionError;
+		}
+		public function get DeliveryTimeError():String
+		{
+			return m_sDeliveryTimeError;
+		}
+		public function get DeliveryPressureError():String
+		{
+			return m_sDeliveryPressureError;
+		}
+		
 		// State components
 		private var m_pReagent:Reagent;
 		
@@ -147,5 +239,12 @@ package Elixys.JSON.Components
 			"\"deliveryposition\":0," +
 			"\"deliverytime\":0," +
 			"\"deliverypressure\":0}";
+		
+		// Validation errors
+		protected var m_sReactorError:String = "";
+		protected var m_sAddReagentError:String = "";
+		protected var m_sDeliveryPositionError:String = "";
+		protected var m_sDeliveryTimeError:String = "";
+		protected var m_sDeliveryPressureError:String = "";
 	}
 }

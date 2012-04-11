@@ -129,8 +129,12 @@ class Evaporate(UnitOperation):
       self.component.update({"evaporationtemperaturevalidation":""})
     if not self.component.has_key("finaltemperaturevalidation"):
       self.component.update({"finaltemperaturevalidation":""})
+    if not self.component.has_key("stirvalidation"):
+      self.component.update({"stirvalidation":""})
     if not self.component.has_key("stirspeedvalidation"):
       self.component.update({"stirspeedvalidation":""})
+    if not self.component.has_key("stopattemperaturevalidation"):
+      self.component.update({"stopattemperaturevalidation":""})
     if not self.component.has_key("evaporationpressurevalidation"):
       self.component.update({"evaporationpressurevalidation":""})
     self.addComponentDetails()
@@ -142,7 +146,9 @@ class Evaporate(UnitOperation):
     self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["evaporationtemperaturevalidation"] = "type=number; min=20; max=200; required=true"
     self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
+    self.component["stirvalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
+    self.component["stopattemperaturevalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["evaporationpressurevalidation"] = "type=number; min=0; max=25"
     return self.validateQuick()
 
@@ -154,7 +160,9 @@ class Evaporate(UnitOperation):
        not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]) or \
        not self.validateComponentField(self.component["evaporationtemperature"], self.component["evaporationtemperaturevalidation"]) or \
        not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
+       not self.validateComponentField(self.component["stir"], self.component["stirvalidation"]) or \
        not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]) or \
+       not self.validateComponentField(self.component["stopattemperature"], self.component["stopattemperaturevalidation"]) or \
        not self.validateComponentField(self.component["evaporationpressure"], self.component["evaporationpressurevalidation"]):
         bValidationError = True
 
@@ -172,7 +180,9 @@ class Evaporate(UnitOperation):
     pDBComponent["durationvalidation"] = self.component["durationvalidation"]
     pDBComponent["evaporationtemperaturevalidation"] = self.component["evaporationtemperaturevalidation"]
     pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
+    pDBComponent["stirvalidation"] = self.component["stirvalidation"]
     pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
+    pDBComponent["stopattemperaturevalidation"] = self.component["stopattemperaturevalidation"]
     pDBComponent["evaporationpressurevalidation"] = self.component["evaporationpressurevalidation"]
     pDBComponent["evaporationpressure"] = self.component["evaporationpressure"]
     pDBComponent["validationerror"] = self.component["validationerror"]
@@ -198,6 +208,8 @@ class Evaporate(UnitOperation):
     pTargetComponent["duration"] = self.component["duration"]
     pTargetComponent["evaporationtemperature"] = self.component["evaporationtemperature"]
     pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
+    pTargetComponent["stir"] = self.component["stir"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]
+    pTargetComponent["stopattemperature"] = self.component["stopattemperature"]
     pTargetComponent["evaporationpressure"] = self.component["evaporationpressure"]
 

@@ -74,12 +74,13 @@ package Elixys.Components
 		}
 
 		// Set data grid header parameters
-		public function SetParameters(sFontFace:String, nFontSize:uint, nTextColor:uint, nVisibleRowCount:uint, nSelectedColor:uint,
-									  nIDField:String):void
+		public function SetParameters(sFontFace:String, nFontSize:uint, nTextColor:uint, nTextSelectedColor:uint,
+									  nVisibleRowCount:uint, nSelectedColor:uint, nIDField:String):void
 		{
 			m_sFontFace = sFontFace;
 			m_nFontSize = nFontSize;
 			m_nTextColor = nTextColor;
+			m_nTextSelectedColor = nTextSelectedColor;
 			m_nVisibleRowCount = nVisibleRowCount;
 			m_nSelectedColor = nSelectedColor;
 			m_sIDField = nIDField;
@@ -271,6 +272,14 @@ package Elixys.Components
 					sFieldName = (m_pColumns[nColumnIndex] as Column).Data;
 					pLabel = m_pLabels[nRowIndex][nColumnIndex] as UILabel;
 					pLabel.text = FormatLabelText(m_pData[nRowIndex], sFieldName);
+					if (nRowIndex == m_nSelectedRow)
+					{
+						pLabel.textColor = m_nTextSelectedColor;
+					}
+					else
+					{
+						pLabel.textColor = m_nTextColor;
+					}
 					var nColumnWidth:Number = m_pColumnWidths[nColumnIndex] - (DataGrid.TEXT_INDENT * 2);
 					if ((nColumnIndex == 0) && !(m_pData[nRowIndex] as SequenceMetadata).Valid)
 					{
@@ -368,6 +377,7 @@ package Elixys.Components
 		protected var m_sFontFace:String = "";
 		protected var m_nFontSize:uint = 0;
 		protected var m_nTextColor:uint = 0;
+		protected var m_nTextSelectedColor:uint = 0;
 		protected var m_nVisibleRowCount:uint = 0;
 		protected var m_nSelectedColor:uint = 0;
 		protected var m_sIDField:String = "";

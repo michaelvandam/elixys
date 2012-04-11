@@ -46,9 +46,9 @@ package Elixys.Components
 			scrollRect = new Rectangle(0, 0, attributes.width, attributes.height);
 
 			// Add the window skins
-			m_pWindowLeftSkin = AddSkinAt(sequencer_windowLeft, 0);
-			m_pWindowRightSkin = AddSkinAt(sequencer_windowRight, 1);
-			m_pWindowCenterSkin = AddSkinAt(sequencer_windowCenter, 2);
+			m_pWindowLeftSkin = AddSkinAt(sequencerWindow_left, 0);
+			m_pWindowRightSkin = AddSkinAt(sequencerWindow_right, 1);
+			m_pWindowCenterSkin = AddSkinAt(sequencerWindow_center, 2);
 
 			// Extract the parameters
 			if (xml.@unitoperationfontface.length() > 0)
@@ -241,7 +241,8 @@ package Elixys.Components
 			}
 			
 			// Calculate the required slider width
-			var nWidth:Number = (m_nUnitOperationWidth * nUnitOperations) + ((WINDOW_CAP_SIZE + WINDOW_GAP) * 2);
+			var nWidth:Number = (m_nUnitOperationWidth * nUnitOperations) + (m_pWindowLeftSkin.width + 
+				m_pWindowRightSkin.width + (WINDOW_GAP * 2));
 			if (nWidth < attributes.width)
 			{
 				nWidth = attributes.width;
@@ -257,12 +258,12 @@ package Elixys.Components
 			m_pWindowLeftSkin.x = WINDOW_GAP;
 			m_pWindowLeftSkin.y = 0;
 			m_pWindowLeftSkin.height = m_nSequencerWindowHeight;
-			m_pWindowRightSkin.x = nWidth - WINDOW_CAP_SIZE - WINDOW_GAP;
+			m_pWindowRightSkin.x = nWidth - m_pWindowRightSkin.width - WINDOW_GAP;
 			m_pWindowRightSkin.y = 0;
 			m_pWindowRightSkin.height = m_nSequencerWindowHeight;
-			m_pWindowCenterSkin.x = WINDOW_GAP + WINDOW_CAP_SIZE;
+			m_pWindowCenterSkin.x = WINDOW_GAP + m_pWindowLeftSkin.width;
 			m_pWindowCenterSkin.y = 0;
-			m_pWindowCenterSkin.width = nWidth - ((WINDOW_CAP_SIZE + WINDOW_GAP) * 2);
+			m_pWindowCenterSkin.width = nWidth - (m_pWindowLeftSkin.width + m_pWindowRightSkin.width + (WINDOW_GAP * 2));
 			m_pWindowCenterSkin.height = m_nSequencerWindowHeight;
 
 			// Clear any selected or pressed unit operations
@@ -1107,7 +1108,6 @@ package Elixys.Components
 		public static var ICON_PADDING:int = 6;
 		public static var ICON_GAP:int = 2;
 		public static var TEXT_HEIGHT:int = 12;
-		public static var WINDOW_CAP_SIZE:int = 10;
 		public static var WINDOW_GAP:int = 20;
 		public static var WINDOW_PERCENT_HEIGHT:int = 77;
 		public static var BUTTON_PERCENT_UPPER_GAP:int = 15;

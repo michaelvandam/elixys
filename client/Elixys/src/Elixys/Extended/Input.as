@@ -30,9 +30,11 @@ package Elixys.Extended
 			// Call the base constructor
 			super(screen, xx, yy, text);
 
-			// Set our size
+			// Set our size and position
 			width = (screen as Form).attributes.width;
 			height = (screen as Form).attributes.height;
+			x = 0;
+			y = 0;
 			
 			// Create the text input field
 			var pTextBox:ITextBox = CreateTextBox();
@@ -43,8 +45,6 @@ package Elixys.Extended
 			pTextBox.fontWeight = FontWeight.NORMAL;
 			pTextBox.autoCapitalize = Constants.AUTOCAPITALIZE_NONE;
 			pTextBox.autoCorrect = false;
-			//pTextBox.width = width;
-			//pTextBox.height = height;
 			if (xml.@color.length() > 0)
 			{
 				pTextBox.color = Styling.AS3Color(xml.@color[0]);
@@ -71,11 +71,9 @@ package Elixys.Extended
 				// Load the skin
 				var pClass:Class = getDefinitionByName(xml.@skin[0]) as Class;
 				m_pSkin = new pClass() as MovieClip;
-				//m_pSkin.x = x;
-				//m_pSkin.y = y;
 				m_pSkin.width = width;
 				m_pSkin.height = height;
-				screen.addChildAt(m_pSkin, 0);
+				screen.addChildAt(m_pSkin, screen.getChildIndex(this));
 			}
 			
 			// Set the keyboard type and return label after adding it to the display list
@@ -102,9 +100,7 @@ package Elixys.Extended
 			stage.addEventListener(Event.RESIZE, OnResizeEvent);
 			addEventListener(Event.ENTER_FRAME, OnEnterFrame);
 			
-			// Remember the initial size and position
-			m_nLastX = x;
-			m_nLastY = y;
+			// Remember the initial dimensions
 			m_nLastWidth = width;
 			m_nLastHeight = height;
 		}
@@ -148,30 +144,42 @@ package Elixys.Extended
 		protected function UpdateSkin():void
 		{
 			// Check if our size or position have changed
-			var nWidth:Number = (parent as Form).attributes.width;
-			var nHeight:Number = (parent as Form).attributes.height;
+			var nWidth:Number, nHeight:Number;
+			if (m_nFixWidth == -1)
+			{
+				nWidth = (parent as Form).attributes.width;
+			}
+			else
+			{
+				nWidth = m_nFixWidth;
+			}
+			if (m_nFixHeight == -1)
+			{
+				nHeight = (parent as Form).attributes.height;
+			}
+			else
+			{
+				nHeight = m_nFixHeight;
+			}
 			if (m_pSkin != null)
 			{
-				if ((nWidth != m_nLastWidth) || (nHeight != m_nLastHeight) || (x != m_nLastX) || (y != m_nLastY))
+				if ((nWidth != m_nLastWidth) || (nHeight != m_nLastHeight) || (x != m_nFixX) || (y != m_nFixY))
 				{
-					trace("Fix this");
-					x = 0;
-					y = 0;
-					// Set our size
+					// Set our size and position
 					width = nWidth;
 					height = nHeight;
-
-					// Remember the new size and position
-					m_nLastX = x;
-					m_nLastY = y;
-					m_nLastWidth = nWidth;
-					m_nLastHeight = nHeight;
+					x = m_nFixX;
+					y = m_nFixY;
 
 					// Update the skin
-					//m_pSkin.x = x;
-					//m_pSkin.y = y;
 					m_pSkin.width = nWidth;
 					m_pSkin.height = nHeight;
+					m_pSkin.x = m_nFixX;
+					m_pSkin.y = m_nFixY;
+					
+					// Remember the new dimensions
+					m_nLastWidth = nWidth;
+					m_nLastHeight = nHeight;
 				}
 			}
 		}
@@ -188,7 +196,25 @@ package Elixys.Extended
 				m_pSkin.visible = bVisible;
 			}
 		}
-		
+
+		// Fixed size and position
+		public function set FixX(value:Number):void
+		{
+			x = m_nFixX = value;
+		}
+		public function set FixY(value:Number):void
+		{
+			y = m_nFixY = value;
+		}
+		public function set FixWidth(value:Number):void
+		{
+			width = m_nFixWidth = value;
+		}
+		public function set FixHeight(value:Number):void
+		{
+			height = m_nFixHeight = value;
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -196,9 +222,13 @@ package Elixys.Extended
 		// Skin
 		protected var m_pSkin:MovieClip;
 		
-		// Last known size and position
-		protected var m_nLastX:Number = 0;
-		protected var m_nLastY:Number = 0;
+		// Fixed offset and size
+		protected var m_nFixX:Number = 0;
+		protected var m_nFixY:Number = 0;
+		protected var m_nFixWidth:Number = -1;
+		protected var m_nFixHeight:Number = -1;
+		
+		// Last known size
 		protected var m_nLastWidth:Number = 0;
 		protected var m_nLastHeight:Number = 0;
 	}

@@ -212,6 +212,11 @@ package
 			// Check if the desired offset has changed
 			if (m_nPanOffset != nOffset)
 			{
+				// This transition is slowing down as the number of items on the stage increases
+				m_nPanOffset = nOffset;
+				y = m_nPanOffset;
+
+				/*
 				// Create or reset the pan transition timer
 				if (m_pPanTimer == null)
 				{
@@ -229,6 +234,7 @@ package
 				m_nPanOffset = nOffset;
 				m_nPanStep = (y - nOffset) / m_pPanTimer.repeatCount;
 				m_pPanTimer.start();
+				*/
 			}
 		}
 		

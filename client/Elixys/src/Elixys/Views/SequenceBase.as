@@ -116,7 +116,8 @@ package Elixys.Views
 			// Load the subview
 			var pAttributes:Attributes = new Attributes(0, 0, m_pSubviewContainer.attributes.width, 
 				m_pSubviewContainer.attributes.height);
-			return (new pSubviewClass(m_pSubviewContainer, m_sMode, pAttributes)) as SubviewBase;
+			return (new pSubviewClass(m_pSubviewContainer, m_sMode, m_pElixys, m_nButtonSkinWidth, 
+				pAttributes)) as SubviewBase;
 		}
 
 		// Load the tab bar
@@ -260,6 +261,10 @@ package Elixys.Views
 				{
 					m_pSequenceCassettes.UpdateSequence(pSequence);
 				}
+				for (var nIndex:int = 0; nIndex < m_pSubviews.length; ++nIndex)
+				{
+					(m_pSubviews[nIndex] as SubviewBase).UpdateSequence(pSequence);
+				}
 				m_pSequencer.UpdateSequence(pSequence);
 			}
 			
@@ -369,7 +374,9 @@ package Elixys.Views
 				enabledtextcolor={Styling.TEXT_GRAY2} pressedtextcolor={Styling.TEXT_WHITE} />;
 		
 		// Subviews
-		protected static var m_pSubviewTypes:Array = [SubviewCassette];
+		protected static var m_pSubviewTypes:Array = [SubviewCassette, SubviewReact, SubviewAdd, SubviewEvaporate,
+			SubviewTransfer, SubviewPrompt, SubviewInstall, SubviewComment, SubviewTrapF18, SubviewEluteF18,
+			SubviewInitialize, SubviewMix, SubviewMove, SubviewExternalAdd];
 		protected var m_pSubviews:Array = new Array();
 		protected var m_pSubviewContainer:Form;
 

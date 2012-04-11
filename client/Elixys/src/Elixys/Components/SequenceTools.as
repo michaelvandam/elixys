@@ -282,6 +282,9 @@ package Elixys.Components
 			pBackgroundSkin.scaleY = pBackgroundSkin.scaleX;
 			var pForegroundSkin:MovieClip = AddSkin(Components.GetUpSkin(m_pSupportedOperations[m_nPressedIndex]),
 				true, m_pDragTarget);
+			pForegroundSkin.height = pBackgroundSkin.height - (SequencerBody.ICON_PADDING * 2) - SequencerBody.ICON_GAP - 
+				SequencerBody.TEXT_HEIGHT;
+			pForegroundSkin.scaleX = pForegroundSkin.scaleY;
 			pForegroundSkin.x = (m_nButtonWidth - pForegroundSkin.width) / 2;
 			pForegroundSkin.y = SequencerBody.ICON_PADDING;
 			var pLabel:UILabel = AddLabel(m_pSupportedOperations[m_nPressedIndex], m_pDragTarget);

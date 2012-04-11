@@ -37,6 +37,12 @@ package Elixys.Extended
 			return UILabel(parseLabel(pXML, pAttributes));
 		}
 
+		// Creates a new input
+		public function CreateInput(pXML:XML, pAttributes:Attributes):Input
+		{
+			return Input(parseInput(pXML, pAttributes));
+		}
+		
 		// Appends a new child to the display list
 		public function AppendChild(pChild:*):void
 		{

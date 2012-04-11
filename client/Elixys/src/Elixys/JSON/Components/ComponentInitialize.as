@@ -45,10 +45,23 @@ package Elixys.JSON.Components
 			return tools_initialize_active;
 		}
 
+		// Static field details
+		public static var FIELDCOUNT:int = 0;
+		public static var FIELDLABELS:Array = [];
+		public static var FIELDTYPES:Array = [];
+		public static var FIELDUNITS:Array = [];
+		public static var FIELDPROPERTIES:Array = [];
+		
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
 			return "";
+		}
+		
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			return true;
 		}
 
 		// Default format

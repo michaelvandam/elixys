@@ -58,6 +58,10 @@ package Elixys.Components
 			{
 				m_nBodyTextColor = Styling.AS3Color(xml.@bodytextcolor[0]);
 			}
+			if (xml.@bodytextselectedcolor.length() > 0)
+			{
+				m_nBodyTextSelectedColor = Styling.AS3Color(xml.@bodytextselectedcolor[0]);
+			}
 			if (xml.@visiblerowcount.length() > 0)
 			{
 				m_nVisibleRowCount = parseInt(xml.@visiblerowcount[0]);
@@ -81,8 +85,8 @@ package Elixys.Components
 			// Pass parameters to the header and body
 			m_pDataGridHeader.SetParameters(m_sHeaderFontFace, m_nHeaderFontSize, m_nHeaderTextColor, m_nHeaderPressedColor,
 				m_sSortUpSkin, m_sSortDownSkin);
-			m_pDataGridBody.SetParameters(m_sBodyFontFace, m_nBodyFontSize, m_nBodyTextColor, m_nVisibleRowCount,
-				m_nRowSelectedColor, m_sIDField);
+			m_pDataGridBody.SetParameters(m_sBodyFontFace, m_nBodyFontSize, m_nBodyTextColor, m_nBodyTextSelectedColor,
+				m_nVisibleRowCount, m_nRowSelectedColor, m_sIDField);
 			
 			// Add event listeners
 			m_pDataGridHeader.addEventListener(ButtonEvent.CLICK, OnHeaderClick);
@@ -169,6 +173,7 @@ package Elixys.Components
 		protected var m_sBodyFontFace:String = "";
 		protected var m_nBodyFontSize:uint = 0;
 		protected var m_nBodyTextColor:uint = 0;
+		protected var m_nBodyTextSelectedColor:uint = 0;
 		protected var m_nVisibleRowCount:uint = 0;
 		protected var m_nRowSelectedColor:uint = 0;
 		protected var m_sIDField:String = "";

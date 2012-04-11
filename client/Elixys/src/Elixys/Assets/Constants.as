@@ -18,5 +18,12 @@ package Elixys.Assets
 		public static const VIEW:String = "VIEW";
 		public static const EDIT:String = "EDIT";
 		public static const RUN:String = "RUN";
+
+		// Input types
+		public static const TYPE_DROPDOWN:String = "dropdown";
+		public static const TYPE_INPUT:String = "input";
+		public static const TYPE_MULTILINEINPUT:String = "multilineinput";
+		public static const TYPE_CHECKBOX:String = "checkbox";
+		public static const TYPE_CHECKBOXINPUT:String = "checkboxinput";
 	}
 }

@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -44,6 +45,49 @@ package Elixys.JSON.Components
 		{
 			return tools_react_active;
 		}
+
+		// Static field details
+		public static var FIELDCOUNT:int = 8;
+		public static var FIELDLABELS:Array = [
+			"REACTOR", 
+			"DURATION", 
+			"REACTION TEMP", 
+			"FINAL TEMP",
+			"COOLING DELAY", 
+			"POSITION", 
+			"STIR", 
+			"STOP AT TEMP"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT,
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_DROPDOWN,
+			Constants.TYPE_CHECKBOXINPUT, 
+			Constants.TYPE_CHECKBOX
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			"SECONDS", 
+			"CELSIUS", 
+			"CELSIUS",
+			"SECONDS", 
+			"", 
+			"", 
+			""
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
+			"Duration", 
+			"ReactionTemperature", 
+			"FinalTemperature",
+			"CoolingDelay", 
+			"Position", 
+			"Stir|StirSpeed", 
+			"StopAtTemperature"
+		];
 
 		// Data wrappers
 		public function get Reactor():uint
@@ -129,6 +173,20 @@ package Elixys.JSON.Components
 		{
 			return super.flash_proxy::getProperty("coolingdelayvalidation");
 		}
+		
+		public function get Stir():uint
+		{
+			return super.flash_proxy::getProperty("stir");
+		}
+		public function set Stir(value:uint):void
+		{
+			super.flash_proxy::setProperty("stir", value);
+		}
+		
+		public function get StirValidation():String
+		{
+			return super.flash_proxy::getProperty("stirvalidation");
+		}
 
 		public function get StirSpeed():uint
 		{
@@ -141,7 +199,21 @@ package Elixys.JSON.Components
 	
 		public function get StirSpeedValidation():String
 		{
-			return super.flash_proxy::getProperty("stirespeedvalidation");
+			return super.flash_proxy::getProperty("stirspeedvalidation");
+		}
+
+		public function get StopAtTemperature():uint
+		{
+			return super.flash_proxy::getProperty("stopattemperature");
+		}
+		public function set StopAtTemperature(value:uint):void
+		{
+			super.flash_proxy::setProperty("stopattemperature", value);
+		}
+		
+		public function get StopAtTemperatureValidation():String
+		{
+			return super.flash_proxy::getProperty("stopattemperaturevalidation");
 		}
 
 		// Format additional component details
@@ -153,10 +225,108 @@ package Elixys.JSON.Components
 			sReactDetails += JSONDataObject("reactiontemperature", ReactionTemperature);
 			sReactDetails += JSONDataObject("finaltemperature", FinalTemperature);
 			sReactDetails += JSONDataObject("coolingdelay", CoolingDelay);
-			sReactDetails += JSONDataObject("stirspeed", StirSpeed, false);
+			sReactDetails += JSONDataObject("stir", Stir);
+			sReactDetails += JSONDataObject("stirspeed", StirSpeed);
+			sReactDetails += JSONDataObject("stopattemperature", StopAtTemperature, false);
 			return sReactDetails;
 		}
+		
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentReactA:ComponentReact = new ComponentReact(null, pComponentA);
+			var pComponentReactB:ComponentReact = new ComponentReact(null, pComponentB);
+			if (pComponentReactA.Reactor != pComponentReactB.Reactor)
+			{
+				return false;
+			}
+			if (pComponentReactA.Position != pComponentReactB.Position)
+			{
+				return false;
+			}
+			if (pComponentReactA.Duration != pComponentReactB.Duration)
+			{
+				return false;
+			}
+			if (pComponentReactA.ReactionTemperature != pComponentReactB.ReactionTemperature)
+			{
+				return false;
+			}
+			if (pComponentReactA.FinalTemperature != pComponentReactB.FinalTemperature)
+			{
+				return false;
+			}
+			if (pComponentReactA.CoolingDelay != pComponentReactB.CoolingDelay)
+			{
+				return false;
+			}
+			if (pComponentReactA.Stir != pComponentReactB.Stir)
+			{
+				return false;
+			}
+			if (pComponentReactA.StirSpeed != pComponentReactB.StirSpeed)
+			{
+				return false;
+			}
+			if (pComponentReactA.StopAtTemperature != pComponentReactB.StopAtTemperature)
+			{
+				return false;
+			}
+			return true;
+		}
 
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
+			m_sPositionError = ValidateField(Position, PositionValidation);
+			m_sDurationError = ValidateField(Duration, DurationValidation);
+			m_sReactionTemperatureError = ValidateField(ReactionTemperature, ReactionTemperatureValidation);
+			m_sFinalTemperatureError = ValidateField(FinalTemperature, FinalTemperatureValidation);
+			m_sCoolingDelayError = ValidateField(CoolingDelay, CoolingDelayValidation);
+			m_sStirError = ValidateField(Stir, StirValidation);
+			m_sStirSpeedError = ValidateField(StirSpeed, StirSpeedValidation);
+			m_sStopAtTemperatureError = ValidateField(StopAtTemperature, StopAtTemperatureValidation);
+		}
+		
+		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
+		public function get PositionError():String
+		{
+			return m_sPositionError;
+		}
+		public function get DurationError():String
+		{
+			return m_sDurationError;
+		}
+		public function get ReactionTemperatureError():String
+		{
+			return m_sReactionTemperatureError;
+		}
+		public function get FinalTemperatureError():String
+		{
+			return m_sFinalTemperatureError;
+		}
+		public function get CoolingDelayError():String
+		{
+			return m_sCoolingDelayError;
+		}
+		public function get StirError():String
+		{
+			return m_sStirError;
+		}
+		public function get StirSpeedError():String
+		{
+			return m_sStirSpeedError;
+		}
+		public function get StopAtTemperatureError():String
+		{
+			return m_sStopAtTemperatureError;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
@@ -169,6 +339,19 @@ package Elixys.JSON.Components
 			"\"reactiontemperature\":0," +
 			"\"finaltemperature\":0," +
 			"\"coolingdelay\":0," +
-			"\"stirspeed\":0}";
+			"\"stir\":0}," +
+			"\"stirspeed\":0}," +
+			"\"stopattemperature\":0}";
+		
+		// Validation errors
+		protected var m_sReactorError:String = "";
+		protected var m_sPositionError:String = "";
+		protected var m_sDurationError:String = "";
+		protected var m_sReactionTemperatureError:String = "";
+		protected var m_sFinalTemperatureError:String = "";
+		protected var m_sCoolingDelayError:String = "";
+		protected var m_sStirError:String = "";
+		protected var m_sStirSpeedError:String = "";
+		protected var m_sStopAtTemperatureError:String = "";
 	}
 }

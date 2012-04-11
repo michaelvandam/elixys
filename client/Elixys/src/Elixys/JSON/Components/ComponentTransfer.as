@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -45,6 +46,37 @@ package Elixys.JSON.Components
 			return tools_transfer_active;
 		}
 
+		// Static field details
+		public static var FIELDCOUNT:int = 5;
+		public static var FIELDLABELS:Array = [
+			"SOURCE REACTOR", 
+			"TARGET REACTOR", 
+			"MODE", 
+			"DURATION",
+			"PRESSURE"
+		];
+		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_INPUT, 
+			Constants.TYPE_INPUT
+		];
+		public static var FIELDUNITS:Array = [
+			"", 
+			"", 
+			"", 
+			"SECONDS", 
+			"PSI"
+		];
+		public static var FIELDPROPERTIES:Array = [
+			"SourceReactor", 
+			"TargetReactor", 
+			"Mode", 
+			"Pressure",
+			"Duration"
+		];
+		
 		// Data wrappers
 		public function get SourceReactor():uint
 		{
@@ -127,6 +159,66 @@ package Elixys.JSON.Components
 			return sTransferDetails;
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentTransferA:ComponentTransfer = new ComponentTransfer(null, pComponentA);
+			var pComponentTransferB:ComponentTransfer = new ComponentTransfer(null, pComponentB);
+			if (pComponentTransferA.SourceReactor != pComponentTransferB.SourceReactor)
+			{
+				return false;
+			}
+			if (pComponentTransferA.TargetReactor != pComponentTransferB.TargetReactor)
+			{
+				return false;
+			}
+			if (pComponentTransferA.Mode != pComponentTransferB.Mode)
+			{
+				return false;
+			}
+			if (pComponentTransferA.Pressure != pComponentTransferB.Pressure)
+			{
+				return false;
+			}
+			if (pComponentTransferA.Duration != pComponentTransferB.Duration)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		// Validates the transfer component
+		public override function Validate():void
+		{
+			m_sSourceReactorError = ValidateField(SourceReactor, SourceReactorValidation);
+			m_sTargetReactorError = ValidateField(TargetReactor, TargetReactorValidation);
+			m_sModeError = ValidateField(Mode, ModeValidation);
+			m_sPressureError = ValidateField(Pressure, PressureValidation);
+			m_sDurationError = ValidateField(Duration, DurationValidation);
+		}
+
+		// Validation fields
+		public function get SourceReactorError():String
+		{
+			return m_sSourceReactorError;
+		}
+		public function get TargetReactorError():String
+		{
+			return m_sTargetReactorError;
+		}
+		public function get ModeError():String
+		{
+			return m_sModeError;
+		}
+		public function get PressureError():String
+		{
+			return m_sPressureError;
+		}
+		public function get DurationError():String
+		{
+			return m_sDurationError;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{" +
 			"\"type\":\"component\"," +
@@ -138,5 +230,12 @@ package Elixys.JSON.Components
 			"\"mode\":\"Trap\"," +
 			"\"pressure\":0," +
 			"\"duration\":0}";
+
+		// Validation errors
+		protected var m_sSourceReactorError:String = "";
+		protected var m_sTargetReactorError:String = "";
+		protected var m_sModeError:String = "";
+		protected var m_sPressureError:String = "";
+		protected var m_sDurationError:String = "";
 	}
 }
