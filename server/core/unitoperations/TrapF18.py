@@ -31,6 +31,10 @@ class TrapF18(UnitOperation):
       self.ReactorID='Reactor1'
     else:
       raise UnitOpError(paramError)
+    if (self.cyclotronFlag):
+      self.description = "Cyclotron will push the F18 solution to trap."
+    else:
+      self.description = "Trapping F18 for " + str(self.trapTime) + " seconds using " + str(self.trapPressure) + " psi nitrogen."
 
     #Should have parameters listed below:
     #self.cyclotronFlag

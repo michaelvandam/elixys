@@ -208,15 +208,16 @@ package
 					nOffset = -stage.softKeyboardRect.height;
 				}
 			}
+
+			// This transition is slowing down as the number of items on the stage increases so drop it for now
+			// and just straight to the panned view
+			m_nPanOffset = nOffset;
+			y = m_nPanOffset;
 			
+			/*
 			// Check if the desired offset has changed
 			if (m_nPanOffset != nOffset)
 			{
-				// This transition is slowing down as the number of items on the stage increases
-				m_nPanOffset = nOffset;
-				y = m_nPanOffset;
-
-				/*
 				// Create or reset the pan transition timer
 				if (m_pPanTimer == null)
 				{
@@ -234,8 +235,8 @@ package
 				m_nPanOffset = nOffset;
 				m_nPanStep = (y - nOffset) / m_pPanTimer.repeatCount;
 				m_pPanTimer.start();
-				*/
 			}
+			*/
 		}
 		
 		// Called once for each step in the pan transition

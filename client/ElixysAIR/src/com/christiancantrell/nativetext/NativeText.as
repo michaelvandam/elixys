@@ -87,7 +87,7 @@ package com.christiancantrell.nativetext
 			this.numberOfLines = numberOfLines;
 			var stio:StageTextInitOptions = new StageTextInitOptions((this.numberOfLines > 1));
 			this.st = new StageText(stio);
-
+			
 			// Listen for the enter frame event
 			this.addEventListener(Event.ENTER_FRAME, OnEnterFrame);
 		}

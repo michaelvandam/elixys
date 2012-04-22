@@ -24,6 +24,5 @@ package Elixys.Assets
 		public static const TYPE_INPUT:String = "input";
 		public static const TYPE_MULTILINEINPUT:String = "multilineinput";
 		public static const TYPE_CHECKBOX:String = "checkbox";
-		public static const TYPE_CHECKBOXINPUT:String = "checkboxinput";
 	}
 }

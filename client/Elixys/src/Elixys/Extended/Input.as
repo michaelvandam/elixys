@@ -25,7 +25,7 @@ package Elixys.Extended
 		 * Construction
 		 **/
 
-		public function Input(screen:Sprite, xx:Number, yy:Number, xml:XML, text:String)
+		public function Input(screen:Sprite, xx:Number, yy:Number, xml:XML, text:String, nLines:int = 1)
 		{
 			// Call the base constructor
 			super(screen, xx, yy, text);
@@ -37,7 +37,7 @@ package Elixys.Extended
 			y = 0;
 			
 			// Create the text input field
-			var pTextBox:ITextBox = CreateTextBox();
+			var pTextBox:ITextBox = CreateTextBox(nLines);
 			pTextBox.borderColor = 0;
 			pTextBox.borderThickness = 1;
 			pTextBox.borderCornerSize = 0;
@@ -110,14 +110,14 @@ package Elixys.Extended
 		 **/
 
 		// Create the text input field
-		protected function CreateTextBox():ITextBox
+		protected function CreateTextBox(nLines:int):ITextBox
 		{
 			// Check where we are running
 			if (Capabilities.playerType == "Desktop")
 			{
 				// This is the AIR player, use native text
 				var pNativeTextClass:Class = getDefinitionByName("com.christiancantrell.nativetext::NativeText") as Class;
-				return (new pNativeTextClass()) as ITextBox;
+				return (new pNativeTextClass(nLines)) as ITextBox;
 			}
 			else
 			{

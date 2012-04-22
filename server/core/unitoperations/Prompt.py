@@ -28,11 +28,12 @@ class Prompt(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
+    self.description = "Prompting the user."
 
   def run(self):
     try:
       # Wait for user input
-      self.setStatus(self.userMessage)
+      self.setStatus("Waiting for user input")
       self.waitForUserInput()
       self.setStatus("Complete")
     except Exception as e:

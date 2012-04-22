@@ -54,7 +54,7 @@ package Elixys.JSON.Components
 			"DURATION", 
 			"FINAL TEMP",
 			"PRESSURE", 
-			"STIR", 
+			"STIR SPEED", 
 			"STOP AT TEMP"
 		];
 		public static var FIELDTYPES:Array = [
@@ -63,7 +63,7 @@ package Elixys.JSON.Components
 			Constants.TYPE_INPUT, 
 			Constants.TYPE_INPUT,
 			Constants.TYPE_INPUT, 
-			Constants.TYPE_CHECKBOXINPUT, 
+			Constants.TYPE_INPUT, 
 			Constants.TYPE_CHECKBOX
 		];
 		public static var FIELDUNITS:Array = [
@@ -81,7 +81,7 @@ package Elixys.JSON.Components
 			"Duration", 
 			"FinalTemperature",
 			"EvaporationPressure", 
-			"Stir|StirSpeed", 
+			"StirSpeed", 
 			"StopAtTemperature"
 		];
 
@@ -142,20 +142,6 @@ package Elixys.JSON.Components
 			return super.flash_proxy::getProperty("finaltemperaturevalidation");
 		}
 	
-		public function get Stir():uint
-		{
-			return super.flash_proxy::getProperty("stir");
-		}
-		public function set Stir(value:uint):void
-		{
-			super.flash_proxy::setProperty("stir", value);
-		}
-		
-		public function get StirValidation():String
-		{
-			return super.flash_proxy::getProperty("stirvalidation");
-		}
-		
 		public function get StirSpeed():uint
 		{
 			return super.flash_proxy::getProperty("stirspeed");
@@ -205,7 +191,6 @@ package Elixys.JSON.Components
 			sEvaporateDetails += JSONDataObject("duration", Duration);
 			sEvaporateDetails += JSONDataObject("evaporationtemperature", EvaporationTemperature);
 			sEvaporateDetails += JSONDataObject("finaltemperature", FinalTemperature);
-			sEvaporateDetails += JSONDataObject("stir", Stir);
 			sEvaporateDetails += JSONDataObject("stirspeed", StirSpeed);
 			sEvaporateDetails += JSONDataObject("stopattemperature", StopAtTemperature);
 			sEvaporateDetails += JSONDataObject("evaporationpressure", EvaporationPressure, false);
@@ -233,10 +218,6 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
-			if (pComponentEvaporateA.Stir != pComponentEvaporateB.Stir)
-			{
-				return false;
-			}
 			if (pComponentEvaporateA.StirSpeed != pComponentEvaporateB.StirSpeed)
 			{
 				return false;
@@ -259,7 +240,6 @@ package Elixys.JSON.Components
 			m_sDurationError = ValidateField(Duration, DurationValidation);
 			m_sEvaporationTemperatureError = ValidateField(EvaporationTemperature, EvaporationTemperatureValidation);
 			m_sFinalTemperatureError = ValidateField(FinalTemperature, FinalTemperatureValidation);
-			m_sStirError = ValidateField(Stir, StirValidation);
 			m_sStirSpeedError = ValidateField(StirSpeed, StirSpeedValidation);
 			m_sStopAtTemperatureError = ValidateField(StopAtTemperature, StopAtTemperatureValidation);
 			m_sEvaporationPressureError = ValidateField(EvaporationPressure, EvaporationPressureValidation);
@@ -281,10 +261,6 @@ package Elixys.JSON.Components
 		public function get FinalTemperatureError():String
 		{
 			return m_sFinalTemperatureError;
-		}
-		public function get StirError():String
-		{
-			return m_sStirError;
 		}
 		public function get StirSpeedError():String
 		{
@@ -309,7 +285,6 @@ package Elixys.JSON.Components
 			"\"duration\":0," +
 			"\"evaporationtemperature\":0," +
 			"\"finaltemperature\":0," +
-			"\"stir\":0," + 
 			"\"stirspeed\":0," + 
 			"\"stopattemperature\":0," + 
 			"\"evaporationpressure\":0}";
@@ -319,7 +294,6 @@ package Elixys.JSON.Components
 		protected var m_sDurationError:String = "";
 		protected var m_sEvaporationTemperatureError:String = "";
 		protected var m_sFinalTemperatureError:String = "";
-		protected var m_sStirError:String = "";
 		protected var m_sStirSpeedError:String = "";
 		protected var m_sStopAtTemperatureError:String = "";
 		protected var m_sEvaporationPressureError:String = "";

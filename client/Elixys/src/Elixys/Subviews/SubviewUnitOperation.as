@@ -2,12 +2,18 @@ package Elixys.Subviews
 {
 	import Elixys.Assets.Constants;
 	import Elixys.Assets.Styling;
+	import Elixys.Components.CheckBox;
+	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.CheckBoxEvent;
 	import Elixys.Extended.Form;
 	import Elixys.Extended.Input;
+	import Elixys.Interfaces.ITextBox;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
 	import Elixys.JSON.Components.Components;
+	import Elixys.JSON.Post.PostSequence;
 	import Elixys.JSON.State.Reagent;
+	import Elixys.JSON.State.RunState;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
 	
@@ -26,71 +32,83 @@ package Elixys.Subviews
 		 **/
 		
 		public function SubviewUnitOperation(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
-										sComponentType:String, attributes:Attributes)
+										sComponentType:String, pRunXML:XML, attributes:Attributes)
 		{
 			// Call the base constructor
 			super(screen, sMode, pElixys, sComponentType, nButtonWidth, VIEW_UNITOPERATION, 
-				EDIT_UNITOPERATION, RUN_UNITOPERATION, attributes);
+				EDIT_UNITOPERATION, pRunXML, attributes);
 
-			// Get references to the view components
-			m_pUnitOperationNumber = UILabel(findViewById("unitoperationnumber"));
-			m_pUnitOperationName = UILabel(findViewById("unitoperationname"));
-			m_pUnitOperationContainer = Form(findViewById("unitoperationcontainer"));
-
-			// Add the unit operation number background skin
-			m_pUnitOperationNumberBackground = AddSkinAt(sequencer_titleBar_mc, 0);
-
-			// Get references to the component fields
-			m_pComponentClass = Components.GetComponentClass(sComponentType);
-			m_nComponentFieldCount = m_pComponentClass.FIELDCOUNT;
-			m_pComponentFieldLabels = m_pComponentClass.FIELDLABELS;
-			m_pComponentFieldTypes = m_pComponentClass.FIELDTYPES;
-			m_pComponentFieldUnits = m_pComponentClass.FIELDUNITS;
-			m_pComponentFieldProperties = m_pComponentClass.FIELDPROPERTIES;
-		
-			// Initialize the fields
-			var nIndex:int, pLabel:UILabel;
-			for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
+			// Initialize depending on the mode
+			switch (m_sMode)
 			{
-				// Create label
-				pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT);
-				pLabel.text = m_pComponentFieldLabels[nIndex];
-				m_pFieldLabels.push(pLabel);
+				case Constants.VIEW:
+				case Constants.EDIT:
+					// Get references to the view components
+					m_pUnitOperationNumber = UILabel(findViewById("unitoperationnumber"));
+					m_pUnitOperationName = UILabel(findViewById("unitoperationname"));
+					m_pUnitOperationContainer = Form(findViewById("unitoperationcontainer"));
+					
+					// Add the unit operation number background skin
+					m_pUnitOperationNumberBackground = AddSkinAt(sequencer_titleBar_mc, 0);
+					
+					// Get references to the component fields
+					m_pComponentClass = Components.GetComponentClass(sComponentType);
+					m_nComponentFieldCount = m_pComponentClass.FIELDCOUNT;
+					m_pComponentFieldLabels = m_pComponentClass.FIELDLABELS;
+					m_pComponentFieldTypes = m_pComponentClass.FIELDTYPES;
+					m_pComponentFieldUnits = m_pComponentClass.FIELDUNITS;
+					m_pComponentFieldProperties = m_pComponentClass.FIELDPROPERTIES;
+					
+					// Initialize the fields
+					var nIndex:int, pLabel:UILabel;
+					for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
+					{
+						// Create label
+						pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT);
+						pLabel.text = m_pComponentFieldLabels[nIndex];
+						m_pFieldLabels.push(pLabel);
+						
+						// Create contents
+						switch (m_pComponentFieldTypes[nIndex])
+						{
+							case Constants.TYPE_DROPDOWN:
+								m_pFieldContents.push(CreateDropdownControl());
+								break;
+							
+							case Constants.TYPE_INPUT:
+								m_pFieldContents.push(CreateInputControl());
+								break;
+							
+							case Constants.TYPE_MULTILINEINPUT:
+								m_pFieldContents.push(CreateMultilineInputControl());
+								break;
+							
+							case Constants.TYPE_CHECKBOX:
+								m_pFieldContents.push(CreateCheckboxControl());
+								break;
+						}
+						
+						// Create units label
+						pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT);
+						pLabel.text = m_pComponentFieldUnits[nIndex];
+						pLabel.textColor = Styling.AS3Color(Styling.TEXT_GRAY4);
+						m_pFieldUnits.push(pLabel);
+						
+						// Create error label
+						pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.CENTER);
+						pLabel.textColor = Styling.AS3Color(Styling.TEXT_RED);
+						m_pFieldErrors.push(pLabel);
+					}
+					break;
 				
-				// Create contents
-				switch (m_pComponentFieldTypes[nIndex])
-				{
-					case Constants.TYPE_DROPDOWN:
-						m_pFieldContents.push(CreateDropdown());
-						break;
+				case Constants.RUN:
+					// This object is the container
+					m_pUnitOperationContainer = this;
 					
-					case Constants.TYPE_INPUT:
-						m_pFieldContents.push(CreateInputControl());
-						break;
-					
-					case Constants.TYPE_MULTILINEINPUT:
-						m_pFieldContents.push(CreateMultilineInput());
-						break;
-					
-					case Constants.TYPE_CHECKBOX:
-						m_pFieldContents.push(CreateCheckbox());
-						break;
-					
-					case Constants.TYPE_CHECKBOXINPUT:
-						m_pFieldContents.push(CreateCheckboxInput());
-						break;
-				}
-				
-				// Create units label
-				pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT);
-				pLabel.text = m_pComponentFieldUnits[nIndex];
-				pLabel.textColor = Styling.AS3Color(Styling.TEXT_GRAY4);
-				m_pFieldUnits.push(pLabel);
-
-				// Create error label
-				pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.CENTER);
-				pLabel.textColor = Styling.AS3Color(Styling.TEXT_RED);
-				m_pFieldErrors.push(pLabel);
+					// Get the class and set the field count to zero
+					m_pComponentClass = Components.GetComponentClass(sComponentType);
+					m_nComponentFieldCount = 0;
+					break;
 			}
 
 			// Initialize the layout
@@ -117,7 +135,15 @@ package Elixys.Subviews
 			m_pComponent.Validate();
 			Update();
 		}
-		
+
+		// Updates the run state
+		public override function UpdateRunState(pRunState:RunState):void
+		{
+			// Call the base implemetation and update
+			super.UpdateRunState(pRunState);
+			Update();
+		}
+
 		// Updates the subview
 		protected function Update():void
 		{
@@ -127,76 +153,59 @@ package Elixys.Subviews
 				return;
 			}
 			
-			// Update the unit operation number and name
-			var nUnitOperationIndex:int = 0, nIndex:int, pSequenceComponent:SequenceComponent;
-			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			// Update the unit operation number and name in view and edit modes
+			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
 			{
-				// Skip cassettes
-				pSequenceComponent = m_pSequence.Components[nIndex] as SequenceComponent;
-				if (pSequenceComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				var nUnitOperationIndex:int = 0, nIndex:int, pSequenceComponent:SequenceComponent;
+				for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
 				{
-					continue;
+					// Skip cassettes
+					pSequenceComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+					if (pSequenceComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+					{
+						continue;
+					}
+					
+					// Check for the current component
+					if (pSequenceComponent.ID == m_pComponent.ID)
+					{
+						break;
+					}
+					else
+					{
+						++nUnitOperationIndex;
+					}
 				}
-				
-				// Check for the current component
-				if (pSequenceComponent.ID == m_pComponent.ID)
-				{
-					break;
-				}
-				else
-				{
-					++nUnitOperationIndex;
-				}
+				m_pUnitOperationNumber.text = (nUnitOperationIndex + 1).toString();
+				m_pUnitOperationNumber.width = width;
+				m_pUnitOperationName.text = m_pComponent.ComponentType;
 			}
-			m_pUnitOperationNumber.text = (nUnitOperationIndex + 1).toString();
-			m_pUnitOperationNumber.width = width;
-			m_pUnitOperationName.text = m_pComponent.ComponentType;
-
+			
 			// Iterate over each field
-			var pFields:Array;
 			for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
 			{
 				// Set the field contents
 				switch (m_pComponentFieldTypes[nIndex])
 				{
 					case Constants.TYPE_DROPDOWN:
-						SetDropdown(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
+						SetDropdownControl(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
 						break;
 					
 					case Constants.TYPE_INPUT:
-						SetInput(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
+						SetInputControl(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
 						break;
 
 					case Constants.TYPE_MULTILINEINPUT:
-						SetMultilineInput(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
+						SetMultilineInputControl(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
 						break;
 
 					case Constants.TYPE_CHECKBOX:
-						SetCheckbox(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
-						break;
-					
-					case Constants.TYPE_CHECKBOXINPUT:
-						pFields = (m_pComponentFieldProperties[nIndex] as String).split("|");
-						SetCheckboxInput(m_pFieldContents[nIndex], m_pComponent[pFields[0]], m_pComponent[pFields[1]]);
+						SetCheckboxControl(m_pFieldContents[nIndex], m_pComponent[m_pComponentFieldProperties[nIndex]]);
 						break;
 				}
 			
 				// Set the error text
-				if (m_pComponentFieldTypes[nIndex] == Constants.TYPE_CHECKBOXINPUT)
-				{
-					if (m_pComponent[pFields[0] + "Error"] != "")
-					{
-						(m_pFieldErrors[nIndex] as UILabel).text = m_pComponent[pFields[0] + "Error"];
-					}
-					else if (m_pComponent[pFields[1] + "Error"] != "")
-					{
-						(m_pFieldErrors[nIndex] as UILabel).text = m_pComponent[pFields[1] + "Error"];
-					}
-				}
-				else
-				{
-					(m_pFieldErrors[nIndex] as UILabel).text = m_pComponent[m_pComponentFieldProperties[nIndex] + "Error"];
-				}
+				(m_pFieldErrors[nIndex] as UILabel).text = m_pComponent[m_pComponentFieldProperties[nIndex] + "Error"];
 			}
 			
 			// Adjust the layout
@@ -206,16 +215,19 @@ package Elixys.Subviews
 		// Adjusts the view component positions
 		protected function AdjustPositions():void
 		{
-			// Adjust the unit operation number and background skin
-			m_pUnitOperationNumber.width = m_pUnitOperationNumber.textWidth + 8;
-			var pSubviewPoint:Point = globalToLocal(m_pUnitOperationNumber.localToGlobal(
-				new Point(m_pUnitOperationNumber.x, m_pUnitOperationNumber.y)));
-			m_pUnitOperationNumberBackground.width = m_pUnitOperationNumber.width + 
-				(2 * UNITOPERATIONHEADERPADDING);
-			m_pUnitOperationNumberBackground.height = m_pUnitOperationNumber.height + 
-				(2 * UNITOPERATIONHEADERPADDING);
-			m_pUnitOperationNumberBackground.x = pSubviewPoint.x - UNITOPERATIONHEADERPADDING;
-			m_pUnitOperationNumberBackground.y = pSubviewPoint.y - UNITOPERATIONHEADERPADDING;
+			// Adjust the unit operation number and background skin in view and edit modes
+			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
+			{
+				m_pUnitOperationNumber.width = m_pUnitOperationNumber.textWidth + 8;
+				var pSubviewPoint:Point = globalToLocal(m_pUnitOperationNumber.localToGlobal(
+					new Point(m_pUnitOperationNumber.x, m_pUnitOperationNumber.y)));
+				m_pUnitOperationNumberBackground.width = m_pUnitOperationNumber.width + 
+					(2 * UNITOPERATIONHEADERPADDING);
+				m_pUnitOperationNumberBackground.height = m_pUnitOperationNumber.height + 
+					(2 * UNITOPERATIONHEADERPADDING);
+				m_pUnitOperationNumberBackground.x = pSubviewPoint.x - UNITOPERATIONHEADERPADDING;
+				m_pUnitOperationNumberBackground.y = pSubviewPoint.y - UNITOPERATIONHEADERPADDING;
+			}
 			
 			// Set the field positions
 			var pLocal:Point = globalToLocal(m_pUnitOperationContainer.localToGlobal(new Point(0, 0)));
@@ -243,24 +255,20 @@ package Elixys.Subviews
 				switch (m_pComponentFieldTypes[nIndex])
 				{
 					case Constants.TYPE_DROPDOWN:
-						AdjustDropdown(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
+						AdjustDropdownControl(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
 						break;
 					
 					case Constants.TYPE_INPUT:
-						AdjustInput(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
+						AdjustInputControl(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
 						break;
 
 					case Constants.TYPE_MULTILINEINPUT:
-						nActualHeight = AdjustMultilineInput(m_pFieldContents[nIndex], nContentWidth + 
+						nActualHeight = AdjustMultilineInputControl(m_pFieldContents[nIndex], nContentWidth + 
 							HORIZONTALGAP + nUnitWidth + HORIZONTALGAP + nErrorWidth, nRowHeight, nOffsetX, nOffsetY);
 						break;
 
 					case Constants.TYPE_CHECKBOX:
-						AdjustCheckbox(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
-						break;
-					
-					case Constants.TYPE_CHECKBOXINPUT:
-						AdjustCheckboxInput(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
+						AdjustCheckboxControl(m_pFieldContents[nIndex], nContentWidth, nRowHeight, nOffsetX, nOffsetY);
 						break;
 				}
 				nOffsetX += nContentWidth + HORIZONTALGAP;
@@ -290,12 +298,19 @@ package Elixys.Subviews
 			}
 
 			// Update the input area of interest
-			m_nInputAreaOfInterestTop = m_pUnitOperationNumber.getBounds(stage).top;
+			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
+			{
+				m_nInputAreaOfInterestTop = m_pUnitOperationNumber.getBounds(stage).top;
+			}
+			else
+			{
+				m_nInputAreaOfInterestTop = m_pUnitOperationContainer.getBounds(stage).top;
+			}
 			m_nInputAreaOfInterestBottom = m_pUnitOperationContainer.getBounds(stage).bottom;
 		}
 
 		// Creates a dropdown field
-		protected function CreateDropdown():*
+		protected function CreateDropdownControl():*
 		{
 			switch (m_sMode)
 			{
@@ -304,25 +319,26 @@ package Elixys.Subviews
 					
 				case Constants.EDIT:
 					return null;
-					
+
 				default:
 					return null;
 			}
 		}
 
 		// Sets the dropdown field contents
-		protected function SetDropdown(pDropdown:*, pContents:*):void
+		protected function SetDropdownControl(pDropdown:*, pContents:*):void
 		{
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
+					var pLabel:UILabel = pDropdown as UILabel;
 					if (pContents is Reagent)
 					{
-						(pDropdown as UILabel).text = (pContents as Reagent).Name;
+						pLabel.text = (pContents as Reagent).Name;
 					}
 					else
 					{
-						(pDropdown as UILabel).text = pContents.toString();
+						pLabel.text = pContents.toString();
 					}
 					break;
 				
@@ -332,7 +348,7 @@ package Elixys.Subviews
 		}
 		
 		// Adust the dropdown field position
-		protected function AdjustDropdown(pDropdown:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
+		protected function AdjustDropdownControl(pDropdown:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
 		{
 			switch (m_sMode)
 			{
@@ -356,15 +372,17 @@ package Elixys.Subviews
 					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT);
 					
 				case Constants.EDIT:
-					return AddInput(22, Styling.TEXT_BLACK, Constants.RETURNKEYLABEL_NEXT);
-					
+					var pInput:Input = AddInput(22, Styling.TEXT_BLACK, Constants.RETURNKEYLABEL_NEXT);
+					ConfigureTextBox(pInput.inputField);
+					return pInput;
+
 				default:
 					return null;
 			}
 		}
 
 		// Sets the input field contents
-		protected function SetInput(pInput:*, pContents:*):void
+		protected function SetInputControl(pInput:*, pContents:*):void
 		{
 			switch (m_sMode)
 			{
@@ -373,13 +391,17 @@ package Elixys.Subviews
 					break;
 					
 				case Constants.EDIT:
-					(pInput as Input).text = pContents.toString();
+					var pInputVar:Input = pInput as Input;
+					if (pInputVar.inputField != m_pKeyboardFocusTextBox)
+					{
+						pInputVar.text = pContents.toString();
+					}
 					break;
 			}
 		}
 
 		// Adust the input field position
-		protected function AdjustInput(pInput:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
+		protected function AdjustInputControl(pInput:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
 		{
 			switch (m_sMode)
 			{
@@ -400,7 +422,7 @@ package Elixys.Subviews
 		}
 
 		// Creates an multiline input field
-		protected function CreateMultilineInput():*
+		protected function CreateMultilineInputControl():*
 		{
 			switch (m_sMode)
 			{
@@ -408,15 +430,18 @@ package Elixys.Subviews
 					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT);
 					
 				case Constants.EDIT:
-					return null;
-					
+					var pInput:Input = AddMultilineInput(22, Styling.TEXT_BLACK, Constants.RETURNKEYLABEL_NEXT,
+						MULTILINE_HEIGHT);
+					ConfigureTextBox(pInput.inputField);
+					return pInput;
+
 				default:
 					return null;
 			}
 		}
 		
 		// Sets the multiline input field contents
-		protected function SetMultilineInput(pInput:*, pContents:*):void
+		protected function SetMultilineInputControl(pInput:*, pContents:*):void
 		{
 			switch (m_sMode)
 			{
@@ -425,12 +450,17 @@ package Elixys.Subviews
 					break;
 				
 				case Constants.EDIT:
+					var pInputVar:Input = pInput as Input;
+					if (pInputVar.inputField != m_pKeyboardFocusTextBox)
+					{
+						pInputVar.text = pContents.toString();
+					}
 					break;
 			}
 		}
 		
 		// Adust the multiline input field position
-		protected function AdjustMultilineInput(pInput:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):Number
+		protected function AdjustMultilineInputControl(pInput:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):Number
 		{
 			switch (m_sMode)
 			{
@@ -446,29 +476,47 @@ package Elixys.Subviews
 					return pLabel.height;
 				
 				case Constants.EDIT:
+					var pInputVar:Input = pInput as Input;
+					var nHeight:Number = (pInputVar.inputField as ITextBox).height;
+					pInputVar.FixWidth = nWidth;
+					pInputVar.FixHeight = nHeight;
+					pInputVar.FixX = nX;
+					if (nHeight < nRowHeight)
+					{
+						pInputVar.FixY = nY + ((nRowHeight - nHeight) / 2);
+						return nRowHeight;
+					}
+					else
+					{
+						pInputVar.FixY = nY;
+						return nHeight;
+					}
+					
+				default:
 					return 0;
 			}
-			return 0;
 		}
 		
 		// Creates a checkbox field
-		protected function CreateCheckbox():*
+		protected function CreateCheckboxControl():*
 		{
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
 					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT);
-					
+
 				case Constants.EDIT:
-					return null;
-					
+					var pCheckBox:CheckBox = AddCheckBox();
+					ConfigureCheckBox(pCheckBox);
+					return pCheckBox;
+
 				default:
 					return null;
 			}
 		}
 
 		// Sets the checkbox field contents
-		protected function SetCheckbox(pCheckbox:*, pContents:*):void
+		protected function SetCheckboxControl(pCheckbox:*, pContents:*):void
 		{
 			switch (m_sMode)
 			{
@@ -477,12 +525,13 @@ package Elixys.Subviews
 					break;
 				
 				case Constants.EDIT:
+					(pCheckbox as CheckBox).Checked = Boolean(pContents);
 					break;
 			}
 		}
 		
 		// Adust the checkbox field position
-		protected function AdjustCheckbox(pCheckbox:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
+		protected function AdjustCheckboxControl(pCheckbox:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
 		{
 			switch (m_sMode)
 			{
@@ -493,156 +542,86 @@ package Elixys.Subviews
 					break;
 				
 				case Constants.EDIT:
+					var pCheckboxVar:CheckBox = pCheckbox as CheckBox;
+					pCheckboxVar.x = nX;
+					pCheckboxVar.y = nY;
+					pCheckboxVar.width = nWidth;
+					pCheckboxVar.height = nRowHeight;
 					break;
 			}
 		}
 
-		// Creates a checkbox and input field
-		protected function CreateCheckboxInput():*
-		{
-			switch (m_sMode)
-			{
-				case Constants.VIEW:
-					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT);
-					
-				case Constants.EDIT:
-					return null;
-					
-				default:
-					return null;
-			}
-		}
-
-		// Sets the checkbox-input field contents
-		protected function SetCheckboxInput(pCheckboxInput:*, pCheckBoxContents:*, pInputContents:*):void
-		{
-			switch (m_sMode)
-			{
-				case Constants.VIEW:
-					if (Boolean(pCheckBoxContents))
-					{
-						(pCheckboxInput as UILabel).text = pInputContents.toString();
-					}
-					else
-					{
-						(pCheckboxInput as UILabel).text = "NO";
-					}
-					break;
-				
-				case Constants.EDIT:
-					break;
-			}
-		}
-		
-		// Adust the checkbox-input field position
-		protected function AdjustCheckboxInput(pCheckboxInput:*, nWidth:Number, nRowHeight:Number, nX:Number, nY:Number):void
-		{
-			switch (m_sMode)
-			{
-				case Constants.VIEW:
-					var pLabel:UILabel = pCheckboxInput as UILabel;
-					pLabel.x = nX + (nWidth - pLabel.width);
-					pLabel.y = nY + ((nRowHeight - pLabel.height) / 2);
-					break;
-				
-				case Constants.EDIT:
-					break;
-			}
-		}
-
-		/*
-		// Called when a text control receives focus
-		public function OnTextFocusIn(event:FocusEvent):void
-		{
-			/*
-			// Determine which input has the keyboard focus
-			if (m_pReagentNameTextBox.containsInternally(event.target))
-			{
-			m_pKeyboardFocusTextBox = m_pReagentNameTextBox;
-			}
-			else if (m_pReagentDescriptionTextBox.containsInternally(event.target))
-			{
-			m_pKeyboardFocusTextBox = m_pReagentDescriptionTextBox;
-			}
-			
-			// Remember the initial text
-			m_sKeyboardFocusInitialText = m_pKeyboardFocusTextBox.text;
-		}
-		
-		// Called when a text control loses focus
-		public function OnTextFocusOut(event:FocusEvent):void
-		{
-			/*
-			if (m_pKeyboardFocusTextBox != null)
-			{
-			// Has the value of the text input changed?
-			if (m_pKeyboardFocusTextBox.text != m_sKeyboardFocusInitialText)
-			{
-			// Yes, so update and save the component
-			OnTextValueChanged(m_pKeyboardFocusTextBox);
-			}
-			
-			// Clear our pointer
-			m_pKeyboardFocusTextBox = null;
-			}
-		}
-		
-		/*
-		// Returns the item that currently has the keyboard focus
-		public function KeyboardFocusTextArea():ITextBox
-		{
-		return m_pKeyboardFocusTextBox;
-		}
-		
-		// Called when the soft keyboard actives or deactivates
-		protected function OnKeyboardChange(event:SoftKeyboardEvent):void
-		{
-		// Pan the application
-		m_pElixys.PanApplication(m_nInputAreaOfInterestTop, m_nInputAreaOfInterestBottom);
-		}
-		
 		// Called when the user changes the text in one of our input fields
-		protected function OnTextValueChanged(pFocusTarget:ITextBox):void
+		protected override function OnTextValueChanged(pFocusTarget:ITextBox):void
 		{
-		// Copy and update the selected reagent
-		var pSelectedReagent:Reagent = new Reagent();
-		pSelectedReagent.Copy(m_pComponent.Reagents[m_nSelectedReagent] as Reagent);
-		if (m_pKeyboardFocusTextBox == m_pReagentNameTextBox)
+			// Only handle when in edit mode
+			if (m_sMode == Constants.EDIT)
+			{
+				// Locate and the field that the user was editing
+				var nIndex:int, pInput:Input;
+				for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
+				{
+					if ((m_pComponentFieldTypes[nIndex] == Constants.TYPE_INPUT) || 
+						(m_pComponentFieldTypes[nIndex] == Constants.TYPE_MULTILINEINPUT))
+					{
+						pInput = m_pFieldContents[nIndex] as Input;
+						if (pInput.inputField == pFocusTarget)
+						{
+							// Set the component field and the reset the input text since the 
+							// component may have altered the value
+							m_pComponent[m_pComponentFieldProperties[nIndex]] = pInput.text;
+							pInput.text = m_pComponent[m_pComponentFieldProperties[nIndex]];
+							break;
+						}
+					}
+				}
+
+				// Post the component to the server
+				PostComponent(m_pComponent);
+			}
+		}
+
+		// Called when the user changes the state of a check box
+		protected override function OnCheckBoxChanged(event:CheckBoxEvent):void
 		{
-		pSelectedReagent.Name = m_pReagentNameTextBox.text;
+			// Only handle when in edit mode
+			if (m_sMode == Constants.EDIT)
+			{
+				// Locate and the check box that has changed
+				var nIndex:int, pCheckBox:CheckBox;
+				for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
+				{
+					if (m_pComponentFieldTypes[nIndex] == Constants.TYPE_CHECKBOX)
+					{
+						pCheckBox = m_pFieldContents[nIndex] as CheckBox;
+						if (pCheckBox == event.checkbox)
+						{
+							// Set the component field
+							m_pComponent[m_pComponentFieldProperties[nIndex]] = pCheckBox.Checked;
+							break;
+						}
+					}
+				}
+				
+				// Post the component to the server
+				PostComponent(m_pComponent);
+			}
 		}
-		
-		// Post the reagent to the server
-		PostReagent(pSelectedReagent);
-		}
-		
-		// Called when the reagent name field receives a key down event
-		protected function OnReagentNameKeyDown(event:KeyboardEvent):void
+
+		// Called when a button on the unit operation is clicked
+		protected function OnButtonClick(event:ButtonEvent):void
 		{
-		// Either tab or return moves the focus to the reagent description field
-		if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
-		{
-		event.preventDefault();
-		m_pReagentDescriptionTextBox.assignFocus();
+			// Send a button click to the server
+			var pPostSequence:PostSequence = new PostSequence();
+			pPostSequence.TargetID = event.button;
+			DoPost(pPostSequence, m_sMode);
 		}
-		}
-		
-		// Called when the reagent description field receives a key down event
-		protected function OnReagentDescriptionKeyDown(event:KeyboardEvent):void
-		{
-		// Either tab or return moves the focus to the reagent name field
-		if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
-		{
-		event.preventDefault();
-		m_pReagentNameTextBox.assignFocus();
-		}
-		}
-		
+
 		/***
 		 * Member variables
 		 **/
 
-		// View react XML
+		// Subview view XML
 		protected static const VIEW_UNITOPERATION:XML = 
 			<columns gapH="0" widths="4%,5%,82%,9%">
 				<frame />
@@ -659,11 +638,11 @@ package Elixys.Subviews
 							<font face="GothamBold" color={Styling.TEXT_BLACK} size="14" />
 						</label>
 					</frame>
-					<frame id="unitoperationcontainer" />
+					<frame id="unitoperationcontainer" background={Styling.APPLICATION_BACKGROUND} />
 				</rows>
 			</columns>;
 
-		// Edit react XML
+		// Subview edit XML
 		protected static const EDIT_UNITOPERATION:XML = 
 			<columns gapH="0" widths="4%,5%,82%,9%">
 				<frame />
@@ -680,30 +659,15 @@ package Elixys.Subviews
 							<font face="GothamBold" color={Styling.TEXT_BLACK} size="14" />
 						</label>
 					</frame>
-					<frame id="unitoperationcontainer" />
+					<frame id="unitoperationcontainer" background={Styling.APPLICATION_BACKGROUND} />
 				</rows>
 			</columns>;
-
-		// Run react XML
-		protected static const RUN_UNITOPERATION:XML = 
-			<columns gapH="0" widths="4%,5%,82%,9%">
-				<frame />
-				<rows gapV="0" heights="8%,92%">
-					<frame alignV="centre">
-						<label id="unitoperationnumber" useEmbedded="true">
-							<font face="GothamMedium" color={Styling.TEXT_WHITE} size="14" />
-						</label>
-					</frame>
-				</rows>
-				<rows gapV="0" heights="8%,88%,4%">
-					<frame alignV="centre">
-						<label id="unitoperationname" useEmbedded="true">
-							<font face="GothamBold" color={Styling.TEXT_BLACK} size="14" />
-						</label>
-					</frame>
-					<frame id="unitoperationcontainer" />
-				</rows>
-			</columns>;
+		
+		// Subview run XMLs
+		protected static const RUN_UNITOPERATION_BLANK:XML = 
+			<frame id="unitoperationcontainer" background={Styling.APPLICATION_BACKGROUND} />;
+		protected static const RUN_UNITOPERATION_ONEVIDEO:XML = 
+			<frame id="unitoperationcontainer" background="#FFFF00" />;
 		
 		// View components
 		protected var m_pUnitOperationNumber:UILabel;
@@ -727,12 +691,13 @@ package Elixys.Subviews
 		protected var m_pComponent:*;
 		
 		// Constants
-		protected static const UNITOPERATIONHEADERPADDING:int = 5;
+		public static const UNITOPERATIONHEADERPADDING:int = 5;
 		protected static const HORIZONTALGAP:int = 10;
 		protected static const LABELPERCENTWIDTH:int = 30;
 		protected static const CONTENTSPERCENTWIDTH:int = 25;
 		protected static const UNITSPERCENTWIDTH:int = 20;
 		protected static const ERRORSPERCENTWIDTH:int = 25;
 		protected static const ROWPERCENTHEIGHT:int = 15;
+		protected static const MULTILINE_HEIGHT:int = 5;
 	}
 }

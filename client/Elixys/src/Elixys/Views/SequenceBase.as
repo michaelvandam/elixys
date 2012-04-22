@@ -206,7 +206,7 @@ package Elixys.Views
 		public override function UpdateState(pState:State):void
 		{
 			// Check what has changed since our last update
-			var pStateSequence:StateSequence = new StateSequence(Constants.VIEW, null, pState);
+			var pStateSequence:StateSequence = new StateSequence(m_sMode, null, pState);
 			var bButtonsChanged:Boolean = true, bComponentChanged:Boolean = true;
 			if (m_pStateSequence != null)
 			{
@@ -235,7 +235,7 @@ package Elixys.Views
 			{
 				m_pSequenceTools.Update();
 			}
-
+			
 			// Remember the new state
 			m_pStateSequence = pStateSequence;
 			
@@ -254,7 +254,7 @@ package Elixys.Views
 				bSequenceChanged = !Sequence.CompareSequences(pSequence, m_pSequence);
 			}
 
-			// Update the cassettes and sequencer
+			// Update the cassettes, subviews and sequencer
 			if (bSequenceChanged)
 			{
 				if (m_pSequenceCassettes != null)
@@ -306,8 +306,8 @@ package Elixys.Views
 					pSubview = m_pSubviews[nIndex] as SubviewBase;
 					if (pSubview.SubviewType == pComponent.ComponentType)
 					{
-						pSubview.UpdateComponent(pComponent);
 						pSubview.visible = true;
+						pSubview.UpdateComponent(pComponent);
 					}
 					else
 					{
@@ -376,7 +376,7 @@ package Elixys.Views
 		// Subviews
 		protected static var m_pSubviewTypes:Array = [SubviewCassette, SubviewReact, SubviewAdd, SubviewEvaporate,
 			SubviewTransfer, SubviewPrompt, SubviewInstall, SubviewComment, SubviewTrapF18, SubviewEluteF18,
-			SubviewInitialize, SubviewMix, SubviewMove, SubviewExternalAdd];
+			SubviewInitialize, SubviewMix, SubviewMove, SubviewExternalAdd, SubviewSummary];
 		protected var m_pSubviews:Array = new Array();
 		protected var m_pSubviewContainer:Form;
 

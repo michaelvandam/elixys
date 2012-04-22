@@ -42,7 +42,19 @@ package Elixys.Extended
 		{
 			return Input(parseInput(pXML, pAttributes));
 		}
-		
+
+		// Creates a new multiline input
+		public function CreateMultilineInput(pXML:XML, pAttributes:Attributes, nLines:int):Input
+		{
+			var inputText:Input = new Input(this, pAttributes.x, pAttributes.y, 
+				pXML, pXML.toString(), nLines);
+			if (attributes.fillH)
+			{
+				inputText.fixwidth = attributes.widthH;
+			}
+			return inputText;
+		}
+
 		// Appends a new child to the display list
 		public function AppendChild(pChild:*):void
 		{

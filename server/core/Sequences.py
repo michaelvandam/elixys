@@ -101,6 +101,10 @@ class Sequence(Thread):
     """Aborts the current sequence run"""
     self.runAborted = True
 
+  def isRunComplete(self):
+    """Returns true if the sequence run has completed and is waiting at the summary unit operation, false otherwise"""
+    return not self.userSourceIDs
+
   def run(self):
     """Thread entry point"""
     sRunError = ""

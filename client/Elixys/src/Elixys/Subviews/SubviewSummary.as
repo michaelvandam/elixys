@@ -3,34 +3,33 @@ package Elixys.Subviews
 	import Elixys.Assets.Constants;
 	import Elixys.Assets.Styling;
 	import Elixys.Extended.Form;
-	import Elixys.JSON.Components.ComponentBase;
-	import Elixys.JSON.Components.ComponentPrompt;
-	import Elixys.JSON.State.RunState;
+	import Elixys.JSON.Components.ComponentSummary;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Sprite;
+	import flash.text.TextFieldAutoSize;
 
-	// This prompt subview is an extension of the unit operation subview class
-	public class SubviewPrompt extends SubviewUnitOperation
+	// This summary subview is an extension of the unit operation subview class
+	public class SubviewSummary extends SubviewUnitOperation
 	{
 		/***
 		 * Construction
 		 **/
 		
-		public function SubviewPrompt(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
+		public function SubviewSummary(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
 			// Call the base constructor
-			super(screen, sMode, pElixys, nButtonWidth, ComponentPrompt.COMPONENTTYPE, RUN_PROMPT, attributes);
-			
+			super(screen, sMode, pElixys, nButtonWidth, ComponentSummary.COMPONENTTYPE, RUN_SUMMARY, attributes);
+
 			// Get references to the view components
 			if (sMode == Constants.RUN)
 			{
 				m_pRunLabel = UILabel(findViewById("prompt_runlabel"));
 			}
 		}
-		
+			
 		// Updates the subview
 		protected override function Update():void
 		{
@@ -42,7 +41,7 @@ package Elixys.Subviews
 				{
 					if (m_pRunState.WaitingForUserInput)
 					{
-						m_pRunLabel.text = (m_pComponent as ComponentPrompt).Message;
+						m_pRunLabel.text = (m_pComponent as ComponentSummary).Message;
 					}
 					else
 					{
@@ -60,7 +59,7 @@ package Elixys.Subviews
 		{
 			// Call the base implementation
 			super.AdjustPositions();
-			
+				
 			// Adjust the run label
 			if ((m_sMode == Constants.RUN) && m_pRunLabel && (m_pRunLabel.parent is Form))
 			{
@@ -75,13 +74,13 @@ package Elixys.Subviews
 				m_pRunLabel.y = (pParent.attributes.height - m_pRunLabel.height) / 2;
 			}
 		}
-		
+			
 		/***
 		 * Member variables
 		 **/
-
+			
 		// Run XML
-		protected static const RUN_PROMPT:XML = 
+		protected static const RUN_SUMMARY:XML = 
 			<columns widths="10%,80%,10%" gapH="0" background={Styling.APPLICATION_BACKGROUND}>
 				<frame />
 				<frame>
@@ -90,7 +89,7 @@ package Elixys.Subviews
 					</label>
 				</frame>
 			</columns>;
-		
+			
 		// View components
 		protected var m_pRunLabel:UILabel;
 	}

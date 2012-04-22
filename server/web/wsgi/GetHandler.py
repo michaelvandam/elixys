@@ -399,15 +399,25 @@ class GetHandler:
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
 
         # Determine if we are the user running the system
-        bUserRunningSystem = (self.__sRemoteUser == pServerState["runstate"]["username"])
+        if self.__sRemoteUser == pServerState["runstate"]["username"]:
+            bSequencerEnabled = False
+            bPauseEnabled = not pServerState["runstate"]["runcomplete"]
+            bAbortEnabled = not pServerState["runstate"]["runcomplete"]
+        else:
+            bSequencerEnabled = True
+            bPauseEnabled = False
+            bAbortEnabled = False
 
         # Return the state
         return {"buttons":[{"type":"button",
             "id":"SEQUENCER",
-            "enabled":not bUserRunningSystem},
+            "enabled":bSequencerEnabled},
+            {"type":"button",
+            "id":"PAUSERUN",
+            "enabled":bPauseEnabled},
             {"type":"button",
             "id":"ABORTRUN",
-            "enabled":bUserRunningSystem}],
+            "enabled":bAbortEnabled}],
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 

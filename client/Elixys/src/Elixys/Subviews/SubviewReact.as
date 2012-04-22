@@ -9,10 +9,15 @@ package Elixys.Subviews
 	// This react subview is an extension of the unit operation subview class
 	public class SubviewReact extends SubviewUnitOperation
 	{
+		/***
+		 * Construction
+		 **/
+		
 		public function SubviewReact(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentReact.COMPONENTTYPE, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentReact.COMPONENTTYPE, 
+				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
 		}
 	}
 }

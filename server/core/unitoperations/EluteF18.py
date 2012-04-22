@@ -17,8 +17,10 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
   pEluteF18.initializeComponent(pComponent)
   if pComponent["reagent"].has_key("position"):
     pEluteF18.reagentPosition = int(pComponent["reagent"]["position"])
+    pEluteF18.reagentName = pComponent["reagent"]["name"]
   if pComponent["reagent"].has_key("reagentid"):
     pEluteF18.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
+  pEluteF18.setDescription()
   return pEluteF18
 
 # Updates a component object based on a unit operation
@@ -36,6 +38,10 @@ class EluteF18(UnitOperation):
       self.ReactorID='Reactor1'
     else:
       raise UnitOpError(paramError)
+    self.reagentName = ""
+
+  def setDescription(self):
+    self.description = "Eluting F18 with " + str(self.reagentName) + " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
 
     #Should have parameters listed below:
     #self.eluteTime

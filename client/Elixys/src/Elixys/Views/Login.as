@@ -308,8 +308,9 @@ package Elixys.Views
 				<frame />
 				<columns gapH="35" widths="41%,41%,18%">
 					<horizontal alignH="fill" alignV="fill">
-						<button id="login" alignH="fill" alignV="fill" enabled="false" useEmbedded="true"
-								enabledTextColor={Styling.TEXT_GRAY1} disabledTextColor={Styling.TEXT_GRAY6}
+						<button id="login" alignH="fill" alignV="fill" enabled="false" 
+								useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
+								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
 								backgroundskinup={getQualifiedClassName(login_signIn_up)}
 								backgroundskindown={getQualifiedClassName(login_signIn_down)}
 								backgroundskindisabled={getQualifiedClassName(login_signIn_disabled)}>

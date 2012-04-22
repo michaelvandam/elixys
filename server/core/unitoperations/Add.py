@@ -19,8 +19,10 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
   pAdd.initializeComponent(pComponent)
   if pComponent["reagent"].has_key("position"):
     pAdd.reagentPosition = int(pComponent["reagent"]["position"])
+    pAdd.reagentName = pComponent["reagent"]["name"]
   if pComponent["reagent"].has_key("reagentid"):
     pAdd.ReagentReactorID = "Reactor" + str(database.GetReagentCassette(username, nSequenceID, pComponent["reagent"]["reagentid"]))
+  pAdd.setDescription()
   return pAdd
 
 # Updates a component object based on a unit operation
@@ -37,7 +39,13 @@ class Add(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-	#Should have parameters listed below: 
+    self.reagentName = ""
+
+  def setDescription(self):
+    self.description = "Adding " + str(self.reagentName) + " to reactor " + str(self.ReactorID[-1]) + " position " + str(self.reagentLoadPosition) + ".  Delivering with " + \
+      str(self.pressure) + " psi nitrogen for " + str(self.duration) + " seconds.";
+
+    #Should have parameters listed below:
     #self.ReactorID
     #self.ReagentReactorID
     #self.ReagentPosition

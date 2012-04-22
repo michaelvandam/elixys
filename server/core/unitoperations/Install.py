@@ -24,6 +24,11 @@ class Install(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     self.setParams(params)
+    self.description = "Moving reactor " + str(self.ReactorID[-1]) + " to the install position"
+    if self.userMessage != "":
+      self.description += " and prompting the user."
+    else:
+      self.description += "."
 
     #Should have parameters listed below:
     #self.ReactorID

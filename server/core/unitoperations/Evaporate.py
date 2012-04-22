@@ -33,15 +33,18 @@ class Evaporate(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-		#Should have parameters listed below:
+    self.evapTemp = self.reactTemp
+    self.evapTime = self.reactTime
+    self.description = "Evaporating the contents of reactor " + str(self.ReactorID[-1]) + " at " + str(self.evapTemp) + " degrees Celsius for " + str(self.evapTime) + \
+      " seconds.  Stirring at " + str(self.stirSpeed) + " and cooling to a final temperature of " + str(self.coolTemp) + " degrees Celsius.";
+
+    #Should have parameters listed below:
     #self.ReactorID
     #self.evapTemp
-    self.evapTemp = self.reactTemp
     #self.evapTime
-    self.evapTime = self.reactTime
     #self.coolTemp
     #self.stirSpeed
-    
+
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
@@ -129,8 +132,6 @@ class Evaporate(UnitOperation):
       self.component.update({"evaporationtemperaturevalidation":""})
     if not self.component.has_key("finaltemperaturevalidation"):
       self.component.update({"finaltemperaturevalidation":""})
-    if not self.component.has_key("stirvalidation"):
-      self.component.update({"stirvalidation":""})
     if not self.component.has_key("stirspeedvalidation"):
       self.component.update({"stirspeedvalidation":""})
     if not self.component.has_key("stopattemperaturevalidation"):
@@ -146,7 +147,6 @@ class Evaporate(UnitOperation):
     self.component["durationvalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["evaporationtemperaturevalidation"] = "type=number; min=20; max=200; required=true"
     self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
-    self.component["stirvalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
     self.component["stopattemperaturevalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["evaporationpressurevalidation"] = "type=number; min=0; max=25"
@@ -160,7 +160,6 @@ class Evaporate(UnitOperation):
        not self.validateComponentField(self.component["duration"], self.component["durationvalidation"]) or \
        not self.validateComponentField(self.component["evaporationtemperature"], self.component["evaporationtemperaturevalidation"]) or \
        not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
-       not self.validateComponentField(self.component["stir"], self.component["stirvalidation"]) or \
        not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]) or \
        not self.validateComponentField(self.component["stopattemperature"], self.component["stopattemperaturevalidation"]) or \
        not self.validateComponentField(self.component["evaporationpressure"], self.component["evaporationpressurevalidation"]):
@@ -180,7 +179,6 @@ class Evaporate(UnitOperation):
     pDBComponent["durationvalidation"] = self.component["durationvalidation"]
     pDBComponent["evaporationtemperaturevalidation"] = self.component["evaporationtemperaturevalidation"]
     pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
-    pDBComponent["stirvalidation"] = self.component["stirvalidation"]
     pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
     pDBComponent["stopattemperaturevalidation"] = self.component["stopattemperaturevalidation"]
     pDBComponent["evaporationpressurevalidation"] = self.component["evaporationpressurevalidation"]
@@ -208,7 +206,6 @@ class Evaporate(UnitOperation):
     pTargetComponent["duration"] = self.component["duration"]
     pTargetComponent["evaporationtemperature"] = self.component["evaporationtemperature"]
     pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
-    pTargetComponent["stir"] = self.component["stir"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]
     pTargetComponent["stopattemperature"] = self.component["stopattemperature"]
     pTargetComponent["evaporationpressure"] = self.component["evaporationpressure"]

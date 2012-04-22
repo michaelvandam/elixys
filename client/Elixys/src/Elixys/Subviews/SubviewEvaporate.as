@@ -9,10 +9,15 @@ package Elixys.Subviews
 	// This evaporate subview is an extension of the unit operation subview class
 	public class SubviewEvaporate extends SubviewUnitOperation
 	{
+		/***
+		 * Construction
+		 **/
+		
 		public function SubviewEvaporate(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentEvaporate.COMPONENTTYPE, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentEvaporate.COMPONENTTYPE, 
+				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
 		}
 	}
 }

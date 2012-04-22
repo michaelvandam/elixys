@@ -1,5 +1,6 @@
 package Elixys.JSON.Components
 {
+	import Elixys.Assets.Constants;
 	import Elixys.JSON.JSONObject;
 	
 	import flash.utils.flash_proxy;
@@ -56,6 +57,22 @@ package Elixys.JSON.Components
 			return super.flash_proxy::getProperty("message");
 		}
 
+		// Component comparison function.  Returns true if the components are equal, false otherwise.
+		public static function CompareComponents(pComponentA:ComponentBase, pComponentB:ComponentBase):Boolean
+		{
+			var pComponentSummaryA:ComponentSummary = new ComponentSummary(null, pComponentA);
+			var pComponentSummaryB:ComponentSummary = new ComponentSummary(null, pComponentB);
+			if (pComponentSummaryA.SuccessFlag != pComponentSummaryB.SuccessFlag)
+			{
+				return false;
+			}
+			if (pComponentSummaryA.Message != pComponentSummaryB.Message)
+			{
+				return false;
+			}
+			return true;
+		}
+		
 		// Default format
 		static public var DEFAULT:String = "{}";
 	}

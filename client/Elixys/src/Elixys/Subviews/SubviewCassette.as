@@ -51,18 +51,10 @@ package Elixys.Subviews
 				case Constants.EDIT:
 					m_pReagentNameInput = Input(findViewById("reagentnameinput"));
 					m_pReagentNameTextBox = m_pReagentNameInput.inputField as ITextBox;
-					m_pReagentNameTextBox.addEventListener(FocusEvent.FOCUS_IN, OnTextFocusIn);
-					m_pReagentNameTextBox.addEventListener(FocusEvent.FOCUS_OUT, OnTextFocusOut);
-					m_pReagentNameTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE, OnKeyboardChange);
-					m_pReagentNameTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_DEACTIVATE, OnKeyboardChange);
-					m_pReagentNameTextBox.addEventListener(KeyboardEvent.KEY_DOWN, OnReagentNameKeyDown);
+					ConfigureTextBox(m_pReagentNameTextBox);
 					m_pReagentDescriptionInput = Input(findViewById("reagentdescriptioninput"));
 					m_pReagentDescriptionTextBox = m_pReagentDescriptionInput.inputField as ITextBox;
-					m_pReagentDescriptionTextBox.addEventListener(FocusEvent.FOCUS_IN, OnTextFocusIn);
-					m_pReagentDescriptionTextBox.addEventListener(FocusEvent.FOCUS_OUT, OnTextFocusOut);
-					m_pReagentDescriptionTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE, OnKeyboardChange);
-					m_pReagentDescriptionTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_DEACTIVATE, OnKeyboardChange);
-					m_pReagentDescriptionTextBox.addEventListener(KeyboardEvent.KEY_DOWN, OnReagentDescriptionKeyDown);
+					ConfigureTextBox(m_pReagentDescriptionTextBox);
 					break;
 			}
 			m_pReagentContainer = Form(findViewById("reagentcontainer"));
@@ -254,12 +246,18 @@ package Elixys.Subviews
 						break;
 					
 					case Constants.EDIT:
-						m_pReagentNameInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
-						m_pReagentNameTextBox.editable = true;
-						m_pReagentNameTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
-						m_pReagentDescriptionInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
-						m_pReagentDescriptionTextBox.editable = true;
-						m_pReagentDescriptionTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
+						if (m_pKeyboardFocusTextBox != m_pReagentNameInput.inputField)
+						{
+							m_pReagentNameInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
+							m_pReagentNameTextBox.editable = true;
+							m_pReagentNameTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
+						}
+						if (m_pKeyboardFocusTextBox != m_pReagentDescriptionInput.inputField)
+						{
+							m_pReagentDescriptionInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
+							m_pReagentDescriptionTextBox.editable = true;
+							m_pReagentDescriptionTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
+						}
 						break;
 				}
 			}
@@ -386,88 +384,23 @@ package Elixys.Subviews
 			m_nPressedReagent = -1;
 		}
 
-		// Called when a text control receives focus
-		public function OnTextFocusIn(event:FocusEvent):void
-		{
-			// Determine which input has the keyboard focus
-			if (m_pReagentNameTextBox.containsInternally(event.target))
-			{
-				m_pKeyboardFocusTextBox = m_pReagentNameTextBox;
-			}
-			else if (m_pReagentDescriptionTextBox.containsInternally(event.target))
-			{
-				m_pKeyboardFocusTextBox = m_pReagentDescriptionTextBox;
-			}
-			
-			// Remember the initial text
-			m_sKeyboardFocusInitialText = m_pKeyboardFocusTextBox.text;
-		}
-		
-		// Called when a text control loses focus
-		public function OnTextFocusOut(event:FocusEvent):void
-		{
-			if (m_pKeyboardFocusTextBox != null)
-			{
-				// Has the value of the text input changed?
-				if (m_pKeyboardFocusTextBox.text != m_sKeyboardFocusInitialText)
-				{
-					// Yes, so update and save the component
-					OnTextValueChanged(m_pKeyboardFocusTextBox);
-				}
-				
-				// Clear our pointer
-				m_pKeyboardFocusTextBox = null;
-			}
-		}
-		
-		// Returns the item that currently has the keyboard focus
-		public function KeyboardFocusTextArea():ITextBox
-		{
-			return m_pKeyboardFocusTextBox;
-		}
-
-		// Called when the soft keyboard actives or deactivates
-		protected function OnKeyboardChange(event:SoftKeyboardEvent):void
-		{
-			// Pan the application
-			m_pElixys.PanApplication(m_nInputAreaOfInterestTop, m_nInputAreaOfInterestBottom);
-		}
-		
 		// Called when the user changes the text in one of our input fields
-		protected function OnTextValueChanged(pFocusTarget:ITextBox):void
+		protected override function OnTextValueChanged(pFocusTarget:ITextBox):void
 		{
 			// Copy and update the selected reagent
 			var pSelectedReagent:Reagent = new Reagent();
 			pSelectedReagent.Copy(m_pComponent.Reagents[m_nSelectedReagent] as Reagent);
-			if (m_pKeyboardFocusTextBox == m_pReagentNameTextBox)
+			if (pFocusTarget == m_pReagentNameTextBox)
 			{
 				pSelectedReagent.Name = m_pReagentNameTextBox.text;
+			}
+			else if (pFocusTarget == m_pReagentDescriptionTextBox)
+			{
+				pSelectedReagent.Description = m_pReagentDescriptionTextBox.text;
 			}
 			
 			// Post the reagent to the server
 			PostReagent(pSelectedReagent);
-		}
-
-		// Called when the reagent name field receives a key down event
-		protected function OnReagentNameKeyDown(event:KeyboardEvent):void
-		{
-			// Either tab or return moves the focus to the reagent description field
-			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
-			{
-				event.preventDefault();
-				m_pReagentDescriptionTextBox.assignFocus();
-			}
-		}
-		
-		// Called when the reagent description field receives a key down event
-		protected function OnReagentDescriptionKeyDown(event:KeyboardEvent):void
-		{
-			// Either tab or return moves the focus to the reagent name field
-			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
-			{
-				event.preventDefault();
-				m_pReagentNameTextBox.assignFocus();
-			}
 		}
 
 		/***
@@ -572,10 +505,6 @@ package Elixys.Subviews
 		protected var m_pLabels:Array = new Array();
 		protected var m_pHitAreas:Array = new Array();
 		protected var m_pEnabledFlags:Array = new Array();
-
-		// Keyboard focus variables
-		protected var m_pKeyboardFocusTextBox:ITextBox;
-		private var m_sKeyboardFocusInitialText:String = "";
 
 		// Disallowed reagent positions
 		protected var m_pDisallowedReagentPositions:Array;

@@ -128,11 +128,10 @@ class UnitOperation(threading.Thread):
     self.timerStartTime = 0
     self.timerLength = 0
     self.timerShowInStatus = False
-    self.timerPaused = False
-    self.timerPauseTime = 0
-    self.timerPausedTime = 0
+    self.timerOverridden = False
     self.waitingForUserInput = False
     self.error = ""
+    self.description = ""
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
@@ -487,20 +486,11 @@ class UnitOperation(threading.Thread):
     self.timerShowInStatus = showInStatus
     
   def waitForTimer(self):
-    while self.timerPaused or not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
-      self.updateTimer()
+    while self.timerOverridden or not self.isTimerExpired(self.timerStartTime, self.timerLength):
       self.checkAbort()
       self.stateCheckInterval(50) #Sleep 50ms between checks
     return (time.time() - self.timerStartTime)
 
-  def updateTimer(self):
-    if self.timerShowInStatus:
-      if not self.timerPaused:
-        nSecondsRemaining = self.timerLength - (time.time() - self.timerStartTime) + self.timerPausedTime
-        self.updateStatus("%s remaining" % self.formatTime(nSecondsRemaining))
-      else:
-        self.updateStatus("paused")
-      
   def isTimerExpired(self,startTime,length):
     if (length == 65535):
       return False
@@ -531,34 +521,39 @@ class UnitOperation(threading.Thread):
     else:
       time.sleep(0.05)#default if delay = None or delay = 0
 
-  def pauseTimer(self):
-    """Pauses the running unit operation timer"""
-    if not self.timerPaused:
-      self.timerPaused = True
-      self.timerPauseTime = time.time()
-
-  def continueTimer(self):
-    """Continues the paused unit operation timer"""
-    if self.timerPaused:
-      self.timerPaused = False
-      self.timerPausedTime += time.time() - self.timerPauseTime
+  def overrideTimer(self):
+    """Overrides the running unit operation timer"""
+    if not self.timerOverridden:
+      self.timerOverridden = True
 
   def stopTimer(self):
     """Stops the unit operation timer"""
-    if self.timerPaused:
-      self.continueTimer()
-    if not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
-      self.timerLength = time.time() - self.timerStartTime - self.timerPausedTime
+    if self.timerOverridden:
+      self.timerLength = time.time() - self.timerStartTime
+      self.timerOverridden = False
 
   def getTimerStatus(self):
+    """Returns the timer status"""
     if self.timerStartTime == 0:
       return "None"
-    if self.timerPaused:
-      return "Paused"
-    if not self.isTimerExpired(self.timerStartTime, self.timerLength + self.timerPausedTime):
+    elif self.timerOverridden:
+      return "Overridden"
+    elif not self.isTimerExpired(self.timerStartTime, self.timerLength):
       return "Running"
     else:
       return "Complete"
+
+  def getTime(self):
+    """Returns either the elapsed time or time remaining"""
+    sStatus = self.getTimerStatus()
+    nCurrentTime = time.time()
+    if sStatus == "Overridden":
+      return (nCurrentTime - self.timerStartTime)
+    elif sStatus == "Running":
+      nEndTime = self.timerStartTime + self.timerLength
+      if nCurrentTime < nEndTime:
+        return (nEndTime - nCurrentTime)
+    return 0
 
   def abortOperation(self,error,raiseException=True):
     #Safely abort -> Do not move, turn off heaters, turn set points to zero.
@@ -658,7 +653,6 @@ class UnitOperation(threading.Thread):
         nElapsedTime += 1 / float(nRefreshFrequency)
         currentPressure += rampRate
         self.systemModel[self.pressureRegulator].setRegulatorPressure(currentPressure) #Set analog value on PLC
-        self.updateTimer()
         self.checkAbort()
     self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
     self.pressureSetPoint = pressureSetPoint
@@ -847,6 +841,7 @@ class UnitOperation(threading.Thread):
     """Pauses the unit operation until we get a signal to continue"""
     # Signal that we are waiting for user input
     self.waitingForUserInput = True
+    self.setStatus("Waiting for user input")
 
     # Wait until we get the signal to continue
     while self.waitingForUserInput:

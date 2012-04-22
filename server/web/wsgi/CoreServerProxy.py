@@ -57,28 +57,20 @@ class CoreServerProxy():
         else:
             raise Exception("Core server failed to return is sequence paused flag")
 
-    def DeliverUserInput(self, sUsername):
-        pDeliverUserInput = self.__pCoreServer.root.DeliverUserInput(sUsername)
-        if pDeliverUserInput["success"]:
-            return pDeliverUserInput["return"]
-        else:
-            raise Exception("Core server failed to deliver user input")
-
-    def PauseTimer(self, sUsername):
-        return self.__pCoreServer.root.PauseTimer(sUsername)
-        pDeliverUserInput = self.__pCoreServer.root.DeliverUserInput(sUsername)
-        if not pDeliverUserInput["success"]:
-            raise Exception("Core server failed to deliver user input")
-
-    def ContinueTimer(self, sUsername):
-        pContinueTimer = self.__pCoreServer.root.ContinueTimer(sUsername)
-        if not pContinueTimer["success"]:
-            raise Exception("Core server failed to continue timer")
+    def OverrideTimer(self, sUsername):
+        pOverrideTimer = self.__pCoreServer.root.OverrideTimer(sUsername)
+        if not pOverrideTimer["success"]:
+            raise Exception("Core server failed to override timer")
 
     def StopTimer(self, sUsername):
         pStopTimer = self.__pCoreServer.root.StopTimer(sUsername)
         if not pStopTimer["success"]:
             raise Exception("Core server failed to stop timer")
+
+    def DeliverUserInput(self, sUsername):
+        pDeliverUserInput = self.__pCoreServer.root.DeliverUserInput(sUsername)
+        if not pDeliverUserInput["success"]:
+            raise Exception("Core server failed to deliver user input")
 
     def CLIExecuteCommand(self, sUsername, sCommand):
         return self.__pCoreServer.root.CLIExecuteCommand(sUsername, sCommand)

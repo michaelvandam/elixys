@@ -9,10 +9,15 @@ package Elixys.Subviews
 	// This mix subview is an extension of the unit operation subview class
 	public class SubviewMix extends SubviewUnitOperation
 	{
+		/***
+		 * Construction
+		 **/
+		
 		public function SubviewMix(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentMix.COMPONENTTYPE, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentMix.COMPONENTTYPE, 
+				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
 		}
 	}
 }

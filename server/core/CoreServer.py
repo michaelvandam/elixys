@@ -77,51 +77,59 @@ class CoreServerService(rpyc.Service):
             if pServerState == None:
                 raise Exception("Failed to get the server state")
 
-            # Format the run state
+            # Initialize the run state
             pServerState["runstate"] = {"type":"runstate"}
+            pServerState["runstate"]["description"] = ""
+            pServerState["runstate"]["status"] = ""
+            pServerState["runstate"]["prompt"] = {"type":"promptstate",
+                "show":False}
+            pServerState["runstate"]["username"] = ""
+            pServerState["runstate"]["sequenceid"] = 0
+            pServerState["runstate"]["componentid"] = 0
+            pServerState["runstate"]["time"] = ""
+            pServerState["runstate"]["timedescription"] = ""
+            pServerState["runstate"]["useralert"] = ""
+            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                "text":"",
+                "id":""}
+            pServerState["runstate"]["waitingforuserinput"] = False
+            pServerState["runstate"]["runcomplete"] = False
+
+            # Format the run state
             if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
-                pServerState["runstate"]["status"] = ""
-                pServerState["runstate"]["prompt"] = {"type":"promptstate",
-                    "show":False}
-                pServerState["runstate"]["timerbuttons"] = []
-                pServerState["runstate"]["unitoperationbuttons"] = []
-                pServerState["runstate"]["waitingforinputmessage"] = ""
+                pServerState["runstate"]["runcomplete"] = gRunSequence.isRunComplete()
                 pUnitOperation = gSystemModel.GetUnitOperation()
-                if pUnitOperation != None:
+                if pUnitOperation != None:	
+                    pServerState["runstate"]["description"] = pUnitOperation.description
                     pServerState["runstate"]["status"] = pUnitOperation.status
+                    pServerState["runstate"]["username"] = gRunUsername
+                    nSequenceID, nComponentID = gRunSequence.getIDs()
+                    pServerState["runstate"]["sequenceid"] = nSequenceID
+                    pServerState["runstate"]["componentid"] = nComponentID
                     sTimerStatus = pUnitOperation.getTimerStatus()
-                    if sUsername == gRunUsername:
-                        if (sTimerStatus == "Running") or (sTimerStatus == "Paused"):
-                            if sTimerStatus == "Running":
-                                pServerState["runstate"]["timerbuttons"].append({"type":"button",
-                                    "text":"Pause",
-                                    "id":"PAUSE"})
-                            else:
-                                pServerState["runstate"]["timerbuttons"].append({"type":"button",
-                                    "text":"Continue",
-                                    "id":"CONTINUE"})
-                            pServerState["runstate"]["timerbuttons"].append({"type":"button",
-                                "text":"Stop",
-                                "id":"STOP"})
-                        if pUnitOperation.waitingForUserInput:
-                            pServerState["runstate"]["unitoperationbuttons"].append({"type":"button",
-                                "text":"Continue",
-                                "id":"USERINPUT"})
-                pServerState["runstate"]["username"] = gRunUsername
-                nSequenceID, nComponentID = gRunSequence.getIDs()
-                pServerState["runstate"]["sequenceid"] = nSequenceID
-                pServerState["runstate"]["componentid"] = nComponentID
+                    if (sTimerStatus == "Running"):
+                        pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
+                        pServerState["runstate"]["timedescription"] = "TIME REMAINING"
+                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                            "text":"OVERRIDE TIMER",
+                            "id":"TIMEROVERRIDE"}
+                    elif (sTimerStatus == "Overridden"):
+                        pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
+                        pServerState["runstate"]["timedescription"] = "TIME ELAPSED"
+                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                            "text":"FINISH UNIT OPERATION",
+                            "id":"TIMERCONTINUE"}
+                    elif pUnitOperation.waitingForUserInput:
+                        pServerState["runstate"]["waitingforuserinput"] = True
+                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                            "text":"CONTINUE",
+                            "id":"USERINPUT"}
+                    if gRunSequence.willRunPause():
+                        pServerState["runstate"]["useralert"] = "Run will pause after the current operation."
             else:
                 gRunSequence = None
                 gRunUsername = ""
                 pServerState["runstate"]["status"] = "Idle"
-                pServerState["runstate"]["prompt"] = {"type":"promptstate",
-                    "show":False}
-                pServerState["runstate"]["username"] = ""
-                pServerState["runstate"]["sequenceid"] = 0
-                pServerState["runstate"]["componentid"] = 0
-                pServerState["runstate"]["timerbuttons"] = []
-                pServerState["runstate"]["unitoperationbuttons"] = []
 
             # Format the server state as a JSON string
             pResult = self.SuccessResult(json.dumps(pServerState))
@@ -367,8 +375,8 @@ class CoreServerService(rpyc.Service):
             gCoreServerLock.Release()
         return pResult
 
-    def exposed_PauseTimer(self, sUsername):
-        """Pauses the timer if the unit operation has one running"""
+    def exposed_OverrideTimer(self, sUsername):
+        """Overrides the timer if the unit operation has one running"""
         global gCoreServerLock
         global gDatabase
         global gSystemModel
@@ -379,71 +387,29 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.PauseTimer()")
+            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.OverrideTimer()")
 
             # Perform additional checks if the user is someone other than the CLI
             if sUsername != "CLI":
                 # Make sure the system is running
                 if (gRunSequence == None) or not gRunSequence.running:
-                    raise Exception("No sequence running, cannot pause timer")
+                    raise Exception("No sequence running, cannot override timer")
 
                 # Make sure we are the user running the system
                 if gRunUsername != sUsername:
-                    raise Exception("Not the user running the sequence, cannot pause timer")
+                    raise Exception("Not the user running the sequence, cannot override timer")
 
             # Make sure we have a unit operation
             pUnitOperation = gSystemModel.GetUnitOperation()
             if pUnitOperation == None:
-                raise Exception("No unit operation, cannot pause timer")
+                raise Exception("No unit operation, cannot override timer")
 
-            # Deliver the pause timer signal to the current unit operation
-            pUnitOperation.pauseTimer()
+            # Deliver the override timer signal to the current unit operation
+            pUnitOperation.overrideTimer()
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.PauseTimer() failed: " + str(ex))
-            pResult = self.FailureResult()
-
-        # Release the lock and return
-        if bLocked:
-            gCoreServerLock.Release()
-        return pResult
-
-    def exposed_ContinueTimer(self, sUsername):
-        """Continues the timer if the unit operation has one paused"""
-        global gCoreServerLock
-        global gDatabase
-        global gSystemModel
-        global gRunUsername
-        global gRunSequence
-        bLocked = False
-        try:
-            # Acquire the lock
-            gCoreServerLock.Acquire(1)
-            bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.ContinueTimer()")
-
-            # Perform additional checks if the user is someone other than the CLI
-            if sUsername != "CLI":
-                # Make sure the system is running
-                if (gRunSequence == None) or not gRunSequence.running:
-                    raise Exception("No sequence running, cannot continue timer")
-
-                # Make sure we are the user running the system
-                if gRunUsername != sUsername:
-                    raise Exception("Not the user running the sequence, cannot continue timer")
-
-            # Make sure we have a unit operation
-            pUnitOperation = gSystemModel.GetUnitOperation()
-            if pUnitOperation == None:
-                raise Exception("No unit operation, cannot continue timer")
-
-            # Deliver the continue timer signal to the current unit operation
-            pUnitOperation.continueTimer()
-            pResult = self.SuccessResult()
-        except Exception, ex:
-            # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.ContinueTimer() failed: " + str(ex))
+            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.OverrideTimer() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -452,7 +418,7 @@ class CoreServerService(rpyc.Service):
         return pResult
 
     def exposed_StopTimer(self, sUsername):
-        """Cuts the timer short if the unit operation has one running"""
+        """Stops the unit operation if the timer has been overridden"""
         global gCoreServerLock
         global gDatabase
         global gSystemModel
@@ -649,6 +615,22 @@ class CoreServerService(rpyc.Service):
     def FailureResult(self):
         """Formats a failed result"""
         return {"success":False}
+
+    def FormatTime(self, nTime):
+        """Format the time to a string"""
+        nSeconds = int(nTime) % 60
+        nMinutes = int((nTime - nSeconds) / 60) % 60
+        nHours = int((((nTime - nSeconds) / 60) - nMinutes) / 60)
+        sTime = ""
+        if nHours != 0:
+            sTime += str(nHours) + ":"
+        if nMinutes < 10:
+            sTime += "0"
+        sTime += str(nMinutes) + "'"
+        if nSeconds < 10:
+            sTime += "0"
+        sTime += str(nSeconds) + "\""
+        return sTime
 
 # Core server daemon exit function
 gCoreServerDaemon = None

@@ -22,6 +22,7 @@ class Initialize(UnitOperation):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
     self.ReactorTuple=('Reactor1','Reactor2','Reactor3')
     self.reagentLoadPositionTuple=(1,2)
+    self.description = "Initializing the system hardware."
     
   def run(self):
     try:

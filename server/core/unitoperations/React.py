@@ -34,6 +34,13 @@ class React(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
+    self.description = "Reacting reactor " + str(self.ReactorID[-1]) + " in position " + str(self.reactPosition) + " at " + str(self.reactTemp) + " degrees Celsius for " + \
+      str(self.reactTime) + " seconds.  Stirring at " + str(self.stirSpeed) + " and cooling to " + str(self.coolTemp) + " degrees Celsius"
+    if self.coolingDelay != 0:
+      self.description += " with an additional delay of " + str(self.coolingDelay) + " seconds."
+    else:
+      self.description += "."
+
     #Should have parameters listed below:
     #self.ReactorID
     #self.reactTemp
@@ -42,6 +49,7 @@ class React(UnitOperation):
     #self.coolingDelay
     #self.reactPosition
     #self.stirSpeed
+
   def run(self):
     try:
       self.setStatus("Moving reactor")
@@ -78,8 +86,6 @@ class React(UnitOperation):
       self.component.update({"finaltemperaturevalidation":""})
     if not self.component.has_key("coolingdelayvalidation"):
       self.component.update({"coolingdelayvalidation":""})
-    if not self.component.has_key("stirvalidation"):
-      self.component.update({"stirvalidation":""})
     if not self.component.has_key("stirspeedvalidation"):
       self.component.update({"stirspeedvalidation":""})
     if not self.component.has_key("stopattemperaturevalidation"):
@@ -95,7 +101,6 @@ class React(UnitOperation):
     self.component["reactiontemperaturevalidation"] = "type=number; min=20; max=200; required=true"
     self.component["finaltemperaturevalidation"] = "type=number; min=20; max=200; required=true"
     self.component["coolingdelayvalidation"] = "type=number; min=0; max=7200; required=true"
-    self.component["stirvalidation"] = "type=enum-number; values=0,1; required=true"
     self.component["stirspeedvalidation"] = "type=number; min=0; max=5000; required=true"
     self.component["stopattemperaturevalidation"] = "type=enum-number; values=0,1; required=true"
 
@@ -112,7 +117,6 @@ class React(UnitOperation):
        not self.validateComponentField(self.component["reactiontemperature"], self.component["reactiontemperaturevalidation"]) or \
        not self.validateComponentField(self.component["finaltemperature"], self.component["finaltemperaturevalidation"]) or \
        not self.validateComponentField(self.component["coolingdelay"], self.component["coolingdelayvalidation"]) or \
-       not self.validateComponentField(self.component["stir"], self.component["stirvalidation"]) or \
        not self.validateComponentField(self.component["stirspeed"], self.component["stirspeedvalidation"]) or \
        not self.validateComponentField(self.component["stopattemperature"], self.component["stopattemperaturevalidation"]):
       bValidationError = True
@@ -133,7 +137,6 @@ class React(UnitOperation):
     pDBComponent["reactiontemperaturevalidation"] = self.component["reactiontemperaturevalidation"]
     pDBComponent["finaltemperaturevalidation"] = self.component["finaltemperaturevalidation"]
     pDBComponent["coolingdelayvalidation"] = self.component["coolingdelayvalidation"]
-    pDBComponent["stirvalidation"] = self.component["stirvalidation"]
     pDBComponent["stirspeedvalidation"] = self.component["stirspeedvalidation"]
     pDBComponent["stopattemperaturevalidation"] = self.component["stopattemperaturevalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
@@ -159,7 +162,6 @@ class React(UnitOperation):
     pTargetComponent["reactiontemperature"] = self.component["reactiontemperature"]
     pTargetComponent["finaltemperature"] = self.component["finaltemperature"]
     pTargetComponent["coolingdelay"] = self.component["coolingdelay"]
-    pTargetComponent["stir"] = self.component["stir"]
     pTargetComponent["stirspeed"] = self.component["stirspeed"]
     pTargetComponent["stopattemperature"] = self.component["stopattemperature"]
 

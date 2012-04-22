@@ -55,7 +55,7 @@ package Elixys.JSON.Components
 			"FINAL TEMP",
 			"COOLING DELAY", 
 			"POSITION", 
-			"STIR", 
+			"STIR SPEED", 
 			"STOP AT TEMP"
 		];
 		public static var FIELDTYPES:Array = [
@@ -65,7 +65,7 @@ package Elixys.JSON.Components
 			Constants.TYPE_INPUT,
 			Constants.TYPE_INPUT, 
 			Constants.TYPE_DROPDOWN,
-			Constants.TYPE_CHECKBOXINPUT, 
+			Constants.TYPE_INPUT, 
 			Constants.TYPE_CHECKBOX
 		];
 		public static var FIELDUNITS:Array = [
@@ -85,7 +85,7 @@ package Elixys.JSON.Components
 			"FinalTemperature",
 			"CoolingDelay", 
 			"Position", 
-			"Stir|StirSpeed", 
+			"StirSpeed", 
 			"StopAtTemperature"
 		];
 
@@ -138,7 +138,10 @@ package Elixys.JSON.Components
 		}
 		public function set ReactionTemperature(value:Number):void
 		{
-			super.flash_proxy::setProperty("reactiontemperature", value);
+			if (!isNaN(value))
+			{
+				super.flash_proxy::setProperty("reactiontemperature", value);
+			}
 		}
 	
 		public function get ReactionTemperatureValidation():String
@@ -174,20 +177,6 @@ package Elixys.JSON.Components
 			return super.flash_proxy::getProperty("coolingdelayvalidation");
 		}
 		
-		public function get Stir():uint
-		{
-			return super.flash_proxy::getProperty("stir");
-		}
-		public function set Stir(value:uint):void
-		{
-			super.flash_proxy::setProperty("stir", value);
-		}
-		
-		public function get StirValidation():String
-		{
-			return super.flash_proxy::getProperty("stirvalidation");
-		}
-
 		public function get StirSpeed():uint
 		{
 			return super.flash_proxy::getProperty("stirspeed");
@@ -225,7 +214,6 @@ package Elixys.JSON.Components
 			sReactDetails += JSONDataObject("reactiontemperature", ReactionTemperature);
 			sReactDetails += JSONDataObject("finaltemperature", FinalTemperature);
 			sReactDetails += JSONDataObject("coolingdelay", CoolingDelay);
-			sReactDetails += JSONDataObject("stir", Stir);
 			sReactDetails += JSONDataObject("stirspeed", StirSpeed);
 			sReactDetails += JSONDataObject("stopattemperature", StopAtTemperature, false);
 			return sReactDetails;
@@ -260,10 +248,6 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
-			if (pComponentReactA.Stir != pComponentReactB.Stir)
-			{
-				return false;
-			}
 			if (pComponentReactA.StirSpeed != pComponentReactB.StirSpeed)
 			{
 				return false;
@@ -284,7 +268,6 @@ package Elixys.JSON.Components
 			m_sReactionTemperatureError = ValidateField(ReactionTemperature, ReactionTemperatureValidation);
 			m_sFinalTemperatureError = ValidateField(FinalTemperature, FinalTemperatureValidation);
 			m_sCoolingDelayError = ValidateField(CoolingDelay, CoolingDelayValidation);
-			m_sStirError = ValidateField(Stir, StirValidation);
 			m_sStirSpeedError = ValidateField(StirSpeed, StirSpeedValidation);
 			m_sStopAtTemperatureError = ValidateField(StopAtTemperature, StopAtTemperatureValidation);
 		}
@@ -314,10 +297,6 @@ package Elixys.JSON.Components
 		{
 			return m_sCoolingDelayError;
 		}
-		public function get StirError():String
-		{
-			return m_sStirError;
-		}
 		public function get StirSpeedError():String
 		{
 			return m_sStirSpeedError;
@@ -339,7 +318,6 @@ package Elixys.JSON.Components
 			"\"reactiontemperature\":0," +
 			"\"finaltemperature\":0," +
 			"\"coolingdelay\":0," +
-			"\"stir\":0}," +
 			"\"stirspeed\":0}," +
 			"\"stopattemperature\":0}";
 		
@@ -350,7 +328,6 @@ package Elixys.JSON.Components
 		protected var m_sReactionTemperatureError:String = "";
 		protected var m_sFinalTemperatureError:String = "";
 		protected var m_sCoolingDelayError:String = "";
-		protected var m_sStirError:String = "";
 		protected var m_sStirSpeedError:String = "";
 		protected var m_sStopAtTemperatureError:String = "";
 	}

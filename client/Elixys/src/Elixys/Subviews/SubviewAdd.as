@@ -9,10 +9,15 @@ package Elixys.Subviews
 	// This add subview is an extension of the unit operation subview class
 	public class SubviewAdd extends SubviewUnitOperation
 	{
+		/***
+		 * Construction
+		 **/
+		
 		public function SubviewAdd(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentAdd.COMPONENTTYPE, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentAdd.COMPONENTTYPE, 
+				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
 		}
 	}
 }

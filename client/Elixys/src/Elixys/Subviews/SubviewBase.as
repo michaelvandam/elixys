@@ -1,11 +1,15 @@
 package Elixys.Subviews
 {
 	import Elixys.Assets.*;
+	import Elixys.Components.CheckBox;
 	import Elixys.Components.Screen;
+	import Elixys.Events.CheckBoxEvent;
 	import Elixys.Extended.Form;
 	import Elixys.Extended.Input;
+	import Elixys.Interfaces.ITextBox;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.State.Reagent;
+	import Elixys.JSON.State.RunState;
 	import Elixys.JSON.State.Sequence;
 	
 	import com.danielfreeman.madcomponents.*;
@@ -13,6 +17,9 @@ package Elixys.Subviews
 	import flash.display.DisplayObjectContainer;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
+	import flash.events.FocusEvent;
+	import flash.events.KeyboardEvent;
+	import flash.events.SoftKeyboardEvent;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
 	import flash.utils.getQualifiedClassName;
@@ -62,12 +69,19 @@ package Elixys.Subviews
 		// Updates the sequence
 		public function UpdateSequence(pSequence:Sequence):void
 		{
+			// Remember the sequence
 			m_pSequence = pSequence;
 		}
 
 		// Updates the component
 		public function UpdateComponent(pComponent:ComponentBase):void
 		{
+		}
+		
+		// Updates the run state
+		public function UpdateRunState(pRunState:RunState):void
+		{
+			m_pRunState = pRunState;
 		}
 		
 		// Returns the subview type
@@ -123,35 +137,161 @@ package Elixys.Subviews
 					returnKeyLabel={sReturnKeyLabel} />;
 			return CreateInput(pXML, attributes);
 		}
+
+		// Adds an multiline input
+		protected function AddMultilineInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, nLines:int):Input
+		{
+			var pXML:XML =
+				<input size={nFontSize} alignH="fill" color={sFontColor} 
+					skin={getQualifiedClassName(TextInput_upSkin)} 
+					returnKeyLabel={sReturnKeyLabel} />;
+			return CreateMultilineInput(pXML, attributes, nLines);
+		}
+
+		// Adds a check box
+		protected function AddCheckBox():CheckBox
+		{
+			return new CheckBox(this, null, attributes);
+		}
+
+		// Configures the given text box
+		protected function ConfigureTextBox(pTextBox:ITextBox):void
+		{
+			pTextBox.addEventListener(FocusEvent.FOCUS_IN, OnTextFocusIn);
+			pTextBox.addEventListener(FocusEvent.FOCUS_OUT, OnTextFocusOut);
+			pTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE, OnKeyboardChange);
+			pTextBox.addEventListener(SoftKeyboardEvent.SOFT_KEYBOARD_DEACTIVATE, OnKeyboardChange);
+			pTextBox.addEventListener(KeyboardEvent.KEY_DOWN, OnKeyboardDown);
+			m_pTextBoxTabOrder.push(pTextBox);
+		}
+
+		// Configures the given check box
+		protected function ConfigureCheckBox(pCheckBox:CheckBox):void
+		{
+			pCheckBox.addEventListener(CheckBoxEvent.CHANGE, OnCheckBoxChanged);
+		}
+
+		// Called when a text control receives focus
+		public function OnTextFocusIn(event:FocusEvent):void
+		{
+			// Determine which input has the keyboard focus
+			var pTextBox:ITextBox = FindTextBox(event.target);
+			if (pTextBox != null)
+			{
+				m_pKeyboardFocusTextBox = pTextBox;
+				m_sKeyboardFocusInitialText = m_pKeyboardFocusTextBox.text;
+			}
+		}
 		
+		// Called when a text control loses focus
+		public function OnTextFocusOut(event:FocusEvent):void
+		{
+			if (m_pKeyboardFocusTextBox != null)
+			{
+				// Has the value of the text input changed?
+				if (m_pKeyboardFocusTextBox.text != m_sKeyboardFocusInitialText)
+				{
+					// Yes, so update and save the component
+					OnTextValueChanged(m_pKeyboardFocusTextBox);
+				}
+				
+				// Clear our pointer
+				m_pKeyboardFocusTextBox = null;
+			}
+		}
+		
+		// Overridden in derived classes to handle when the user changes the text in one of our input fields
+		protected function OnTextValueChanged(pFocusTarget:ITextBox):void
+		{
+		}
+
+		// Overridden in derived classes to handle when the user changes the state of a check box
+		protected function OnCheckBoxChanged(event:CheckBoxEvent):void
+		{
+		}
+
+		// Called when the soft keyboard actives or deactivates
+		protected function OnKeyboardChange(event:SoftKeyboardEvent):void
+		{
+			// Pan the application
+			m_pElixys.PanApplication(m_nInputAreaOfInterestTop, m_nInputAreaOfInterestBottom);
+		}
+		
+		// Called when a text box receives a key down event
+		protected function OnKeyboardDown(event:KeyboardEvent):void
+		{
+			// Either tab or return moves the focus to the next field in the tab order
+			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
+			{
+				event.preventDefault();
+				var pTextBox:ITextBox = FindNextTextBox(event.target);
+				if (pTextBox != null)
+				{
+					pTextBox.assignFocus();
+				}
+			}
+		}
+
+		// Finds the text box that contains the specified target
+		protected function FindTextBox(pTarget:Object):ITextBox
+		{
+			var nIndex:int, pTextBox:ITextBox;
+			for (nIndex = 0; nIndex < m_pTextBoxTabOrder.length; ++nIndex)
+			{
+				pTextBox = m_pTextBoxTabOrder[nIndex] as ITextBox;
+				if (pTextBox.containsInternally(pTarget))
+				{
+					return pTextBox;
+				}
+			}
+			return null;
+		}
+
+		// Finds the text box after the one that contains the specified target
+		protected function FindNextTextBox(pTarget:Object):ITextBox
+		{
+			var nIndex:int, pTextBox:ITextBox;
+			for (nIndex = 0; nIndex < m_pTextBoxTabOrder.length; ++nIndex)
+			{
+				pTextBox = m_pTextBoxTabOrder[nIndex] as ITextBox;
+				if (pTextBox.containsInternally(pTarget))
+				{
+					if ((nIndex + 1) < m_pTextBoxTabOrder.length)
+					{
+						return (m_pTextBoxTabOrder[nIndex + 1] as ITextBox);
+					}
+					else
+					{
+						return (m_pTextBoxTabOrder[0] as ITextBox);
+					}
+				}
+			}
+			return null;
+		}
+
 		// Post the component to the server
 		protected function PostComponent(pComponent:ComponentBase):void
 		{
-			// Locate the screen
-			var pParent:DisplayObjectContainer = this;
-			while (pParent != null)
-			{
-				if (pParent is Screen)
-				{
-					(pParent as Screen).DoPost(pComponent, "sequence/" + m_pSequence.Metadata.ID + "/component/" + 
-						pComponent.ID);
-					return;
-				}
-				pParent = pParent.parent;
-			}
+			DoPost(pComponent, "sequence/" + m_pSequence.Metadata.ID + "/component/" + pComponent.ID);
 		}
 
 		// Post the reagent to the server
 		protected function PostReagent(pReagent:Reagent):void
 		{
+			DoPost(pReagent, "sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagent.ReagentID);
+		}
+		
+		// Posts the message through the parent
+		protected function DoPost(pPost:Object, sViewName:String):void
+		{
 			// Locate the screen
 			var pParent:DisplayObjectContainer = this;
 			while (pParent != null)
 			{
 				if (pParent is Screen)
 				{
-					(pParent as Screen).DoPost(pReagent, "sequence/" + m_pSequence.Metadata.ID + "/reagent/" + 
-						pReagent.ReagentID);
+					// Do the post
+					(pParent as Screen).DoPost(pPost, sViewName);
 					return;
 				}
 				pParent = pParent.parent;
@@ -168,11 +308,15 @@ package Elixys.Subviews
 		protected var m_sSubviewType:String;
 		protected var m_nButtonWidth:Number;
 		
-		// Current sequence
+		// Current run state and sequence
+		protected var m_pRunState:RunState;
 		protected var m_pSequence:Sequence;
 		
-		// Keyboard focus region for panning
+		// Keyboard variables
+		protected var m_pKeyboardFocusTextBox:ITextBox;
+		protected var m_sKeyboardFocusInitialText:String = "";
 		protected var m_nInputAreaOfInterestTop:uint;
 		protected var m_nInputAreaOfInterestBottom:uint;
+		protected var m_pTextBoxTabOrder:Array = new Array();
 	}
 }

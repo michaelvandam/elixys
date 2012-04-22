@@ -26,13 +26,23 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class Transfer(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    self.setParams(params) 
+    self.setParams(params)
+    if (self.transferType == "Trap"):
+      self.description = "Trapping the contents of reactor " + str(self.ReactorID[-1]) + " and sending the liquid to waste.  Transferring using " + str(self.transferPressure) + \
+        " psi nitrogen for " + str(self.transferTimer) + " seconds."
+    elif (self.transferType == "Elute"):
+      self.description = "Eluting from reactor " + str(self.ReactorID[-1]) + " into reactor " + str(self.transferReactorID[-1]) + ".  Transferring using " + \
+        str(self.transferPressure) + " psi nitrogen for " + str(self.transferTimer) + " seconds."
+    else:
+      self.description = "Error: unknown transfer mode."
+
     #Should have parameters listed below:
     #self.ReactorID
     #self.transferReactorID
     #self.transferType
     #self.transferTimer
     #self.transferPressure
+
   def run(self):
     try:
       self.setStatus("Moving reactors")

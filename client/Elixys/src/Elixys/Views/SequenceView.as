@@ -137,21 +137,21 @@ package Elixys.Views
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="EDITSEQUENCE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_editSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_editSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_editSequence_disabled)}>
 					EDIT SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>
 					RUN SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCEHERE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>

@@ -227,35 +227,35 @@ package Elixys.Views
 					SEQUENCER
 				</navigationbaroption>
 				<navigationbaroption name="COPYSEQUENCE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_copySequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_copySequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_copySequence_disabled)}>
 					COPY SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="VIEWSEQUENCE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewSequence_disabled)}>
 					VIEW SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="RUNSEQUENCE" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_runSequence_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_runSequence_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_runSequence_disabled)}>
 					RUN SEQUENCE
 				</navigationbaroption>
 				<navigationbaroption name="VIEWRUNLOGS" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewRunLogs_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewRunLogs_down)} 
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewRunLogs_disabled)}>
 					RUN LOGS
 				</navigationbaroption>
 				<navigationbaroption name="VIEWBATCHRECORD" foregroundskinheightpercent="30" fontSize="12" fontFace="GothamMedium"
-						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
 						foregroundskinup={getQualifiedClassName(seqListNav_viewBatchRecord_up)}
 						foregroundskindown={getQualifiedClassName(seqListNav_viewBatchRecord_down)}
 						foregroundskindisabled={getQualifiedClassName(seqListNav_viewBatchRecord_disabled)}>

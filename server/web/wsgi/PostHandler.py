@@ -407,15 +407,11 @@ class PostHandler:
                 # Switch states to Home
                 self.__pClientState["screen"] = "HOME"
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "PAUSE":
-                # Pause the timer
-                self.__pCoreServer.PauseTimer(self.__sRemoteUser)
+            elif sActionTargetID == "TIMEROVERRIDE":
+                # Override the timer
+                self.__pCoreServer.OverrideTimer(self.__sRemoteUser)
                 return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "CONTINUE":
-                # Continue the timer
-                self.__pCoreServer.ContinueTimer(self.__sRemoteUser)
-                return self.__SaveClientStateAndReturn()
-            elif sActionTargetID == "STOP":
+            elif sActionTargetID == "TIMERCONTINUE":
                 # Stop the timer
                 self.__pCoreServer.StopTimer(self.__sRemoteUser)
                 return self.__SaveClientStateAndReturn()
@@ -617,6 +613,8 @@ class PostHandler:
         pComponent = None
         if self.__nBodyLength != 0:
             pComponent = json.loads(self.__pBody)
+
+        print "Posting component: " + str(pComponent);
 
         # Are we working with an existing component?
         if nComponentID != 0:

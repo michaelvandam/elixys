@@ -42,6 +42,7 @@ class Summary(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
+    self.description = "Summary of sequence run."
 
     #Should have parameters listed below:
     #self.summaryFlag
