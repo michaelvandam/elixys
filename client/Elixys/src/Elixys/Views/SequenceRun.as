@@ -2,17 +2,19 @@ package Elixys.Views
 {
 	import Elixys.Assets.*;
 	import Elixys.Components.Button;
+	import Elixys.Components.Video;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
+	import Elixys.JSON.State.ReactorState;
 	import Elixys.JSON.State.RunState;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
 	import Elixys.JSON.State.State;
 	import Elixys.JSON.State.StateSequence;
 	import Elixys.Subviews.SubviewBase;
-	import Elixys.Subviews.SubviewUnitOperation;
+	import Elixys.Subviews.SubviewUnitOperationBase;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -105,7 +107,7 @@ package Elixys.Views
 				bRunStateChanged = !RunState.CompareRunStates(pState.ServerState.RunState,
 					m_pStateSequence.ServerState.RunState);
 			}
-
+			
 			// Call the base implementation
 			super.UpdateState(pState);
 
@@ -132,6 +134,79 @@ package Elixys.Views
 			UpdateComponentInternal();
 		}
 
+		// Sets the video player
+		public function SetVideo(nReactor:uint, pParent:Form):void
+		{
+			var pVideo:Video, nReactorIndex:uint;
+			switch(nReactor)
+			{
+				case 1:
+					if (m_pReactor1Video == null)
+					{
+						m_pReactor1Video = new Video();
+					}
+					pVideo = m_pReactor1Video;
+					nReactorIndex = 0;
+					break;
+				
+				case 2:
+					if (m_pReactor2Video == null)
+					{
+						m_pReactor2Video = new Video();
+					}
+					pVideo = m_pReactor2Video;
+					nReactorIndex = 1;
+					break;
+				
+				case 3:
+					if (m_pReactor3Video == null)
+					{
+						m_pReactor3Video = new Video();
+					}
+					pVideo = m_pReactor3Video;
+					nReactorIndex = 2;
+					break;
+				
+				default:
+					throw Error("Unknown reactor");
+			}
+
+			// Assign the video to the parent
+			if ((pVideo.parent == null) || (pVideo.parent != pParent))
+			{
+				if (pVideo.parent != null)
+				{
+					pVideo.parent.removeChild(pVideo);
+				}
+				pParent.addChild(pVideo);
+			}
+
+			// Update the dimensions
+			pVideo.width = pParent.attributes.width;
+			pVideo.height = pParent.attributes.height;
+
+			// Update the stream
+			var pReactor:ReactorState = m_pStateSequence.ServerState.HardwareState.Reactors[nReactorIndex] as ReactorState;
+			pVideo.SetStream(m_pElixys.GetServer(), pReactor.Video, pParent.attributes.width, pParent.attributes.height);
+		}
+		
+		// Hides any associated video from the video player
+		public function HideVideo(pParent:Form):void
+		{
+			if (m_pReactor1Video && pParent.contains(m_pReactor1Video))
+			{
+				pParent.removeChild(m_pReactor1Video);
+			}
+			if (m_pReactor2Video && pParent.contains(m_pReactor2Video))
+			{
+				pParent.removeChild(m_pReactor2Video);
+			}
+			if (m_pReactor3Video && pParent.contains(m_pReactor3Video))
+			{
+				pParent.removeChild(m_pReactor3Video);
+			}
+		}
+		
 		// Updates the component name and type
 		protected function UpdateComponentInternal():void
 		{
@@ -242,11 +317,11 @@ package Elixys.Views
 			m_pUnitOperationNumber.x = (pParent.attributes.width - m_pUnitOperationNumber.width) / 2;
 			m_pUnitOperationNumber.y = (pParent.attributes.height - m_pUnitOperationNumber.height) / 2;
 			m_pUnitOperationNumberBackground.width = m_pUnitOperationNumber.width + 
-				(2 * SubviewUnitOperation.UNITOPERATIONHEADERPADDING);
+				(2 * SubviewUnitOperationBase.UNITOPERATIONHEADERPADDING);
 			m_pUnitOperationNumberBackground.height = m_pUnitOperationNumber.height + 
-				(2 * SubviewUnitOperation.UNITOPERATIONHEADERPADDING);
-			m_pUnitOperationNumberBackground.x = m_pUnitOperationNumber.x - SubviewUnitOperation.UNITOPERATIONHEADERPADDING;
-			m_pUnitOperationNumberBackground.y = m_pUnitOperationNumber.y - SubviewUnitOperation.UNITOPERATIONHEADERPADDING;
+				(2 * SubviewUnitOperationBase.UNITOPERATIONHEADERPADDING);
+			m_pUnitOperationNumberBackground.x = m_pUnitOperationNumber.x - SubviewUnitOperationBase.UNITOPERATIONHEADERPADDING;
+			m_pUnitOperationNumberBackground.y = m_pUnitOperationNumber.y - SubviewUnitOperationBase.UNITOPERATIONHEADERPADDING;
 			
 			// Adjust the unit operation name
 			m_pUnitOperationName.x = 0;
@@ -277,7 +352,6 @@ package Elixys.Views
 				super.OnButtonClick(event);
 			}
 		}
-
 		
 		/***
 		 * Member variables
@@ -408,5 +482,10 @@ package Elixys.Views
 		protected var m_pUnitOperationButton:Button;
 		protected var m_pUnitOperationAlert:UILabel;
 		protected var m_pUnitOperationStatus:UILabel;
+		
+		// Reactor videos
+		protected var m_pReactor1Video:Video;
+		protected var m_pReactor2Video:Video;
+		protected var m_pReactor3Video:Video;
 	}
 }

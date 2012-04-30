@@ -30,6 +30,10 @@ package Elixys.JSON.State
 		{
 			return super.flash_proxy::getProperty("status");
 		}
+		public function get Running():Boolean
+		{
+			return super.flash_proxy::getProperty("running");
+		}
 		public function get Description():String
 		{
 			return super.flash_proxy::getProperty("description");

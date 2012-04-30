@@ -309,7 +309,20 @@ package
 			
 			// Start the connecting timer
 		}
-		
+
+		// Returns the name of the server
+		public function GetServer():String
+		{
+			if (m_pHTTPConnectionPool)
+			{
+				return m_pHTTPConnectionPool.Server;
+			}
+			else
+			{
+				return "";
+			}
+		}
+
 		// Called if the connecting timer goes off before we establish a connection to the server
 		
 		// Called when the configuration HTTP response is received

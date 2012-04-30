@@ -6,8 +6,8 @@ package Elixys.Subviews
 	
 	import flash.display.Sprite;
 
-	// This comment subview is an extension of the unit operation subview class
-	public class SubviewComment extends SubviewUnitOperation
+	// This comment subview is an extension of the subview blank base class
+	public class SubviewComment extends SubviewBlankBase
 	{
 		/***
 		 * Construction
@@ -16,8 +16,7 @@ package Elixys.Subviews
 		public function SubviewComment(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentComment.COMPONENTTYPE, 
-				SubviewUnitOperation.RUN_UNITOPERATION_BLANK, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentComment.COMPONENTTYPE, attributes);
 		}
 	}
 }

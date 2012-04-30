@@ -4,6 +4,7 @@ package Elixys.Assets
 	public class Styling
 	{
 		// Colors
+		public static var UNITOPERATION_DIVIDER:String = "#CCCCCC";
 		public static var SCROLLER_SELECTED:String = "#27B3EE";
 		public static var POPUP_BACKGROUND:String = "#FFFFFF";
 		public static var DATAGRID_HEADERLINE:String = "#EBEBEB";

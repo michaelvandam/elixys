@@ -32,21 +32,27 @@ package Elixys.Extended
 		 **/
 		
 		// Creates a new label
-		public function CreateLabel(pXML:XML, pAttributes:Attributes):UILabel
+		public function CreateLabel(pXML:XML, pAttributes:Attributes, pParent:Sprite = null):UILabel
 		{
+			m_pParseLabelParent = pParent;
 			return UILabel(parseLabel(pXML, pAttributes));
 		}
 
 		// Creates a new input
-		public function CreateInput(pXML:XML, pAttributes:Attributes):Input
+		public function CreateInput(pXML:XML, pAttributes:Attributes, pParent:Sprite = null):Input
 		{
+			m_pParseInputParent = pParent;
 			return Input(parseInput(pXML, pAttributes));
 		}
 
 		// Creates a new multiline input
-		public function CreateMultilineInput(pXML:XML, pAttributes:Attributes, nLines:int):Input
+		public function CreateMultilineInput(pXML:XML, pAttributes:Attributes, nLines:int, pParent:Sprite = null):Input
 		{
-			var inputText:Input = new Input(this, pAttributes.x, pAttributes.y, 
+			if (!pParent)
+			{
+				pParent = this;
+			}
+			var inputText:Input = new Input(pParent, pAttributes.x, pAttributes.y, 
 				pXML, pXML.toString(), nLines);
 			if (attributes.fillH)
 			{
@@ -181,8 +187,30 @@ package Elixys.Extended
 		// Override the default parseLabel function so we can enable embedded fonts
 		protected override function parseLabel(xml:XML, attributes:Attributes):DisplayObject
 		{
-			// Call the base handler to create the label
-			var pLabel:UILabel = super.parseLabel(xml, attributes) as UILabel;
+			// The base handler is repeated here but modified to support an arbitrary parent
+			var pParent:Sprite = this;
+			if (m_pParseLabelParent)
+			{
+				pParent = m_pParseLabelParent;
+				m_pParseLabelParent = null;
+			}
+			var pLabel:UILabel = new UILabel(pParent, attributes.x, attributes.y, xml.toString());
+			assignToLabel(xml, pLabel);
+			if (xml.@height.length() > 0)
+			{
+				pLabel.fixheight = Number(xml.@height[0]);
+			}
+			if (attributes.fillH || (xml.@height.length() > 0))
+			{
+				pLabel.fixwidth = attributes.widthH;
+				var textAlign:String = attributes.textAlign;
+				if (textAlign != "")
+				{
+					var format:TextFormat = new TextFormat();
+					format.align = textAlign;
+					pLabel.defaultTextFormat = format;
+				}
+			}
 
 			// Check if this label is tagged as embedded
 			if (xml.@useEmbedded == "true")
@@ -197,8 +225,13 @@ package Elixys.Extended
 		// Override the default parseInput function so we can use our version
 		protected override function parseInput(xml:XML, attributes:Attributes):DisplayObject
 		{
-			var inputText:Input = new Input(this, attributes.x, attributes.y, 
-				xml, xml.toString());
+			var pParent:Sprite = this;
+			if (m_pParseInputParent)
+			{
+				pParent = m_pParseInputParent;
+				m_pParseInputParent = null;
+			}
+			var inputText:Input = new Input(pParent, attributes.x, attributes.y, xml, xml.toString());
 			if (attributes.fillH)
 			{
 				inputText.fixwidth = attributes.widthH;
@@ -328,5 +361,9 @@ package Elixys.Extended
 
 		// Width override
 		protected var _width:Number = -1;
+		
+		// Parent parameters for parseLabel and parseInput
+		protected var m_pParseLabelParent:Sprite;
+		protected var m_pParseInputParent:Sprite;
 	}
 }

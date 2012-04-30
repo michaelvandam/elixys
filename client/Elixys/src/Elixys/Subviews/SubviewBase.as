@@ -115,13 +115,13 @@ package Elixys.Subviews
 		}
 
 		// Adds a label
-		protected function AddLabel(sFontFace:String, nFontSize:int, sAlign:String):UILabel
+		protected function AddLabel(sFontFace:String, nFontSize:int, sAlign:String, pParent:Sprite = null):UILabel
 		{
 			var pXML:XML =
 				<label useEmbedded="true" alignH="left" alignV="bottom">
 					<font face={sFontFace} size={nFontSize} />
 				</label>;
-			var pLabel:UILabel = CreateLabel(pXML, attributes);
+			var pLabel:UILabel = CreateLabel(pXML, attributes, pParent);
 			var pTextFormat:TextFormat = pLabel.getTextFormat();
 			pTextFormat.align = sAlign;
 			pLabel.setTextFormat(pTextFormat);
@@ -129,29 +129,35 @@ package Elixys.Subviews
 		}
 
 		// Adds an input
-		protected function AddInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String):Input
+		protected function AddInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, pParent:Sprite = null):Input
 		{
 			var pXML:XML =
 				<input size={nFontSize} alignH="fill" color={sFontColor} 
 					skin={getQualifiedClassName(TextInput_upSkin)} 
 					returnKeyLabel={sReturnKeyLabel} />;
-			return CreateInput(pXML, attributes);
+			var pInput:Input = CreateInput(pXML, attributes, pParent);
+			return pInput;
 		}
 
 		// Adds an multiline input
-		protected function AddMultilineInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, nLines:int):Input
+		protected function AddMultilineInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, nLines:int,
+											 pParent:Sprite = null):Input
 		{
 			var pXML:XML =
 				<input size={nFontSize} alignH="fill" color={sFontColor} 
 					skin={getQualifiedClassName(TextInput_upSkin)} 
 					returnKeyLabel={sReturnKeyLabel} />;
-			return CreateMultilineInput(pXML, attributes, nLines);
+			return CreateMultilineInput(pXML, attributes, nLines, pParent);
 		}
 
 		// Adds a check box
-		protected function AddCheckBox():CheckBox
+		protected function AddCheckBox(pParent:Sprite = null):CheckBox
 		{
-			return new CheckBox(this, null, attributes);
+			if (!pParent)
+			{
+				pParent = this;
+			}
+			return new CheckBox(pParent, null, attributes);
 		}
 
 		// Configures the given text box

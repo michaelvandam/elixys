@@ -81,6 +81,7 @@ class CoreServerService(rpyc.Service):
             pServerState["runstate"] = {"type":"runstate"}
             pServerState["runstate"]["description"] = ""
             pServerState["runstate"]["status"] = ""
+            pServerState["runstate"]["running"] = False
             pServerState["runstate"]["prompt"] = {"type":"promptstate",
                 "show":False}
             pServerState["runstate"]["username"] = ""
@@ -102,6 +103,7 @@ class CoreServerService(rpyc.Service):
                 if pUnitOperation != None:	
                     pServerState["runstate"]["description"] = pUnitOperation.description
                     pServerState["runstate"]["status"] = pUnitOperation.status
+                    pServerState["runstate"]["running"] = True
                     pServerState["runstate"]["username"] = gRunUsername
                     nSequenceID, nComponentID = gRunSequence.getIDs()
                     pServerState["runstate"]["sequenceid"] = nSequenceID

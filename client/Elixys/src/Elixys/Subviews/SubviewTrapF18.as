@@ -8,8 +8,8 @@ package Elixys.Subviews
 	
 	import flash.display.Sprite;
 
-	// This trap F18 subview is an extension of the unit operation subview class
-	public class SubviewTrapF18 extends SubviewUnitOperation
+	// This trap F18 subview is an extension of the subview blank base class
+	public class SubviewTrapF18 extends SubviewBlankBase
 	{
 		/***
 		 * Construction
@@ -18,8 +18,7 @@ package Elixys.Subviews
 		public function SubviewTrapF18(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentTrapF18.COMPONENTTYPE, 
-				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentTrapF18.COMPONENTTYPE, attributes);
 		}
 		
 		// Finds the index of the specified field contents

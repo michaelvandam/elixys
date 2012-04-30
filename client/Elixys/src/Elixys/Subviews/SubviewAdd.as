@@ -6,8 +6,8 @@ package Elixys.Subviews
 	
 	import flash.display.Sprite;
 
-	// This add subview is an extension of the unit operation subview class
-	public class SubviewAdd extends SubviewUnitOperation
+	// This add subview is an extension of the subview video base class
+	public class SubviewAdd extends SubviewVideoBase
 	{
 		/***
 		 * Construction
@@ -16,8 +16,17 @@ package Elixys.Subviews
 		public function SubviewAdd(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentAdd.COMPONENTTYPE, 
-				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentAdd.COMPONENTTYPE, attributes);
+		}
+		
+		/***
+		 * Member functions
+		 **/
+		
+		// Returns the reactor number
+		protected override function GetReactor():uint
+		{
+			return (m_pComponent as ComponentAdd).Reactor;
 		}
 	}
 }

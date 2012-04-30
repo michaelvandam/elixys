@@ -29,7 +29,7 @@ class ExternalAdd(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-    self.description = "Externally adding " + str(self.externalReagentName) + " to reactor " + str(self.ReactorID[-1]) + ".";
+    self.description = "Externally adding " + str(self.externalReagentName) + " to reactor " + str(self.ReactorID[-1]) + "."
 
     #Should have parameters listed below: 
     #self.ReactorID
@@ -39,7 +39,7 @@ class ExternalAdd(UnitOperation):
     try:
       self.setStatus("Moving reactor")
       self.setReactorPosition(ADDREAGENT)             #Move reactor to position
-      self.setStatus("Waiting for the user to externally add " + self.externalReagentName)
+      self.setStatus("Waiting for user input")
       self.waitForUserInput()                         #Wait until user delivers reagent
       self.setStatus("Complete")
     except Exception as e:
@@ -97,4 +97,5 @@ class ExternalAdd(UnitOperation):
     # Update the fields we want to save
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["reagentname"] = self.component["reagentname"]
+    pTargetComponent["message"] = "Externally add " + self.component["reagent"] + " to reactor " + str(self.component["reactor"]) + "."
 

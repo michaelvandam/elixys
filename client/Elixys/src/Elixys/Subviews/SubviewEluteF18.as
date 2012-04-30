@@ -6,8 +6,8 @@ package Elixys.Subviews
 	
 	import flash.display.Sprite;
 
-	// This elute F18 subview is an extension of the unit operation subview class
-	public class SubviewEluteF18 extends SubviewUnitOperation
+	// This elute F18 subview is an extension of the subview video base class
+	public class SubviewEluteF18 extends SubviewVideoBase
 	{
 		/***
 		 * Construction
@@ -16,8 +16,17 @@ package Elixys.Subviews
 		public function SubviewEluteF18(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										attributes:Attributes)
 		{
-			super(screen, sMode, pElixys, nButtonWidth, ComponentEluteF18.COMPONENTTYPE, 
-				SubviewUnitOperation.RUN_UNITOPERATION_ONEVIDEO, attributes);
+			super(screen, sMode, pElixys, nButtonWidth, ComponentEluteF18.COMPONENTTYPE, attributes);
+		}
+		
+		/***
+		 * Member functions
+		 **/
+		
+		// Returns the reactor number
+		protected override function GetReactor():uint
+		{
+			return 1;
 		}
 	}
 }

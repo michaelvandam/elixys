@@ -93,7 +93,12 @@ package Elixys.JSON.Components
 		{
 			return super.flash_proxy::getProperty("reagentnamevalidation");
 		}
-		
+
+		public function get Message():String
+		{
+			return super.flash_proxy::getProperty("message");
+		}
+
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
@@ -112,6 +117,10 @@ package Elixys.JSON.Components
 				return false;
 			}
 			if (pComponentExternalAddA.ReagentName != pComponentExternalAddB.ReagentName)
+			{
+				return false;
+			}
+			if (pComponentExternalAddA.Message != pComponentExternalAddB.Message)
 			{
 				return false;
 			}
@@ -142,7 +151,8 @@ package Elixys.JSON.Components
 			"\"id\":0," +
 			"\"name\":\"External Add\"," +
 			"\"reactor\":0," +
-			"\"reagentname\":\"\"}";
+			"\"reagentname\":\"\"," + 
+			"\"message\":\"\"}";
 		
 		// Validation errors
 		protected var m_sReactorError:String = "";
