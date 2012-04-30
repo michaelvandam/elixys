@@ -97,5 +97,5 @@ class ExternalAdd(UnitOperation):
     # Update the fields we want to save
     pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["reagentname"] = self.component["reagentname"]
-    pTargetComponent["message"] = "Externally add " + self.component["reagent"] + " to reactor " + str(self.component["reactor"]) + "."
+    pTargetComponent["message"] = "Externally add " + self.component["reagentname"] + " to reactor " + str(self.component["reactor"]) + "."
 
