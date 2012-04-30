@@ -295,6 +295,14 @@ class UnitOperation(threading.Thread):
       else:
         if not self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
           return
+          
+    #Lower the pneumatic pressure if we are in one of the react positions and up
+    bRestorePressure = False
+    if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,REACT_A,EQUAL) or \
+        self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,REACT_B,EQUAL):
+      if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
+        self.setPressureRegulator(2,30)
+        bRestorePressure = True
 
     #Lower the reactor and enable the robot
     self.systemModel[ReactorID]['Motion'].moveReactorDown()
@@ -302,6 +310,10 @@ class UnitOperation(threading.Thread):
     if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
       self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
       self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
+
+    #Restore the pneumatic pressure
+    if bRestorePressure:
+      self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
     #Move to the correct position and raise the reactor
     self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
@@ -363,7 +375,7 @@ class UnitOperation(threading.Thread):
 
     #Lower the vial
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,6)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,20)
     
   def removeGripperPlace(self):
     #Make sure we are closed and down
@@ -385,7 +397,7 @@ class UnitOperation(threading.Thread):
       if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
         #Yes
         bVialUp = True
-      elif nFailureCount < 3:
+      elif nFailureCount < 10:
         #No, so pick it up again
         self.systemModel['ReagentDelivery'].setMoveGripperOpen()
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)

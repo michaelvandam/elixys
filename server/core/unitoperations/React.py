@@ -59,6 +59,7 @@ class React(UnitOperation):
       self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
+      self.setStirSpeed(OFF)
       self.setStatus("Reacting")
       self.startTimer(self.reactTime)
       self.reactTime = self.waitForTimer()
@@ -66,7 +67,6 @@ class React(UnitOperation):
       self.setHeater(OFF)
       self.setCool(self.coolingDelay)
       self.setStatus("Completing") 
-      self.setStirSpeed(OFF)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)

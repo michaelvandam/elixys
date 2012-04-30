@@ -60,6 +60,7 @@ class Evaporate(UnitOperation):
       self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
+      self.setStirSpeed(OFF)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
       self.setPressureRegulator(1,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
@@ -68,7 +69,6 @@ class Evaporate(UnitOperation):
       self.setHeater(OFF)
       self.setCool()
       self.setStatus("Completing") 
-      self.setStirSpeed(OFF)
       self.setStatus("Moving robot")
       self.setGasTransferValve(OFF)
       self.setVacuumSystem(OFF)
