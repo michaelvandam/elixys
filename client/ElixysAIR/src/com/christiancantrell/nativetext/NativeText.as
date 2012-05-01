@@ -316,6 +316,11 @@ package com.christiancantrell.nativetext
 			this.st.maxChars = maxChars;
 		}
 		
+		public function get maxNumberOfLines():int
+		{
+			return this.numberOfLines;
+		}
+
 		public function set restrict(restrict:String):void
 		{
 			this.st.restrict = restrict;

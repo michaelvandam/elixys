@@ -61,7 +61,7 @@ package Elixys.Components
 			m_pCheckUpSkin.height = m_pCheckDownSkin.height = CHECKBOX_SIZE / scaleY;
 			
 			// Set the skin position
-			m_pCheckUpSkin.x = m_pCheckDownSkin.x = (attributes.width - m_pCheckUpSkin.width) / 2;
+			m_pCheckUpSkin.x = m_pCheckDownSkin.x = attributes.width - m_pCheckUpSkin.width;
 			m_pCheckUpSkin.y = m_pCheckDownSkin.y = (attributes.height - m_pCheckUpSkin.height) / 2;
 
 			// Set the skin visibility

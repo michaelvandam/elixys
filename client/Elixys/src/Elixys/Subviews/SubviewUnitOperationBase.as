@@ -2,9 +2,12 @@ package Elixys.Subviews
 {
 	import Elixys.Assets.Constants;
 	import Elixys.Assets.Styling;
+	import Elixys.Components.Button;
 	import Elixys.Components.CheckBox;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Events.CheckBoxEvent;
+	import Elixys.Events.DropdownEvent;
+	import Elixys.Events.ScrollClickEvent;
 	import Elixys.Extended.Form;
 	import Elixys.Extended.Input;
 	import Elixys.Extended.ScrollVertical;
@@ -14,19 +17,26 @@ package Elixys.Subviews
 	import Elixys.JSON.Components.Components;
 	import Elixys.JSON.Post.PostSequence;
 	import Elixys.JSON.State.Reagent;
+	import Elixys.JSON.State.Reagents;
 	import Elixys.JSON.State.RunState;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
+	import Elixys.Views.SequenceEdit;
 	
 	import com.danielfreeman.madcomponents.*;
 	
+	import flash.display.DisplayObjectContainer;
 	import flash.display.GradientType;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.TextFormatAlign;
+	
+	import mx.utils.StringUtil;
 
 	// This unit operation base class is an extension of the subview base class
 	public class SubviewUnitOperationBase extends SubviewBase
@@ -68,8 +78,9 @@ package Elixys.Subviews
 					// Add the horizontal scroller
 					var pAttributes:Attributes = new Attributes(0, 0, m_pUnitOperationContainer.attributes.width, 
 						m_pUnitOperationContainer.attributes.height);
-					m_pUnitOperationScroll = new ScrollVertical(m_pUnitOperationContainer, UNITOPERATION_SCROLL, pAttributes);
+					m_pUnitOperationScroll = new ScrollVertical(m_pUnitOperationContainer, UNITOPERATION_SCROLL, pAttributes, false);
 					m_pUnitOperationScroll.addEventListener(ScrollVertical.SLIDER_MOVED, OnSliderMove);
+					m_pUnitOperationScroll.addEventListener(ScrollClickEvent.CLICK, OnScrollClick);
 					m_pUnitOperationSlider = m_pUnitOperationScroll.pages[0] as Form;
 
 					// Get references to the component fields
@@ -81,19 +92,24 @@ package Elixys.Subviews
 					m_pComponentFieldProperties = m_pComponentClass.FIELDPROPERTIES;
 					
 					// Initialize the fields
-					var nIndex:int, pLabel:UILabel;
+					var nIndex:int, pLabel:UILabel, pArrow:MovieClip, pHitArea:Rectangle;
 					for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
 					{
 						// Create label
-						pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+						pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
 						pLabel.text = m_pComponentFieldLabels[nIndex];
 						m_pFieldLabels.push(pLabel);
 						
 						// Create contents
+						pArrow = null;
+						pHitArea = null;
 						switch (m_pComponentFieldTypes[nIndex])
 						{
 							case Constants.TYPE_DROPDOWN:
 								m_pFieldContents.push(CreateDropdownControl());
+								pArrow = new slidingList_arrow_up() as MovieClip;
+								m_pUnitOperationSlider.addChild(pArrow);
+								pHitArea = new Rectangle();
 								break;
 							
 							case Constants.TYPE_INPUT:
@@ -108,15 +124,35 @@ package Elixys.Subviews
 								m_pFieldContents.push(CreateCheckboxControl());
 								break;
 						}
+						m_pFieldArrows.push(pArrow);
+						m_pFieldHitAreas.push(pHitArea);
 						
 						// Create units label
-						pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+						pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
 						pLabel.text = m_pComponentFieldUnits[nIndex];
 						pLabel.textColor = Styling.AS3Color(Styling.TEXT_GRAY4);
 						m_pFieldUnits.push(pLabel);
 						
 						// Create blank entry in error field array
 						m_pFieldErrors.push(null);
+					}
+					
+					if (m_sMode == Constants.EDIT)
+					{
+						// Find the parent edit sequence
+						var pParent:DisplayObjectContainer = screen;
+						while ((pParent != null) && !(pParent is SequenceEdit))
+						{
+							pParent = pParent.parent;
+						}
+						if (pParent is SequenceEdit)
+						{
+							m_pSequenceEdit = pParent as SequenceEdit;
+						}
+						
+						// Add event listeners
+						addEventListener(DropdownEvent.ITEMSELECTED, OnDropdownItemSelected);
+						addEventListener(DropdownEvent.LISTHIDDEN, OnDropdownListHidden);
 					}
 					break;
 				
@@ -148,6 +184,12 @@ package Elixys.Subviews
 		// Updates the component
 		public override function UpdateComponent(pComponent:ComponentBase):void
 		{
+			// Hide the dropdown list if the component ID has changed
+			if (m_pComponent && (pComponent.ID != m_pComponent.ID))
+			{
+				HideDropdownList();
+			}
+			
 			// Cast to a real component, validate and update
 			m_pComponent = new m_pComponentClass(null, pComponent);
 			m_pComponent.Validate();
@@ -160,6 +202,23 @@ package Elixys.Subviews
 			// Call the base implemetation and update
 			super.UpdateRunState(pRunState);
 			Update();
+		}
+
+		// Updates the reagent list
+		public override function UpdateReagents(pReagents:Reagents):void
+		{
+			// Show the dropdown control if we are waiting on a reagent list
+			if (m_sDropdownIndex != -1)
+			{
+				var pReagent:Reagent;
+				for (var i:int = 0; i < pReagents.ReagentList.length; ++i)
+				{
+					pReagent = pReagents.ReagentList[i] as Reagent;
+					m_pDropdownValues.push(pReagent.Name);
+					m_pDropdownData.push(pReagent);
+				}
+				ShowDropdownList();
+			}
 		}
 
 		// Updates the subview
@@ -249,7 +308,7 @@ package Elixys.Subviews
 					{
 						if (!m_pFieldErrors[nIndex])
 						{
-							pLabel = AddLabel("GothamMedium", 14, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+							pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
 							pLabel.textColor = Styling.AS3Color(Styling.TEXT_RED);
 							m_pFieldErrors[nIndex] = pLabel;
 						}
@@ -261,10 +320,10 @@ package Elixys.Subviews
 						m_pFieldErrors[nIndex] = null;
 					}
 				}
-				
-				// Adjust the layout
-				AdjustPositions();
 			}
+			
+			// Adjust the layout
+			AdjustPositions();
 		}
 
 		// Calculates the required height of the slider
@@ -338,6 +397,67 @@ package Elixys.Subviews
 				((m_pUnitOperationScroll.scrollPositionY + FADE_THRESHOLD) < m_pUnitOperationScroll.MaximumSlide);
 		}
 		
+		// Called when the scroll area is clicked
+		protected function OnScrollClick(event:ScrollClickEvent):void
+		{
+			// Hit test
+			var nIndex:int, pHitArea:Rectangle;
+			for (nIndex = 0; nIndex < m_pFieldHitAreas.length; ++nIndex)
+			{
+				if (m_pFieldHitAreas[nIndex])
+				{
+					pHitArea = m_pFieldHitAreas[nIndex] as Rectangle;
+					if (pHitArea.contains(event.x, event.y))
+					{
+						// Found it.  Get the current value of this field and the list of acceptable values from the 
+						// validation string
+						if (m_pComponent[m_pComponentFieldProperties[nIndex]] is Reagent)
+						{
+							m_sDropdownCurrentValue = (m_pComponent[m_pComponentFieldProperties[nIndex]] as Reagent).Name;
+						}
+						else
+						{
+							m_sDropdownCurrentValue = m_pComponent[m_pComponentFieldProperties[nIndex]].toString();
+						}
+						var sValidation:String = m_pComponent[m_pComponentFieldProperties[nIndex] + "Validation"];
+
+						// Create an array of key-value pairs from the validation string
+						var pFields:Array = sValidation.split(";");
+						var pFieldValidation:Object = new Object(), sField:String, pKeyValue:Array;
+						for each (sField in pFields)
+						{
+							pKeyValue = sField.split("=");
+							pFieldValidation[StringUtil.trim(pKeyValue[0])] = StringUtil.trim(pKeyValue[1]);
+						}
+
+						// Remember the dropdown parameters
+						m_sDropdownIndex = nIndex;
+						m_sDropdownType = pFieldValidation["type"];
+						m_pDropdownValues = new Array();
+						m_pDropdownData = new Array();
+
+						// What type of list do we have?
+						var pValues:Array = pFieldValidation["values"].split(",");
+						if ((m_sDropdownType == "enum-number") || (m_sDropdownType == "enum-string"))
+						{
+							// We already have the values to display
+							for (var i:int = 0; i < pValues.length; ++i)
+							{
+								m_pDropdownValues.push(pValues[i].toString());
+							}
+							ShowDropdownList();
+						}
+						else
+						{
+							// Load the reagents from the server
+							GetReagents(pValues);
+						}
+						return;
+					}
+				}
+			}
+		}
+		
 		// Adjusts the view component positions
 		protected function AdjustPositions():void
 		{
@@ -388,7 +508,8 @@ package Elixys.Subviews
 				m_pUnitOperationFadeBottom.graphics.endFill();
 			
 				// Draw the dividers and set the field positions
-				var nIndex:int, pLabel:UILabel, pUnits:UILabel, nRowHeight:Number, nFieldRight:Number, nFieldWidth:Number;
+				var nIndex:int, pLabel:UILabel, pUnits:UILabel, pArrow:MovieClip, pError:UILabel, pHitArea:Rectangle, 
+					nRowHeight:Number, nFieldRight:Number, nFieldWidth:Number;
 				nOffsetY = SCROLL_VERTICAL_PADDING;
 				m_pUnitOperationSlider.graphics.clear();
 				m_pUnitOperationSlider.graphics.beginFill(Styling.AS3Color(Styling.UNITOPERATION_DIVIDER));
@@ -400,8 +521,14 @@ package Elixys.Subviews
 					// Draw the top divider
 					m_pUnitOperationSlider.graphics.drawRect(0, nOffsetY - (DIVIDER_HEIGHT / 2), m_pUnitOperationSlider.attributes.width, DIVIDER_HEIGHT);
 
-					// Adjust the label
+					// Skip this field if the label is not visible
 					pLabel = m_pFieldLabels[nIndex] as UILabel;
+					if (!pLabel.visible)
+					{
+						continue;
+					}
+
+					// Adjust the label
 					pLabel.x = HORIZONTALGAP;
 					pLabel.y = nOffsetY + ((ROWCONTENTHEIGHT - pLabel.textHeight) / 2);
 
@@ -419,16 +546,16 @@ package Elixys.Subviews
 					nFieldWidth = pUnits.x - nFieldRight;
 					if (pUnits.text != "")
 					{
-						nFieldWidth -= HORIZONTALGAP
+						nFieldWidth -= HORIZONTALGAP;
 					}
 					switch (m_pComponentFieldTypes[nIndex])
 					{
 						case Constants.TYPE_DROPDOWN:
-							AdjustDropdownControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, nRowHeight);
+							AdjustDropdownControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, ROWCONTENTHEIGHT);
 							break;
 						
 						case Constants.TYPE_INPUT:
-							AdjustInputControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, nRowHeight);
+							AdjustInputControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, ROWCONTENTHEIGHT);
 							break;
 	
 						case Constants.TYPE_MULTILINEINPUT:
@@ -436,16 +563,40 @@ package Elixys.Subviews
 							break;
 	
 						case Constants.TYPE_CHECKBOX:
-							AdjustCheckboxControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, nRowHeight);
+							AdjustCheckboxControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY + (ROWVERTICALPADDING / 2), 
+								nFieldWidth, nRowHeight - ROWVERTICALPADDING);
 							break;
 					}
+
+					// Adjust the arrow
+					if (m_pFieldArrows[nIndex])
+					{
+						pArrow = m_pFieldArrows[nIndex] as MovieClip;
+						pArrow.x = m_pUnitOperationSlider.attributes.width - RIGHTGAP - pArrow.width;
+						pArrow.y = nOffsetY + ((ROWCONTENTHEIGHT - pArrow.height) / 2);
+					}
 					
-					/*
+					// Set the hit area
+					if (m_pFieldHitAreas[nIndex])
+					{
+						pHitArea = m_pFieldHitAreas[nIndex] as Rectangle;
+						pHitArea.x = 0;
+						pHitArea.y = nOffsetY;
+						pHitArea.width =  m_pUnitOperationSlider.attributes.width;
+						pHitArea.height = nRowHeight;
+					}
+
 					// Adjust the error label
-					pLabel = m_pFieldErrors[nIndex] as UILabel;
-					pLabel.x = nOffsetX;
-					pLabel.y = nOffsetY + ((nRowHeight - pLabel.height) / 2);
-					*/
+					if (m_pFieldErrors[nIndex])
+					{
+						pError = m_pFieldErrors[nIndex] as UILabel;
+						pError.x = m_pUnitOperationSlider.attributes.width - RIGHTGAP - pError.textWidth;
+						if (m_sMode == Constants.EDIT)
+						{
+							pError.x -= ROWARROWWIDTH + HORIZONTALGAP;
+						}
+						pError.y = pLabel.y + pLabel.height + ROWERRORHEIGHT - pError.textHeight;
+					}
 					
 					// Adjust the offset
 					nOffsetY += nRowHeight;
@@ -471,13 +622,18 @@ package Elixys.Subviews
 		// Creates a dropdown field
 		protected function CreateDropdownControl():*
 		{
+			var pLabel:UILabel;
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
+					return pLabel;
 					
 				case Constants.EDIT:
-					return null;
+					pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
+					return pLabel;
 
 				default:
 					return null;
@@ -490,6 +646,7 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
+				case Constants.EDIT:
 					var pLabel:UILabel = pDropdown as UILabel;
 					if (pContents is Reagent)
 					{
@@ -500,9 +657,6 @@ package Elixys.Subviews
 						pLabel.text = pContents.toString();
 					}
 					break;
-				
-				case Constants.EDIT:
-					break;
 			}
 		}
 		
@@ -512,11 +666,9 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
+				case Constants.EDIT:
 					var pLabel:UILabel = pDropdown as UILabel;
 					return pLabel.height;
-					
-				case Constants.EDIT:
-					break;
 			}
 			return 0;
 		}
@@ -527,12 +679,10 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
+				case Constants.EDIT:
 					var pLabel:UILabel = pDropdown as UILabel;
 					pLabel.x = nX + nWidth - pLabel.textWidth;
 					pLabel.y = nY + ((nHeight - pLabel.textHeight) / 2);
-					break;
-				
-				case Constants.EDIT:
 					break;
 			}
 		}
@@ -543,10 +693,12 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					var pLabel:UILabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
+					return pLabel;
 					
 				case Constants.EDIT:
-					var pInput:Input = AddInput(22, Styling.TEXT_BLACK, Constants.RETURNKEYLABEL_NEXT, m_pUnitOperationSlider);
+					var pInput:Input = AddSkinlessInput(22, Styling.TEXT_BLUE4, Constants.RETURNKEYLABEL_NEXT, m_pUnitOperationSlider);
 					ConfigureTextBox(pInput.inputField);
 					return pInput;
 
@@ -600,13 +752,11 @@ package Elixys.Subviews
 					break;
 
 				case Constants.EDIT:
-					/*
 					var pInputVar:Input = pInput as Input;
 					pInputVar.FixWidth = nWidth;
 					pInputVar.FixHeight = pInputVar.inputField.height;
 					pInputVar.FixX = nX;
-					pInputVar.FixY = nY + ((nRowHeight - pInputVar.height) / 2);
-					*/
+					pInputVar.FixY = nY + ((nHeight - pInputVar.height) / 2);
 					break;
 			}
 		}
@@ -617,11 +767,12 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					var pLabel:UILabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
+					return pLabel;
 					
 				case Constants.EDIT:
-					var pInput:Input = AddMultilineInput(22, Styling.TEXT_BLACK, Constants.RETURNKEYLABEL_NEXT,
-						MULTILINE_HEIGHT, m_pUnitOperationSlider);
+					var pInput:Input = AddSkinlessMultilineInput(22, Styling.TEXT_BLUE4, MULTILINE_HEIGHT, m_pUnitOperationSlider);
 					ConfigureTextBox(pInput.inputField);
 					return pInput;
 
@@ -673,32 +824,21 @@ package Elixys.Subviews
 					pLabel.fixwidth = nWidth;
 					if (pLabel.numLines == 1)
 					{
-						pLabel.x = nX - nWidth - pLabel.textWidth;
-						pLabel.y = nY + (nHeight - pLabel.textHeight) / 2;
+						pLabel.x = nX + nWidth - pLabel.textWidth;
 					}
 					else
 					{
 						pLabel.x = nX;
-						pLabel.y = nY;
 					}
+					pLabel.y = nY + (nHeight - pLabel.textHeight) / 2;
 					break;
 				
 				case Constants.EDIT:
-					/*
 					var pInputVar:Input = pInput as Input;
-					var nHeight:Number = (pInputVar.inputField as ITextBox).height;
 					pInputVar.FixWidth = nWidth;
-					pInputVar.FixHeight = nHeight;
+					pInputVar.FixHeight = nHeight - (3 * ROWVERTICALPADDING);
 					pInputVar.FixX = nX;
-					if (nHeight < nRowHeight)
-					{
-						pInputVar.FixY = nY + ((nRowHeight - nHeight) / 2);
-					}
-					else
-					{
-						pInputVar.FixY = nY;
-					}
-					*/
+					pInputVar.FixY = nY + (1.5 * ROWVERTICALPADDING);
 					break;
 			}
 		}
@@ -762,13 +902,11 @@ package Elixys.Subviews
 					break;
 				
 				case Constants.EDIT:
-					/*
 					var pCheckboxVar:CheckBox = pCheckbox as CheckBox;
 					pCheckboxVar.x = nX;
 					pCheckboxVar.y = nY;
 					pCheckboxVar.width = nWidth;
-					pCheckboxVar.height = nRowHeight;
-					*/
+					pCheckboxVar.height = nHeight;
 					break;
 			}
 		}
@@ -809,7 +947,7 @@ package Elixys.Subviews
 			// Only handle when in edit mode
 			if (m_sMode == Constants.EDIT)
 			{
-				// Locate and the check box that has changed
+				// Locate the check box that has changed
 				var nIndex:int, pCheckBox:CheckBox;
 				for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
 				{
@@ -836,9 +974,72 @@ package Elixys.Subviews
 			// Send a button click to the server
 			var pPostSequence:PostSequence = new PostSequence();
 			pPostSequence.TargetID = event.button;
-			DoPost(pPostSequence, m_sMode);
+			FindScreen().DoPost(pPostSequence, m_sMode);
 		}
 
+		// Shows the dropdown list
+		protected function ShowDropdownList():void
+		{
+			m_pSequenceEdit.ShowDropdownList(m_pDropdownValues, m_sDropdownCurrentValue, m_pUnitOperationContainer, 
+				this, m_pDropdownData);
+			m_pUnitOperationScroll.visible = false;
+			m_pUnitOperationFadeTop.visible = false;
+			m_pUnitOperationFadeBottom.visible = false;
+		}
+		
+		// Hides the dropdown list
+		protected function HideDropdownList():void
+		{
+			if (m_pSequenceEdit && m_pUnitOperationScroll)
+			{
+				// Hide the dropdown list and show the unit operation
+				m_sDropdownIndex = -1;
+				m_pSequenceEdit.HideDropdownList();
+				m_pUnitOperationScroll.visible = true;
+				UpdateFadeVisibility();
+			}
+		}
+		
+		// Called when the user selects an item from the dropdown list
+		protected function OnDropdownItemSelected(event:DropdownEvent):void
+		{
+			/// Hide the dropdown list
+			HideDropdownList();
+
+			// Set the component field
+			if (event.selectedData)
+			{
+				m_pComponent[m_pComponentFieldProperties[m_sDropdownIndex]] = event.selectedData as Reagent;
+			}
+			else
+			{
+				m_pComponent[m_pComponentFieldProperties[m_sDropdownIndex]] = event.selectedValue;
+			}
+			
+			// Post the component to the server
+			PostComponent(m_pComponent);
+		}
+
+		// Called when the dropdown list is hidden
+		protected function OnDropdownListHidden(event:DropdownEvent):void
+		{
+			/// Hide the dropdown list
+			HideDropdownList();
+		}
+		
+		// Overridden visiblilty setter
+		public override function set visible(bVisible:Boolean):void
+		{
+			// Hide the dropdown if we're being hidden
+			if (!bVisible)
+			{
+				HideDropdownList();
+			}
+			
+			// Call the base setter
+			super.visible = bVisible;
+		}
+		
 		/***
 		 * Member variables
 		 **/
@@ -867,25 +1068,26 @@ package Elixys.Subviews
 		
 		// Subview edit XML
 		protected static const EDIT_UNITOPERATION:XML = 
-			<columns gapH="0" widths="4%,5%,82%,9%">
+			<columns gapH="0" widths="20,100%,20">
 				<frame />
-				<rows gapV="0" heights="8%,92%">
-					<frame alignV="centre">
-						<label id="unitoperationnumber" useEmbedded="true">
-							<font face="GothamMedium" color={Styling.TEXT_WHITE} size="14" />
-						</label>
-					</frame>
-				</rows>
-				<rows gapV="0" heights="8%,88%,4%">
-					<frame alignV="centre">
-						<label id="unitoperationname" useEmbedded="true">
-							<font face="GothamBold" color={Styling.TEXT_BLACK} size="14" />
-						</label>
-					</frame>
-					<frame id="unitoperationcontainer" background={Styling.APPLICATION_BACKGROUND} />
+				<rows heights="9%,10,86%,5%" gapV="0">
+					<columns widths="5%,95%" gapH="0">
+						<frame>
+							<label id="unitoperationnumber" useEmbedded="true">
+								<font face="GothamMedium" color={Styling.TEXT_WHITE} size="14" />
+							</label>
+						</frame>
+						<frame>
+							<label id="unitoperationname" useEmbedded="true">
+								<font face="GothamBold" color={Styling.TEXT_BLACK} size="14" />
+							</label>
+						</frame>
+					</columns>
+					<frame />
+					<frame id="unitoperationcontainer" />
 				</rows>
 			</columns>;
-		
+
 		// Unit operation scroll XML
 		protected static const UNITOPERATION_SCROLL:XML =
 			<frame mask="true" />;
@@ -911,15 +1113,27 @@ package Elixys.Subviews
 		protected var m_pFieldContents:Array = new Array();
 		protected var m_pFieldUnits:Array = new Array();
 		protected var m_pFieldErrors:Array = new Array();
-
+		protected var m_pFieldArrows:Array = new Array();
+		protected var m_pFieldHitAreas:Array = new Array();
+		
 		// Component from server
 		protected var m_pComponent:*;
-		
+
+		// Parent sequence edit
+		protected var m_pSequenceEdit:SequenceEdit;
+
+		// Dropdown list variables
+		protected var m_sDropdownIndex:int = -1;
+		protected var m_sDropdownType:String;
+		protected var m_sDropdownCurrentValue:String;
+		protected var m_pDropdownValues:Array;
+		protected var m_pDropdownData:Array;
+
 		// Constants
 		public static const UNITOPERATIONHEADERPADDING:int = 5;
-		protected static const HORIZONTALGAP:int = 10;
+		public static const HORIZONTALGAP:int = 10;
 		protected static const RIGHTGAP:int = 20;
-		protected static const ROWCONTENTHEIGHT:int = 65;
+		public static const ROWCONTENTHEIGHT:int = 65;
 		protected static const ROWERRORHEIGHT:int = 25;
 		protected static const ROWTEXTGAP:int = 20;
 		protected static const ROWVERTICALPADDING:int = 3;
@@ -927,7 +1141,7 @@ package Elixys.Subviews
 		protected static const MULTILINE_HEIGHT:int = 5;
 		protected static const FADE_HEIGHT:int = 15;
 		protected static const FADE_THRESHOLD:Number = 3;
-		protected static const SCROLL_VERTICAL_PADDING:int = 2;
-		protected static const DIVIDER_HEIGHT:int = 3;
+		public static const SCROLL_VERTICAL_PADDING:int = 2;
+		public static const DIVIDER_HEIGHT:int = 3;
 	}
 }

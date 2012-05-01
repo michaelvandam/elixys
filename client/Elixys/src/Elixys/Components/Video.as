@@ -55,6 +55,9 @@ package Elixys.Components
 				// Establish a connection to the server
 				CreateVideoConnection();
 			}
+			
+			// Update the video dimensions
+			UpdateVideoDimensions();
 		}
 	
 		// Establishes a connection to the server
@@ -118,18 +121,20 @@ package Elixys.Components
 		{
 			// Resize and center the video
 			var fUIComponent:Number = (parent.width * parent.scaleX) / (parent.height * parent.scaleY);
-			var fVideo:Number = m_pVideo.width / m_pVideo.height;
+			var fVideo:Number = m_nVideoWidth / m_nVideoHeight;
 			if (fUIComponent < fVideo)
 			{
-				m_pVideo.height = m_pVideo.height * (width / m_pVideo.width);
-				m_pVideo.width = width;
-				m_pVideo.y = (height - m_pVideo.height) / 2;
+				m_pVideo.height = parent.width * (parent.scaleX / parent.scaleY) / fVideo;
+				m_pVideo.width = parent.width;
+				m_pVideo.x = 0;
+				m_pVideo.y = (parent.height - m_pVideo.height) / 2;
 			}
 			else if (fUIComponent > fVideo)
 			{
-				m_pVideo.width = m_pVideo.width * (height / m_pVideo.height);
-				m_pVideo.height = height;
-				m_pVideo.x = (width - m_pVideo.width) / 2;
+				m_pVideo.width = parent.height * (parent.scaleY / parent.scaleX) * fVideo;
+				m_pVideo.height = parent.height;
+				m_pVideo.x = (parent.width - m_pVideo.width) / 2;
+				m_pVideo.y = 0;
 			}
 			m_nWidth = width;
 			m_nHeight = height;
@@ -156,6 +161,8 @@ package Elixys.Components
 				function OnMetaData(item:Object):void
 				{
 					// Update the video dimensions
+					m_nVideoWidth = item.width;
+					m_nVideoHeight = item.height;
 					UpdateVideoDimensions();
 				}
 			}
@@ -255,6 +262,10 @@ package Elixys.Components
 		protected var m_pVideo:flash.media.Video;
 		protected var m_pNetConnection:NetConnection;
 		protected var m_pNetStream:NetStream;
+		
+		// Source video dimensions
+		protected var m_nVideoWidth:int = 0;
+		protected var m_nVideoHeight:int = 0;
 		
 		// Timers
 		protected var m_pWatchTimer:Timer;

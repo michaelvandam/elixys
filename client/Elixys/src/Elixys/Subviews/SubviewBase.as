@@ -9,6 +9,7 @@ package Elixys.Subviews
 	import Elixys.Interfaces.ITextBox;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.State.Reagent;
+	import Elixys.JSON.State.Reagents;
 	import Elixys.JSON.State.RunState;
 	import Elixys.JSON.State.Sequence;
 	
@@ -17,12 +18,15 @@ package Elixys.Subviews
 	import flash.display.DisplayObjectContainer;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
+	import flash.events.Event;
 	import flash.events.FocusEvent;
 	import flash.events.KeyboardEvent;
 	import flash.events.SoftKeyboardEvent;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
 	import flash.utils.getQualifiedClassName;
+	
+	import flashx.textLayout.formats.TextAlign;
 
 	// This subview baset is an extension of our extended Form class
 	public class SubviewBase extends Form
@@ -84,6 +88,11 @@ package Elixys.Subviews
 			m_pRunState = pRunState;
 		}
 		
+		// Updates the reagent list
+		public function UpdateReagents(pReagents:Reagents):void
+		{
+		}
+		
 		// Returns the subview type
 		public function get SubviewType():String
 		{
@@ -139,15 +148,38 @@ package Elixys.Subviews
 			return pInput;
 		}
 
-		// Adds an multiline input
-		protected function AddMultilineInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, nLines:int,
-											 pParent:Sprite = null):Input
+		// Adds a skinless input
+		protected function AddSkinlessInput(nFontSize:int, sFontColor:String, sReturnKeyLabel:String, pParent:Sprite = null):Input
 		{
 			var pXML:XML =
 				<input size={nFontSize} alignH="fill" color={sFontColor} 
-					skin={getQualifiedClassName(TextInput_upSkin)} 
 					returnKeyLabel={sReturnKeyLabel} />;
+			var pInput:Input = CreateInput(pXML, attributes, pParent);
+			var pTextBox:ITextBox = pInput.inputField as ITextBox;
+			pTextBox.borderColor = 0xFFFFFF;
+			pTextBox.textAlign = TextAlign.RIGHT;
+			return pInput;
+		}
+		
+		// Adds an multiline input
+		protected function AddMultilineInput(nFontSize:int, sFontColor:String, nLines:int, pParent:Sprite = null):Input
+		{
+			var pXML:XML =
+				<input size={nFontSize} alignH="fill" color={sFontColor} 
+					skin={getQualifiedClassName(TextInput_upSkin)} />;
 			return CreateMultilineInput(pXML, attributes, nLines, pParent);
+		}
+
+		// Adds a skinless multiline input
+		protected function AddSkinlessMultilineInput(nFontSize:int, sFontColor:String, nLines:int, pParent:Sprite = null):Input
+		{
+			var pXML:XML =
+				<input size={nFontSize} alignH="fill" color={sFontColor} />;
+			var pInput:Input = CreateMultilineInput(pXML, attributes, nLines, pParent);
+			var pTextBox:ITextBox = pInput.inputField as ITextBox;
+			pTextBox.borderColor = 0xFFFFFF;
+			pTextBox.textAlign = TextAlign.LEFT;
+			return pInput;
 		}
 
 		// Adds a check box
@@ -226,12 +258,35 @@ package Elixys.Subviews
 		// Called when a text box receives a key down event
 		protected function OnKeyboardDown(event:KeyboardEvent):void
 		{
-			// Either tab or return moves the focus to the next field in the tab order
-			if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
+			// Locate the text box and check if it is a single or multiline input control
+			var pTextBox:ITextBox = FindTextBox(event.target);
+			var bMoveFocus:Boolean = false;
+			if (pTextBox)
+			{
+				if (pTextBox.maxNumberOfLines > 1)
+				{
+					// For multiline inputs the tab moves the focus to the next field in the tab order
+					if (event.keyCode == Constants.CHAR_TAB)
+					{
+						bMoveFocus = true;
+					}
+				}
+				else
+				{
+					// For single line inputs either tab or return moves the focus to the next field in the tab order
+					if ((event.keyCode == Constants.CHAR_TAB) || (event.keyCode == Constants.CHAR_RETURN))
+					{
+						bMoveFocus = true;
+					}
+				}
+			}
+			
+			// Move the focus to the next text box
+			if (bMoveFocus)
 			{
 				event.preventDefault();
-				var pTextBox:ITextBox = FindNextTextBox(event.target);
-				if (pTextBox != null)
+				pTextBox = FindNextTextBox(event.target);
+				if (pTextBox)
 				{
 					pTextBox.assignFocus();
 				}
@@ -275,20 +330,34 @@ package Elixys.Subviews
 			return null;
 		}
 
+		// Gets the array of reagents
+		protected function GetReagents(pReagents:Array):void
+		{
+			if (pReagents.length > 0)
+			{
+				var sURL:String = "/Elixys/sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagents[0];
+				for (var nIndex:int = 1; nIndex < pReagents.length; ++nIndex)
+				{
+					sURL += "." + pReagents[nIndex];
+				}
+				FindScreen().DoGet(sURL);
+			}
+		}
+		
 		// Post the component to the server
 		protected function PostComponent(pComponent:ComponentBase):void
 		{
-			DoPost(pComponent, "sequence/" + m_pSequence.Metadata.ID + "/component/" + pComponent.ID);
+			FindScreen().DoPost(pComponent, "sequence/" + m_pSequence.Metadata.ID + "/component/" + pComponent.ID);
 		}
 
 		// Post the reagent to the server
 		protected function PostReagent(pReagent:Reagent):void
 		{
-			DoPost(pReagent, "sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagent.ReagentID);
+			FindScreen().DoPost(pReagent, "sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagent.ReagentID);
 		}
 		
-		// Posts the message through the parent
-		protected function DoPost(pPost:Object, sViewName:String):void
+		// Locates the screen
+		protected function FindScreen():Screen
 		{
 			// Locate the screen
 			var pParent:DisplayObjectContainer = this;
@@ -296,13 +365,12 @@ package Elixys.Subviews
 			{
 				if (pParent is Screen)
 				{
-					// Do the post
-					(pParent as Screen).DoPost(pPost, sViewName);
-					return;
+					return (pParent as Screen);
 				}
 				pParent = pParent.parent;
 			}
-		}
+			return null;
+		}			
 		
 		/***
 		 * Member variables

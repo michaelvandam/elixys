@@ -129,6 +129,7 @@ class UnitOperation(threading.Thread):
     self.timerLength = 0
     self.timerShowInStatus = False
     self.timerOverridden = False
+    self.timerStopped = False
     self.waitingForUserInput = False
     self.error = ""
     self.description = ""
@@ -496,6 +497,7 @@ class UnitOperation(threading.Thread):
     self.timerStartTime = time.time()
     self.timerLength = timerLength
     self.timerShowInStatus = showInStatus
+    self.timerStopped = False
     
   def waitForTimer(self):
     while self.timerOverridden or not self.isTimerExpired(self.timerStartTime, self.timerLength):
@@ -543,6 +545,7 @@ class UnitOperation(threading.Thread):
     if self.timerOverridden:
       self.timerLength = time.time() - self.timerStartTime
       self.timerOverridden = False
+    self.timerStopped = True
 
   def getTimerStatus(self):
     """Returns the timer status"""
@@ -660,12 +663,14 @@ class UnitOperation(threading.Thread):
       currentPressure = float(self.systemModel[self.pressureRegulator].getSetPressure())
       rampRate = (float(pressureSetPoint) - float(currentPressure)) / float(rampTime) / float(nRefreshFrequency)
       nElapsedTime = 0
-      while nElapsedTime < rampTime:
+      while (not self.timerStopped) and (nElapsedTime < rampTime):
         time.sleep(1 / float(nRefreshFrequency))
         nElapsedTime += 1 / float(nRefreshFrequency)
         currentPressure += rampRate
         self.systemModel[self.pressureRegulator].setRegulatorPressure(currentPressure) #Set analog value on PLC
         self.checkAbort()
+      if self.timerStopped:
+        return
     self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
     self.pressureSetPoint = pressureSetPoint
     self.waitForCondition(self.pressureSet,True,EQUAL,4)

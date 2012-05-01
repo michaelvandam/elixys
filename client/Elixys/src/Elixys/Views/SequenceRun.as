@@ -220,21 +220,19 @@ package Elixys.Views
 			var nUnitOperationIndex:int = 0, nIndex:int, pSequenceComponent:SequenceComponent;
 			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
 			{
-				// Skip cassettes
-				pSequenceComponent = m_pSequence.Components[nIndex] as SequenceComponent;
-				if (pSequenceComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
-				{
-					continue;
-				}
-					
 				// Check for the current component
+				pSequenceComponent = m_pSequence.Components[nIndex] as SequenceComponent;
 				if (pSequenceComponent.ID == m_pComponent.ID)
 				{
 					break;
 				}
 				else
 				{
-					++nUnitOperationIndex;
+					// Don't count cassettes
+					if (pSequenceComponent.ComponentType != ComponentCassette.COMPONENTTYPE)
+					{
+						++nUnitOperationIndex;
+					}
 				}
 			}
 			m_pUnitOperationNumber.text = (nUnitOperationIndex + 1).toString();
@@ -332,9 +330,9 @@ package Elixys.Views
 			if (m_pUnitOperationAlert.visible)
 			{
 				pParent = m_pUnitOperationAlert.parent as Form;
-				m_pUnitOperationAlert.width = pParent.attributes.width * 0.9;
-				m_pUnitOperationAlert.x = (pParent.attributes.width - m_pUnitOperationAlert.width) / 2;
-				m_pUnitOperationAlert.y = (pParent.attributes.height - m_pUnitOperationAlert.height) / 2;
+				m_pUnitOperationAlert.width = pParent.attributes.width;
+				m_pUnitOperationAlert.x = (pParent.attributes.width - m_pUnitOperationAlert.textWidth) / 2;
+				m_pUnitOperationAlert.y = (pParent.attributes.height - m_pUnitOperationAlert.textHeight) / 2;
 			}
 		}
 		

@@ -196,7 +196,7 @@ package Elixys.JSON.Components
 				if (pFieldValidation["required"] == "true")
 				{
 					// Value required
-					return "Required";
+					return "REQUIRED";
 				}
 				else
 				{
@@ -220,7 +220,7 @@ package Elixys.JSON.Components
 			}
 			
 			// Any other value is invalid
-			return "Invalid selection";
+			return "INVALID SELECTION";
 		}
 		
 		// Validate the reagent enumeration
@@ -233,7 +233,7 @@ package Elixys.JSON.Components
 				if (pFieldValidation["required"] == "true")
 				{
 					// Value required
-					return "Required";
+					return "REQUIRED";
 				}
 				else
 				{
@@ -255,7 +255,7 @@ package Elixys.JSON.Components
 				if (pFieldValidation["required"] == "true")
 				{
 					// Value required
-					return "Required";
+					return "REQUIRED";
 				}
 				else
 				{
@@ -279,7 +279,7 @@ package Elixys.JSON.Components
 			}
 			
 			// Any other value is invalid
-			return "Invalid selection";
+			return "INVALID SELECTION";
 		}
 		
 		// Validates the number
@@ -291,7 +291,7 @@ package Elixys.JSON.Components
 				if (pFieldValidation["required"] == "true")
 				{
 					// Value required
-					return "Required";
+					return "REQUIRED";
 				}
 				else
 				{
@@ -310,7 +310,7 @@ package Elixys.JSON.Components
 			}
 			else
 			{
-				return "Out of range";
+				return "OUT OF RANGE";
 			}
 		}
 		
@@ -323,7 +323,7 @@ package Elixys.JSON.Components
 				if (pFieldValidation["required"] == "true")
 				{
 					// Value required
-					return "Required";
+					return "REQUIRED";
 				}
 				else
 				{

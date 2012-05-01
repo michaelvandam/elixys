@@ -99,33 +99,36 @@ class CoreServerService(rpyc.Service):
             # Format the run state
             if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
                 pServerState["runstate"]["runcomplete"] = gRunSequence.isRunComplete()
+                pServerState["runstate"]["running"] = True
+                pServerState["runstate"]["username"] = gRunUsername
+                nSequenceID, nComponentID = gRunSequence.getIDs()
+                pServerState["runstate"]["sequenceid"] = nSequenceID
+                pServerState["runstate"]["componentid"] = nComponentID
                 pUnitOperation = gSystemModel.GetUnitOperation()
-                if pUnitOperation != None:	
+                if pUnitOperation != None:
                     pServerState["runstate"]["description"] = pUnitOperation.description
                     pServerState["runstate"]["status"] = pUnitOperation.status
-                    pServerState["runstate"]["running"] = True
-                    pServerState["runstate"]["username"] = gRunUsername
-                    nSequenceID, nComponentID = gRunSequence.getIDs()
-                    pServerState["runstate"]["sequenceid"] = nSequenceID
-                    pServerState["runstate"]["componentid"] = nComponentID
                     sTimerStatus = pUnitOperation.getTimerStatus()
                     if (sTimerStatus == "Running"):
                         pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
                         pServerState["runstate"]["timedescription"] = "TIME REMAINING"
-                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                            "text":"OVERRIDE TIMER",
-                            "id":"TIMEROVERRIDE"}
+                        if gRunUsername == sUsername:
+                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                "text":"OVERRIDE TIMER",
+                                "id":"TIMEROVERRIDE"}
                     elif (sTimerStatus == "Overridden"):
                         pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
                         pServerState["runstate"]["timedescription"] = "TIME ELAPSED"
-                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                            "text":"FINISH UNIT OPERATION",
-                            "id":"TIMERCONTINUE"}
+                        if gRunUsername == sUsername:
+                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                "text":"FINISH UNIT OPERATION",
+                                "id":"TIMERCONTINUE"}
                     elif pUnitOperation.waitingForUserInput:
                         pServerState["runstate"]["waitingforuserinput"] = True
-                        pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                            "text":"CONTINUE",
-                            "id":"USERINPUT"}
+                        if gRunUsername == sUsername:
+                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                "text":"CONTINUE",
+                                "id":"USERINPUT"}
                     if gRunSequence.willRunPause():
                         pServerState["runstate"]["useralert"] = "Run will pause after the current operation."
             else:

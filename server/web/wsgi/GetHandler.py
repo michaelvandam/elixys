@@ -392,7 +392,8 @@ class GetHandler:
 
             # Update the prompt if it isn't abort
             if (self.__pClientState["prompt"]["show"] == False) or \
-               (self.__pClientState["prompt"].has_key("screen") and self.__pClientState["prompt"]["screen"] != "PROMPT_ABORTSEQUENCERUN"):
+               (self.__pClientState["prompt"].has_key("screen") and \
+               self.__pClientState["prompt"]["screen"] != "PROMPT_ABORTSEQUENCERUN"):
                 self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
 
             # Update the client state
@@ -400,10 +401,12 @@ class GetHandler:
 
         # Determine if we are the user running the system
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
+            # Enable or disable buttons
             bSequencerEnabled = False
             bPauseEnabled = not pServerState["runstate"]["runcomplete"]
             bAbortEnabled = not pServerState["runstate"]["runcomplete"]
         else:
+            # Enable or disable buttons
             bSequencerEnabled = True
             bPauseEnabled = False
             bAbortEnabled = False

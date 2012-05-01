@@ -44,7 +44,10 @@ package Elixys.Subviews
 			{
 				(m_pFieldLabels[nIndex] as UILabel).visible = !bCyclotronFlag;
 				(m_pFieldUnits[nIndex] as UILabel).visible = !bCyclotronFlag;
-				(m_pFieldErrors[nIndex] as UILabel).visible = !bCyclotronFlag;
+				if (m_pFieldErrors[nIndex])
+				{
+					(m_pFieldErrors[nIndex] as UILabel).visible = !bCyclotronFlag;
+				}
 			}
 
 			// Show or hide the input control based on the cyclotron flag

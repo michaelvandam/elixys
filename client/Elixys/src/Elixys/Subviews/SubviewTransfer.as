@@ -79,15 +79,18 @@ package Elixys.Subviews
 					{
 						// Set the video labels
 						m_pVideoLabel1.text = "REACTOR " + pComponent.SourceReactor;
-						m_pVideoLabel1.visible = false;
+						m_pVideoLabel1.visible = true;
 						m_pVideoIconSkin2.visible = false;
 						
 						// Update the video stream if we're running and visible
 						if (m_pRunState.Running && visible)
 						{
-							//m_pSequenceRun.HideVideo(m_pVideoContainerDual1);
-							//m_pSequenceRun.HideVideo(m_pVideoContainerDual2);
-							//m_pSequenceRun.SetVideo(pComponent.SourceReactor, m_pVideoContainerSingle);
+							m_pVideoContainerSingle.visible = true;
+							m_pVideoContainerDual1.visible = false;
+							m_pVideoContainerDual2.visible = false;
+							m_pSequenceRun.HideVideo(m_pVideoContainerDual1);
+							m_pSequenceRun.HideVideo(m_pVideoContainerDual2);
+							m_pSequenceRun.SetVideo(pComponent.SourceReactor, m_pVideoContainerSingle);
 						}
 					}
 					else
@@ -101,9 +104,12 @@ package Elixys.Subviews
 						// Update the video stream if we're running and visible
 						if (m_pRunState.Running && visible)
 						{
-							//m_pSequenceRun.HideVideo(m_pVideoContainerSingle);
-							//m_pSequenceRun.SetVideo(pComponent.SourceReactor, m_pVideoContainerDual1);
-							//m_pSequenceRun.SetVideo(pComponent.TargetReactor, m_pVideoContainerDual2);
+							m_pVideoContainerSingle.visible = false;
+							m_pVideoContainerDual1.visible = true;
+							m_pVideoContainerDual2.visible = true;
+							m_pSequenceRun.HideVideo(m_pVideoContainerSingle);
+							m_pSequenceRun.SetVideo(pComponent.SourceReactor, m_pVideoContainerDual1);
+							m_pSequenceRun.SetVideo(pComponent.TargetReactor, m_pVideoContainerDual2);
 						}
 					}
 				}
@@ -144,22 +150,13 @@ package Elixys.Subviews
 
 				// Adjust the video container positions
 				m_pVideoContainerSingle.x = m_pVideoContainerParent.attributes.width * SINGLE_LEFTGAP / 100;
-				m_pVideoContainerSingle.width = (m_pVideoContainerParent.attributes.width * SINGLE_VIDEO / 100);
+				m_pVideoContainerSingle.width = m_pVideoContainerParent.attributes.width * SINGLE_VIDEO / 100;
 				m_pVideoContainerDual1.x = m_pVideoContainerParent.attributes.width * DOUBLE_LEFTGAP / 100;
 				m_pVideoContainerDual1.width = (m_pVideoContainerParent.attributes.width * DOUBLE_LEFTVIDEO / 100);
 				m_pVideoContainerDual2.x = m_pVideoContainerParent.attributes.width * (DOUBLE_LEFTGAP + DOUBLE_LEFTVIDEO + DOUBLE_CENTERGAP) / 100;
 				m_pVideoContainerDual2.width = (m_pVideoContainerParent.attributes.width * DOUBLE_RIGHTVIDEO / 100);
 				m_pVideoContainerSingle.y = m_pVideoContainerDual1.y = m_pVideoContainerDual2.y = 0;
 				m_pVideoContainerSingle.height = m_pVideoContainerDual1.height = m_pVideoContainerDual2.height = m_pVideoContainerParent.attributes.height;
-				trace("Single (" + m_pVideoContainerSingle.x + ", " + m_pVideoContainerSingle.y + ") x (" + m_pVideoContainerSingle.scaleX + ", " +
-					m_pVideoContainerSingle.scaleY + "), (" + (m_pVideoContainerSingle.x * m_pVideoContainerSingle.scaleX) + ", " +
-					(m_pVideoContainerSingle.y * m_pVideoContainerSingle.scaleY) + ")");
-				trace("Dual 1 (" + m_pVideoContainerDual1.x + ", " + m_pVideoContainerDual1.y + ") x (" + m_pVideoContainerDual1.scaleX + ", " +
-					m_pVideoContainerDual1.scaleY + "), (" + (m_pVideoContainerDual1.x * m_pVideoContainerDual1.scaleX) + ", " +
-					(m_pVideoContainerDual1.y * m_pVideoContainerDual1.scaleY) + ")");
-				trace("Dual 2 (" + m_pVideoContainerDual2.x + ", " + m_pVideoContainerDual2.y + ") x (" + m_pVideoContainerDual2.scaleX + ", " +
-					m_pVideoContainerDual2.scaleY + "), (" + (m_pVideoContainerDual2.x * m_pVideoContainerDual2.scaleX) + ", " +
-					(m_pVideoContainerDual2.y * m_pVideoContainerDual2.scaleY) + ")");
 			}
 			else
 			{
@@ -199,14 +196,12 @@ package Elixys.Subviews
 					<frame />
 				</rows>
 			</frame>;
-		protected static const RUN_VIDEOCONTAINER:XML = 
-			<frame alignH="fill" alignV="fill" />;
 		protected static const RUN_VIDEOCONTAINER1:XML = 
-			<frame alignH="fill" alignV="fill" background="#FF0000" />;
+			<frame alignH="fill" alignV="fill" background={Styling.APPLICATION_BACKGROUND} />;
 		protected static const RUN_VIDEOCONTAINER2:XML = 
-			<frame alignH="fill" alignV="fill" background="#00FF00" />;
+			<frame alignH="fill" alignV="fill" />;
 		protected static const RUN_VIDEOCONTAINER3:XML = 
-			<frame alignH="fill" alignV="fill" background="#0000FF" />;
+			<frame alignH="fill" alignV="fill" />;
 		
 		// View components
 		protected var m_pVideoIconContainer1:Form;

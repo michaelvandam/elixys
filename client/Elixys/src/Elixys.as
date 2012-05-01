@@ -46,11 +46,8 @@ package
 				screen.addChild(this);
 			}
 			
-			// Set the state alignment and scaling mode
-			stage.align = StageAlign.TOP_LEFT;
+			// Set the stage scaling mode and crank up the frame rate
 			stage.scaleMode = StageScaleMode.NO_SCALE;
-
-			// Crank up the frame rate
 			stage.frameRate = 60;
 			
 			// Create the initial UI
@@ -486,6 +483,11 @@ package
 					m_pComponent = pResponse as ComponentBase;
 					UpdateComponent();
 				}
+				else if (pResponse is Reagents)
+				{
+					var pReagents:Reagents = pResponse as Reagents;
+					UpdateReagents(pReagents);
+				}
 				else if (pResponse is ServerError)
 				{
 					ShowLoginScreen(pResponse.Description);
@@ -606,6 +608,17 @@ package
 			}
 		}
 
+		// Update the list of reagents
+		protected function UpdateReagents(pReagents:Reagents):void
+		{
+			// Update the current screen's reagent list
+			var pScreen:Screen = GetScreen(m_pState.ClientState.Screen);
+			if (pScreen != null)
+			{
+				pScreen.UpdateReagents(pReagents);
+			}
+		}
+
 		// Returns the page index that corresponds to the screen name
 		protected function GetPageIndex(sScreen:String):int
 		{
@@ -684,7 +697,7 @@ package
 		
 		// XML page list
 		protected static const PAGES:XML = 
-			<pages id="Pages" alignV="fill" alignH="fill">
+			<pages id="Pages" width="1024" height="768" autoResize="false">
 				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;
 		
@@ -740,7 +753,7 @@ package
 		protected var m_pComponent:ComponentBase;
 		
 		// Array of recognized JSON objects
-		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase, ServerError];
+		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase, Reagents, ServerError];
 		
 		// Unused reference to our static assets that is required for them to be available at run time
 		protected var m_pAssets:StaticAssets;

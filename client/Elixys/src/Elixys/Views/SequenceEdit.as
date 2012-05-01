@@ -1,14 +1,21 @@
 package Elixys.Views
 {
 	import Elixys.Assets.*;
+	import Elixys.Components.DropdownList;
 	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.DropdownEvent;
+	import Elixys.Extended.Form;
+	import Elixys.JSON.State.Reagents;
 	import Elixys.JSON.State.State;
 	import Elixys.JSON.State.StateSequence;
 	import Elixys.JSON.State.Tab;
+	import Elixys.Subviews.SubviewBase;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Sprite;
+	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.utils.*;
 	
 	// This sequence edit screen is an extension of the base sequence class
@@ -90,6 +97,15 @@ package Elixys.Views
 			super.UpdateState(pState);
 		}
 		
+		// Updates the reagent list
+		public override function UpdateReagents(pReagents:Reagents):void
+		{
+			for (var nIndex:int = 0; nIndex < m_pSubviews.length; ++nIndex)
+			{
+				(m_pSubviews[nIndex] as SubviewBase).UpdateReagents(pReagents);
+			}
+		}
+		
 		// Called when a tab on the tab bar is clicked
 		protected override function OnTabClick(event:ButtonEvent):void
 		{
@@ -104,6 +120,60 @@ package Elixys.Views
 				m_pTabBar.UpdateTabs(m_pTabs, "TOOLS");
 				m_pSequenceTools.parent.setChildIndex(m_pSequenceTools, m_pSequenceTools.parent.numChildren - 1);
 			}
+		}
+
+		// Shows the dropdown list
+		public function ShowDropdownList(pValues:Array, sCurrentValue:String, pParent:Form, pEventListener:EventDispatcher, pData:Array = null):void
+		{
+			// Creating the dropdown list
+			if (!m_pDropdownList)
+			{
+				m_pDropdownList = new DropdownList(pParent, pParent.attributes);
+				m_pDropdownList.addEventListener(DropdownEvent.ITEMSELECTED, OnDropdownEvent);
+				m_pDropdownList.addEventListener(DropdownEvent.LISTHIDDEN, OnDropdownEvent);
+				m_pDropdownList.visible = true;
+			}
+
+			// Assign the dropdown to the parent
+			if ((m_pDropdownList.parent == null) || (m_pDropdownList.parent != pParent))
+			{
+				if (m_pDropdownList.parent != null)
+				{
+					m_pDropdownList.parent.removeChild(m_pDropdownList);
+				}
+				pParent.addChild(m_pDropdownList);
+				m_pDropdownList.visible = true;
+			}
+			
+			// Remember the current event listener
+			m_pDropdownEventListener = pEventListener;
+
+			// Pass the current value and array
+			m_pDropdownList.SetList(pValues, sCurrentValue, pData);
+		}
+
+		// Hides the dropdown list
+		public function HideDropdownList():void
+		{
+			if (m_pDropdownList)
+			{
+				// Remove the dropdown from the parent
+				if (m_pDropdownList.parent)
+				{
+					m_pDropdownList.visible = false;
+					m_pDropdownList.parent.removeChild(m_pDropdownList);
+				}
+			
+				// Clear the current event listener
+				m_pDropdownEventListener = null;
+			}
+		}
+		
+		// Called when the dropdown emits and event
+		protected function OnDropdownEvent(event:DropdownEvent):void
+		{
+			// Pass the event to our listener
+			m_pDropdownEventListener.dispatchEvent(event.Copy());
 		}
 
 		/***
@@ -185,5 +255,9 @@ package Elixys.Views
 		// Number of steps required to load this object
 		public static var EDIT_LOAD_STEPS:uint = 5;
 		public static var LOAD_STEPS:uint = SequenceBase.BASE_LOAD_STEPS + EDIT_LOAD_STEPS;
+		
+		// View components
+		protected var m_pDropdownList:DropdownList;
+		protected var m_pDropdownEventListener:EventDispatcher;
 	}
 }

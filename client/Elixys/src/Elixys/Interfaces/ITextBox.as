@@ -24,6 +24,7 @@ package Elixys.Interfaces
 		function set fontWeight(fontWeight:String):void;
 		function set locale(locale:String):void;
 		function set maxChars(maxChars:int):void;
+		function get maxNumberOfLines():int;
 		function set restrict(restrict:String):void;
 		function set returnKeyLabel(returnKeyLabel:String):void;
 		function get selectionActiveIndex():int;

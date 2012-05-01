@@ -120,6 +120,10 @@ package Elixys.Components
 		{
 			super.maxChars = maxChars;
 		}
+		public function get maxNumberOfLines():int
+		{
+			return 1;
+		}
 		public override function set restrict(restrict:String):void
 		{
 			super.restrict = restrict;

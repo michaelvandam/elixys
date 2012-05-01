@@ -4,6 +4,7 @@ package Elixys.Components
 	import Elixys.Extended.Form;
 	import Elixys.HTTP.HTTPRequest;
 	import Elixys.JSON.Components.ComponentBase;
+	import Elixys.JSON.State.Reagents;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.State;
 	
@@ -50,6 +51,11 @@ package Elixys.Components
 
 		// Updates the component
 		public function UpdateComponent(pComponent:ComponentBase):void
+		{
+		}
+
+		// Update the reagent list
+		public function UpdateReagents(pReagents:Reagents):void
 		{
 		}
 
