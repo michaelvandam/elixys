@@ -33,7 +33,7 @@ class UnitOperationsWrapper:
         pInit.start()
         return pInit
        
-    def React(self, sReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nCoolingDelay, sReactPosition, nStirSpeed):
+    def React(self, sReactor, nReactionTemperature, nReactionTime, nFinalTemperature, nCoolingDelay, sReactPosition, nStirSpeed, nStopAtTemperature):
         """Performs a react unit operation"""
         pParams = {"ReactorID":sReactor,
                    "reactTemp":nReactionTemperature,
@@ -41,7 +41,8 @@ class UnitOperationsWrapper:
                    "coolTemp":nFinalTemperature,
                    "coolingDelay":nCoolingDelay,
                    "reactPosition":sReactPosition,
-                   "stirSpeed":nStirSpeed}
+                   "stirSpeed":nStirSpeed,
+                   "stopAtTemperature":nStopAtTemperature}
         pReact = React(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pReact.setDaemon(True)
         pReact.start()
@@ -69,14 +70,15 @@ class UnitOperationsWrapper:
         pAdd.start()
         return pAdd
 
-    def Evaporate(self, sReactor, nEvaporationTemperature, nEvaporationTime, nFinalTemperature, nStirSpeed):
+    def Evaporate(self, sReactor, nEvaporationTemperature, nEvaporationTime, nFinalTemperature, nStirSpeed, nStopAtTemperature):
         """Performs an evaporation unit operation"""
         pParams = {"ReactorID":sReactor,
                    "evapTemp":nEvaporationTemperature,
                    "evapTime":nEvaporationTime,
                    "coolTemp":nFinalTemperature,
                    "stirSpeed":nStirSpeed,
-                   "pressure":DEFAULT_EVAPORATE_PRESSURE}
+                   "pressure":DEFAULT_EVAPORATE_PRESSURE,
+                   "stopAtTemperature":nStopAtTemperature}
         pEvaporate = Evaporate(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
         pEvaporate.setDaemon(True)
         pEvaporate.start()

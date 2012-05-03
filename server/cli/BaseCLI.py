@@ -90,6 +90,8 @@ def ExecuteCommandImpl(sCommand, pUnitOperationsWrapper, pSystemModel, pHardware
             pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5])
         elif nParameters == 7:
             pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6])
+        elif nParameters == 8:
+            pReturn = pFunction(pObject, pParameters[0], pParameters[1], pParameters[2], pParameters[3], pParameters[4], pParameters[5], pParameters[6], pParameters[7])
         else:
             raise Exception("Too many arguments");
         
@@ -257,7 +259,8 @@ class BaseCLI(threading.Thread):
                 print "        nFinalTemperature,        Celsius"
                 print "        nCoolingDelay,            Seconds"
                 print "        sReactPosition,           'React1','React2'"
-                print "        nStirSpeed)               Suggested 500"
+                print "        nStirSpeed,               Suggested 500"
+                print "        nStopAtTemperature)       '1' to stop stirring at temperature"
             elif sCommand == "help Move":
                 # React unit operation
                 print "Move the reactor to position specified."
@@ -284,7 +287,8 @@ class BaseCLI(threading.Thread):
                 print "            nEvaporationTemperature,  Celsius"
                 print "            nEvaporationTime,         Seconds"
                 print "            nFinalTemperature,        Celsius"
-                print "            nStirSpeed)               Suggested 500"
+                print "            nStirSpeed,               Suggested 500"
+                print "            nStopAtTemperature)       '1' to stop stirring at temperature"
             elif sCommand == "help Install":
                 # Install unit operation
                 print "Moves a reactor to the install position"
