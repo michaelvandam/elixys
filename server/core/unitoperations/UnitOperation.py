@@ -66,6 +66,7 @@ ELUTEPRESSURE = "elutePressure"
 SUMMARYFLAG = "summaryFlag"
 SUMMARYMESSAGE = "summaryMessage"
 EXTERNALREAGENTNAME = "externalReagentName"
+STOPATTEMPERATURE = "stopAtTemperature"
 
 STR   = 'str'
 INT   = 'int'
@@ -133,6 +134,7 @@ class UnitOperation(threading.Thread):
     self.waitingForUserInput = False
     self.error = ""
     self.description = ""
+    self.stopAtTemperature = False
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
@@ -203,6 +205,8 @@ class UnitOperation(threading.Thread):
         self.summaryMessage = params['summaryMessage']
       elif paramname=="externalReagentName":
         self.externalReagentName = params['externalReagentName']
+      elif paramname=="stopAtTemperature":
+        self.stopAtTemperature = params['stopAtTemperature']
       else:
         raise Exception("Unknown parameter: " + paramname)
 
@@ -829,6 +833,7 @@ class UnitOperation(threading.Thread):
     if not pTargetComponent.has_key("type"):
       pTargetComponent["type"] = self.component["type"]
       pTargetComponent["componenttype"] = self.component["componenttype"]
+    pTargetComponent["note"] = self.component["note"]
 
   def copyComponent(self, nSourceSequenceID, nTargetSequenceID):
     """Creates a copy of the component in the database"""

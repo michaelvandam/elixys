@@ -614,8 +614,6 @@ class PostHandler:
         if self.__nBodyLength != 0:
             pComponent = json.loads(self.__pBody)
 
-        print "Posting component: " + str(pComponent);
-
         # Are we working with an existing component?
         if nComponentID != 0:
             # Yes, so update the existing component

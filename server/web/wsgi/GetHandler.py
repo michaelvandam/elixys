@@ -403,7 +403,7 @@ class GetHandler:
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
             # Enable or disable buttons
             bSequencerEnabled = False
-            bPauseEnabled = not pServerState["runstate"]["runcomplete"]
+            bPauseEnabled = False   #not pServerState["runstate"]["runcomplete"]
             bAbortEnabled = not pServerState["runstate"]["runcomplete"]
         else:
             # Enable or disable buttons

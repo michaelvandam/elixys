@@ -15,6 +15,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
   pParams["evapTime"] = pComponent["duration"]
   pParams["coolTemp"] = pComponent["finaltemperature"]
   pParams["stirSpeed"] = pComponent["stirspeed"]
+  pParams["stopAtTemperature"] = pComponent["stopattemperature"]
   pEvaporate = Evaporate(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
   pEvaporate.initializeComponent(pComponent)
   return pEvaporate
@@ -27,7 +28,7 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class Evaporate(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,PRESSURE:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT}
+    expectedParams = {REACTORID:STR,EVAPTEMP:FLOAT,PRESSURE:FLOAT,EVAPTIME:INT,COOLTEMP:INT,STIRSPEED:INT,STOPATTEMPERATURE:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
@@ -36,7 +37,9 @@ class Evaporate(UnitOperation):
     self.evapTemp = self.reactTemp
     self.evapTime = self.reactTime
     self.description = "Evaporating the contents of reactor " + str(self.ReactorID[-1]) + " at " + str(self.evapTemp) + " degrees Celsius for " + str(self.evapTime) + \
-      " seconds.  Stirring at " + str(self.stirSpeed) + " and cooling to a final temperature of " + str(self.coolTemp) + " degrees Celsius.";
+      " seconds.  Stirring at " + str(self.stirSpeed) + " and cooling to a final temperature of " + str(self.coolTemp) + " degrees Celsius."
+    if self.stopAtTemperature:
+      self.description += "  Stirring will stop once temperature is reached."
 
     #Should have parameters listed below:
     #self.ReactorID
@@ -44,6 +47,7 @@ class Evaporate(UnitOperation):
     #self.evapTime
     #self.coolTemp
     #self.stirSpeed
+    #self.stopAtTemperature
 
   def run(self):
     try:
@@ -60,7 +64,8 @@ class Evaporate(UnitOperation):
       self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
-      self.setStirSpeed(OFF)
+      if self.stopAtTemperature:
+        self.setStirSpeed(OFF)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
       self.setPressureRegulator(1,self.pressure,self.evapTime/2) #Ramp pressure over the first half of the evaporation
@@ -68,6 +73,8 @@ class Evaporate(UnitOperation):
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCool()
+      if not self.stopAtTemperature:
+        self.setStirSpeed(OFF)
       self.setStatus("Completing") 
       self.setStatus("Moving robot")
       self.setGasTransferValve(OFF)

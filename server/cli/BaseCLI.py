@@ -370,7 +370,7 @@ class BaseCLI(threading.Thread):
                 print "  * GripperUp()         * GripperDown()    * GripperOpen()   * GripperClose()"
                 print "  * GasTransferUp()     * GasTransferDown()"
                 print "  * GasTransferStart()  * GasTransferStop()"
-                print "  * LoadF18Start()      * LoadF18Stop()    * LoadHPLCStart() * LoadHPLCStop()  "
+                print "  * LoadF18Start()      * LoadF18Stop()    * HPLCLoad()      * HPLCInject()  "
                 print "  * MoveReactor(nReactor, sPositionName)"
                 print "  * ReactorUp(nReactor) * ReactorDown(nReactor)"
                 print "  * ReactorStopcockCW(nReactor, nStopcock)"

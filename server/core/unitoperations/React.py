@@ -16,6 +16,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
   pParams["coolingDelay"] = pComponent["coolingdelay"]
   pParams["reactPosition"] = "React" + str(pComponent["position"])
   pParams["stirSpeed"] = pComponent["stirspeed"]
+  pParams["stopAtTemperature"] = pComponent["stopattemperature"]
   pReact = React(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
   pReact.initializeComponent(pComponent)
   return pReact
@@ -28,7 +29,7 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class React(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,COOLINGDELAY:INT,REACTPOSITION:STR,STIRSPEED:INT}
+    expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,COOLINGDELAY:INT,REACTPOSITION:STR,STIRSPEED:INT,STOPATTEMPERATURE:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
@@ -40,6 +41,8 @@ class React(UnitOperation):
       self.description += " with an additional delay of " + str(self.coolingDelay) + " seconds."
     else:
       self.description += "."
+    if self.stopAtTemperature:
+      self.description += "  Stirring will stop once temperature is reached."
 
     #Should have parameters listed below:
     #self.ReactorID
@@ -49,6 +52,7 @@ class React(UnitOperation):
     #self.coolingDelay
     #self.reactPosition
     #self.stirSpeed
+    #self.stopAtTemperature
 
   def run(self):
     try:
@@ -59,13 +63,16 @@ class React(UnitOperation):
       self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
-      self.setStirSpeed(OFF)
+      if self.stopAtTemperature:
+        self.setStirSpeed(OFF)
       self.setStatus("Reacting")
       self.startTimer(self.reactTime)
       self.reactTime = self.waitForTimer()
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCool(self.coolingDelay)
+      if not self.stopAtTemperature:
+        self.setStirSpeed(OFF)
       self.setStatus("Completing") 
       self.setStatus("Complete")
     except Exception as e:
