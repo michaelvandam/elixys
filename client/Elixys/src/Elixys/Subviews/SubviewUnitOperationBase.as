@@ -401,7 +401,7 @@ package Elixys.Subviews
 		protected function OnScrollClick(event:ScrollClickEvent):void
 		{
 			// Hit test
-			var nIndex:int, pHitArea:Rectangle;
+			var nIndex:int, pHitArea:Rectangle, pReagent:Reagent;
 			for (nIndex = 0; nIndex < m_pFieldHitAreas.length; ++nIndex)
 			{
 				if (m_pFieldHitAreas[nIndex])
@@ -413,7 +413,15 @@ package Elixys.Subviews
 						// validation string
 						if (m_pComponent[m_pComponentFieldProperties[nIndex]] is Reagent)
 						{
-							m_sDropdownCurrentValue = (m_pComponent[m_pComponentFieldProperties[nIndex]] as Reagent).Name;
+							pReagent = m_pComponent[m_pComponentFieldProperties[nIndex]] as Reagent;
+							if (pReagent.Name)
+							{
+								m_sDropdownCurrentValue = pReagent.Name;
+							}
+							else
+							{
+								m_sDropdownCurrentValue = "";
+							}
 						}
 						else
 						{
@@ -435,6 +443,7 @@ package Elixys.Subviews
 						m_sDropdownType = pFieldValidation["type"];
 						m_pDropdownValues = new Array();
 						m_pDropdownData = new Array();
+						m_sDropdownErrorMessage = "";
 
 						// What type of list do we have?
 						var pValues:Array = pFieldValidation["values"].split(",");
@@ -449,8 +458,18 @@ package Elixys.Subviews
 						}
 						else
 						{
-							// Load the reagents from the server
-							GetReagents(pValues);
+							// Check if we have a list of one or more reagents
+							if ((pValues.length > 0) && (pValues[0] != ""))
+							{
+								// Load the reagents from the server
+								GetReagents(pValues);
+							}
+							else
+							{
+								// Show the dropdown list with a help message
+								m_sDropdownErrorMessage = "There are no unused reagents to choose from.  Use the Cassettes tab to the left to add new reagents.";
+								ShowDropdownList();
+							}
 						}
 						return;
 					}
@@ -650,7 +669,15 @@ package Elixys.Subviews
 					var pLabel:UILabel = pDropdown as UILabel;
 					if (pContents is Reagent)
 					{
-						pLabel.text = (pContents as Reagent).Name;
+						var pReagent:Reagent = pContents as Reagent;
+						if (pReagent.Name)
+						{
+							pLabel.text = (pContents as Reagent).Name;
+						}
+						else
+						{
+							pLabel.text = "";
+						}
 					}
 					else
 					{
@@ -981,7 +1008,7 @@ package Elixys.Subviews
 		protected function ShowDropdownList():void
 		{
 			m_pSequenceEdit.ShowDropdownList(m_pDropdownValues, m_sDropdownCurrentValue, m_pUnitOperationContainer, 
-				this, m_pDropdownData);
+				this, m_pDropdownData, m_sDropdownErrorMessage);
 			m_pUnitOperationScroll.visible = false;
 			m_pUnitOperationFadeTop.visible = false;
 			m_pUnitOperationFadeBottom.visible = false;
@@ -1003,9 +1030,6 @@ package Elixys.Subviews
 		// Called when the user selects an item from the dropdown list
 		protected function OnDropdownItemSelected(event:DropdownEvent):void
 		{
-			/// Hide the dropdown list
-			HideDropdownList();
-
 			// Set the component field
 			if (event.selectedData)
 			{
@@ -1015,7 +1039,10 @@ package Elixys.Subviews
 			{
 				m_pComponent[m_pComponentFieldProperties[m_sDropdownIndex]] = event.selectedValue;
 			}
-			
+
+			/// Hide the dropdown list
+			HideDropdownList();
+
 			// Post the component to the server
 			PostComponent(m_pComponent);
 		}
@@ -1128,6 +1155,7 @@ package Elixys.Subviews
 		protected var m_sDropdownCurrentValue:String;
 		protected var m_pDropdownValues:Array;
 		protected var m_pDropdownData:Array;
+		protected var m_sDropdownErrorMessage:String;
 
 		// Constants
 		public static const UNITOPERATIONHEADERPADDING:int = 5;

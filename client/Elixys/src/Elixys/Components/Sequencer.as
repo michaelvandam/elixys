@@ -11,6 +11,7 @@ package Elixys.Components
 	
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
+	import flash.events.MouseEvent;
 	import flash.utils.*;
 	
 	// This sequencer component is an extension of our extended Form class
@@ -48,8 +49,9 @@ package Elixys.Components
 			m_pSequencerHeader = findViewById("sequencer_header") as SequencerHeader;
 			m_pSequencerBody = findViewById("sequencer_body") as SequencerBody;
 			
-			// Pass the widths to the body
+			// Pass the widths and sequencer reference to the body
 			m_pSequencerBody.SetWidths(nUnitOperationWidth, nButtonSkinWidth);
+			m_pSequencerBody.SetSequencer(this);
 			
 			// Add event listeners
 			m_pSequencerHeader.addEventListener(ButtonEvent.CLICK, OnButtonClick);
@@ -111,7 +113,128 @@ package Elixys.Components
 			// Pass the event to anyone listening
 			dispatchEvent(new SelectionEvent(event.selectionID));
 		}
+		
+		// Called to start dragging a new unit operation
+		public function StartDraggingNew(pDragTarget:Sprite, sDraggingOperation:String):void
+		{
+			// Remember the operation and clear the other variables
+			m_sDraggingOperation = sDraggingOperation;
+			m_nDraggingID = -1;
+			m_pDragTargetUpSkin = null;
+			m_pDragTargetDeleteSkin = null;
+			
+			// Start dragging
+			StartDragging(pDragTarget);
+		}
 
+		// Called to start dragging an existing unit operation
+		public function StartDraggingExisting(pDragTarget:Sprite, nDraggingID:int, pUpSkin:MovieClip, pDeleteSkin:MovieClip):void
+		{
+			// Remember the ID and skins and clear the operation
+			m_nDraggingID = nDraggingID;
+			m_pDragTargetUpSkin = pUpSkin;
+			m_pDragTargetDeleteSkin = pDeleteSkin;
+			m_sDraggingOperation = "";
+			
+			// Start dragging
+			StartDragging(pDragTarget);
+		}
+		
+		// Internal start dragging function
+		protected function StartDragging(pDragTarget:Sprite):void
+		{
+			// Delete any existing drag target
+			if (m_pDragTarget != null)
+			{
+				stage.removeChild(m_pDragTarget);
+				m_pDragTarget = null;
+			}
+			
+			// Start dragging
+			m_pDragTarget = pDragTarget;
+			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
+			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
+			m_pDragTarget.startDrag();
+			stage.addEventListener(MouseEvent.MOUSE_MOVE, OnDragMouseMove);
+			stage.addEventListener(MouseEvent.MOUSE_UP, OnDragMouseUp);
+		}
+		
+		// Called when the user moves the mouse while dragging
+		protected function OnDragMouseMove(event:MouseEvent):void
+		{
+			// Move the drag target
+			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
+			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
+			
+			// Check if we are dragging a new or existing unit operation
+			if (m_nDraggingID != -1)
+			{
+				// We are dragging an existing unit operation.  Hit test the header first to see if the user is trying
+				// to delete the operation
+				if (m_pSequencerHeader.DragHitTest(m_pDragTarget))
+				{
+					// Yes, so show the delete skin
+					m_pDragTargetDeleteSkin.visible = true;
+					m_pDragTargetUpSkin.visible = false;
+					
+					// Hide any opening in the sequencer body
+					m_pSequencerBody.DragHitTest(null);
+				}
+				else
+				{
+					// No, so show the up skin
+					m_pDragTargetUpSkin.visible = true;
+					m_pDragTargetDeleteSkin.visible = false;
+					
+					// Hit test the sequencer body
+					m_pSequencerBody.DragHitTest(m_pDragTarget);
+				}
+			}
+			else
+			{
+				// We are dragging an new unit operation.  Hit test the sequencer body
+				m_pSequencerBody.DragHitTest(m_pDragTarget);
+			}
+		}
+		
+		// Called when the user releases the mouse button while dragging
+		protected function OnDragMouseUp(event:MouseEvent):void
+		{
+			// Remove the event listeners
+			stage.removeEventListener(MouseEvent.MOUSE_MOVE, OnDragMouseMove);
+			stage.removeEventListener(MouseEvent.MOUSE_UP, OnDragMouseUp);
+			
+			// Check if we are dragging a new or existing unit operation
+			if (m_nDraggingID != -1)
+			{
+				// We are dragging an existing unit operation.  Hit test the header first to see if the user is trying
+				// to delete the operation
+				if (m_pSequencerHeader.DragHitTest(m_pDragTarget))
+				{
+					// Yes, so delete the unit operation
+					m_pSequencerBody.DropOnDelete();
+				}
+				else
+				{
+					// No, so give the sequencer body a chance to reorder the existing unit operation
+					m_pSequencerBody.DropExisting(m_pDragTarget);
+				}
+			}
+			else
+			{
+				// We are dragging an new unit operation.  Give the sequencer body a chance to insert
+				// the new unit operation
+				m_pSequencerBody.DropNew(m_pDragTarget, m_sDraggingOperation);
+			}
+			
+			// Delete the drag target
+			if (m_pDragTarget != null)
+			{
+				stage.removeChild(m_pDragTarget);
+				m_pDragTarget = null;
+			}
+		}
+		
 		/***
 		 * Member variables
 		 **/
@@ -139,6 +262,13 @@ package Elixys.Components
 		protected var m_pSequencerHeader:SequencerHeader;
 		protected var m_pSequencerBody:SequencerBody;
 		
+		// Drag-and-drop variables
+		protected var m_pDragTarget:Sprite;
+		protected var m_nDraggingID:int = -1;
+		protected var m_pDragTargetUpSkin:MovieClip;
+		protected var m_pDragTargetDeleteSkin:MovieClip;
+		protected var m_sDraggingOperation:String = "";
+
 		// Constants
 		public static var VISIBLE_COLUMN_COUNT:int = 9;
 		public static var BUTTON_GAP:int = 20;

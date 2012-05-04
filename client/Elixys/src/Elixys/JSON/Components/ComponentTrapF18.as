@@ -168,7 +168,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"TRAPF18\"," +
 			"\"id\":0," +
-			"\"name\":\"Trap F18\"," +
+			"\"note\":\"\"," +
 			"\"cyclotronflag\":0," +
 			"\"traptime\":0," +
 			"\"trappressure\":0}";

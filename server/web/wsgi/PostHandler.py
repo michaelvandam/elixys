@@ -644,6 +644,9 @@ class PostHandler:
         pReagent = json.loads(self.__pBody)
         self.__pDatabase.UpdateReagent(self.__sRemoteUser, nReagentID, pReagent["available"], pReagent["name"], pReagent["description"])
 
+        # Flag the sequence validation as dirty
+        self.__pDatabase.UpdateSequenceDirtyFlag(self.__sRemoteUser, nSequenceID, True)
+
         # Return the new state
         return self.__SaveClientStateAndReturn()
 

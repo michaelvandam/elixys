@@ -311,14 +311,14 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"REACT\"," +
 			"\"id\":0," +
-			"\"name\":\"React\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"position\":0," +
 			"\"duration\":0," +
 			"\"reactiontemperature\":0," +
 			"\"finaltemperature\":0," +
 			"\"coolingdelay\":0," +
-			"\"stirspeed\":0}," +
+			"\"stirspeed\":0," +
 			"\"stopattemperature\":0}";
 		
 		// Validation errors

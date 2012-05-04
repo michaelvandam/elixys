@@ -140,7 +140,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"INSTALL\"," +
 			"\"id\":0," +
-			"\"name\":\"Install\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"message\":\"\"}";
 		

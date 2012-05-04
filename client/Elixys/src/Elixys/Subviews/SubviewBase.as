@@ -335,7 +335,7 @@ package Elixys.Subviews
 		{
 			if (pReagents.length > 0)
 			{
-				var sURL:String = "/Elixys/sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagents[0];
+				var sURL:String = "sequence/" + m_pSequence.Metadata.ID + "/reagent/" + pReagents[0];
 				for (var nIndex:int = 1; nIndex < pReagents.length; ++nIndex)
 				{
 					sURL += "." + pReagents[nIndex];

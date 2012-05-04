@@ -69,6 +69,6 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"INITIALIZE\"," +
 			"\"id\":0," +
-			"\"name\":\"Initialize\"}";
+			"\"note\":\"\"}";
 	}
 }

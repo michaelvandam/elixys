@@ -111,7 +111,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"PROMPT\"," +
 			"\"id\":0," +
-			"\"name\":\"Prompt\"," +
+			"\"note\":\"\"," +
 			"\"message\":\"\"}";
 		
 		// Validation errors

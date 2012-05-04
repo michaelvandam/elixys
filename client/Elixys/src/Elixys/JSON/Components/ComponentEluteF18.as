@@ -140,7 +140,15 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
-			return Reagent.CompareReagents(pComponentEluteF18A.EluteReagent, pComponentEluteF18B.EluteReagent);
+			if (!Reagent.CompareReagents(pComponentEluteF18A.EluteReagent, pComponentEluteF18B.EluteReagent))
+			{
+				return false;
+			}
+			if (pComponentEluteF18A.EluteReagentValidation != pComponentEluteF18B.EluteReagentValidation)
+			{
+				return false;
+			}
+			return true;
 		}
 
 		// Validates the transfer component
@@ -173,7 +181,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"ELUTEF18\"," +
 			"\"id\":0," +
-			"\"name\":\"Elute F18\"," +
+			"\"note\":\"\"," +
 			"\"elutetime\":0," +
 			"\"elutepressure\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "}";

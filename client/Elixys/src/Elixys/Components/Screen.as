@@ -84,10 +84,20 @@ package Elixys.Components
 			// Pass the request up to be sent to the server
 			var pHTTPRequest:HTTPRequest = new HTTPRequest();
 			pHTTPRequest.m_sMethod = "GET";
-			pHTTPRequest.m_sResource = sResource;
+			pHTTPRequest.m_sResource = "/Elixys/" + sResource;
 			m_pElixys.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
 		}
 
+		// Deletes data from the server
+		public function DoDelete(sResource:String):void
+		{
+			// Pass the request up to be sent to the server
+			var pHTTPRequest:HTTPRequest = new HTTPRequest();
+			pHTTPRequest.m_sMethod = "DELETE";
+			pHTTPRequest.m_sResource = "/Elixys/" + sResource;
+			m_pElixys.dispatchEvent(new HTTPRequestEvent(pHTTPRequest));
+		}
+		
 		/***
 		 * Member variables
 		 **/

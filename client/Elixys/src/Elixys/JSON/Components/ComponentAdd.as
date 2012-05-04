@@ -178,6 +178,10 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
+			if (pComponentAddA.AddReagentValidation != pComponentAddB.AddReagentValidation)
+			{
+				return false;
+			}
 			if (pComponentAddA.DeliveryPosition != pComponentAddB.DeliveryPosition)
 			{
 				return false;
@@ -233,13 +237,13 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"ADD\"," +
 			"\"id\":0," +
-			"\"name\":\"Add\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "," +
 			"\"deliveryposition\":0," +
 			"\"deliverytime\":0," +
 			"\"deliverypressure\":0}";
-		
+
 		// Validation errors
 		protected var m_sReactorError:String = "";
 		protected var m_sAddReagentError:String = "";

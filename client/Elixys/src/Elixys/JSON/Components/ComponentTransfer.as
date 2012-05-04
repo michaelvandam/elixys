@@ -224,7 +224,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"TRANSFER\"," +
 			"\"id\":0," +
-			"\"name\":\"Transfer\"," +
+			"\"note\":\"\"," +
 			"\"sourcereactor\":0," +
 			"\"targetreactor\":0," +
 			"\"mode\":\"Trap\"," +

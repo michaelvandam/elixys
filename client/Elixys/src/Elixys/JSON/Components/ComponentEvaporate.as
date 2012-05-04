@@ -280,7 +280,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"EVAPORATE\"," +
 			"\"id\":0," +
-			"\"name\":\"Evaporate\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"duration\":0," +
 			"\"evaporationtemperature\":0," +

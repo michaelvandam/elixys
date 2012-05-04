@@ -176,6 +176,9 @@ package Elixys.Views
 			pContainer.xml.appendChild(SEQUENCETOOLS);
 			pContainer.AppendChild(m_pSequenceTools);
 			layout(attributes);
+			
+			// Set the sequencer reference
+			m_pSequenceTools.SetSequencer(m_pSequencer);
 		}
 		
 		// Load the sequencer
@@ -240,8 +243,8 @@ package Elixys.Views
 			m_pStateSequence = pStateSequence;
 			
 			// Fetch the sequence and component from the server
-			DoGet("/Elixys/sequence/" + pState.ClientState.SequenceID);
-			DoGet("/Elixys/sequence/" + pState.ClientState.SequenceID + "/component/" + pState.ClientState.ComponentID);
+			DoGet("sequence/" + pState.ClientState.SequenceID);
+			DoGet("sequence/" + pState.ClientState.SequenceID + "/component/" + pState.ClientState.ComponentID);
 		}
 
 		// Updates the sequence

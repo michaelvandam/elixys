@@ -230,10 +230,10 @@ class SequenceManager:
     pSequence = self.GetSequence(sRemoteUser, nSequenceID)
     pAllReagents = self.database.GetReagentsBySequence(sRemoteUser, nSequenceID)
 
-    # Filter reagents to keep only those that are available
+    # Filter reagents to keep only those that have a name
     pAvailableReagents = []
     for pReagent in pAllReagents:
-      if pReagent["available"]:
+      if pReagent["name"] != "":
         pAvailableReagents.append(pReagent)
 
     # Do a full validation of each component

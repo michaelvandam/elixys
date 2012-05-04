@@ -50,8 +50,14 @@ package Elixys.Views
 					LoadNavigationBar("sequenceedit_navigationbar_container", NAVIGATION);
 				}
 
-				// Step 2 is loading the tab bar
+				// Step 2 is loading the sequencer
 				if (m_nChildrenLoaded == 1)
+				{
+					LoadSequencer("sequenceedit_sequencer_container", SEQUENCER);
+				}
+
+				// Step 3 is loading the tab bar
+				if (m_nChildrenLoaded == 2)
 				{
 					m_pTabs = new Array();
 					m_pTabs.push(Tab.CreateTab("CASSETTES", "CASSETTES"));
@@ -59,22 +65,16 @@ package Elixys.Views
 					LoadTabBar("sequenceedit_tabbar_container", m_pTabs, "CASSETTES");
 				}
 				
-				// Step 3 is loading the tools component
-				if (m_nChildrenLoaded == 2)
+				// Step 4 is loading the tools component
+				if (m_nChildrenLoaded == 3)
 				{
 					LoadSequenceTools("sequenceedit_cassettestools_container");
 				}
 
-				// Step 4 is loading the cassettes component
-				if (m_nChildrenLoaded == 3)
-				{
-					LoadSequenceCassettes("sequenceedit_cassettestools_container");
-				}
-				
-				// Step 5 is loading the sequencer
+				// Step 5 is loading the cassettes component
 				if (m_nChildrenLoaded == 4)
 				{
-					LoadSequencer("sequenceedit_sequencer_container", SEQUENCER);
+					LoadSequenceCassettes("sequenceedit_cassettestools_container");
 				}
 				
 				// Increment and return
@@ -123,7 +123,8 @@ package Elixys.Views
 		}
 
 		// Shows the dropdown list
-		public function ShowDropdownList(pValues:Array, sCurrentValue:String, pParent:Form, pEventListener:EventDispatcher, pData:Array = null):void
+		public function ShowDropdownList(pValues:Array, sCurrentValue:String, pParent:Form, pEventListener:EventDispatcher,
+										 pData:Array = null, sErrorMessage:String = ""):void
 		{
 			// Creating the dropdown list
 			if (!m_pDropdownList)
@@ -148,8 +149,8 @@ package Elixys.Views
 			// Remember the current event listener
 			m_pDropdownEventListener = pEventListener;
 
-			// Pass the current value and array
-			m_pDropdownList.SetList(pValues, sCurrentValue, pData);
+			// Pass the parameters to the dropdown
+			m_pDropdownList.SetList(pValues, sCurrentValue, pData, sErrorMessage);
 		}
 
 		// Hides the dropdown list

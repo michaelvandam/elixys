@@ -140,7 +140,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"MOVE\"," +
 			"\"id\":0," +
-			"\"name\":\"Move\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"position\":0}";
 		

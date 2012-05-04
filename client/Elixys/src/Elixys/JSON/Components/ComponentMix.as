@@ -168,7 +168,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"MIX\"," +
 			"\"id\":0," +
-			"\"name\":\"Mix\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"mixtime\":0," + 
 			"\"stirspeed\":0}";

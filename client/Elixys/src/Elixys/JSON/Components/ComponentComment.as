@@ -111,7 +111,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"COMMENT\"," +
 			"\"id\":0," +
-			"\"name\":\"Comment\"," +
+			"\"note\":\"\"," +
 			"\"comment\":\"\"}";
 		
 		// Validation errors

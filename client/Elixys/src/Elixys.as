@@ -11,6 +11,7 @@ package
 	import Elixys.JSON.State.*;
 	import Elixys.Views.*;
 	
+	import com.adobe.protocols.dict.events.ErrorEvent;
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Loader;
@@ -20,8 +21,10 @@ package
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.HTTPStatusEvent;
+	import flash.events.IEventDispatcher;
 	import flash.events.SoftKeyboardEvent;
 	import flash.events.TimerEvent;
+	import flash.events.UncaughtErrorEvent;
 	import flash.net.SharedObject;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
@@ -277,8 +280,6 @@ package
 			ShowLoginScreen("HTTP exception (" + event.exception + ")");
 		}
 		
-		// Catch all unhandled exceptions
-
 		/***
 		 * Connect to server functions
 		 **/

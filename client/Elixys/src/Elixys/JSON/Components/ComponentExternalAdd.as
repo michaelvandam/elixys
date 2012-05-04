@@ -149,7 +149,7 @@ package Elixys.JSON.Components
 			"\"type\":\"component\"," +
 			"\"componenttype\":\"EXTERNALADD\"," +
 			"\"id\":0," +
-			"\"name\":\"External Add\"," +
+			"\"note\":\"\"," +
 			"\"reactor\":0," +
 			"\"reagentname\":\"\"," + 
 			"\"message\":\"\"}";

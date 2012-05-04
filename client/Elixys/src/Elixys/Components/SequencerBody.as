@@ -3,6 +3,7 @@ package Elixys.Components
 	import Elixys.Assets.*;
 	import Elixys.Events.SelectionEvent;
 	import Elixys.Extended.Form;
+	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
 	import Elixys.JSON.Components.Components;
 	import Elixys.JSON.State.Column;
@@ -13,6 +14,7 @@ package Elixys.Components
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
+	import flash.display.DisplayObjectContainer;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
@@ -126,6 +128,18 @@ package Elixys.Components
 				m_pHoldTimer = new Timer(500, 1);
 				m_pHoldTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHoldTimer);
 			}
+			
+			// Locates the screen
+			var pParent:DisplayObjectContainer = this;
+			while (pParent != null)
+			{
+				if (pParent is Screen)
+				{
+					m_pScreen = pParent as Screen;
+					break;
+				}
+				pParent = pParent.parent;
+			}
 		}
 		
 		/***
@@ -137,6 +151,12 @@ package Elixys.Components
 		{
 			m_nUnitOperationWidth = nUnitOperationWidth;
 			m_nButtonSkinWidth = nButtonWidth;
+		}
+		
+		// Sets the sequencer
+		public function SetSequencer(pSequencer:Sequencer):void
+		{
+			m_pSequencer = pSequencer;
 		}
 		
 		// Override the hit searching function
@@ -229,6 +249,12 @@ package Elixys.Components
 		// Update the sequence
 		public function UpdateSequence(pSequence:Sequence):void
 		{
+			// Ignore if we're dragging
+			if (m_nDraggingID != -1)
+			{
+				return;
+			}
+			
 			// Count the number of non-cassette unit operations
 			var nIndex:int, pComponent:SequenceComponent, nUnitOperations:int = 0;
 			for (nIndex = 0; nIndex < pSequence.Components.length; ++nIndex)
@@ -271,7 +297,7 @@ package Elixys.Components
 			m_nPressedIndex = -1;
 
 			// Create the hit array
-			var nOffset:Number = WINDOW_GAP + 10;
+			var nOffset:Number = WINDOW_GAP + 10, nUnitOperationIndex:int = 0;
 			m_pHitAreas = new Array();
 			for (nIndex = 0; nIndex < pSequence.Components.length; ++nIndex)
 			{
@@ -285,6 +311,7 @@ package Elixys.Components
 				// Create the hit area
 				m_pHitAreas.push(new Rectangle(nOffset, 0, m_nUnitOperationWidth, m_nSequencerWindowHeight));
 				nOffset += m_nUnitOperationWidth;
+				++nUnitOperationIndex;
 			}
 
 			// Adjust the number of button background skins
@@ -323,7 +350,7 @@ package Elixys.Components
 
 			// Adjust the number and type of unit operation skins
 			var pClass:Class;
-			var nUnitOperationIndex:int = 0;
+			nUnitOperationIndex = 0;
 			for (nIndex = 0; nIndex < pSequence.Components.length; ++nIndex)
 			{
 				// Skip cassettes
@@ -675,6 +702,12 @@ package Elixys.Components
 		// Updates the view component positions
 		protected function AdjustPositions():void
 		{
+			// Ignore if we're dragging
+			if (m_nDraggingID != -1)
+			{
+				return;
+			}
+			
 			// Adjust the visual elements for each unit operation
 			var pLabel:UILabel, pComponent:SequenceComponent, nButtonSkinX:Number, nButtonSkinY:Number,
 				nUnitOpSkinX:Number, nUnitOpSkinY:Number, pUpSkin:MovieClip, pDownSkin:MovieClip,
@@ -758,6 +791,12 @@ package Elixys.Components
 		// Updates the rendering
 		protected function Render():void
 		{
+			// Ignore if we're dragging
+			if (m_nDraggingID != -1)
+			{
+				return;
+			}
+
 			// Update the visibility of the button skins
 			var nIndex:int, nUnitOperationIndex:int = 0, pComponent:SequenceComponent;
 			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
@@ -947,40 +986,34 @@ package Elixys.Components
 			stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUp);
 			_dragTimer.stop();
 			_touchTimer.stop();
-
-			// Delete any existing drag target
-			if (m_pDragTarget != null)
-			{
-				stage.removeChild(m_pDragTarget);
-				m_pDragTarget = null;
-			}
+			trace("Restore base class control in SequencerBody?");
 
 			// Get a reference to the pressed sequence component
 			var nSequenceIndex:int = m_nPressedIndex + (m_pSequence.Components.length - m_pHitAreas.length);
 			var pComponent:SequenceComponent = m_pSequence.Components[nSequenceIndex] as SequenceComponent;
 
 			// Duplicate the pressed unit operation
-			m_pDragTarget = new Sprite();
-			stage.addChild(m_pDragTarget);
-			m_pDragTargetDeleteSkin = AddSkin(tools_btn_delete, m_pDragTarget);
-			m_pDragTargetDeleteSkin.visible = false;
-			var pForegroundSkin:MovieClip, pLabel:UILabel;
+			var pDragTarget:Sprite = new Sprite();
+			stage.addChild(pDragTarget);
+			var pDeleteSkin:MovieClip = AddSkin(tools_btn_delete, pDragTarget);
+			pDeleteSkin.visible = false;
+			var pUpSkin:MovieClip, pForegroundSkin:MovieClip, pLabel:UILabel;
 			if (m_nPressedIndex == m_nSelectedIndex)
 			{
-				m_pDragTargetUpSkin = AddSkin(tools_btn_active, m_pDragTarget);
-				pForegroundSkin = AddSkin(Components.GetActiveSkin(pComponent.ComponentType), m_pDragTarget);
+				pUpSkin = AddSkin(tools_btn_active, pDragTarget);
+				pForegroundSkin = AddSkin(Components.GetActiveSkin(pComponent.ComponentType), pDragTarget);
 				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationActiveTextColor,
-					m_pDragTarget);
+					pDragTarget);
 			}
 			else
 			{
-				m_pDragTargetUpSkin = AddSkin(tools_btn_up, m_pDragTarget);
-				pForegroundSkin = AddSkin(Components.GetUpSkin(pComponent.ComponentType), m_pDragTarget);
+				pUpSkin = AddSkin(tools_btn_up, pDragTarget);
+				pForegroundSkin = AddSkin(Components.GetUpSkin(pComponent.ComponentType), pDragTarget);
 				pLabel = AddLabel(m_sUnitOperationFontFace, m_nUnitOperationFontSize, m_nUnitOperationEnabledTextColor,
-					m_pDragTarget);
+					pDragTarget);
 			}
-			m_pDragTargetDeleteSkin.width = m_pDragTargetUpSkin.width = m_nButtonSkinWidth;
-			m_pDragTargetDeleteSkin.scaleY = m_pDragTargetUpSkin.scaleY = m_pDragTargetDeleteSkin.scaleX;
+			pDeleteSkin.width = pUpSkin.width = m_nButtonSkinWidth;
+			pDeleteSkin.scaleY = pUpSkin.scaleY = pDeleteSkin.scaleX;
 			pForegroundSkin.x = (m_nButtonSkinWidth - pForegroundSkin.width) / 2;
 			pForegroundSkin.y = ICON_PADDING;
 			pLabel.text = pComponent.ComponentType;
@@ -991,46 +1024,391 @@ package Elixys.Components
 			// Add error callout if the unit operation has one
 			if (m_pUnitOperationWarningIcons[m_nPressedIndex] != null)
 			{
-				var pWarningIcon:MovieClip = AddSkin(sequencer_invalidMarker, m_pDragTarget);
+				var pWarningIcon:MovieClip = AddSkin(sequencer_invalidMarker, pDragTarget);
 				pWarningIcon.height = WARNING_ICON_HEIGHT;
 				pWarningIcon.scaleX = pWarningIcon.scaleY;
-				pWarningIcon.x = m_pDragTargetUpSkin.width - pWarningIcon.width + WARNING_ICON_OFFSETX;
+				pWarningIcon.x = pUpSkin.width - pWarningIcon.width + WARNING_ICON_OFFSETX;
 				pWarningIcon.y = WARNING_ICON_OFFSETY;
 			}
 
-			// Start dragging
-			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
-			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
-			m_pDragTarget.startDrag();
-			stage.addEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
-			stage.addEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
+			// Start the drag operation
+			m_pSequencer.StartDraggingExisting(pDragTarget, pComponent.ID, pUpSkin, pDeleteSkin);
 			
-			// Clear the pressed index
+			// Clear the pressed index and hide the drag target
 			m_nPressedIndex = -1;
+			HideDragTarget(pComponent.ID);
 		}
 
-		// Called when the user moves the mouse while holding the button pressed
-		protected function OnHoldMouseMove(event:MouseEvent):void
+		// Hit test the drag target
+		public function DragHitTest(pDragTarget:Sprite):void
 		{
-			// Move the drag target
-			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
-			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
-		}
-
-		// Called when the user moves the mouse while holding the button pressed
-		protected function OnHoldMouseUp(event:MouseEvent):void
-		{
-			// Remove the event listeners
-			stage.removeEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
-			stage.removeEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
-			
-			// Delete the drag target
-			if (m_pDragTarget != null)
+			// Check if we have a drag target
+			if (pDragTarget)
 			{
-				stage.removeChild(m_pDragTarget);
-				m_pDragTarget = null;
-				m_pDragTargetUpSkin = null;
-				m_pDragTargetDeleteSkin = null;
+				// Create or close any drop opening
+				var pDragTargetIDs:Array = FindDragTargetIDs(pDragTarget);
+				if (pDragTargetIDs)
+				{
+					CreateDropOpening(pDragTargetIDs[0]);
+				}
+			}
+			else
+			{
+				// Close any opening in the unit operations
+				CloseDropOpening();
+			}
+		}
+
+		// Called when the user drops an existing unit operation on the trash can
+		public function DropOnDelete():void
+		{
+			// Delete the component from the sequence
+			m_pScreen.DoDelete("sequence/" + m_pSequence.Metadata.ID + "/component/" + m_nDraggingID);
+
+			// Restore the drag target and update the sequence
+			UnhideDragTarget();
+		}
+		
+		// Called when the user drops an existing unit operation
+		public function DropExisting(pDragTarget:Sprite):void
+		{
+			// Move the existing unit operation
+			var pDragTargetIDs:Array = FindDragTargetIDs(pDragTarget);
+			if (pDragTargetIDs)
+			{
+				m_pScreen.DoPost(null, "sequence/" + m_pSequence.Metadata.ID + "/component/" + m_nDraggingID + "/" + pDragTargetIDs[0]);
+			}
+
+			// Restore the drag target and update the sequence
+			UnhideDragTarget();
+		}
+		
+		// Called when the user drops a new unit operation
+		public function DropNew(pDragTarget:Sprite, sDraggingOperation:String):void
+		{
+			// Insert the new unit operation
+			var pDragTargetIDs:Array = FindDragTargetIDs(pDragTarget);
+			if (pDragTargetIDs)
+			{
+				// Create a blank instance of the appropriate unit operation
+				var pComponentClass:Class = Components.GetComponentClass(sDraggingOperation);
+				var pComponent:* = new pComponentClass();
+					
+				// Insert the unit operation
+				m_pScreen.DoPost(pComponent, "sequence/" + m_pSequence.Metadata.ID + "/component/0/" + pDragTargetIDs[0]);
+			}
+		}
+
+		// Locates the insert ID for the give drag target
+		protected function FindDragTargetIDs(pDragTarget:Sprite):Array
+		{
+			// Search for the unit operations that intersect with the drag target
+			var nIndex:int, nUnitOperationIndex:int = 0, pComponent:SequenceComponent, pReturn:Array = new Array(), 
+				nLastCassetteID:int = -1, nFirstUnitOperationID:int = -1, nLastUnitOperationID:int = -1;
+			var pDragRect:Rectangle = pDragTarget.getBounds(_slider);
+			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			{
+				// Skip cassettes
+				pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+				if (pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					// Remember the last cassette ID
+					nLastCassetteID = pComponent.ID;
+					continue;
+				}
+
+				// Skip the unit operation that we are dragging
+				if (pComponent.ID == m_nDraggingID)
+				{
+					++nUnitOperationIndex;
+					continue;
+				}
+				
+				// Remember the first unit operation
+				if (nFirstUnitOperationID == -1)
+				{
+					nFirstUnitOperationID = pComponent.ID;
+				}
+				
+				// Hit test
+				if ((m_pHitAreas[nUnitOperationIndex] as Rectangle).intersects(pDragRect))
+				{
+					// They intersect, add the component ID
+					pReturn.push(pComponent.ID);
+					
+					// The drag target should only be able to overlap two unit operations
+					if (pReturn.length == 2)
+					{
+						break;
+					}
+				}
+				
+				// Remember the last unit operation ID and increment
+				nLastUnitOperationID = pComponent.ID;
+				++nUnitOperationIndex;
+			}
+
+			// Prepend the last cassette ID if the only item in our array is the first unit operation ID
+			if ((pReturn.length == 1) && (pReturn[0] == nFirstUnitOperationID))
+			{
+				pReturn[0] = nLastCassetteID;
+				pReturn.push(nFirstUnitOperationID);
+			}
+			
+			// Return the insert ID if we have one
+			if (pReturn.length)
+			{
+				return pReturn;
+			}
+			
+			// Return the last unit operation or cassette ID if the user dropped the unit operation
+			// anywhere on the slider
+			var pSliderRect:Rectangle = new Rectangle(0, 0, _slider.width, _slider.height);
+			if (pSliderRect.intersects(pDragRect))
+			{
+				if (nLastUnitOperationID != -1)
+				{
+					return [nLastUnitOperationID];
+				}
+				else
+				{
+					return [nLastCassetteID];
+				}
+			}
+			
+			// Drag target was dropped elsewhere on the screen
+			return null;
+		}
+		
+		// Hides the sequencer drag target
+		protected function HideDragTarget(nDragTargetID:int):void
+		{
+			// Remember the drag target ID
+			m_nDraggingID = nDragTargetID;
+			
+			// Walk the component array and adjust each one
+			var nIndex:int, pComponent:SequenceComponent, nUnitOperationIndex:int = 0, bFound:Boolean = false,
+				nPreviousUnitOperationID:int = -1, nOpeningWidth:Number = m_nUnitOperationWidth * DROP_OPENING_PERCENT/ 100;
+			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			{
+				// Skip cassettes
+				pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+				if (pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					nPreviousUnitOperationID = pComponent.ID;
+					continue;
+				}
+				
+				// Skip until we get to the unit operation that is being hidden
+				if (!bFound && (pComponent.ID != m_nDraggingID))
+				{
+					++nUnitOperationIndex;
+					nPreviousUnitOperationID = pComponent.ID;
+					continue;
+				}
+				
+				// Hide the target unit operation
+				if (!bFound)
+				{
+					// Hide the unit operation components
+					(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					if (m_pUnitOperationWarningIcons[nUnitOperationIndex])
+					{
+						(m_pUnitOperationWarningIcons[nUnitOperationIndex] as MovieClip).visible = false;
+					}
+					(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).visible = false;
+					(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).visible = false;
+					if (m_pNoteLabels[nUnitOperationIndex])
+					{
+						(m_pNoteLabels[nUnitOperationIndex] as UILabel).visible = false;
+					}
+					(m_pNumberLabels[nUnitOperationIndex] as UILabel).visible = false;
+					
+					// Set the found flag and increment the index
+					bFound = true;
+					++nUnitOperationIndex;
+					
+					// Set the drop opening ID and continue
+					m_nDropOpeningID = nPreviousUnitOperationID;
+					continue;
+				}
+				
+				// Set the positions of the button skins
+				(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				if (m_pUnitOperationWarningIcons[nUnitOperationIndex])
+				{
+					(m_pUnitOperationWarningIcons[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				}
+				(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).x -= nOpeningWidth;
+				(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).x -= nOpeningWidth;
+				if (m_pNoteLabels[nUnitOperationIndex])
+				{
+					(m_pNoteLabels[nUnitOperationIndex] as UILabel).x -= nOpeningWidth;
+				}
+				(m_pNumberLabels[nUnitOperationIndex] as UILabel).x -= nOpeningWidth;
+				(m_pHitAreas[nUnitOperationIndex] as Rectangle).x -= nOpeningWidth;
+				
+				// Increment index
+				++nUnitOperationIndex;
+			}				
+			
+			// Update the slider and skins
+			if ((m_pWindowRightSkin.x + m_pWindowRightSkin.width - m_nUnitOperationWidth) > attributes.width)
+			{
+				// Update the center and right window skin positions
+				m_pWindowRightSkin.x -= m_nUnitOperationWidth;
+				m_pWindowCenterSkin.width -= m_nUnitOperationWidth;
+				
+				// Reduce the slider dimensions
+				var pSlider:Form = _slider as Form;
+				pSlider.ForceWidth(pSlider.attributes.width - m_nUnitOperationWidth);
+				doLayout();
+			}
+		}
+
+		// Unhides the sequencer drag target
+		protected function UnhideDragTarget():void
+		{
+			// Walk the component array and restore the hidden unit operation
+			var nIndex:int, pComponent:SequenceComponent, nUnitOperationIndex:int = 0;
+			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			{
+				// Skip cassettes
+				pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+				if (pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					continue;
+				}
+				
+				// Skip until we get to the unit operation that was hidden
+				if (pComponent.ID != m_nDraggingID)
+				{
+					++nUnitOperationIndex;
+					continue;
+				}
+				
+				// Unhide the target unit operation
+				(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				if (m_pUnitOperationWarningIcons[nUnitOperationIndex])
+				{
+					(m_pUnitOperationWarningIcons[nUnitOperationIndex] as MovieClip).visible = true;
+				}
+				(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).visible = true;
+				(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).visible = true;
+				if (m_pNoteLabels[nUnitOperationIndex])
+				{
+					(m_pNoteLabels[nUnitOperationIndex] as UILabel).visible = true;
+				}
+				(m_pNumberLabels[nUnitOperationIndex] as UILabel).visible = true;
+			}
+			
+			// Clear the dragging IDs and refresh the sequence
+			m_nDraggingID = -1;
+			m_nDropOpeningID = -1;
+			UpdateSequence(m_pSequence);
+		}
+		
+		// Creates a drop opening after the specified unit operation
+		protected function CreateDropOpening(nFirstUnitOperationID:int):void
+		{
+			/*
+			// Ignore if the unit operation hasn't changed
+			if (nFirstUnitOperationID == m_nDropOpeningID)
+			{
+				return;
+			}
+			
+			// Walk the component array and adjust each one
+			var nIndex:int, pComponent:SequenceComponent, nUnitOperationIndex:int = 0, nDeltaX:Number = 0;
+			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
+			{
+				// Check if the is the existing drop opening
+				pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
+				if (pComponent.ID == m_nDropOpeningID)
+				{
+					trace("existing site");
+				}
+				
+				// Check if this is the site of the new drop opening
+				if (pComponent.ID == nFirstUnitOperation)
+				{
+					trace("new site");
+				}
+				
+				// Skip cassettes
+				if (pComponent.ComponentType == ComponentCassette.COMPONENTTYPE)
+				{
+					continue;
+				}
+
+				// Set the positions of the button skins
+				(m_pButtonUpSkins[nUnitOperationIndex] as MovieClip).x += nDeltaX;
+				(m_pButtonDownSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pButtonDisabledSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pButtonActiveSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				if (m_pUnitOperationWarningIcons[nUnitOperationIndex])
+				{
+					(m_pUnitOperationWarningIcons[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				}
+				(m_pUnitOperationUpSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pUnitOperationDownSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pUnitOperationDisabledSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pUnitOperationActiveSkins[nUnitOperationIndex] as MovieClip).x -= nDeltaX;
+				(m_pUnitOperationLabels[nUnitOperationIndex] as UILabel).x -= nDeltaX;
+				if (m_pNoteLabels[nUnitOperationIndex])
+				{
+					(m_pNoteLabels[nUnitOperationIndex] as UILabel).x -= nDeltaX;
+				}
+				(m_pNumberLabels[nUnitOperationIndex] as UILabel).x -= nDeltaX;
+				(m_pHitAreas[nUnitOperationIndex] as Rectangle).x -= nDeltaX;
+				
+				// Increment index
+				++nUnitOperationIndex;
+			}				
+			
+			// Update the slider and skins
+			if ((m_pWindowRightSkin.x + m_pWindowRightSkin.width - m_nUnitOperationWidth) > attributes.width)
+			{
+				// Update the center and right window skin positions
+				m_pWindowRightSkin.x -= m_nUnitOperationWidth;
+				m_pWindowCenterSkin.width -= m_nUnitOperationWidth;
+				
+				// Reduce the slider dimensions
+				var pSlider:Form = _slider as Form;
+				pSlider.ForceWidth(pSlider.attributes.width - m_nUnitOperationWidth);
+				doLayout();
+			}
+			*/
+			
+			// Remember the drop opening
+			m_nDropOpeningID = nFirstUnitOperationID;
+		}
+
+		// Closes any drop opening
+		protected function CloseDropOpening():void
+		{
+			if (m_nDropOpeningID != -1)
+			{
+				trace("close opening: " + m_nDropOpeningID);
+				m_nDropOpeningID = -1;
 			}
 		}
 
@@ -1083,7 +1461,11 @@ package Elixys.Components
 		// Dimensions
 		protected var m_nUnitOperationWidth:Number = 0;
 		protected var m_nSequencerWindowHeight:Number = 0;
-		protected var m_nButtonSkinWidth:Number = 0
+		protected var m_nButtonSkinWidth:Number = 0;
+		
+		// Sequencer and screen
+		protected var m_pSequencer:Sequencer;
+		protected var m_pScreen:Screen;
 		
 		// Current sequence and selected component ID
 		protected var m_pSequence:Sequence;
@@ -1094,12 +1476,11 @@ package Elixys.Components
 		protected var m_nSelectedIndex:int = -1;
 		protected var m_nPressedIndex:int = -1;
 		
-		// Drag-and-drop variables
+		// Drag and drop variables
 		protected var m_pHoldTimer:Timer;
-		protected var m_pDragTarget:Sprite;
-		protected var m_pDragTargetUpSkin:MovieClip;
-		protected var m_pDragTargetDeleteSkin:MovieClip;
-		
+		protected var m_nDraggingID:int = -1;
+		protected var m_nDropOpeningID:int = -1;
+				
 		// Constants
 		public static var WARNING_ICON_HEIGHT:int = 15;
 		public static var WARNING_ICON_OFFSETX:int = 4;
@@ -1114,5 +1495,6 @@ package Elixys.Components
 		public static var BUTTON_PERCENT_LOWER_GAP:int = 36;
 		public static var SELECTED_GAP:int = 3;
 		public static var SELECTED_NUMBER_CURVE:int = 10;
+		public static var DROP_OPENING_PERCENT:int = 60;
 	}
 }

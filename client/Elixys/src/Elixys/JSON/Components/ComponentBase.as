@@ -47,13 +47,13 @@ package Elixys.JSON.Components
 			super.flash_proxy::setProperty("id", value);
 		}
 		
-		public function get Name():String
+		public function get Note():String
 		{
-			return super.flash_proxy::getProperty("name");
+			return super.flash_proxy::getProperty("note");
 		}
-		public function set Name(value:String):void
+		public function set Note(value:String):void
 		{
-			super.flash_proxy::setProperty("name", value);
+			super.flash_proxy::setProperty("note", value);
 		}
 
 		public function get ValidationError():Boolean
@@ -81,7 +81,7 @@ package Elixys.JSON.Components
 			var sJSON:String = "{";
 			sJSON += JSONDataString("type", Type);
 			sJSON += JSONDataString("componenttype", ComponentType);
-			sJSON += JSONDataString("name", Name);
+			sJSON += JSONDataString("note", Note);
 			sJSON += JSONDataObject("id", ID, sAdditionalDetails != "");
 			if (sAdditionalDetails != "")
 			{
@@ -102,7 +102,7 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
-			if (pComponentA.Name != pComponentB.Name)
+			if (pComponentA.Note != pComponentB.Note)
 			{
 				return false;
 			}
@@ -191,7 +191,7 @@ package Elixys.JSON.Components
 		protected function ValidateEnumNumber(pField:*, pFieldValidation:Object):String
 		{
 			// Handle blank values
-			if (pField.toString() == "")
+			if (!pField)
 			{
 				if (pFieldValidation["required"] == "true")
 				{
@@ -228,7 +228,7 @@ package Elixys.JSON.Components
 		{
 			// Handle blank values
 			var pReagent:Reagent = pField as Reagent;
-			if (pReagent == null)
+			if (pReagent.Name == null)
 			{
 				if (pFieldValidation["required"] == "true")
 				{
@@ -250,7 +250,7 @@ package Elixys.JSON.Components
 		protected function ValidateEnumString(pField:*, pFieldValidation:Object):String
 		{
 			// Handle blank values
-			if (pField.toString() == "")
+			if (!pField || (pField == ""))
 			{
 				if (pFieldValidation["required"] == "true")
 				{
@@ -286,7 +286,7 @@ package Elixys.JSON.Components
 		protected function ValidateNumber(pField:*, pFieldValidation:Object):String
 		{
 			// Handle blank values
-			if (pField.toString() == "")
+			if (!pField)
 			{
 				if (pFieldValidation["required"] == "true")
 				{
@@ -318,7 +318,7 @@ package Elixys.JSON.Components
 		protected function ValidateString(pField:*, pFieldValidation:Object):String
 		{
 			// Handle blank values
-			if (pField.toString() == "")
+			if (pField == "")
 			{
 				if (pFieldValidation["required"] == "true")
 				{

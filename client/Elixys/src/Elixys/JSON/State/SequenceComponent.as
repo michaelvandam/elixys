@@ -135,7 +135,7 @@ package Elixys.JSON.State
 		}
 
 		// Default format
-		private var m_sDefault:String = "{" +
+		protected var m_sDefault:String = "{" +
 			"\"type\":\"sequencecomponent\"," +
 			"\"name\":\"\"," +
 			"\"id\":0," +

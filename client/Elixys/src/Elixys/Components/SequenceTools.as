@@ -66,6 +66,12 @@ package Elixys.Components
 		 * Member functions
 		 **/
 		
+		// Sets the sequencer
+		public function SetSequencer(pSequencer:Sequencer):void
+		{
+			m_pSequencer = pSequencer;
+		}
+
 		// Updates
 		public function Update():void
 		{
@@ -267,63 +273,29 @@ package Elixys.Components
 				return;
 			}
 			
-			// Delete any existing drag target
-			if (m_pDragTarget != null)
-			{
-				stage.removeChild(m_pDragTarget);
-				m_pDragTarget = null;
-			}
-			
 			// Duplicate the pressed unit operation
-			m_pDragTarget = new Sprite();
-			stage.addChild(m_pDragTarget);
-			var pBackgroundSkin:MovieClip = AddSkin(tools_btn_up, true, m_pDragTarget);
+			var pDragTarget:Sprite = new Sprite();
+			stage.addChild(pDragTarget);
+			var pBackgroundSkin:MovieClip = AddSkin(tools_btn_up, true, pDragTarget);
 			pBackgroundSkin.width = m_nButtonWidth;
 			pBackgroundSkin.scaleY = pBackgroundSkin.scaleX;
 			var pForegroundSkin:MovieClip = AddSkin(Components.GetUpSkin(m_pSupportedOperations[m_nPressedIndex]),
-				true, m_pDragTarget);
+				true, pDragTarget);
 			pForegroundSkin.height = pBackgroundSkin.height - (SequencerBody.ICON_PADDING * 2) - SequencerBody.ICON_GAP - 
 				SequencerBody.TEXT_HEIGHT;
 			pForegroundSkin.scaleX = pForegroundSkin.scaleY;
 			pForegroundSkin.x = (m_nButtonWidth - pForegroundSkin.width) / 2;
 			pForegroundSkin.y = SequencerBody.ICON_PADDING;
-			var pLabel:UILabel = AddLabel(m_pSupportedOperations[m_nPressedIndex], m_pDragTarget);
+			var pLabel:UILabel = AddLabel(m_pSupportedOperations[m_nPressedIndex], pDragTarget);
 			pLabel.width = pLabel.textWidth + 5;
 			pLabel.x = (m_nButtonWidth - pLabel.width) / 2;
 			pLabel.y = pForegroundSkin.y + pForegroundSkin.height + SequencerBody.ICON_GAP;
-			
-			// Start dragging
-			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
-			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
-			m_pDragTarget.startDrag();
-			stage.addEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
-			stage.addEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
-			
+
+			// Start the drag operation
+			m_pSequencer.StartDraggingNew(pDragTarget, m_pSupportedOperations[m_nPressedIndex]);
+
 			// Clear the pressed index
 			m_nPressedIndex = -1;
-		}
-
-		// Called when the user moves the mouse while holding the button pressed
-		protected function OnHoldMouseMove(event:MouseEvent):void
-		{
-			// Move the drag target
-			m_pDragTarget.x = stage.mouseX - (m_pDragTarget.width / 2);
-			m_pDragTarget.y = stage.mouseY - (m_pDragTarget.height / 2);
-		}
-		
-		// Called when the user moves the mouse while holding the button pressed
-		protected function OnHoldMouseUp(event:MouseEvent):void
-		{
-			// Remove the event listeners
-			stage.removeEventListener(MouseEvent.MOUSE_MOVE, OnHoldMouseMove);
-			stage.removeEventListener(MouseEvent.MOUSE_UP, OnHoldMouseUp);
-			
-			// Delete the drag target
-			if (m_pDragTarget != null)
-			{
-				stage.removeChild(m_pDragTarget);
-				m_pDragTarget = null;
-			}
 		}
 
 		/***
@@ -348,6 +320,9 @@ package Elixys.Components
 		protected var m_nLastWidth:Number = 0;
 		protected var m_nLastHeight:Number = 0;
 
+		// Sequencer
+		protected var m_pSequencer:Sequencer;
+
 		// Components
 		protected var m_pButtonUpSkins:Array = new Array();
 		protected var m_pButtonDownSkins:Array = new Array();
@@ -355,9 +330,8 @@ package Elixys.Components
 		protected var m_pUnitOperationDownSkins:Array = new Array();
 		protected var m_pUnitOperationLabels:Array = new Array();
 
-		// Drag-and-drop variables
+		// Hold timer
 		protected var m_pHoldTimer:Timer;
-		protected var m_pDragTarget:Sprite;
 
 		// Unit operation hit areas
 		protected var m_pHitAreas:Array = new Array();

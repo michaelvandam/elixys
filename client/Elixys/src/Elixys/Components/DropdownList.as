@@ -34,12 +34,13 @@ package Elixys.Components
 		 **/
 
 		// Sets the data list and current value
-		public function SetList(pValues:Array, sCurrentValue:String, pData:Array = null):void
+		public function SetList(pValues:Array, sCurrentValue:String, pData:Array, sErrorMessage:String):void
 		{
 			// Remember the list
 			m_pValues = pValues;
 			m_sCurrentValue = sCurrentValue;
 			m_pData = pData;
+			m_sError = sErrorMessage;
 			
 			// Update the list
 			Update();
@@ -67,6 +68,27 @@ package Elixys.Components
 				doLayout();
 			}
 
+			// Adjust the error label
+			var pXML:XML;
+			if (m_sError != "")
+			{
+				if (!m_pErrorLabel)
+				{
+					// Add label
+					pXML =
+						<label useEmbedded="true" alignH="centre" alignV="top">
+							<font face="GothamBold" size="18" />
+						</label>;
+					m_pErrorLabel = m_pSlider.CreateLabel(pXML, attributes);
+				}
+				m_pErrorLabel.text = m_sError;
+			}
+			else if (m_pErrorLabel)
+			{
+				m_pSlider.removeChild(m_pErrorLabel);
+				m_pErrorLabel = null;
+			}
+
 			// Update the number of labels
 			var nIndex:int, pLabel:UILabel;
 			for (nIndex = 0; nIndex < m_pValues.length; ++nIndex)
@@ -79,7 +101,7 @@ package Elixys.Components
 				else
 				{
 					// Add label
-					var pXML:XML =
+					pXML =
 						<label useEmbedded="true" alignH="left" alignV="bottom">
 							<font face="GothamBold" size="18" />
 						</label>;
@@ -118,9 +140,25 @@ package Elixys.Components
 			m_pSlider.graphics.drawRect(0, 0, m_pSlider.attributes.width, m_pSlider.attributes.height);
 			m_pSlider.graphics.endFill();
 			
-			// Draw the dividers and set the label positions
+			// Adjust the error label
 			var nOffsetY:Number = SubviewUnitOperationBase.SCROLL_VERTICAL_PADDING;
 			m_pSlider.graphics.beginFill(Styling.AS3Color(Styling.UNITOPERATION_DIVIDER));
+			if (m_sError != "")
+			{
+				// Draw the top divider
+				m_pSlider.graphics.drawRect(0, nOffsetY - (SubviewUnitOperationBase.DIVIDER_HEIGHT / 2), 
+					m_pSlider.attributes.width, SubviewUnitOperationBase.DIVIDER_HEIGHT);
+
+				// Adjust the label
+				m_pErrorLabel.fixwidth = m_pSlider.attributes.width * ERROR_WIDTH_PERCENT / 100;
+				m_pErrorLabel.x = (m_pSlider.attributes.width - m_pErrorLabel.textWidth) / 2;
+				m_pErrorLabel.y = nOffsetY + ERROR_PADDING_VERTICAL;
+				
+				// Increment our offset
+				nOffsetY += m_pErrorLabel.height + (2 * ERROR_PADDING_VERTICAL);
+			}
+			
+			// Draw the dividers and set the label positions
 			var nIndex:int, pLabel:UILabel, pHitArea:Rectangle;
 			for (nIndex = 0; nIndex < m_pValues.length; ++nIndex)
 			{
@@ -185,6 +223,9 @@ package Elixys.Components
 					return;
 				}
 			}
+			
+			// A click anywhere else closes the dropdown
+			dispatchEvent(new DropdownEvent(DropdownEvent.LISTHIDDEN));
 		}
 
 		// Overridden function to detect visibility changes
@@ -239,14 +280,20 @@ package Elixys.Components
 		// List options
 		protected var m_pValues:Array;
 		protected var m_sCurrentValue:String;
-		protected  var m_pData:Array;
+		protected var m_pData:Array;
+		protected var m_sError:String;
 		
 		// View components
 		protected var m_pSlider:Form;
 		protected var m_pLabels:Array = new Array();
 		protected var m_pHitAreas:Array = new Array();
+		protected var m_pErrorLabel:UILabel;
 
 		// Visibilty check counter
 		protected var m_nVisibilityCheckCount:int = 0;
+		
+		// Constants
+		protected static const ERROR_PADDING_VERTICAL:int = 5;
+		protected static const ERROR_WIDTH_PERCENT:int = 80;
 	}
 }
