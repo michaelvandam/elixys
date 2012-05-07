@@ -2,6 +2,7 @@
 
 # Imports
 from UnitOperation import *
+import urllib
 
 # Component type
 componentType = "EXTERNALADD"
@@ -29,7 +30,7 @@ class ExternalAdd(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-    self.description = "Externally adding " + str(self.externalReagentName) + " to reactor " + str(self.ReactorID[-1]) + "."
+    self.description = "Externally adding " + urllib.unquote(str(self.externalReagentName)) + " to reactor " + str(self.ReactorID[-1]) + "."
 
     #Should have parameters listed below: 
     #self.ReactorID

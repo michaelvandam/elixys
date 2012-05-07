@@ -107,8 +107,11 @@ package Elixys.Subviews
 						{
 							case Constants.TYPE_DROPDOWN:
 								m_pFieldContents.push(CreateDropdownControl());
-								pArrow = new slidingList_arrow_up() as MovieClip;
-								m_pUnitOperationSlider.addChild(pArrow);
+								if (m_sMode == Constants.EDIT)
+								{
+									pArrow = new slidingList_arrow_up() as MovieClip;
+									m_pUnitOperationSlider.addChild(pArrow);
+								}
 								pHitArea = new Rectangle();
 								break;
 							
@@ -578,7 +581,12 @@ package Elixys.Subviews
 							break;
 	
 						case Constants.TYPE_MULTILINEINPUT:
-							AdjustMultilineInputControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, nRowHeight);
+							var nMultilineHeight:Number = nRowHeight;
+							if (m_pComponent && (m_pComponent[m_pComponentFieldProperties[nIndex] + "Error"] != ""))
+							{
+								nMultilineHeight -= ROWERRORHEIGHT + ROWVERTICALPADDING;
+							}
+							AdjustMultilineInputControl(m_pFieldContents[nIndex], nFieldRight, nOffsetY, nFieldWidth, nMultilineHeight);
 							break;
 	
 						case Constants.TYPE_CHECKBOX:
@@ -614,7 +622,7 @@ package Elixys.Subviews
 						{
 							pError.x -= ROWARROWWIDTH + HORIZONTALGAP;
 						}
-						pError.y = pLabel.y + pLabel.height + ROWERRORHEIGHT - pError.textHeight;
+						pError.y = nOffsetY + nRowHeight - ROWERRORHEIGHT - (ROWVERTICALPADDING * 2);
 					}
 					
 					// Adjust the offset
@@ -933,7 +941,7 @@ package Elixys.Subviews
 					pCheckboxVar.x = nX;
 					pCheckboxVar.y = nY;
 					pCheckboxVar.width = nWidth;
-					pCheckboxVar.height = nHeight;
+					pCheckboxVar.height = ROWCONTENTHEIGHT - 5;
 					break;
 			}
 		}

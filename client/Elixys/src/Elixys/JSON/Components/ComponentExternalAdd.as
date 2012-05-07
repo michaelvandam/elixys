@@ -82,11 +82,11 @@ package Elixys.JSON.Components
 
 		public function get ReagentName():String
 		{
-			return super.flash_proxy::getProperty("reagentname");
+			return unescape(super.flash_proxy::getProperty("reagentname"));
 		}
 		public function set ReagentName(value:String):void
 		{
-			super.flash_proxy::setProperty("reagentname", value);
+			super.flash_proxy::setProperty("reagentname", escape(value));
 		}
 		
 		public function get ReagentNameValidation():String
@@ -103,7 +103,7 @@ package Elixys.JSON.Components
 		protected override function FormatComponentDetails():String
 		{
 			var sExternalAddDetails:String = JSONDataObject("reactor", Reactor);
-			sExternalAddDetails += JSONDataString("reagentname", ReagentName, false);
+			sExternalAddDetails += JSONDataString("reagentname", escape(ReagentName), false);
 			return sExternalAddDetails;
 		}
 		

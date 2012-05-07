@@ -79,7 +79,7 @@ package Elixys.JSON.Components
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataString("message", Message, false);
+			return JSONDataString("message", escape(Message), false);
 		}
 
 		// Component comparison function.  Returns true if the components are equal, false otherwise.

@@ -79,11 +79,11 @@ package Elixys.JSON.State
 
 		public function get Name():String
 		{
-			return super.flash_proxy::getProperty("name");
+			return unescape(super.flash_proxy::getProperty("name"));
 		}
 		public function set Name(value:String):void
 		{
-			super.flash_proxy::setProperty("name", value);
+			super.flash_proxy::setProperty("name", escape(value));
 		}
 
 		public function get NameValidation():String
@@ -93,11 +93,11 @@ package Elixys.JSON.State
 
 		public function get Description():String
 		{
-			return super.flash_proxy::getProperty("description");
+			return unescape(super.flash_proxy::getProperty("description"));
 		}
 		public function set Description(value:String):void
 		{
-			super.flash_proxy::setProperty("description", value);
+			super.flash_proxy::setProperty("description", escape(value));
 		}
 
 		public function get DescriptionValidation():String
@@ -115,8 +115,8 @@ package Elixys.JSON.State
 			sReagentJSON += JSONDataObject("reagentid", ReagentID);
 			sReagentJSON += JSONDataObject("componentid", ComponentID);
 			sReagentJSON += JSONDataString("position", Position);
-			sReagentJSON += JSONDataString("name", Name);
-			sReagentJSON += JSONDataString("description", Description, false);
+			sReagentJSON += JSONDataString("name", escape(Name));
+			sReagentJSON += JSONDataString("description", escape(Description), false);
 			sReagentJSON += "}";
 			return sReagentJSON;
 		}

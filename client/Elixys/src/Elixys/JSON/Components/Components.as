@@ -16,7 +16,7 @@ package Elixys.JSON.Components
 					return pComponentClass;
 				}
 			}
-			throw Error("Component type not found: " + sComponentType);
+			throw new Error("Component type not found: " + sComponentType);
 		}
 
 		// Returns the skins for the component type

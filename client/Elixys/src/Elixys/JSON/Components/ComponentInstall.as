@@ -98,7 +98,7 @@ package Elixys.JSON.Components
 		protected override function FormatComponentDetails():String
 		{
 			var sInstallDetails:String = JSONDataObject("reactor", Reactor);
-			sInstallDetails += JSONDataString("message", Message, false);
+			sInstallDetails += JSONDataString("message", escape(Message), false);
 			return sInstallDetails;
 		}
 

@@ -77,6 +77,9 @@ package com.christiancantrell.nativetext
 		// Border flag
 		protected var _border:Boolean = true;
 		
+		// Flag to force text box to invisible
+		protected var _forceInvisible:Boolean = false;
+		
 		public function NativeText(numberOfLines:uint = 1)
 		{
 			super();
@@ -121,13 +124,19 @@ package com.christiancantrell.nativetext
 				// Hide the text
 				this.st.visible = false;
 			}
-			else if (bVisible && (fAlpha == 1) && !this.st.visible)
+			else if (bVisible && (fAlpha == 1) && !this.st.visible && !_forceInvisible)
 			{
 				// Show the text
 				this.st.visible = true;
 			}
 		}
 
+		// Determines if this input is visible
+		public function IsVisible():Boolean
+		{
+			return (GetVisibility() && GetTransparency() && this.st.visible);
+		}
+		
 		// Walks the display list to determine the visibility
 		protected function GetVisibility():Boolean
 		{
@@ -367,6 +376,16 @@ package com.christiancantrell.nativetext
 			//this.visible = visible;
 			super.visible = visible;
 			this.st.visible = visible;
+			
+			// Force ourselve to be invisible
+			if (!visible)
+			{
+				_forceInvisible = true;
+			}
+			else
+			{
+				_forceInvisible = false;
+			}
 		}
 		
 		public function get multiline():Boolean

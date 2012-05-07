@@ -5,6 +5,7 @@ package Elixys.Extended
 	import Elixys.Components.*;
 	import Elixys.Interfaces.ITextBox;
 	
+	import com.christiancantrell.nativetext.NativeText;
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
@@ -117,7 +118,11 @@ package Elixys.Extended
 			{
 				// This is the AIR player, use native text
 				var pNativeTextClass:Class = getDefinitionByName("com.christiancantrell.nativetext::NativeText") as Class;
-				return (new pNativeTextClass(nLines)) as ITextBox;
+				var pNativeText:* = new pNativeTextClass(nLines);
+				
+				// Add the native text to our static array
+				m_pNativeTextInputs.push(pNativeText);
+				return pNativeText as ITextBox;
 			}
 			else
 			{
@@ -215,6 +220,34 @@ package Elixys.Extended
 			height = m_nFixHeight = value;
 		}
 
+		// Hides the visible native text inputs
+		public static function HideNativeTextInputs():void
+		{
+			// Iterate over our array of native text inputs and hide any that are visible
+			var nIndex:int, pNativeText:*;
+			for (nIndex = 0; nIndex < m_pNativeTextInputs.length; ++nIndex)
+			{
+				pNativeText = m_pNativeTextInputs[nIndex];
+				if (pNativeText["IsVisible"]())
+				{
+					pNativeText["visible"] = false;
+					m_pHiddenNativeTextInputs.push(pNativeText);
+				}
+			}
+		}
+
+		// Restores the hidden native text inputs
+		public static function RestoreNativeTextInputs():void
+		{
+			// Iterate over our array of hidden native text inputs and restore their visibility
+			var nIndex:int, pNativeText:*;
+			while (m_pHiddenNativeTextInputs.length)
+			{
+				pNativeText = m_pHiddenNativeTextInputs.pop();
+				pNativeText["visible"] = true;
+			}
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -231,5 +264,9 @@ package Elixys.Extended
 		// Last known size
 		protected var m_nLastWidth:Number = 0;
 		protected var m_nLastHeight:Number = 0;
+
+		// Static array of native text elements
+		protected static var m_pNativeTextInputs:Array = new Array();
+		protected static var m_pHiddenNativeTextInputs:Array = new Array();
 	}
 }

@@ -2,6 +2,7 @@
 
 # Imports
 from UnitOperation import *
+import urllib
 
 # Component type
 componentType = "ELUTEF18"
@@ -41,7 +42,7 @@ class EluteF18(UnitOperation):
     self.reagentName = ""
 
   def setDescription(self):
-    self.description = "Eluting F18 with " + str(self.reagentName) + " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
+    self.description = "Eluting F18 with " + urllib.unquote(str(self.reagentName)) + " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
 
     #Should have parameters listed below:
     #self.eluteTime

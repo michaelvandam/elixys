@@ -403,14 +403,14 @@ package Elixys.Views
 		protected var m_nInputAreaOfInterestBottom:uint;
 
 		// Constants
-		protected static var POPUP_PERCENT_WIDTH:int = 50;
-		protected static var POPUP_BORDER:int = 38;
-		protected static var POPUP_GAP_BIG:int = 15;
-		protected static var POPUP_GAP_SMALL:int = 5;
-		protected static var POPUP_CURVE:uint = 15;
-		protected static var POPUP_BUTTON_WIDTH:int = 110;
-		protected static var POPUP_BUTTON_HEIGHT:int = 35;
-		protected static var INPUT_WIDTH:int = 200;
-		protected static var INPUT_HEIGHT:int = 40;
+		public static const POPUP_PERCENT_WIDTH:int = 50;
+		public static const POPUP_BORDER:int = 38;
+		public static const POPUP_GAP_BIG:int = 15;
+		public static const POPUP_GAP_SMALL:int = 5;
+		public static const POPUP_CURVE:uint = 15;
+		public static const POPUP_BUTTON_WIDTH:int = 110;
+		public static const POPUP_BUTTON_HEIGHT:int = 35;
+		protected static const INPUT_WIDTH:int = 200;
+		protected static const INPUT_HEIGHT:int = 33;
 	}
 }

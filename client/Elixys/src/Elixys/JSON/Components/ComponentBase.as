@@ -183,28 +183,13 @@ package Elixys.JSON.Components
 			}
 			else
 			{
-				throw Error("Unknown validation type: " + pFieldValidation["type"])
+				throw new Error("Unknown validation type: " + pFieldValidation["type"])
 			}
 		}
 		
 		// Validates the number enumeration
 		protected function ValidateEnumNumber(pField:*, pFieldValidation:Object):String
 		{
-			// Handle blank values
-			if (!pField)
-			{
-				if (pFieldValidation["required"] == "true")
-				{
-					// Value required
-					return "REQUIRED";
-				}
-				else
-				{
-					// Blank value is valid
-					return "";
-				}
-			}
-			
 			// Make sure the value is set to one of the allowed values
 			var nValue:int = parseInt(pField.toString());
 			var pValues:Array = pFieldValidation["values"].split(",");
@@ -285,21 +270,6 @@ package Elixys.JSON.Components
 		// Validates the number
 		protected function ValidateNumber(pField:*, pFieldValidation:Object):String
 		{
-			// Handle blank values
-			if (!pField)
-			{
-				if (pFieldValidation["required"] == "true")
-				{
-					// Value required
-					return "REQUIRED";
-				}
-				else
-				{
-					// Blank value is valid
-					return "";
-				}
-			}
-			
 			// Make sure the number is within the acceptable range
 			var nValue:Number = parseFloat(pField.toString()),
 				nMin:Number = parseFloat(pFieldValidation["min"]),

@@ -89,6 +89,8 @@ def application(pEnvironment, fStartResponse):
     if pDatabase != None:
         nElapsed = time.time() - nStart
         pDatabase.SystemLog(LOG_INFO, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
+        if nElapsed > 0.15:
+            pDatabase.SystemLog(LOG_INFO, sRemoteUser, "  ##  Long request processing time ##")
         pDatabase.Disconnect()
 
     # Send the response

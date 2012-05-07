@@ -1,7 +1,6 @@
 package Elixys.HTTP
 {
-	import Elixys.Events.ExceptionEvent;
-	import Elixys.Events.HTTPResponseEvent;
+	import Elixys.Events.*;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -43,7 +42,14 @@ package Elixys.HTTP
 		}
 		public function IsAvailable():Boolean
 		{
-			return (m_pOutstandingRequest == null);
+			if (!m_pSocket)
+			{
+				return true;
+			}
+			else
+			{
+				return (!m_pOutstandingRequest);
+			}
 		}
 		
 		// Send the request to the server
@@ -77,7 +83,11 @@ package Elixys.HTTP
 				}
 				m_pSocket = null;
 				m_bConnected = false;
+				m_bWaitingForResponse = false;
 			}
+			
+			// Clear any outstanding request
+			m_pOutstandingRequest = null;
 		}
 		
 		/***
@@ -155,8 +165,9 @@ package Elixys.HTTP
 				// Flush the socket
 				m_pSocket.flush();
 
-				// Start the response timer
+				// Start the response timer and set the response flag
 				m_pResponseTimer.start();
+				m_bWaitingForResponse = true;
 			}
 			catch (err:Error)
 			{
@@ -214,6 +225,15 @@ package Elixys.HTTP
 					return;
 				}
 				
+				// Make sure we're waiting for a response.  We get unexpected responses when we retry a request that is taking too long
+				if (!m_bWaitingForResponse)
+				{
+					// Discard extra responses
+					var pDiscardedBytes:ByteArray = new ByteArray();
+					m_pSocket.readBytes(pDiscardedBytes);
+					return;
+				}
+
 				// Capture the HTTP response headers if we don't have them yet
 				if (!m_nContentLength)
 				{
@@ -277,6 +297,13 @@ package Elixys.HTTP
 					// Yes, so stop the timer
 					m_pResponseTimer.stop();
 
+					// Dispatch a server responded event if we are retrying
+					if (m_nRetryCount)
+					{
+						var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERRESPONDED);
+						m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
+					}
+					
 					// Create and dispatch the response
 					var pHTTPResponse:HTTPResponse = new HTTPResponse();
 					pHTTPResponse.m_nStatusCode = m_nStatusCode;
@@ -292,6 +319,7 @@ package Elixys.HTTP
 					m_nContentLength = 0;
 					m_pHTTPResponseBody.clear();
 					m_pOutstandingRequest = null;
+					m_bWaitingForResponse = false;
 					
 					// Inform the connection pool that we are available
 					m_pHTTPConnectionPool.OnConnectionAvailable(this);
@@ -355,9 +383,14 @@ package Elixys.HTTP
 				m_nStatusCode = 0;
 				m_nContentLength = 0;
 				m_pHTTPResponseBody.clear();
+				m_bWaitingForResponse = false;
 
 				// Send the failed request again
 				SendRequestInternal(m_pOutstandingRequest);
+				
+				// Dispatch a server not responding event
+				var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERNOTRESPONDING);
+				m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
 			}
 			else
 			{
@@ -370,12 +403,12 @@ package Elixys.HTTP
 		// Called when a socket IO or security error occurs
 		protected function OnSocketIOErrorEvent(event:IOErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed (IO error)");
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}		
 		protected function OnSocketSecurityErrorEvent(event:SecurityErrorEvent):void
 		{
-			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed (security error)");
+			var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Connection failed");
 			m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
 		}
 
@@ -397,9 +430,10 @@ package Elixys.HTTP
 		protected var m_nStatusCode:uint = 0;
 		protected var m_nContentLength:uint = 0;
 		protected var m_pHTTPResponseBody:ByteArray = new ByteArray();
+		protected var m_bWaitingForResponse:Boolean = false;
 
 		// Response timer, outstanding HTTP request and retry count
-		protected var m_pResponseTimer:Timer = new Timer(3000, 1);
+		protected var m_pResponseTimer:Timer = new Timer(1000, 1);
 		protected var m_pOutstandingRequest:HTTPRequest;
 		protected var m_nRetryCount:uint;
 			

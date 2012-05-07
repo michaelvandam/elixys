@@ -224,6 +224,13 @@ package Elixys.Components
 				}
 				++nUnitOperationIndex;
 			}
+			
+			// Release the button if the mouse was released elsewhere
+			if ((m_nClickState == STATE_NONE) && (m_nPressedIndex != -1))
+			{
+				ReleaseButton(m_nPressedIndex);
+				m_nPressedIndex = -1;
+			}
 		}
 
 		// Overridden to clear any pressed button
@@ -769,7 +776,7 @@ package Elixys.Components
 				if (pComponent.Note != "")
 				{
 					pLabel = m_pNoteLabels[nUnitOperationIndex] as UILabel;
-					pLabel.text = pComponent.Note;
+					pLabel.text = unescape(pComponent.Note);
 					pLabel.width = pLabel.textWidth + 5;
 					pLabel.x = nOffset + ((m_nUnitOperationWidth - pLabel.width) / 2);
 					pLabel.y = nButtonUpperGap + nButtonSkinHeight + NOTE_GAP;
@@ -978,7 +985,6 @@ package Elixys.Components
 			// Ignore if the mouse is not over the same unit operation that was initially pressed
 			if (!(m_pHitAreas[m_nPressedIndex] as Rectangle).contains(_slider.mouseX, _slider.mouseY))
 			{
-				m_nPressedIndex = -1;
 				return;
 			}
 

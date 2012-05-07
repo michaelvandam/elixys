@@ -13,7 +13,7 @@ package Elixys.Events
 		}
 
 		// Event name
-		static public var EXCEPTION:String = "ExceptionEvent";
+		static public var EXCEPTION:String = "ElixysExceptionEvent";
 		
 		// Error string
 		public var exception:String = "";

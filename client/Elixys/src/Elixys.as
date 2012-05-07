@@ -63,11 +63,11 @@ package
 			m_pLoading.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoadingStartedTransitionComplete);
 			m_pLoading.InitialDisplay();
 			
-			// Create the HTTP connection pool
+			// Create the HTTP connection pool and timers
 			m_pHTTPConnectionPool = new HTTPConnectionPool(5);
-			m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnHTTPStatusEvent);
-			m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnHTTPExceptionEvent);
-			
+			m_pConnectingTimer = new Timer(CONNECTING_POPUP_TIMEOUT, 1);
+			m_pUpdateTimer = new Timer(STATE_UPDATE_TIME);
+
 			// Add event listeners
 			addEventListener(HTTPRequestEvent.HTTPREQUEST, OnHTTPRequest);
 			addEventListener(ElixysEvents.LOGOUT, OnLogOut);
@@ -161,6 +161,7 @@ package
 			
 			// Loading is complete.  Set our references to the various pages
 			m_pLogin = m_pScreens[LOGIN_INDEX - 1];
+			m_pConnectionPopup = m_pScreens[CONNECTIONPOPUP_INDEX - 1];
 			m_pHome = m_pScreens[HOME_INDEX - 1];
 			m_pSelectSaved = m_pScreens[SELECTSAVED_INDEX - 1];
 			m_pSelectHistory = m_pScreens[SELECTHISTORY_INDEX - 1];
@@ -186,218 +187,375 @@ package
 		}
 		
 		/***
-		 * Soft keyboard functions
-		 **/
-		
-		// Called to pan the entire application when the keyboard is raised or lowered
-		public function PanApplication(nInputAreaOfInterestTop:int, nInputAreaOfInterestBottom:int):void
-		{
-			// Calculate the offset
-			var nOffset:int = 0;
-			if (stage.softKeyboardRect.y != 0)
-			{
-				// Center the area of interest
-				var nAreaOfInterestCenter:int = (nInputAreaOfInterestTop + nInputAreaOfInterestBottom) / 2; 
-				var nAvailableCenter:int = stage.softKeyboardRect.y / 2;
-				if ((nAreaOfInterestCenter - nAvailableCenter) < stage.softKeyboardRect.height)
-				{
-					nOffset = nAvailableCenter - nAreaOfInterestCenter;
-				}
-				else
-				{
-					nOffset = -stage.softKeyboardRect.height;
-				}
-			}
-
-			// This transition is slowing down as the number of items on the stage increases so drop it for now
-			// and just straight to the panned view
-			m_nPanOffset = nOffset;
-			y = m_nPanOffset;
-			
-			/*
-			// Check if the desired offset has changed
-			if (m_nPanOffset != nOffset)
-			{
-				// Create or reset the pan transition timer
-				if (m_pPanTimer == null)
-				{
-					var nPanSteps:uint = 150 / TRANSITION_UPDATE_INTERVAL;
-					m_pPanTimer = new Timer(TRANSITION_UPDATE_INTERVAL, nPanSteps);
-					m_pPanTimer.addEventListener(TimerEvent.TIMER, OnPanTransitionTimer);
-					m_pPanTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnPanTransitionTimerComplete);
-				}
-				else
-				{
-					m_pPanTimer.reset();
-				}
-				
-				// Start a new pan transition
-				m_nPanOffset = nOffset;
-				m_nPanStep = (y - nOffset) / m_pPanTimer.repeatCount;
-				m_pPanTimer.start();
-			}
-			*/
-		}
-		
-		// Called once for each step in the pan transition
-		protected function OnPanTransitionTimer(event:TimerEvent):void
-		{
-			y -= m_nPanStep;
-		}
-		
-		// Called when the pan transition is complete
-		protected function OnPanTransitionTimerComplete(event:TimerEvent):void
-		{
-			y = m_nPanOffset;
-		}
-		
-		/***
-		 * Error functions
-		 **/
-		
-		// Called when the status of the HTTP request is know
-		protected function OnHTTPStatusEvent(event:HTTPStatusEvent):void
-		{
-			// Catch any HTTP errors
-			if (event.status != 200)
-			{
-				// Display the error
-				if (event.status == 401)
-				{
-					ShowLoginScreen("Invalid username or password");
-				}
-				else
-				{
-					ShowLoginScreen("HTTP request failed (" + event.status + ")");
-				}
-			}
-		}
-		
-		// Called when an exception occurs in the HTTP connection
-		protected function OnHTTPExceptionEvent(event:ExceptionEvent):void
-		{
-			// Display the error
-			ShowLoginScreen("HTTP exception (" + event.exception + ")");
-		}
-		
-		/***
 		 * Connect to server functions
 		 **/
 		
 		// Creates a connection to the server
 		public function ConnectToServer(sServer:String, sUsername:String, sPassword:String):void
 		{
-			// Drop all existing connection
+			// Drop all existing connection and clear the error text
 			m_pHTTPConnectionPool.DropAllConnections();
-			
+			m_pLogin.SetError("");
+
 			// Set the server and credentials
 			m_pHTTPConnectionPool.Server = sServer;
 			m_pHTTPConnectionPool.SetRawCredentials(sUsername, sPassword);
 			
-			// Remove any HTTP response listeners
-			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
-			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_Configuration);
-			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_State);
-			
-			// Set the HTTP response listener
-			m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_Configuration);
+			// Configure the listeners
+			RemoveConnectedEventListeners();
+			AddConnectingEventListeners();
 			
 			// Load the system configuration
+			m_pConfiguration = null;
 			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/configuration", HTTPConnectionPool.MIME_JSON);
 			
 			// Start the connecting timer
+			m_pConnectingTimer.start();
+		}
+		
+		// Adds connecting event listeners
+		protected function AddConnectingEventListeners():void
+		{
+			m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectingHTTPResponseEvent);
+			m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnConnectingHTTPStatusEvent);
+			m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnConnectingHTTPExceptionEvent);
+			m_pConnectingTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnConnectingTimer);
+		}
+		
+		// Removes connecting event listeners
+		protected function RemoveConnectingEventListeners():void
+		{
+			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectingHTTPResponseEvent);
+			m_pHTTPConnectionPool.removeEventListener(HTTPStatusEvent.HTTP_STATUS, OnConnectingHTTPStatusEvent);
+			m_pHTTPConnectionPool.removeEventListener(ExceptionEvent.EXCEPTION, OnConnectingHTTPExceptionEvent);
+			m_pConnectingTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, OnConnectingTimer);
 		}
 
-		// Returns the name of the server
-		public function GetServer():String
+		// Called when a response is received from the server during the connection phase
+		protected function OnConnectingHTTPResponseEvent(event:HTTPResponseEvent):void
 		{
-			if (m_pHTTPConnectionPool)
+			try
 			{
-				return m_pHTTPConnectionPool.Server;
+				// Handle failed responses
+				if (!CheckHTTPResponse(event.m_pHTTPResponse.m_nStatusCode))
+				{
+					return;
+				}
+				
+				// Are we loading the configuration or state?
+				if (!m_pConfiguration)
+				{
+					// We're loading the configuration.  Parse the HTTP response
+					m_pConfiguration = ParseHTTPResponse(event, getQualifiedClassName(Configuration)) as Configuration;
+					
+					// Load the system state
+					m_pState = null;
+					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+				}
+				else
+				{
+					// We're loading the state.  Parse the HTTP response
+					m_pState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
+
+					// Clean up
+					CleanUpConnection();
+					RemoveConnectingEventListeners();
+
+					// We've connected successfully to the server
+					ConnectedToServer();
+				}
+			}
+			catch (err:Error)
+			{
+				// Clean up and display the error
+				CleanUpConnection();
+				ShowLoginScreen(err.message);
+			}
+		}
+		
+		// Called when the status of the HTTP request is know during the connection phase
+		protected function OnConnectingHTTPStatusEvent(event:HTTPStatusEvent):void
+		{
+			CheckHTTPResponse(event.status);
+		}
+		
+		// Called when an exception occurs in the HTTP connection during the connection phase
+		protected function OnConnectingHTTPExceptionEvent(event:ExceptionEvent):void
+		{
+			// Clean up and display the error
+			CleanUpConnection();
+			ShowLoginScreen("Failed to connect to server");
+		}
+
+		// Called when the connection timer lapses during the connection phase
+		protected function OnConnectingTimer(event:TimerEvent):void
+		{
+			// Show the connecting to server popup
+			ShowConnectionPopup("Connecting", "Connecting to server, please wait...", "CANCEL", OnConnectingCancel);
+		}
+		
+		// Called when the response timer lapses during the connection phase
+		protected function OnConnectingResponseTimer(event:TimerEvent):void
+		{
+			// Clean up and display the error
+			CleanUpConnection();
+			ShowLoginScreen("Failed to connect to server");
+		}
+
+		// Called when the user clicks the cancel button on the connection popup
+		protected function OnConnectingCancel(event:ButtonEvent):void
+		{
+			CleanUpConnection();
+		}
+
+		// Checks the HTTP response.  Returns true if successful, false otherwise
+		protected function CheckHTTPResponse(nStatus:int):Boolean
+		{
+			if (nStatus != 200)
+			{
+				// HTTP request failed, clean up and display the error
+				CleanUpConnection();
+				if (nStatus == 401)
+				{
+					ShowLoginScreen("Invalid username or password");
+				}
+				else
+				{
+					ShowLoginScreen("Failed to connection to server");
+				}
+				return false;
 			}
 			else
 			{
-				return "";
+				// HTTP request successful
+				return true;
 			}
-		}
-
-		// Called if the connecting timer goes off before we establish a connection to the server
-		
-		// Called when the configuration HTTP response is received
-		protected function OnConnectionHTTPResponseEvent_Configuration(event:HTTPResponseEvent):void
-		{
-			// Ignore failed responses
-			if (event.m_pHTTPResponse.m_nStatusCode != 200)
-			{
-				return;
-			}
-			
-			// Load the configuration
-			try
-			{
-				m_pConfiguration = ParseHTTPResponse(event, getQualifiedClassName(Configuration)) as Configuration;
-			}
-			catch (err:Error)
-			{
-				ShowLoginScreen(err.message);
-			}
-			
-			// Set the HTTP response listener
-			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_Configuration);
-			m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_State);
-			
-			// Load the system state
-			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 		}
 		
-		// Called when the state HTTP response is received
-		protected function OnConnectionHTTPResponseEvent_State(event:HTTPResponseEvent):void
+		// Cleans up the connection state
+		protected function CleanUpConnection():void
 		{
-			// Stop the connecting timer
-			
-			// Close the connecting popup if it is visible
-			
-			try
-			{
-				// Load the state
-				m_pState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
-				if (m_pState == null)
-				{
-					throw Error("Unexpected response received from server");
-				}
+			// Clean up
+			m_pConnectingTimer.stop();
+			HideConnectionPopup();
+			m_pHTTPConnectionPool.DropAllConnections();
+			RemoveConnectingEventListeners();
+		}
 
-				// Set the HTTP response listener
-				m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectionHTTPResponseEvent_State);
-				m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnHTTPResponseEvent);
-				
-				// Fade out the login screen
-				m_pLogin.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
-				m_pLogin.Fade(1, 0, 350);
-			}
-			catch (err:Error)
+		// Shows the connecting to server popup
+		protected function ShowConnectionPopup(sPopupTitle:String, sPopupText:String, sButtonText:String, pButtonListener:Function):void
+		{
+			// Show the connection popup and move it to the top of the stack
+			if (!m_pConnectionPopup.visible)
 			{
-				ShowLoginScreen(err.message);
+				m_pConnectionPopup.visible = true;
+				m_pConnectionPopup.parent.setChildIndex(m_pConnectionPopup, m_pConnectionPopup.parent.numChildren - 1);
+				m_pConnectionPopup.addEventListener(ButtonEvent.CLICK, pButtonListener);
+				m_pConnectionPopup.listener = pButtonListener;
+				Input.HideNativeTextInputs();
+			}
+			
+			// Update the popup text
+			m_pConnectionPopup.SetText(sPopupTitle, sPopupText, sButtonText);
+		}
+		
+		// Hides the connecting to server popup
+		protected function HideConnectionPopup():void
+		{
+			if (m_pConnectionPopup.visible)
+			{
+				m_pConnectionPopup.visible = false;
+				m_pConnectionPopup.parent.setChildIndex(m_pConnectionPopup, 0);
+				m_pConnectionPopup.removeEventListener(ButtonEvent.CLICK, m_pConnectionPopup.listener);
+				Input.RestoreNativeTextInputs();
 			}
 		}
+		
+		/***
+		 * Server communication functions
+		 **/
+
+		// Called when we've connected successfully to the server
+		protected function ConnectedToServer():void
+		{
+			// Fade out the login screen
+			m_pLogin.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
+			m_pLogin.Fade(1, 0, 350);
+		}		
 		
 		// Called when the login screen has faded out
 		protected function OnLoginFadeTransitionComplete(event:TransitionCompleteEvent):void
 		{
-			// Remove the event listener
+			// Remove the transition event listener
 			m_pLogin.removeEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
-			
+
+			// Configure the listeners
+			AddConnectedEventListeners();
+
+			// Start the state update timer
+			m_pUpdateTimer.start();
+
 			// Show the current screen
 			UpdateState();
-			
-			// Start the state update timer
-			if (m_pUpdateTimer == null)
-			{
-				m_pUpdateTimer = new Timer(500);
-				m_pUpdateTimer.addEventListener(TimerEvent.TIMER, OnUpdateTimer);
-			}
-			m_pUpdateTimer.start();
 		}
 
+		// Adds connected event listeners
+		protected function AddConnectedEventListeners():void
+		{
+			m_pHTTPConnectionPool.addEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectedHTTPResponseEvent);
+			m_pHTTPConnectionPool.addEventListener(HTTPStatusEvent.HTTP_STATUS, OnConnectedHTTPStatusEvent);
+			m_pHTTPConnectionPool.addEventListener(StatusEvent.STATUS, OnConnectedServerStatus);
+			m_pHTTPConnectionPool.addEventListener(ExceptionEvent.EXCEPTION, OnConnectedHTTPExceptionEvent);
+			m_pUpdateTimer.addEventListener(TimerEvent.TIMER, OnUpdateTimer);
+		}
+		
+		// Removes connected event listeners
+		protected function RemoveConnectedEventListeners():void
+		{
+			m_pHTTPConnectionPool.removeEventListener(HTTPResponseEvent.HTTPRESPONSE, OnConnectedHTTPResponseEvent);
+			m_pHTTPConnectionPool.removeEventListener(HTTPStatusEvent.HTTP_STATUS, OnConnectedHTTPStatusEvent);
+			m_pHTTPConnectionPool.removeEventListener(StatusEvent.STATUS, OnConnectedServerStatus);
+			m_pHTTPConnectionPool.removeEventListener(ExceptionEvent.EXCEPTION, OnConnectedHTTPExceptionEvent);
+			m_pUpdateTimer.removeEventListener(TimerEvent.TIMER, OnUpdateTimer);
+		}
+		
+		// Called when an HTTP response is received while connected to the server
+		protected function OnConnectedHTTPResponseEvent(event:HTTPResponseEvent):void
+		{
+			try
+			{
+				// Make sure the request succeeded
+				if (event.m_pHTTPResponse.m_nStatusCode != 200)
+				{
+					throw new Error("HTTP request failed");
+				}
+				
+				// Parse the response
+				var pResponse:* = ParseHTTPResponse(event);
+				
+				// Call the appropriate update function
+				if (pResponse is State)
+				{
+					m_pState = pResponse as State;
+					UpdateState();
+				}
+				else if (pResponse is Sequence)
+				{
+					m_pSequence = pResponse as Sequence;
+					UpdateSequence();
+				}
+				else if (pResponse is ComponentBase)
+				{
+					m_pComponent = pResponse as ComponentBase;
+					UpdateComponent();
+				}
+				else if (pResponse is Reagents)
+				{
+					var pReagents:Reagents = pResponse as Reagents;
+					UpdateReagents(pReagents);
+				}
+				else if (pResponse is ServerError)
+				{
+					ShowLoginScreen(pResponse.Description);
+				}
+				else
+				{
+					throw new Error("Unhandled response type " + pResponse);
+				}
+			}
+			catch (err:Error)
+			{
+				ShowLoginScreen(err.message);
+			}
+		}
+
+		// Called when the status of the HTTP request is known while connected to the server
+		protected function OnConnectedHTTPStatusEvent(event:HTTPStatusEvent):void
+		{
+			if (event.status != 200)
+			{
+				// HTTP request failed, clean up and display the error
+				CleanUpConnection();
+				ShowLoginScreen("Connection to server failed");
+			}
+		}
+
+		// Called when the status of one of our connections changes
+		protected function OnConnectedServerStatus(event:StatusEvent):void
+		{
+			switch (event.status)
+			{
+				case StatusEvent.SERVERNOTRESPONDING:
+					// The server has stopped responding and the request is being retried
+					ShowConnectionPopup("Waiting", "Waiting for server to respond", "LOG OUT", OnConnectedLogOut);
+					break;
+				
+				case StatusEvent.SERVERRESPONDED:
+					// The server started responding again after a request was retried
+					HideConnectionPopup();
+					break;
+			}
+		}
+		
+		// Called when the user clicks the log out button on the connection popup
+		protected function OnConnectedLogOut(event:ButtonEvent):void
+		{
+			CleanUpConnection();
+			ShowLoginScreen("");
+		}
+
+		// Called when an HTTP exception event is dispatched while connected to the server
+		protected function OnConnectedHTTPExceptionEvent(event:ExceptionEvent):void
+		{
+			// Clean up and display the error
+			CleanUpConnection();
+			ShowLoginScreen("Connection to server failed");
+		}
+		
+		// Called to update the client state
+		protected function OnUpdateTimer(event:TimerEvent):void
+		{
+			// Load the system state
+			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+		}
+
+		// Called when a screen wants to send something to the server
+		protected function OnHTTPRequest(event:HTTPRequestEvent):void
+		{
+			// Send the request to the server
+			m_pHTTPConnectionPool.SendRequestB(event.m_pHTTPRequest);
+		}
+		
+		// Parses the HTTP response
+		protected function ParseHTTPResponse(event:HTTPResponseEvent, sClassName:String = ""):JSONObject
+		{
+			// Read in the contents of the response as a string
+			var nReponseLength:uint = event.m_pHTTPResponse.m_pBody.length;
+			var sResponse:String = event.m_pHTTPResponse.m_pBody.readUTFBytes(nReponseLength);
+				
+			// Parse the response as JSON
+			var pJSON:JSONObject = new JSONObject(sResponse);
+				
+			// Find the object in our array
+			for (var i:uint = 0; i < m_pJSONObjects.length; ++i)
+			{
+				if (pJSON.type == m_pJSONObjects[i].TYPE)
+				{
+					// Make sure this is the object we're looking for
+					if ((sClassName != "") && (sClassName != getQualifiedClassName(m_pJSONObjects[i])))
+					{
+						continue;
+					}
+						
+					// Create and return the object
+					return new m_pJSONObjects[i](null, pJSON);
+				}
+			}
+			
+			// Failed to find the object
+			throw new Error("Unknown HTTP response: " + pJSON.type);
+		}
+		
 		/***
 		 * Disconnect from server functions
 		 **/
@@ -433,110 +591,6 @@ package
 			{
 				m_pLogin.Fade(0, 1, 350);
 			}
-		}
-
-		
-		/***
-		 * Server communication functions
-		 **/
-		
-		// Called to update the client state
-		protected function OnUpdateTimer(event:TimerEvent):void
-		{
-			// Load the system state
-			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
-		}
-
-		// Called when a screen wants to send something to the server
-		protected function OnHTTPRequest(event:HTTPRequestEvent):void
-		{
-			// Send the request to the server
-			m_pHTTPConnectionPool.SendRequestB(event.m_pHTTPRequest);
-		}
-		
-		// Called when an HTTP response is received
-		protected function OnHTTPResponseEvent(event:HTTPResponseEvent):void
-		{
-			try
-			{
-				// Make sure the request succeeded
-				if (event.m_pHTTPResponse.m_nStatusCode != 200)
-				{
-					throw Error("HTTP request failed with status code " + event.m_pHTTPResponse.m_nStatusCode);
-				}
-				
-				// Parse the response
-				var pResponse:* = ParseHTTPResponse(event);
-
-				// Call the appropriate update function
-				if (pResponse is State)
-				{
-					m_pState = pResponse as State;
-					UpdateState();
-				}
-				else if (pResponse is Sequence)
-				{
-					m_pSequence = pResponse as Sequence;
-					UpdateSequence();
-				}
-				else if (pResponse is ComponentBase)
-				{
-					m_pComponent = pResponse as ComponentBase;
-					UpdateComponent();
-				}
-				else if (pResponse is Reagents)
-				{
-					var pReagents:Reagents = pResponse as Reagents;
-					UpdateReagents(pReagents);
-				}
-				else if (pResponse is ServerError)
-				{
-					ShowLoginScreen(pResponse.Description);
-				}
-				else
-				{
-					ShowLoginScreen("Unhandled response type");
-				}
-			}
-			catch (err:Error)
-			{
-				ShowLoginScreen(err.message);
-			}
-		}
-		
-		// Parses the HTTP response
-		protected function ParseHTTPResponse(event:HTTPResponseEvent, sClassName:String = ""):JSONObject
-		{
-			try
-			{
-				// Read in the contents of the response as a string
-				var nReponseLength:uint = event.m_pHTTPResponse.m_pBody.length;
-				var sResponse:String = event.m_pHTTPResponse.m_pBody.readUTFBytes(nReponseLength);
-				
-				// Parse the response as JSON
-				var pJSON:JSONObject = new JSONObject(sResponse);
-				
-				// Find the object in our array
-				for (var i:uint = 0; i < m_pJSONObjects.length; ++i)
-				{
-					if (pJSON.type == m_pJSONObjects[i].TYPE)
-					{
-						// Make sure this is the object we're looking for
-						if ((sClassName != "") && (sClassName != getQualifiedClassName(m_pJSONObjects[i])))
-						{
-							continue;
-						}
-						
-						// Create and return the object
-						return new m_pJSONObjects[i](null, pJSON);
-					}
-				}
-			}
-			catch (err:Error)
-			{
-				ShowLoginScreen(err.message);
-			}
-			return null;
 		}
 		
 		/***
@@ -620,6 +674,72 @@ package
 			}
 		}
 
+		/***
+		 * Miscellaneous functions
+		 **/
+		
+		// Called to pan the entire application when the keyboard is raised or lowered
+		public function PanApplication(nInputAreaOfInterestTop:int, nInputAreaOfInterestBottom:int):void
+		{
+			// Calculate the offset
+			var nOffset:int = 0;
+			if (stage.softKeyboardRect.y != 0)
+			{
+				// Center the area of interest
+				var nAreaOfInterestCenter:int = (nInputAreaOfInterestTop + nInputAreaOfInterestBottom) / 2; 
+				var nAvailableCenter:int = stage.softKeyboardRect.y / 2;
+				if ((nAreaOfInterestCenter - nAvailableCenter) < stage.softKeyboardRect.height)
+				{
+					nOffset = nAvailableCenter - nAreaOfInterestCenter;
+				}
+				else
+				{
+					nOffset = -stage.softKeyboardRect.height;
+				}
+			}
+			
+			// This transition is slowing down as the number of items on the stage increases so drop it for now
+			// and just straight to the panned view
+			m_nPanOffset = nOffset;
+			y = m_nPanOffset;
+			
+			/*
+			// Check if the desired offset has changed
+			if (m_nPanOffset != nOffset)
+			{
+			// Create or reset the pan transition timer
+			if (m_pPanTimer == null)
+			{
+			var nPanSteps:uint = 150 / TRANSITION_UPDATE_INTERVAL;
+			m_pPanTimer = new Timer(TRANSITION_UPDATE_INTERVAL, nPanSteps);
+			m_pPanTimer.addEventListener(TimerEvent.TIMER, OnPanTransitionTimer);
+			m_pPanTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnPanTransitionTimerComplete);
+			}
+			else
+			{
+			m_pPanTimer.reset();
+			}
+			
+			// Start a new pan transition
+			m_nPanOffset = nOffset;
+			m_nPanStep = (y - nOffset) / m_pPanTimer.repeatCount;
+			m_pPanTimer.start();
+			}
+			*/
+		}
+		
+		// Called once for each step in the pan transition
+		protected function OnPanTransitionTimer(event:TimerEvent):void
+		{
+			y -= m_nPanStep;
+		}
+		
+		// Called when the pan transition is complete
+		protected function OnPanTransitionTimerComplete(event:TimerEvent):void
+		{
+			y = m_nPanOffset;
+		}
+		
 		// Returns the page index that corresponds to the screen name
 		protected function GetPageIndex(sScreen:String):int
 		{
@@ -692,6 +812,19 @@ package
 			return m_pConfiguration;
 		}
 		
+		// Returns the name of the server
+		public function GetServer():String
+		{
+			if (m_pHTTPConnectionPool)
+			{
+				return m_pHTTPConnectionPool.Server;
+			}
+			else
+			{
+				return "";
+			}
+		}
+
 		/***
 		 * Member variables
 		 **/
@@ -715,9 +848,11 @@ package
 		protected var m_pUpdateTimer:Timer;
 		
 		// Screen variables
-		protected var m_pScreenClasses:Array = [Login, Home, SelectSaved, SelectHistory, SequenceView, SequenceEdit, SequenceRun, Popup];
+		protected var m_pScreenClasses:Array = [Login, ConnectionPopup, Home, SelectSaved, SelectHistory, SequenceView, 
+			SequenceEdit, SequenceRun, Popup];
 		protected var m_pScreens:Array = new Array;
 		protected var m_pLogin:Login;
+		protected var m_pConnectionPopup:ConnectionPopup;
 		protected var m_pHome:Home;
 		protected var m_pSelectSaved:SelectSaved;
 		protected var m_pSelectHistory:SelectHistory;
@@ -731,22 +866,24 @@ package
 		
 		// Constants to refer to the page indicies (one-based because of loading page)
 		protected static var LOGIN_INDEX:uint = 1;
-		protected static var HOME_INDEX:uint = 2;
-		protected static var SELECTSAVED_INDEX:uint = 3;
-		protected static var SELECTHISTORY_INDEX:uint = 4;
-		protected static var SEQUENCEVIEW_INDEX:uint = 5;
-		protected static var SEQUENCEEDIT_INDEX:uint = 6;
-		protected static var SEQUENCERUN_INDEX:uint = 7;
-		protected static var POPUP_INDEX:uint = 8;
+		protected static var CONNECTIONPOPUP_INDEX:uint = 2;
+		protected static var HOME_INDEX:uint = 3;
+		protected static var SELECTSAVED_INDEX:uint = 4;
+		protected static var SELECTHISTORY_INDEX:uint = 5;
+		protected static var SEQUENCEVIEW_INDEX:uint = 6;
+		protected static var SEQUENCEEDIT_INDEX:uint = 7;
+		protected static var SEQUENCERUN_INDEX:uint = 8;
+		protected static var POPUP_INDEX:uint = 9;
 		
 		// Pan transition variables
 		protected var m_nPanStep:Number = 0;
 		protected var m_nPanOffset:Number = 0;
 		protected var m_pPanTimer:Timer;
 		
-		// HTTP connection pool
+		// HTTP connection pool and timer
 		protected var m_pHTTPConnectionPool:HTTPConnectionPool;
-		
+		protected var m_pConnectingTimer:Timer;
+
 		// Server configuration and move recent client state
 		protected var m_pConfiguration:Configuration;
 		protected var m_pState:State;
@@ -755,8 +892,12 @@ package
 		
 		// Array of recognized JSON objects
 		protected static var m_pJSONObjects:Array = [Configuration, State, Sequence, ComponentBase, Reagents, ServerError];
-		
+
 		// Unused reference to our static assets that is required for them to be available at run time
 		protected var m_pAssets:StaticAssets;
+		
+		// Constants
+		protected static const CONNECTING_POPUP_TIMEOUT:int = 150;
+		protected static const STATE_UPDATE_TIME:int = 500;
 	}
 }

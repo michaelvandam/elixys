@@ -204,6 +204,9 @@ class Sequence(Thread):
     pSummaryComponent = Summary.createNewComponent(sRunError)
     self.runComponentID = self.database.CreateComponent(self.username, self.runSequenceID, pSummaryComponent["type"], pSummaryComponent["note"], json.dumps(pSummaryComponent))
 
+    # Fully validate the run sequence
+    self.sequenceManager.ValidateSequenceFull(self.username, self.runSequenceID)
+
     # Switch to using the run IDs rather than the source because the summary unit operation only exists in the run sequence
     self.userSourceIDs = False
 

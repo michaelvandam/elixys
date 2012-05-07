@@ -2,6 +2,7 @@
 
 # Imports
 from UnitOperation import *
+import urllib
 
 # Component type
 componentType = "ADD"
@@ -42,7 +43,7 @@ class Add(UnitOperation):
     self.reagentName = ""
 
   def setDescription(self):
-    self.description = "Adding " + str(self.reagentName) + " to reactor " + str(self.ReactorID[-1]) + " position " + str(self.reagentLoadPosition) + ".  Delivering with " + \
+    self.description = "Adding " + urllib.unquote(str(self.reagentName)) + " to reactor " + str(self.ReactorID[-1]) + " position " + str(self.reagentLoadPosition) + ".  Delivering with " + \
       str(self.pressure) + " psi nitrogen for " + str(self.duration) + " seconds.";
 
     #Should have parameters listed below:

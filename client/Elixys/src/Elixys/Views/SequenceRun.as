@@ -168,7 +168,7 @@ package Elixys.Views
 					break;
 				
 				default:
-					throw Error("Unknown reactor");
+					throw new Error("Unknown reactor");
 			}
 
 			// Assign the video to the parent

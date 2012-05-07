@@ -8,6 +8,7 @@ import SequenceManager
 import copy
 from DBComm import *
 from operator import itemgetter
+import Exceptions
 
 # Function used to sort strings in a case-insensitive manner
 def LowerIfPossible(x):
@@ -456,8 +457,12 @@ class GetHandler:
         nSequenceID = int(pPathComponents[2])
         nComponentID = int(pPathComponents[4])
 
-        # Return the desired component
-        return self.__pSequenceManager.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
+        # Get the component and verify the sequence ID
+        pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, nComponentID, nSequenceID)
+        if pComponent["sequenceid"] == nSequenceID:
+            return pComponent
+        else:
+            raise Exceptions.ComponentNotFoundException(nComponentID)
 
     # Handle GET /sequence/[sequenceid]/reagent/[reagentid1].[reagentID2]...[reagentIDN]
     def __HandleGetReagent(self):
