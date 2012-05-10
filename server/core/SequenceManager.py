@@ -84,7 +84,7 @@ class SequenceManager:
     pAllReagents = self.database.GetReagentsBySequence(sRemoteUser, nSequenceID)
     pAvailableReagents = []
     for pReagent in pAllReagents:
-      if pReagent["available"]:
+      if pReagent["name"] != "":
         pAvailableReagents.append(pReagent)
 
     # Process each component
@@ -129,7 +129,7 @@ class SequenceManager:
             pCassette = UnitOperations.createFromComponent(nSequenceID, pComponent, sRemoteUser, self.database)
             pCassette.addComponentDetails()
             for pReagent in pCassette.component["reagents"]:
-                if pReagent["available"]:
+                if pReagent["name"] != "":
                     pSequence["reagents"].append({"type":"reagent",
                         "cassette":nCassette,
                         "position":pReagent["position"],
