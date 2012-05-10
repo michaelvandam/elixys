@@ -234,6 +234,12 @@ package Elixys.HTTP
 					return;
 				}
 
+				// Stop the timer if it's running
+				if (m_pResponseTimer.running)
+				{
+					m_pResponseTimer.stop();
+				}
+
 				// Capture the HTTP response headers if we don't have them yet
 				if (!m_nContentLength)
 				{
@@ -294,10 +300,7 @@ package Elixys.HTTP
 				// Is this request is complete?
 				if (m_pHTTPResponseBody.length == m_nContentLength)
 				{
-					// Yes, so stop the timer
-					m_pResponseTimer.stop();
-
-					// Dispatch a server responded event if we are retrying
+					// Yes.  Dispatch a server responded event if we are retrying
 					if (m_nRetryCount)
 					{
 						var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERRESPONDED);

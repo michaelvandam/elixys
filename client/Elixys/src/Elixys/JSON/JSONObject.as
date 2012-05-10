@@ -28,7 +28,7 @@ THE SOFTWARE.
 
 package Elixys.JSON
 {
-	import com.adobe.serialization.json.JSON;
+	import skyboy.serialization.JSON;
 
 	import flash.utils.Proxy;
 	import flash.utils.flash_proxy;
@@ -47,7 +47,7 @@ package Elixys.JSON
 		{
 			if (data != null)
 			{
-				content = com.adobe.serialization.json.JSON.decode(data);
+				content = skyboy.serialization.JSON.decode(data);
 			}
 			else
 			{
@@ -57,12 +57,12 @@ package Elixys.JSON
 	
 		public function populate(data:String):void
 		{
-			content = com.adobe.serialization.json.JSON.decode(data);
+			content = skyboy.serialization.JSON.decode(data);
 		}
 	
 		public function toString():String
 		{
-			return com.adobe.serialization.json.JSON.encode(content);
+			return skyboy.serialization.JSON.encode(content);
 		}
 	
 		override flash_proxy function deleteProperty(name:*):Boolean

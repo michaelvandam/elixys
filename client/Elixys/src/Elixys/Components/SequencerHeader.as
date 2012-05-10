@@ -153,16 +153,22 @@ package Elixys.Components
 		// Hit test the drag target
 		public function DragHitTest(pDragTarget:Sprite):Boolean
 		{
-			// Calculate the central 40% of the drag rect in stage coordinates
+			// Check if the drag target overlaps the trash can
 			var pFullDragRect:Rectangle = pDragTarget.getBounds(stage);
-			var nDragOffsetX:Number = pFullDragRect.width * 0.3;
-			var nDragOffsetY:Number = pFullDragRect.height * 0.3;
-			var pDragRect:Rectangle = new Rectangle(pFullDragRect.x + nDragOffsetX, pFullDragRect.y + nDragOffsetY,
-				pFullDragRect.width - (2 * nDragOffsetX), pFullDragRect.height - (2 * nDragOffsetY));
-			
-			// Test if the the drag target overlaps the trash can
 			var pTrashRect:Rectangle = m_pTrash.getBounds(stage);
-			return pTrashRect.intersects(pDragRect)
+			if (pTrashRect.intersects(pFullDragRect))
+			{
+				// Calculate the central 40% of the drag rect and test if the that overlaps the trash can
+				var nDragOffsetX:Number = pFullDragRect.width * 0.3;
+				var nDragOffsetY:Number = pFullDragRect.height * 0.3;
+				var pDragRect:Rectangle = new Rectangle(pFullDragRect.x + nDragOffsetX, pFullDragRect.y + nDragOffsetY,
+					pFullDragRect.width - (2 * nDragOffsetX), pFullDragRect.height - (2 * nDragOffsetY));
+				return pTrashRect.intersects(pDragRect);
+			}
+			else
+			{
+				return false;
+			}
 		}
 
 		/***

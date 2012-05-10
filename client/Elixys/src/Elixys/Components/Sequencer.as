@@ -174,8 +174,11 @@ package Elixys.Components
 				if (m_pSequencerHeader.DragHitTest(m_pDragTarget))
 				{
 					// Yes, so show the delete skin
-					m_pDragTargetDeleteSkin.visible = true;
-					m_pDragTargetUpSkin.visible = false;
+					if (m_pDragTargetUpSkin.visible)
+					{
+						m_pDragTargetDeleteSkin.visible = true;
+						m_pDragTargetUpSkin.visible = false;
+					}
 					
 					// Hide any opening in the sequencer body
 					m_pSequencerBody.DragHitTest(null);
@@ -183,8 +186,11 @@ package Elixys.Components
 				else
 				{
 					// No, so show the up skin
-					m_pDragTargetUpSkin.visible = true;
-					m_pDragTargetDeleteSkin.visible = false;
+					if (m_pDragTargetDeleteSkin.visible)
+					{
+						m_pDragTargetUpSkin.visible = true;
+						m_pDragTargetDeleteSkin.visible = false;
+					}
 					
 					// Hit test the sequencer body
 					m_pSequencerBody.DragHitTest(m_pDragTarget);

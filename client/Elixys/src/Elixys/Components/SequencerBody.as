@@ -992,7 +992,6 @@ package Elixys.Components
 			stage.removeEventListener(MouseEvent.MOUSE_UP, mouseUp);
 			_dragTimer.stop();
 			_touchTimer.stop();
-			trace("Restore base class control in SequencerBody?");
 
 			// Get a reference to the pressed sequence component
 			var nSequenceIndex:int = m_nPressedIndex + (m_pSequence.Components.length - m_pHitAreas.length);
@@ -1048,6 +1047,7 @@ package Elixys.Components
 		// Hit test the drag target
 		public function DragHitTest(pDragTarget:Sprite):void
 		{
+			/*
 			// Check if we have a drag target
 			if (pDragTarget)
 			{
@@ -1063,6 +1063,7 @@ package Elixys.Components
 				// Close any opening in the unit operations
 				CloseDropOpening();
 			}
+			*/
 		}
 
 		// Called when the user drops an existing unit operation on the trash can
@@ -1108,10 +1109,17 @@ package Elixys.Components
 		// Locates the insert ID for the give drag target
 		protected function FindDragTargetIDs(pDragTarget:Sprite):Array
 		{
+			// Make sure the drag target is over the sequencer
+			var pDragRect:Rectangle = pDragTarget.getBounds(_slider);
+			var pSliderRect:Rectangle = new Rectangle(0, 0, _slider.width, _slider.height);
+			if (!pSliderRect.intersects(pDragRect))
+			{
+				return null;
+			}
+
 			// Search for the unit operations that intersect with the drag target
 			var nIndex:int, nUnitOperationIndex:int = 0, pComponent:SequenceComponent, pReturn:Array = new Array(), 
 				nLastCassetteID:int = -1, nFirstUnitOperationID:int = -1, nLastUnitOperationID:int = -1;
-			var pDragRect:Rectangle = pDragTarget.getBounds(_slider);
 			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)
 			{
 				// Skip cassettes
@@ -1169,7 +1177,6 @@ package Elixys.Components
 			
 			// Return the last unit operation or cassette ID if the user dropped the unit operation
 			// anywhere on the slider
-			var pSliderRect:Rectangle = new Rectangle(0, 0, _slider.width, _slider.height);
 			if (pSliderRect.intersects(pDragRect))
 			{
 				if (nLastUnitOperationID != -1)

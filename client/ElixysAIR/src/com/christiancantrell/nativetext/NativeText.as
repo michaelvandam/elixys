@@ -94,8 +94,9 @@ package com.christiancantrell.nativetext
 			// Listen for the enter frame event
 			this.addEventListener(Event.ENTER_FRAME, OnEnterFrame);
 		}
-		
+
 		// Called when we enter a frame
+		protected var enterFrameCount:int = 0;
 		protected function OnEnterFrame(event:Event):void
 		{
 			// This is a bit hacky but we need a way to detect two things:
@@ -107,7 +108,7 @@ package com.christiancantrell.nativetext
 			{
 				return;
 			}
-			
+
 			// Check for changes in position
 			var pViewPort:Rectangle = this.getViewPortRectangle();
 			if (!pViewPort.equals(this.st.viewPort))
@@ -116,18 +117,27 @@ package com.christiancantrell.nativetext
 				this.drawBorder(this);
 			}
 			
-			// Set visibility of the stage text
-			var bVisible:Boolean = this.GetVisibility();
-			var fAlpha:Number = this.GetTransparency();
-			if ((!bVisible || (fAlpha != 1)) && this.st.visible)
+			// Check for visibility and transparency every 30 frames
+			if (enterFrameCount <= 0)
 			{
-				// Hide the text
-				this.st.visible = false;
+				// Set visibility of the stage text
+				var bVisible:Boolean = this.GetVisibility();
+				var fAlpha:Number = this.GetTransparency();
+				if ((!bVisible || (fAlpha != 1)) && this.st.visible)
+				{
+					// Hide the text
+					this.st.visible = false;
+				}
+				else if (bVisible && (fAlpha == 1) && !this.st.visible && !_forceInvisible)
+				{
+					// Show the text
+					this.st.visible = true;
+				}
+				enterFrameCount = 30;
 			}
-			else if (bVisible && (fAlpha == 1) && !this.st.visible && !_forceInvisible)
+			else
 			{
-				// Show the text
-				this.st.visible = true;
+				--enterFrameCount;
 			}
 		}
 
@@ -482,24 +492,40 @@ package com.christiancantrell.nativetext
 			this.drawBorder(this);
 		}
 		
+		// Cache the upper left corner and view point rect to avoid calculating it in we don't need to
+		protected var globalUpperLeft:Point = new Point();
+		protected var viewPointRect:Rectangle = new Rectangle();
+		
 		private function getViewPortRectangle():Rectangle
 		{
-			var totalFontHeight:Number = this.getTotalFontHeight();
 			/* The following original block of code has been fixed below to account for the face that the view port is
-			   in global (stage) coordinates, not necessarily the same as our parent object's coordinates.
+			in global (stage) coordinates, not necessarily the same as our parent object's coordinates.
 			
 			return new Rectangle(this.x + this.borderThickness,
-				 				 this.y + this.borderThickness,
-								 Math.round(this._width - (this.borderThickness * 2.5)),
-								 Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));
+			this.y + this.borderThickness,
+			Math.round(this._width - (this.borderThickness * 2.5)),
+			Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));
 			*/
 
+			// Check if the global upper left point has changed
 			var pUpperLeft:Point = new Point(this.x + this.borderThickness, this.y + this.borderThickness);
-			var pLowerRight:Point = new Point(pUpperLeft.x + Math.round(this._width - (this.borderThickness * 2.5)),
-				pUpperLeft.y + Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));
-			pUpperLeft = this.localToGlobal(pUpperLeft);
-			pLowerRight = this.localToGlobal(pLowerRight);
-			return new Rectangle(pUpperLeft.x, pUpperLeft.y, pLowerRight.x - pUpperLeft.x, pLowerRight.y - pUpperLeft.y);
+			var pGlobalUpperLeft:Point = this.localToGlobal(pUpperLeft);
+			if (!globalUpperLeft.equals(pGlobalUpperLeft))
+			{
+				// Yes, so recalculate the view port rect
+				var totalFontHeight:Number = this.getTotalFontHeight();
+				var pLowerRight:Point = new Point(pUpperLeft.x + Math.round(this._width - (this.borderThickness * 2.5)),
+					pUpperLeft.y + Math.round((totalFontHeight + (totalFontHeight - this.st.fontSize)) * this.numberOfLines));
+				var pGlobalLowerRight:Point = this.localToGlobal(pLowerRight);
+				globalUpperLeft.copyFrom(pGlobalUpperLeft);
+				viewPointRect.x = pGlobalUpperLeft.x;
+				viewPointRect.y = pGlobalUpperLeft.y;
+				viewPointRect.width = pGlobalLowerRight.x - pGlobalUpperLeft.x;
+				viewPointRect.height = pGlobalLowerRight.y - pGlobalUpperLeft.y;
+			}
+
+			// Return the view point rect
+			return viewPointRect;
 		}
 		
 		private function drawBorder(s:Sprite):void

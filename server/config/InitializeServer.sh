@@ -25,7 +25,7 @@ chmod 755 *.sh
 
 # Install, start and initialize MySQL
 yum -y install mysql mysql-server apr-util-mysql
-cp elixys/config/my.cnf /etc
+cp my.cnf /etc
 restorecon /etc/my.cnf
 /sbin/service mysqld start
 ./InitializeDatabase.sh
