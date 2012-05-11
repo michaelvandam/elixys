@@ -75,7 +75,7 @@ class CoreServerService(rpyc.Service):
             # Get the server state
             pServerState = gSystemModel.GetStateObject()
             if pServerState == None:
-                raise Exception("Failed to get the server state")
+                raise Exception("Failed to get server state")
 
             # Initialize the run state
             pServerState["runstate"] = {"type":"runstate"}
@@ -96,8 +96,9 @@ class CoreServerService(rpyc.Service):
             pServerState["runstate"]["waitingforuserinput"] = False
             pServerState["runstate"]["runcomplete"] = False
 
-            # Format the run state
+            # Check if the system is running or idle
             if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
+                # System is running
                 pServerState["runstate"]["runcomplete"] = gRunSequence.isRunComplete()
                 pServerState["runstate"]["running"] = True
                 pServerState["runstate"]["username"] = gRunUsername
@@ -132,6 +133,7 @@ class CoreServerService(rpyc.Service):
                     if gRunSequence.willRunPause():
                         pServerState["runstate"]["useralert"] = "Run will pause after the current operation."
             else:
+                # The system is idle
                 gRunSequence = None
                 gRunUsername = ""
                 pServerState["runstate"]["status"] = "Idle"

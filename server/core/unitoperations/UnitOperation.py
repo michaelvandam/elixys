@@ -128,13 +128,14 @@ class UnitOperation(threading.Thread):
     self.abort = False
     self.timerStartTime = 0
     self.timerLength = 0
-    self.timerShowInStatus = False
     self.timerOverridden = False
     self.timerStopped = False
     self.waitingForUserInput = False
     self.error = ""
     self.description = ""
     self.stopAtTemperature = False
+    self.cyclotronFlag = False
+    self.updateStatusWhileWaiting = None
 
   def setParams(self,params): #Params come in as Dict, we can loop through and assign each 'key' to a variable. Eg. self.'key' = 'value'
     for paramname in params.keys():
@@ -271,11 +272,8 @@ class UnitOperation(threading.Thread):
       self.logInfo(urllib.unquote(status))
 
   def updateStatus(self,status):
-    statusComponents = self.status.split(", ")
-    if len(statusComponents) > 0:
-       self.setStatus(statusComponents[0] + ", " + status, True)
-    else:
-       self.setStatus(status, True)
+    statusComponents = self.status.split(" (")
+    self.setStatus(statusComponents[0] + " (" + status + ")", True)
 
   def setAbort(self):
     self.abort = True
@@ -447,6 +445,8 @@ class UnitOperation(threading.Thread):
             self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
             break
         self.checkAbort()
+        if self.updateStatusWhileWaiting != None:
+          self.updateStatus(self.updateStatusWhileWaiting(function()))
     elif comparator == NOTEQUAL:
       while (function() == condition):
         self.stateCheckInterval(self.delay)
@@ -456,6 +456,8 @@ class UnitOperation(threading.Thread):
             self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
             break
         self.checkAbort()
+        if self.updateStatusWhileWaiting != None:
+          self.updateStatus(self.updateStatusWhileWaiting(function()))
     elif comparator == GREATER:
       while not(function() >= condition):
         self.stateCheckInterval(self.delay)
@@ -465,6 +467,8 @@ class UnitOperation(threading.Thread):
             self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
             break            
         self.checkAbort()
+        if self.updateStatusWhileWaiting != None:
+          self.updateStatus(self.updateStatusWhileWaiting(function()))
     elif comparator == LESS:
       while not(function() <=condition):
         self.stateCheckInterval(self.delay)
@@ -474,6 +478,8 @@ class UnitOperation(threading.Thread):
             self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
             break
         self.checkAbort()
+        if self.updateStatusWhileWaiting != None:
+          self.updateStatus(self.updateStatusWhileWaiting(function()))
     else:
       self.logError("Invalid comparator: " + comparator)
       self.abortOperation("Invalid comparator: " + comparator)
@@ -496,11 +502,10 @@ class UnitOperation(threading.Thread):
     #print "Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition))  
     return ret
     
-  def startTimer(self,timerLength,showInStatus=True):  #In seconds
+  def startTimer(self,timerLength):  #In seconds
     #Remember the start time and length
     self.timerStartTime = time.time()
     self.timerLength = timerLength
-    self.timerShowInStatus = showInStatus
     self.timerStopped = False
     
   def waitForTimer(self):
@@ -606,12 +611,17 @@ class UnitOperation(threading.Thread):
  
   def setHeater(self,heaterState):
     if heaterState == ON:
+      self.updateStatusWhileWaiting = self.updateHeaterStatus
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn()
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,True,EQUAL,3)
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,65535)
+      self.updateStatusWhileWaiting = None
     elif heaterState == OFF:
       self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
       self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
+
+  def updateHeaterStatus(self,currentTemp):
+      return ("%i C" % currentTemp)
       
   def setTemp(self):
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(self.reactTemp)
@@ -621,10 +631,12 @@ class UnitOperation(threading.Thread):
     self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
     self.setCoolingSystem(ON)
+    self.updateStatusWhileWaiting = self.updateHeaterStatus
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
     if coolingDelay > 0:
       self.startTimer(coolingDelay)
       self.waitForTimer()
+    self.updateStatusWhileWaiting = None
     self.setCoolingSystem(OFF)
     
   def setStirSpeed(self,stirSpeed):

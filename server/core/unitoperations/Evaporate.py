@@ -51,6 +51,7 @@ class Evaporate(UnitOperation):
 
   def run(self):
     try:
+      self.logInfo("###Temp### Evaporate stop at temperature: " + str(self.stopAtTemperature))    # Temp
       self.setStatus("Adjusting pressure")
       self.setPressureRegulator(1,self.pressure/3)
       self.setStatus("Moving reactor")
@@ -64,7 +65,8 @@ class Evaporate(UnitOperation):
       self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
-      if self.stopAtTemperature:
+      if self.stopAtTemperature > 0:
+        self.logInfo("###Temp### Evaporate stopping at temperature")    # Temp
         self.setStirSpeed(OFF)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
@@ -73,8 +75,9 @@ class Evaporate(UnitOperation):
       self.setStatus("Cooling")
       self.setHeater(OFF)
       self.setCool()
-      if not self.stopAtTemperature:
+      if self.stopAtTemperature == 0:
         self.setStirSpeed(OFF)
+        self.logInfo("###Temp### Evaporate stopping after cooling")    # Temp
       self.setStatus("Completing") 
       self.setStatus("Moving robot")
       self.setGasTransferValve(OFF)

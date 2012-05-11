@@ -122,6 +122,12 @@ package Elixys.Components
 				// Skip remaining steps for blank buttons
 				if (m_pButtonBlankFlags[nButton])
 				{
+					m_pBackgroundSkinUp.push(null);
+					m_pBackgroundSkinDown.push(null);
+					m_pBackgroundSkinDisabled.push(null);
+					m_pForegroundSkinUp.push(null);
+					m_pForegroundSkinDown.push(null);
+					m_pForegroundSkinDisabled.push(null);
 					continue;
 				}
 
@@ -131,15 +137,27 @@ package Elixys.Components
 					m_pBackgroundSkinUp.push(AddSkin(pBackgroundSkinUpName[nButton]));
 					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinUp[nButton]);
 				}
+				else
+				{
+					m_pBackgroundSkinUp.push(null);
+				}
 				if (pBackgroundSkinDownName[nButton] != null)
 				{
 					m_pBackgroundSkinDown.push(AddSkin(pBackgroundSkinDownName[nButton]));
 					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinDown[nButton]);
 				}
+				else
+				{
+					m_pBackgroundSkinDown.push(null);
+				}
 				if (pBackgroundSkinDisabledName[nButton] != null)
 				{
 					m_pBackgroundSkinDisabled.push(AddSkin(pBackgroundSkinDisabledName[nButton]));
 					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinDisabled[nButton]);
+				}
+				else
+				{
+					m_pBackgroundSkinDisabled.push(null);
 				}
 				
 				// Create the foreground skins
@@ -151,11 +169,19 @@ package Elixys.Components
 						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
 							m_pForegroundSkinUp[nButton]);
 					}
+					else
+					{
+						m_pForegroundSkinUp.push(null);
+					}
 					if (pForegroundSkinDownName[nButton] != null)
 					{
 						m_pForegroundSkinDown.push(AddSkin(pForegroundSkinDownName[nButton]));
 						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
 							m_pForegroundSkinDown[nButton]);
+					}
+					else
+					{
+						m_pForegroundSkinDown.push(null);
 					}
 					if (pForegroundSkinDisabledName[nButton] != null)
 					{
@@ -163,6 +189,16 @@ package Elixys.Components
 						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
 							m_pForegroundSkinDisabled[nButton]);
 					}
+					else
+					{
+						m_pForegroundSkinDisabled.push(null);
+					}
+				}
+				else
+				{
+					m_pForegroundSkinUp.push(null);
+					m_pForegroundSkinDown.push(null);
+					m_pForegroundSkinDisabled.push(null);
 				}
 
 				// Set the label position

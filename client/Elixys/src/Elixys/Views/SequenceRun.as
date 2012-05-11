@@ -4,6 +4,7 @@ package Elixys.Views
 	import Elixys.Components.Button;
 	import Elixys.Components.Video;
 	import Elixys.Events.ButtonEvent;
+	import Elixys.Events.ElixysEvents;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
@@ -21,6 +22,7 @@ package Elixys.Views
 	import flash.display.DisplayObjectContainer;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
+	import flash.events.Event;
 	import flash.geom.Point;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
@@ -339,6 +341,13 @@ package Elixys.Views
 		// Overridden to handle unit operation button clicks
 		protected override function OnButtonClick(event:ButtonEvent):void
 		{
+			// Handle the log out button
+			if (event.button == "LOGOUT")
+			{
+				m_pElixys.dispatchEvent(new Event(ElixysEvents.LOGOUT));
+				return;
+			}
+			
 			// Intercept and set the target if it was out unit operation button
 			if (event.target == m_pUnitOperationButton)
 			{
@@ -459,7 +468,13 @@ package Elixys.Views
 				<navigationbaroption blank="true" />
 				<navigationbaroption blank="true" />
 				<navigationbaroption blank="true" />
-				<navigationbaroption blank="true" />
+				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}
+						foregroundskindown={getQualifiedClassName(mainNav_logOut_down)} 
+						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_disabled)}>
+					LOG OUT
+				</navigationbaroption>
 			</navigationbar>;
 		
 		// Sequencer XML

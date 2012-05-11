@@ -128,7 +128,7 @@ class GetHandler:
     def __HandleGetStateSelectSavedSequences(self):
         # Check if the system is running
         pServerState = self.__GetServerState()
-        bSystemAvailable = (pServerState["runstate"]["username"] == "")
+        bSystemAvailable = (pServerState["runstate"]["status"] == "Idle")
 
         # Determine the sorting modes
         bSortDescending = True
@@ -205,7 +205,7 @@ class GetHandler:
     def __HandleGetStateSelectRunHistory(self):
         # Check if the system is running
         pServerState = self.__GetServerState()
-        bSystemAvailable = (pServerState["runstate"]["username"] == "")
+        bSystemAvailable = (pServerState["runstate"]["status"] == "Idle")
 
         # Determine the sorting modes
         bSortDescending = True
@@ -319,7 +319,7 @@ class GetHandler:
 
         # Allow running if the system is not in use
         pServerState = self.__GetServerState()
-        bRunAllowed = (pServerState["runstate"]["username"] == "")
+        bRunAllowed = (pServerState["runstate"]["status"] == "Idle")
 
         # Allow running from here if this is not a cassette
         bRunHereAllowed = False
@@ -356,7 +356,7 @@ class GetHandler:
 
         # Allow running if the system is not in use
         pServerState = self.__GetServerState()
-        bRunAllowed = (pServerState["runstate"]["username"] == "")
+        bRunAllowed = (pServerState["runstate"]["status"] == "Idle")
 
         # Allow running from here if this is not a cassette
         bRunHereAllowed = False
@@ -421,7 +421,10 @@ class GetHandler:
             "enabled":bPauseEnabled},
             {"type":"button",
             "id":"ABORTRUN",
-            "enabled":bAbortEnabled}],
+            "enabled":bAbortEnabled},
+            {"type":"button",
+            "id":"LOGOUT",
+            "enabled":True}],
             "sequenceid":self.__pClientState["sequenceid"],
             "componentid":self.__pClientState["componentid"]}
 
@@ -482,6 +485,13 @@ class GetHandler:
     # Initializes and/or returns the cached server state
     def __GetServerState(self):
         if self.__pServerState == None:
-            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            try:
+                self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            except Exception, ex:
+                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed: " + str(ex) + ", assuming hardware off")
+                self.__pServerState = {"type":"serverstate"}
+                self.__pServerState["runstate"] = {"type":"runstate"}
+                self.__pServerState["runstate"]["status"] = "Offline"
+                self.__pServerState["runstate"]["username"] = ""
         return self.__pServerState
 

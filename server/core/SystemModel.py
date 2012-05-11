@@ -618,8 +618,16 @@ class SystemModel:
       # Unit operation
       if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():
         self.__sStateString += "\n"
-        self.__sStateString += "\"" + self.__pUnitOperation.__class__.__name__ + "\" unit operation status: " + self.__pUnitOperation.status
-        self.__sStateString += "\n"
+        self.__sStateString += "\"" + self.__pUnitOperation.__class__.__name__ + "\" unit operation:\n"
+        self.__sStateString += "  " + self.__pUnitOperation.description + "\n"
+        self.__sStateString += "  Status: " + self.__pUnitOperation.status + "\n"
+        sTimerStatus = self.__pUnitOperation.getTimerStatus()
+        if sTimerStatus == "Running":
+          self.__sStateString += "  Timer running, time remaining: " + self.__FormatTime(self.__pUnitOperation.getTime()) + "\n"
+        elif (sTimerStatus == "Overridden"):
+          self.__sStateString += "  Timer paused, time elapsed: " + self.__FormatTime(self.__pUnitOperation.getTime()) + "\n"
+        elif self.__pUnitOperation.waitingForUserInput:
+          self.__sStateString += "  Waiting for user input\n"
 
       # Update the database
       if self.database != None:
@@ -647,6 +655,22 @@ class SystemModel:
         # Release the locks
         self.UnlockSystemModel()
         self.__pStateLock.Release()
+
+  def __FormatTime(self, nTime):
+    """Format the time to a string"""
+    nSeconds = int(nTime) % 60
+    nMinutes = int((nTime - nSeconds) / 60) % 60
+    nHours = int((((nTime - nSeconds) / 60) - nMinutes) / 60)
+    sTime = ""
+    if nHours != 0:
+      sTime += str(nHours) + ":"
+    if nMinutes < 10:
+      sTime += "0"
+    sTime += str(nMinutes) + "'"
+    if nSeconds < 10:
+      sTime += "0"
+    sTime += str(nSeconds) + "\""
+    return sTime
 
   def __PadString(self, sString, nTotalCharacters):
     """Pads a string with whitespace"""
