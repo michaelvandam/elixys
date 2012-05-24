@@ -439,6 +439,10 @@ package
 					m_pState = pResponse as State;
 					UpdateState();
 				}
+				else if (pResponse is Configuration)
+				{
+					m_pConfiguration = pResponse as Configuration;
+				}
 				else if (pResponse is Sequence)
 				{
 					m_pSequence = pResponse as Sequence;
@@ -831,6 +835,7 @@ package
 		
 		// XML page list
 		protected static const PAGES:XML = 
+			//<pages id="Pages" width="2048" height="1536" autoResize="false">
 			<pages id="Pages" width="1024" height="768" autoResize="false">
 				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;

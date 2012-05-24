@@ -6,8 +6,9 @@ package
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	
-	// Set the application size to match the iPad2
+	// Set the application size to match the iPad 2 or 3
 	[SWF(width="1024", height="768")]
+	//[SWF(width="2048", height="1536")]
 
 	public class ElixysMobile extends Elixys
 	{

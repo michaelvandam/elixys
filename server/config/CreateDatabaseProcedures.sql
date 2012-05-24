@@ -462,7 +462,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
         SET lUserID = (SELECT UserID FROM Users WHERE Username = iUsername);
 
         -- Create the entry in the sequences table
-        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0, 0, False, False);
+        INSERT INTO Sequences VALUES (NULL, iName, iComment, iType, NULL, lUserID, 0, 0, True, False);
         SET lSequenceID = LAST_INSERT_ID();
 
         -- Create each cassette
@@ -476,13 +476,13 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             END IF;
 
             -- Start the cassette JSON string
-            SET lCassetteJSON = CONCAT("{\"type\":\"component\", \"componenttype\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"available\":false, \"reagentids\":[");
+            SET lCassetteJSON = CONCAT("{\"type\":\"component\", \"componenttype\":\"CASSETTE\", \"reactor\":", lCassette + 1, ", \"reagentids\":[");
 
             -- Create the reagents
             SET lReagent = 0;
             WHILE lReagent < iReagents DO
                 -- Create an entry in the reagents table
-                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, lReagent + 1, False, "", "");
+                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, lReagent + 1, "", "");
                 SET lReagentID = LAST_INSERT_ID();
 
                 -- Update the cassette JSON string
@@ -500,7 +500,7 @@ CREATE PROCEDURE CreateSequence(IN iName VARCHAR(64), IN iComment VARCHAR(255), 
             SET lColumn = 0; 
             WHILE lColumn < iColumns DO
                 -- Create an entry in the reagents table
-                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, CHAR(ASCII('A') + lColumn), False, "", "");
+                INSERT INTO Reagents VALUES (NULL, lSequenceID, lCassetteID, CHAR(ASCII('A') + lColumn), "", "");
                 SET lReagentID = LAST_INSERT_ID();
 
                 -- Update the cassette JSON string
@@ -640,27 +640,25 @@ CREATE PROCEDURE GetReagentCassette(IN iSequenceID INT UNSIGNED, IN iReagentID I
 
 /* Update an existing reagent:
  *   IN ReagentID - ID of the reagent
- *   IN Available - True if a reagent is in this position, False otherwise
  *   IN Name - Reagent name
  *   IN Description - ReagentDescription
  */
 DROP PROCEDURE IF EXISTS UpdateReagent;
-CREATE PROCEDURE UpdateReagent(IN iReagentID INT UNSIGNED, IN iAvailable BOOL, IN iName VARCHAR(64), IN iDescription VARCHAR(255))
+CREATE PROCEDURE UpdateReagent(IN iReagentID INT UNSIGNED, IN iName VARCHAR(64), IN iDescription VARCHAR(255))
     BEGIN
         -- Update the reagent
-        UPDATE Reagents SET Available = iAvailable, Name = iName, Description = iDescription WHERE ReagentID = iReagentID;
+        UPDATE Reagents SET Name = iName, Description = iDescription WHERE ReagentID = iReagentID;
     END //
 
 /* Updates an existing reagent by position:
  *   IN SequenceID - Sequence ID of the reagent
  *   IN CassetteNumber - Cassette number of the reagent
  *   IN Position - Position of the reagent
- *   IN Available - True if a reagent is in this position, False otherwise
  *   IN Name - Reagent name
  *   IN Description - ReagentDescription
  */
 DROP PROCEDURE IF EXISTS UpdateReagentByPosition;
-CREATE PROCEDURE UpdateReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCassetteNumber INT UNSIGNED, IN iPosition VARCHAR(2), IN iAvailable BOOL, IN iName VARCHAR(64),
+CREATE PROCEDURE UpdateReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCassetteNumber INT UNSIGNED, IN iPosition VARCHAR(2), IN iName VARCHAR(64),
                                          IN iDescription VARCHAR(255))
     BEGIN
         DECLARE lComponentID INT UNSIGNED;
@@ -673,7 +671,7 @@ CREATE PROCEDURE UpdateReagentByPosition(IN iSequenceID INT UNSIGNED, IN iCasset
         SET lReagentID = (SELECT ReagentID FROM Reagents WHERE SequenceID = iSequenceID AND ComponentID = lComponentID AND Position = iPosition);
 
         -- Update the reagent by position
-        CALL UpdateReagent(lReagentID, iAvailable, iName, iDescription);
+        CALL UpdateReagent(lReagentID, iName, iDescription);
     END //
 
 /****************************************************************************************************************************************************************

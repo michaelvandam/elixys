@@ -27,15 +27,15 @@ class GetHandler:
         # Create the sequence manager
         self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
-        # Initialize server state
-        self.__pServerState = None
-
     # Main entry point for handling all GET requests
     def HandleRequest(self, pClientState, sRemoteUser, sPath, pBody, nBodyLength):
         # Remember the request variables
         self.__pClientState = pClientState
         self.__sRemoteUser = sRemoteUser
         self.__sPath = sPath
+
+        # Initialize server state
+        self.__pServerState = None
 
         # Call the appropriate handler function
         if self.__sPath == "/configuration":

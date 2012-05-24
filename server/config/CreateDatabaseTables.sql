@@ -47,7 +47,6 @@ CREATE TABLE Reagents
     SequenceID INT UNSIGNED NOT NULL,
     ComponentID INT UNSIGNED NOT NULL,
     Position VARCHAR(2) NOT NULL,
-    Available BOOL NOT NULL,
     Name VARCHAR(64) NOT NULL,
     Description VARCHAR(255) NOT NULL,
     PRIMARY KEY (ReagentID)

@@ -174,6 +174,14 @@ package Elixys.Components
 				return;
 			}
 			
+			// Release the button if we have entered scroll mode
+			if ((m_nClickState == STATE_SCROLLING) && (m_nPressedIndex != -1))
+			{
+				ReleaseButton(m_nPressedIndex);
+				m_nPressedIndex = -1;
+				return;
+			}
+
 			// Check for a unit operation click
 			var nIndex:int, nUnitOperationIndex:int = 0, pComponent:SequenceComponent;
 			for (nIndex = 0; nIndex < m_pSequence.Components.length; ++nIndex)

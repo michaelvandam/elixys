@@ -140,11 +140,16 @@ package Elixys.JSON.State
 			{
 				return false;
 			}
+			
 			if (pSequenceMetadataA.Creator != pSequenceMetadataB.Creator)
 			{
 				return false;
 			}
 			if (pSequenceMetadataA.Operations != pSequenceMetadataB.Operations)
+			{
+				return false;
+			}
+			if (pSequenceMetadataA.Valid != pSequenceMetadataB.Valid)
 			{
 				return false;
 			}

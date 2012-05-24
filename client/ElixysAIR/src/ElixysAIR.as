@@ -4,8 +4,9 @@ package
 	
 	import flash.display.Sprite;
 
-	// Set the application size to match the iPad2
+	// Set the application size to match the iPad 2 or 3
 	[SWF(width="1024", height="768")]
+	//[SWF(width="2048", height="1536")]
 	
 	// This is the root of the Elixys application
 	public class ElixysAIR extends Elixys

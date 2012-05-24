@@ -27,9 +27,6 @@ class PostHandler:
         # Create the sequence manager
         self.__pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
-        # Initialize server state
-        self.__pServerState = None
-
     # Main entry point for handling all POST requests
     def HandleRequest(self, pClientState, sRemoteUser, sPath, pBody, nBodyLength):
         # Remember the request variables
@@ -38,6 +35,9 @@ class PostHandler:
         self.__sPath = sPath
         self.__pBody = pBody
         self.__nBodyLength = nBodyLength
+
+        # Initialize server state
+        self.__pServerState = None
 
         # Call the appropriate handler function
         if self.__sPath == "/HOME":
@@ -659,6 +659,13 @@ class PostHandler:
     # Initializes and/or returns the cached server state
     def __GetServerState(self):
         if self.__pServerState == None:
-            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            try:
+                self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            except Exception, ex:
+                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed: " + str(ex) + ", assuming hardware off")
+                self.__pServerState = {"type":"serverstate"}
+                self.__pServerState["runstate"] = {"type":"runstate"}
+                self.__pServerState["runstate"]["status"] = "Offline"
+                self.__pServerState["runstate"]["username"] = ""
         return self.__pServerState
 

@@ -70,13 +70,9 @@ class SequenceManager:
       raise Exception("Invalid sequence parameters")
 
     # Add the reagents
-    nCurrentCassette = 0
     for pReagent in pSequence["reagents"]:
       if (pReagent["type"] == "reagent") and (pReagent["cassette"] != 0) and (pReagent["position"] != "") and (pReagent["name"] != ""):
-        self.database.UpdateReagentByPosition(sRemoteUser, nSequenceID, pReagent["cassette"], pReagent["position"], True, pReagent["name"], pReagent["description"])
-        if nCurrentCassette != pReagent["cassette"]:
-          self.database.EnableCassette(sRemoteUser, nSequenceID, pReagent["cassette"] - 1)
-          nCurrentCassette = pReagent["cassette"]
+        self.database.UpdateReagentByPosition(sRemoteUser, nSequenceID, pReagent["cassette"], pReagent["position"], pReagent["name"], pReagent["description"])
       else:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 

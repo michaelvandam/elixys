@@ -134,6 +134,10 @@
 		<image128x128></image128x128>
 	</icon> -->
 
+	<icon>
+		<image128x128>ElixysIcon128.png</image128x128>
+	</icon>
+
 	<!-- Whether the application handles the update when a user double-clicks an update version
 	of the AIR file (true), or the default AIR application installer handles the update (false).
 	Optional. Default false. -->

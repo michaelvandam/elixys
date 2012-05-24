@@ -37,17 +37,9 @@ class Cassette(UnitOperation):
 
   def validateQuick(self):
     """Performs a quick validation on the component"""
-    #Validate all reagents
-    bValidationError = False
-    for pReagent in self.component["reagents"]:
-      if pReagent["available"]:
-        if not self.validateComponentField(pReagent["name"], pReagent["namevalidation"]) or \
-           not self.validateComponentField(pReagent["description"], pReagent["descriptionvalidation"]):
-          bValidationError = True
-
-    # Set the validation error field
-    self.component.update({"validationerror":bValidationError})
-    return not bValidationError
+    # Cassettes are always valid
+    self.component.update({"validationerror":False})
+    return True
 
   def saveValidation(self):
     """Saves validation-specific fields back to the database"""
@@ -75,14 +67,6 @@ class Cassette(UnitOperation):
     del self.component["reagentids"]
     self.component["reagents"] = pReagents
 
-  def updateComponentDetails(self, pTargetComponent):
-    """Strips a component down to only the details we want to save in the database"""
-    # Call the base handler
-    UnitOperation.updateComponentDetails(self, pTargetComponent)
-
-    # Update the field we want to save
-    pTargetComponent["available"] = self.component["available"]
-
   def copyComponent(self, nSourceSequenceID, nTargetSequenceID):
     """Creates a copy of the component in the database"""
     # Cassettes can only be copied by the database which needs to be done before this function is called.  Locate the cassette in the
@@ -97,13 +81,13 @@ class Cassette(UnitOperation):
     pConfiguration = self.database.GetConfiguration(self.username)
     for nReagent in range(1, pConfiguration["reagentsperreactor"] + 1):
       pReagent = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], str(nReagent))
-      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], str(nReagent), pReagent["available"], pReagent["name"], pReagent["description"])
+      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], str(nReagent), pReagent["name"], pReagent["description"])
 
     # Copy the column details
     for nColumn in range(0, pConfiguration["columnsperreactor"]):
       sPosition = chr(ord("A") + nColumn)
       pColumn = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], sPosition)
-      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], sPosition, pColumn["available"], pColumn["name"], pColumn["description"])
+      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], sPosition, pColumn["name"], pColumn["description"])
 
     # Return the cassette ID
     return pNewCassette["id"]

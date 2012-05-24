@@ -139,6 +139,14 @@
 		<image128x128></image128x128>
 	</icon> -->
 
+	<icon>
+		<image29x29>ElixysIcon29.png</image29x29>
+		<image48x48>ElixysIcon48.png</image48x48>
+		<image57x57>ElixysIcon57.png</image57x57>
+		<image72x72>ElixysIcon72.png</image72x72>
+		<image512x512>ElixysIcon512.png</image512x512>
+	</icon>
+
 	<!-- Whether the application handles the update when a user double-clicks an update version
 	of the AIR file (true), or the default AIR application installer handles the update (false).
 	Optional. Default false. -->
@@ -263,6 +271,8 @@
 				<string>1</string>
 				<string>2</string>
 			</array>
+       		<key>UIPrerenderedIcon</key> 
+       		<true/> 
 		]]></InfoAdditions>
         <requestedDisplayResolution>high</requestedDisplayResolution>
     </iPhone>

@@ -475,15 +475,15 @@ class DBComm:
     pCassetteRaw, pReturn = self.__CallStoredProcedureWithReturn("GetReagentCassette", (nSequenceID, nReagentID))
     return pReturn[0][0]
 
-  def UpdateReagent(self, sCurrentUsername, nReagentID, bAvailable, sName, sDescription):
+  def UpdateReagent(self, sCurrentUsername, nReagentID, sName, sDescription):
     """Updates a existing reagent"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagent(%i, %i, %s, %s)" % (nReagentID, bAvailable, sName, sDescription))
-    return self.__CallStoredProcedure("UpdateReagent", (nReagentID, bAvailable, sName, sDescription))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagent(%i, %s, %s)" % (nReagentID, sName, sDescription))
+    return self.__CallStoredProcedure("UpdateReagent", (nReagentID, sName, sDescription))
 
-  def UpdateReagentByPosition(self, sCurrentUsername, nSequenceID, nCassetteNumber, sPosition, bAvailable, sName, sDescription):
+  def UpdateReagentByPosition(self, sCurrentUsername, nSequenceID, nCassetteNumber, sPosition, sName, sDescription):
     """Update an existing reagent by position"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagentByPosition(%i, %i, %s, %i, %s, %s)" % (nSequenceID, nCassetteNumber, sPosition, bAvailable, sName, sDescription))
-    return self.__CallStoredProcedure("UpdateReagentByPosition", (nSequenceID, nCassetteNumber, sPosition, bAvailable, sName, sDescription))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagentByPosition(%i, %i, %s, %s, %s)" % (nSequenceID, nCassetteNumber, sPosition, sName, sDescription))
+    return self.__CallStoredProcedure("UpdateReagentByPosition", (nSequenceID, nCassetteNumber, sPosition, sName, sDescription))
 
   ### Component functions ###
 
@@ -556,23 +556,6 @@ class DBComm:
     """Deletes the component and removes it from the sequence"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.DeleteComponent(%i)" % (nComponentID, ))
     return self.__CallStoredProcedure("DeleteComponent", (nComponentID, ))
-
-  def EnableCassette(self, sCurrentUsername, nSequenceID, nCassette):
-    """Enables the target cassette"""
-    # Log the function call and get the raw cassette component
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.EnableCassette(%i, %i)" % (nSequenceID, nCassette))
-    pCassetteComponent = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassette))
-    if (len(pCassetteComponent) == 0) or (len(pCassetteComponent[0]) == 0):
-        raise Exception("Failed to get cassette " + str(nCassette) + " of sequence " + str(nSequenceID))
-
-    # Update the "available" field in the JSON to true
-    sDetailsJSON = pCassetteComponent[0][6]
-    pDetails = json.loads(sDetailsJSON)
-    pDetails["available"] = True;
-
-    # Save the updated JSON back to the database
-    sDetailsJSON = json.dumps(pDetails)
-    self.UpdateComponent(sCurrentUsername, pCassetteComponent[0][0], pCassetteComponent[0][4], pCassetteComponent[0][5], sDetailsJSON)
 
   ### Internal functions ###
 
@@ -755,10 +738,9 @@ class DBComm:
     pReagent["reagentid"] = pReagentRaw[0]
     pReagent["componentid"] = pReagentRaw[2]
     pReagent["position"] = pReagentRaw[3]
-    pReagent["available"] = bool(pReagentRaw[4])
-    pReagent["name"] = pReagentRaw[5]
+    pReagent["name"] = pReagentRaw[4]
     pReagent["namevalidation"] = "type=string; required=true"
-    pReagent["description"] = pReagentRaw[6] 
+    pReagent["description"] = pReagentRaw[5] 
     pReagent["descriptionvalidation"] = "type=string"
     return pReagent
 

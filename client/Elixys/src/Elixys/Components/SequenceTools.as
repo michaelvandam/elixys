@@ -58,7 +58,7 @@ package Elixys.Components
 			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
 			
 			// Create the timer
-			m_pHoldTimer = new Timer(250, 1);
+			m_pHoldTimer = new Timer(50, 1);
 			m_pHoldTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHoldTimer);
 		}
 		
@@ -266,13 +266,6 @@ package Elixys.Components
 			// Release the button
 			ReleaseButton(m_nPressedIndex);
 
-			// Ignore if the mouse is not over the same unit operation that was initially pressed
-			if (!(m_pHitAreas[m_nPressedIndex] as Rectangle).contains(mouseX, mouseY))
-			{
-				m_nPressedIndex = -1;
-				return;
-			}
-			
 			// Duplicate the pressed unit operation
 			var pDragTarget:Sprite = new Sprite();
 			stage.addChild(pDragTarget);

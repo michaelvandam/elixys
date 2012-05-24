@@ -42,7 +42,7 @@ package Elixys.Extended
 			pTextBox.borderColor = 0;
 			pTextBox.borderThickness = 1;
 			pTextBox.borderCornerSize = 0;
-			pTextBox.fontFamily = "Times New Roman";
+			pTextBox.fontFamily = "HelveticaNeue";
 			pTextBox.fontWeight = FontWeight.NORMAL;
 			pTextBox.autoCapitalize = Constants.AUTOCAPITALIZE_NONE;
 			pTextBox.autoCorrect = false;
