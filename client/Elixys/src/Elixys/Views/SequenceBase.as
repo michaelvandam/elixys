@@ -11,7 +11,6 @@ package Elixys.Views
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	
 	// This base sequence view is an extension of the screen class
@@ -99,15 +98,14 @@ package Elixys.Views
 			pContainer.AppendChild(m_pTitle);
 			layout(attributes);
 			
-			// Add the title background and get a reference to the label
-			m_pTitleBackground = new sequencer_titleBar_mc() as MovieClip;
+			// Add the title background
+			m_pTitleBackground = Utils.AddSkin(sequencer_titleBar_mc, true, m_pTitle, 
+				m_pTitle.attributes.width - (2 * TITLE_PADDING), m_pTitle.attributes.height);
 			m_pTitle.addChildAt(m_pTitleBackground, 0);
-			m_pTitleLabel = findViewById("titlelabel") as UILabel;
-			
-			// Update the title background position
 			m_pTitleBackground.x = TITLE_PADDING;
-			m_pTitleBackground.width = m_pTitle.attributes.width - (2 * TITLE_PADDING);
-			m_pTitleBackground.height = m_pTitle.attributes.height;
+			
+			// Get a reference to the label
+			m_pTitleLabel = findViewById("titlelabel") as UILabel;
 		}
 
 		// Load the subview
@@ -401,7 +399,7 @@ package Elixys.Views
 		protected var m_pNavigationBar:NavigationBar;
 		protected var m_pTitle:Form;
 		protected var m_pTitleLabel:UILabel;
-		protected var m_pTitleBackground:MovieClip;
+		protected var m_pTitleBackground:Sprite;
 		protected var m_pTabBar:TabBar;
 		protected var m_pSequenceCassettes:SequenceCassettes;
 		protected var m_pSequenceTools:SequenceTools;

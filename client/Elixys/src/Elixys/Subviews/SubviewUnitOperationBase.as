@@ -4,6 +4,7 @@ package Elixys.Subviews
 	import Elixys.Assets.Styling;
 	import Elixys.Components.Button;
 	import Elixys.Components.CheckBox;
+	import Elixys.Components.Utils;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Events.CheckBoxEvent;
 	import Elixys.Events.DropdownEvent;
@@ -27,7 +28,6 @@ package Elixys.Subviews
 	
 	import flash.display.DisplayObjectContainer;
 	import flash.display.GradientType;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -63,7 +63,7 @@ package Elixys.Subviews
 					m_pUnitOperationContainer = Form(findViewById("unitoperationcontainer"));
 					
 					// Add the unit operation number background skin
-					m_pUnitOperationNumberBackground = AddSkinAt(sequencer_titleBar_mc, 0);
+					m_pUnitOperationNumberBackground = Utils.AddSkin(sequencer_titleBar_mc, true, this, 0, 0, 0);
 					
 					// Add the fade fields
 					m_pUnitOperationFadeTop = new Sprite();
@@ -92,11 +92,12 @@ package Elixys.Subviews
 					m_pComponentFieldProperties = m_pComponentClass.FIELDPROPERTIES;
 					
 					// Initialize the fields
-					var nIndex:int, pLabel:UILabel, pArrow:MovieClip, pHitArea:Rectangle;
+					var nIndex:int, pLabel:UILabel, pArrow:Sprite, pHitArea:Rectangle;
 					for (nIndex = 0; nIndex < m_nComponentFieldCount; ++nIndex)
 					{
 						// Create label
-						pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+						pLabel = Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLACK),
+							m_pUnitOperationSlider);
 						pLabel.text = m_pComponentFieldLabels[nIndex];
 						m_pFieldLabels.push(pLabel);
 						
@@ -109,8 +110,7 @@ package Elixys.Subviews
 								m_pFieldContents.push(CreateDropdownControl());
 								if (m_sMode == Constants.EDIT)
 								{
-									pArrow = new slidingList_arrow_up() as MovieClip;
-									m_pUnitOperationSlider.addChild(pArrow);
+									pArrow = Utils.AddSkin(slidingList_arrow_up, true, m_pUnitOperationSlider);
 								}
 								pHitArea = new Rectangle();
 								break;
@@ -131,7 +131,8 @@ package Elixys.Subviews
 						m_pFieldHitAreas.push(pHitArea);
 						
 						// Create units label
-						pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+						pLabel = Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLACK),
+							m_pUnitOperationSlider);
 						pLabel.text = m_pComponentFieldUnits[nIndex];
 						pLabel.textColor = Styling.AS3Color(Styling.TEXT_GRAY4);
 						m_pFieldUnits.push(pLabel);
@@ -311,7 +312,8 @@ package Elixys.Subviews
 					{
 						if (!m_pFieldErrors[nIndex])
 						{
-							pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+							pLabel = Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLACK),
+								m_pUnitOperationSlider);
 							pLabel.textColor = Styling.AS3Color(Styling.TEXT_RED);
 							m_pFieldErrors[nIndex] = pLabel;
 						}
@@ -530,7 +532,7 @@ package Elixys.Subviews
 				m_pUnitOperationFadeBottom.graphics.endFill();
 			
 				// Draw the dividers and set the field positions
-				var nIndex:int, pLabel:UILabel, pUnits:UILabel, pArrow:MovieClip, pError:UILabel, pHitArea:Rectangle, 
+				var nIndex:int, pLabel:UILabel, pUnits:UILabel, pArrow:Sprite, pError:UILabel, pHitArea:Rectangle, 
 					nRowHeight:Number, nFieldRight:Number, nFieldWidth:Number;
 				nOffsetY = SCROLL_VERTICAL_PADDING;
 				m_pUnitOperationSlider.graphics.clear();
@@ -598,7 +600,7 @@ package Elixys.Subviews
 					// Adjust the arrow
 					if (m_pFieldArrows[nIndex])
 					{
-						pArrow = m_pFieldArrows[nIndex] as MovieClip;
+						pArrow = m_pFieldArrows[nIndex] as Sprite;
 						pArrow.x = m_pUnitOperationSlider.attributes.width - RIGHTGAP - pArrow.width;
 						pArrow.y = nOffsetY + ((ROWCONTENTHEIGHT - pArrow.height) / 2);
 					}
@@ -653,12 +655,14 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel = Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLACK),
+						m_pUnitOperationSlider);
 					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
 					return pLabel;
 					
 				case Constants.EDIT:
-					pLabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					pLabel = Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLACK),
+						m_pUnitOperationSlider);
 					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
 					return pLabel;
 
@@ -728,7 +732,8 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					var pLabel:UILabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					var pLabel:UILabel = Utils.AddLabel("", this, "GothamBold", 18, 
+						Styling.AS3Color(Styling.TEXT_BLACK), m_pUnitOperationSlider);
 					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
 					return pLabel;
 					
@@ -802,7 +807,8 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					var pLabel:UILabel = AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					var pLabel:UILabel = Utils.AddLabel("", this, "GothamBold", 18, 
+						Styling.AS3Color(Styling.TEXT_BLACK), m_pUnitOperationSlider);
 					pLabel.textColor = Styling.AS3Color(Styling.TEXT_BLUE4);
 					return pLabel;
 					
@@ -884,7 +890,8 @@ package Elixys.Subviews
 			switch (m_sMode)
 			{
 				case Constants.VIEW:
-					return AddLabel("GothamBold", 18, TextFormatAlign.LEFT, m_pUnitOperationSlider);
+					return Utils.AddLabel("", this, "GothamBold", 18, Styling.AS3Color(Styling.TEXT_BLUE4),
+						m_pUnitOperationSlider);
 
 				case Constants.EDIT:
 					var pCheckBox:CheckBox = AddCheckBox(m_pUnitOperationSlider);
@@ -1129,7 +1136,7 @@ package Elixys.Subviews
 			
 		// View components
 		protected var m_pUnitOperationNumber:UILabel;
-		protected var m_pUnitOperationNumberBackground:MovieClip;
+		protected var m_pUnitOperationNumberBackground:Sprite;
 		protected var m_pUnitOperationName:UILabel;
 		protected var m_pUnitOperationContainer:Form;
 		protected var m_pUnitOperationFadeTop:Sprite;

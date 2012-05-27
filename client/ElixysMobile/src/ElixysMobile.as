@@ -4,6 +4,7 @@ package
 	
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
+	import flash.display.StageQuality;
 	import flash.display.StageScaleMode;
 	
 	// Set the application size to match the iPad 2 or 3

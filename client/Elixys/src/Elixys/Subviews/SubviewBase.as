@@ -16,7 +16,6 @@ package Elixys.Subviews
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.FocusEvent;
@@ -97,44 +96,6 @@ package Elixys.Subviews
 		public function get SubviewType():String
 		{
 			return m_sSubviewType;
-		}
-
-		// Adds a skin
-		protected function AddSkin(pClass:Class):MovieClip
-		{
-			return AddSkinAt(pClass, numChildren);
-		}
-
-		// Adds a skin at the specified index
-		protected function AddSkinAt(pClass:Class, nIndex:int):MovieClip
-		{
-			var pSkin:MovieClip = new pClass() as MovieClip;
-			pSkin.buttonMode = false;
-			addChildAt(pSkin, nIndex);
-			return pSkin;
-		}
-
-		// Adds a skin and scales to a given width
-		protected function AddSkinWidth(pClass:Class, nWidth:Number):MovieClip
-		{
-			var pSkin:MovieClip = AddSkin(pClass);
-			pSkin.width = m_nButtonWidth;
-			pSkin.scaleY = pSkin.scaleX;
-			return pSkin;
-		}
-
-		// Adds a label
-		protected function AddLabel(sFontFace:String, nFontSize:int, sAlign:String, pParent:Sprite = null):UILabel
-		{
-			var pXML:XML =
-				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={sFontFace} size={nFontSize} />
-				</label>;
-			var pLabel:UILabel = CreateLabel(pXML, attributes, pParent);
-			var pTextFormat:TextFormat = pLabel.getTextFormat();
-			pTextFormat.align = sAlign;
-			pLabel.setTextFormat(pTextFormat);
-			return pLabel;
 		}
 
 		// Adds an input

@@ -17,6 +17,7 @@ package
 	import flash.display.Loader;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
+	import flash.display.StageQuality;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -52,6 +53,7 @@ package
 			// Set the stage scaling mode and crank up the frame rate
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.frameRate = 60;
+			stage.quality = StageQuality.BEST;
 			
 			// Create the initial UI
 			ElixysUI.Initialize();

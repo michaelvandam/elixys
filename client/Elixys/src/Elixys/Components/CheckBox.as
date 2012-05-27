@@ -6,7 +6,6 @@ package Elixys.Components
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Shape;
 	import flash.display.Sprite;
 	import flash.events.Event;
@@ -29,10 +28,8 @@ package Elixys.Components
 			super(screen, CHECKBOX, pAttributes);
 			
 			// Add the skins
-			m_pCheckUpSkin = new checkbox_up() as MovieClip;
-			addChild(m_pCheckUpSkin);
-			m_pCheckDownSkin = new checkbox_down() as MovieClip;
-			addChild(m_pCheckDownSkin);
+			m_pCheckUpSkin = Utils.AddSkin(checkbox_up, true, this);
+			m_pCheckDownSkin = Utils.AddSkin(checkbox_down, true, this);
 			
 			// Add event listener
 			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
@@ -56,11 +53,9 @@ package Elixys.Components
 
 		protected function Update():void
 		{
-			// Set the skin dimensions
+			// Set the skin size and position
 			m_pCheckUpSkin.width = m_pCheckDownSkin.width = CHECKBOX_SIZE / scaleX;
 			m_pCheckUpSkin.height = m_pCheckDownSkin.height = CHECKBOX_SIZE / scaleY;
-			
-			// Set the skin position
 			m_pCheckUpSkin.x = m_pCheckDownSkin.x = attributes.width - m_pCheckUpSkin.width;
 			m_pCheckUpSkin.y = m_pCheckDownSkin.y = (attributes.height - m_pCheckUpSkin.height) / 2;
 
@@ -125,8 +120,8 @@ package Elixys.Components
 			<frame alignH="fill" alignV="fill" background={Styling.APPLICATION_BACKGROUND} />;
 		
 		// Check skins
-		protected var m_pCheckUpSkin:MovieClip;
-		protected var m_pCheckDownSkin:MovieClip;
+		protected var m_pCheckUpSkin:Sprite;
+		protected var m_pCheckDownSkin:Sprite;
 		
 		// Checked flag
 		protected var m_bChecked:Boolean = false;

@@ -7,7 +7,6 @@ package Elixys.Components
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
@@ -104,7 +103,7 @@ package Elixys.Components
 			}
 			
 			// Update the sort icons
-			var nIndex:int, pSortIcon:MovieClip;
+			var nIndex:int, pSortIcon:Sprite;
 			for (nIndex = 0; nIndex < pColumns.length; ++nIndex)
 			{
 				// Continue if we already have the correct sort icon
@@ -157,18 +156,16 @@ package Elixys.Components
 				{
 					if (pColumn.SortMode == "up")
 					{
-						pSortIcon = new m_pSortUpSkinClass() as MovieClip;
-						addChild(pSortIcon);
+						pSortIcon = Utils.AddSkin(m_pSortUpSkinClass, true, this);
 					}
 					else if (pColumn.SortMode == "down")
 					{
-						pSortIcon = new m_pSortDownSkinClass() as MovieClip;
-						addChild(pSortIcon);
+						pSortIcon = Utils.AddSkin(m_pSortDownSkinClass, true, this);
 					}
 				}
 				if (nIndex < m_pSortIcons.length)
 				{
-					m_pSortIcons[nIndex] = pSortIcon
+					m_pSortIcons[nIndex] = pSortIcon;
 				}
 				else
 				{
@@ -185,7 +182,7 @@ package Elixys.Components
 		protected function Render():void
 		{
 			// Adjust the labels and icons
-			var nIndex:int, pColumn:Column, pLabel:UILabel, pHitArea:Rectangle, pSortIcon:MovieClip;
+			var nIndex:int, pColumn:Column, pLabel:UILabel, pHitArea:Rectangle, pSortIcon:Sprite;
 			for (nIndex = 0; nIndex < m_pColumns.length; ++nIndex)
 			{
 				pColumn = m_pColumns[nIndex] as Column;
@@ -196,7 +193,7 @@ package Elixys.Components
 				pLabel.y = (attributes.height - pLabel.textHeight) / 2;
 				if (m_pSortIcons[nIndex] != null)
 				{
-					pSortIcon = m_pSortIcons[nIndex] as MovieClip;
+					pSortIcon = m_pSortIcons[nIndex] as Sprite;
 					pSortIcon.x = pHitArea.right - LABEL_INDENT - pSortIcon.width;
 					pSortIcon.y = (attributes.height - pSortIcon.height) / 2;
 				}

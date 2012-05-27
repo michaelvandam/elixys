@@ -7,13 +7,17 @@ package Elixys.Components
 	import Elixys.JSON.Components.Components;
 	import Elixys.JSON.State.State;
 	
+	import com.andymoore.CachedSprite;
 	import com.danielfreeman.madcomponents.*;
 	
+	import flash.display.Bitmap;
+	import flash.display.BitmapData;
+	import flash.display.BlendMode;
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
+	import flash.geom.Matrix;
 	import flash.geom.Rectangle;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
@@ -87,17 +91,20 @@ package Elixys.Components
 					m_pHitAreas.push(new Rectangle());
 					
 					// Add button background skins
-					m_pButtonUpSkins.push(AddSkin(tools_btn_up, true));
-					m_pButtonDownSkins.push(AddSkin(tools_btn_down, false));
+					m_pButtonUpSkins.push(Utils.AddSkin(tools_btn_up, true, this, m_nButtonWidth));
+					m_pButtonDownSkins.push(Utils.AddSkin(tools_btn_down, false, this, m_nButtonWidth));
 					
 					// Add unit operation up and down skins
+					var nUnitOperationSkinHeight:Number = m_pButtonUpSkins[0].height - 
+						(SequencerBody.ICON_PADDING * 2) - SequencerBody.ICON_GAP - SequencerBody.TEXT_HEIGHT;
 					pClass = Components.GetUpSkin(m_pSupportedOperations[nIndex]);
-					m_pUnitOperationUpSkins.push(AddSkin(pClass, true));
+					m_pUnitOperationUpSkins.push(Utils.AddSkin(pClass, true, this, 0, nUnitOperationSkinHeight));
 					pClass = Components.GetDownSkin(m_pSupportedOperations[nIndex]);
-					m_pUnitOperationDownSkins.push(AddSkin(pClass, false));
+					m_pUnitOperationDownSkins.push(Utils.AddSkin(pClass, false, this, 0, nUnitOperationSkinHeight));
 
 					// Add a unit operation label
-					m_pUnitOperationLabels.push(AddLabel(m_pSupportedOperations[nIndex]));
+					m_pUnitOperationLabels.push(Utils.AddLabel(m_pSupportedOperations[nIndex], this, m_sFontFace,
+						m_nFontSize, m_nEnabledTextColor));
 				}
 				
 				// Set the flag
@@ -115,44 +122,6 @@ package Elixys.Components
 			}
 		}
 
-		// Add a skin
-		protected function AddSkin(pClass:Class, bVisible:Boolean, pParent:Sprite = null):MovieClip
-		{
-			var pSkin:MovieClip = new pClass() as MovieClip;
-			pSkin.buttonMode = false;
-			pSkin.visible = bVisible;
-			if (pParent != null)
-			{
-				pParent.addChild(pSkin);
-			}
-			else
-			{
-				addChild(pSkin);
-			}
-			return pSkin;
-		}
-
-		// Create a new text label
-		protected function AddLabel(sText:String, pParent:Sprite = null):UILabel
-		{
-			var pXML:XML =
-				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={m_sFontFace} size={m_nFontSize} />
-				</label>;
-			var pLabel:UILabel = CreateLabel(pXML, attributes);
-			if (pParent != null)
-			{
-				removeChild(pLabel);
-				pParent.addChild(pLabel);
-			}
-			var pTextFormat:TextFormat = pLabel.getTextFormat();
-			pTextFormat.align = TextFormatAlign.CENTER;
-			pLabel.setTextFormat(pTextFormat);
-			pLabel.textColor = m_nEnabledTextColor;
-			pLabel.text = sText;
-			return pLabel;
-		}
-
 		// Adjust the unit operation positions
 		protected function AdjustPositions():void
 		{
@@ -163,23 +132,14 @@ package Elixys.Components
 			var pLabel:UILabel;
 			for (var nIndex:int = 0; nIndex < m_pSupportedOperations.length; ++nIndex)
 			{
-				// Update the size and position of the up and down skins
+				// Update the skin positions
 				m_pButtonUpSkins[nIndex].x = m_pButtonDownSkins[nIndex].x = nOffsetX;
 				m_pButtonUpSkins[nIndex].y = m_pButtonDownSkins[nIndex].y = nOffsetY;
-				m_pButtonUpSkins[nIndex].width = m_pButtonDownSkins[nIndex].width = m_nButtonWidth;
-				m_pButtonUpSkins[nIndex].scaleY = m_pButtonDownSkins[nIndex].scaleY = m_pButtonUpSkins[nIndex].scaleX;
-
-				// Update the size and position of the unit operation skins
-				m_pUnitOperationUpSkins[nIndex].height = m_pUnitOperationDownSkins[nIndex].height = 
-					m_pButtonUpSkins[nIndex].height - (SequencerBody.ICON_PADDING * 2) - SequencerBody.ICON_GAP - 
-					SequencerBody.TEXT_HEIGHT;
-				m_pUnitOperationUpSkins[nIndex].scaleX = m_pUnitOperationDownSkins[nIndex].scaleX = 
-					m_pUnitOperationUpSkins[nIndex].scaleY;
 				m_pUnitOperationUpSkins[nIndex].x = m_pUnitOperationDownSkins[nIndex].x = 
 					m_pButtonUpSkins[nIndex].x + ((m_nButtonWidth - m_pUnitOperationUpSkins[nIndex].width) / 2);
 				m_pUnitOperationUpSkins[nIndex].y = m_pUnitOperationDownSkins[nIndex].y = 
 					m_pButtonUpSkins[nIndex].y + SequencerBody.ICON_PADDING;
-
+				
 				// Update unit operation label position
 				pLabel = m_pUnitOperationLabels[nIndex] as UILabel;
 				pLabel.width = pLabel.textWidth + 5;
@@ -234,20 +194,20 @@ package Elixys.Components
 		// Draws the button in the pressed state
 		protected function PressButton(nIndex:int):void
 		{
-			(m_pButtonUpSkins[nIndex] as MovieClip).visible = false;
-			(m_pButtonDownSkins[nIndex] as MovieClip).visible = true;
-			(m_pUnitOperationUpSkins[nIndex] as MovieClip).visible = false;
-			(m_pUnitOperationDownSkins[nIndex] as MovieClip).visible = true;
+			(m_pButtonUpSkins[nIndex] as Sprite).visible = false;
+			(m_pButtonDownSkins[nIndex] as Sprite).visible = true;
+			(m_pUnitOperationUpSkins[nIndex] as Sprite).visible = false;
+			(m_pUnitOperationDownSkins[nIndex] as Sprite).visible = true;
 			(m_pUnitOperationLabels[nIndex] as UILabel).textColor = m_nPressedTextColor;
 		}
 		
 		// Draws the button in the released state
 		protected function ReleaseButton(nIndex:int):void
 		{
-			(m_pButtonUpSkins[nIndex] as MovieClip).visible = true;
-			(m_pButtonDownSkins[nIndex] as MovieClip).visible = false;
-			(m_pUnitOperationUpSkins[nIndex] as MovieClip).visible = true;
-			(m_pUnitOperationDownSkins[nIndex] as MovieClip).visible = false;
+			(m_pButtonUpSkins[nIndex] as Sprite).visible = true;
+			(m_pButtonDownSkins[nIndex] as Sprite).visible = false;
+			(m_pUnitOperationUpSkins[nIndex] as Sprite).visible = true;
+			(m_pUnitOperationDownSkins[nIndex] as Sprite).visible = false;
 			(m_pUnitOperationLabels[nIndex] as UILabel).textColor = m_nEnabledTextColor;
 		}
 		
@@ -269,17 +229,16 @@ package Elixys.Components
 			// Duplicate the pressed unit operation
 			var pDragTarget:Sprite = new Sprite();
 			stage.addChild(pDragTarget);
-			var pBackgroundSkin:MovieClip = AddSkin(tools_btn_up, true, pDragTarget);
-			pBackgroundSkin.width = m_nButtonWidth;
-			pBackgroundSkin.scaleY = pBackgroundSkin.scaleX;
-			var pForegroundSkin:MovieClip = AddSkin(Components.GetUpSkin(m_pSupportedOperations[m_nPressedIndex]),
-				true, pDragTarget);
+			var pBackgroundSkin:Sprite = Utils.AddSkin(tools_btn_up, true, pDragTarget, m_nButtonWidth);
+			var pForegroundSkin:Sprite = Utils.AddSkin(Components.GetUpSkin(m_pSupportedOperations[m_nPressedIndex]),
+				true, pDragTarget, 0, (m_pUnitOperationUpSkins[m_nPressedIndex] as Sprite).height);
 			pForegroundSkin.height = pBackgroundSkin.height - (SequencerBody.ICON_PADDING * 2) - SequencerBody.ICON_GAP - 
 				SequencerBody.TEXT_HEIGHT;
 			pForegroundSkin.scaleX = pForegroundSkin.scaleY;
 			pForegroundSkin.x = (m_nButtonWidth - pForegroundSkin.width) / 2;
 			pForegroundSkin.y = SequencerBody.ICON_PADDING;
-			var pLabel:UILabel = AddLabel(m_pSupportedOperations[m_nPressedIndex], pDragTarget);
+			var pLabel:UILabel = Utils.AddLabel(m_pSupportedOperations[m_nPressedIndex], this, m_sFontFace, m_nFontSize, 
+				m_nEnabledTextColor, pDragTarget);
 			pLabel.width = pLabel.textWidth + 5;
 			pLabel.x = (m_nButtonWidth - pLabel.width) / 2;
 			pLabel.y = pForegroundSkin.y + pForegroundSkin.height + SequencerBody.ICON_GAP;

@@ -9,7 +9,6 @@ package Elixys.Components
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
@@ -127,7 +126,7 @@ package Elixys.Components
 			}
 			
 			// Adjust the actual number of labels and warning icons
-			var pLabels:Array, pLabel:UILabel, pWarningIcon:MovieClip, nRowIndex:int, nColumnIndex:int;
+			var pLabels:Array, pLabel:UILabel, pWarningIcon:Sprite, nRowIndex:int, nColumnIndex:int;
 			for (nRowIndex = 0; nRowIndex < pData.length; ++nRowIndex)
 			{
 				// Check if the label row exists
@@ -137,7 +136,7 @@ package Elixys.Components
 					pLabels = m_pLabels[nRowIndex] as Array;
 					while (pLabels.length < pColumns.length)
 					{
-						pLabels.push(AddLabel());
+						pLabels.push(Utils.AddLabel("", _slider as Form, m_sFontFace, m_nFontSize, m_nTextColor));
 					}
 					while (pLabels.length > pColumns.length)
 					{
@@ -151,7 +150,7 @@ package Elixys.Components
 					pLabels = new Array();
 					while (pLabels.length < pColumns.length)
 					{
-						pLabels.push(AddLabel());
+						pLabels.push(Utils.AddLabel("", _slider as Form, m_sFontFace, m_nFontSize, m_nTextColor));
 					}
 					m_pLabels.push(pLabels);
 				}
@@ -159,9 +158,7 @@ package Elixys.Components
 				// Add warning icons as needed
 				if (nRowIndex >= m_pWarningIcons.length)
 				{
-					pWarningIcon = new warningIcon_up() as MovieClip;
-					pWarningIcon.buttonMode = false;
-					_slider.addChild(pWarningIcon);
+					pWarningIcon = Utils.AddSkin(warningIcon_up, true, _slider, 0, nRowHeight * WARNING_ICON_PERCENT / 100);
 					m_pWarningIcons.push(pWarningIcon);
 				}
 			}
@@ -245,13 +242,13 @@ package Elixys.Components
 			}
 
 			// Adjust the labels and warning icons
-			var nRowIndex:int, nColumnIndex:int, pColumn:Column, pLabel:UILabel, pWarningIcon:MovieClip,
+			var nRowIndex:int, nColumnIndex:int, pColumn:Column, pLabel:UILabel, pWarningIcon:Sprite,
 				sFieldName:String;
 			for (nRowIndex = 0; nRowIndex < m_pLabels.length; ++nRowIndex)
 			{
 				// Adjust the warning icons visibility and positions
 				pHitArea = m_pHitAreas[nRowIndex] as Rectangle;
-				pWarningIcon = m_pWarningIcons[nRowIndex] as MovieClip;
+				pWarningIcon = m_pWarningIcons[nRowIndex] as Sprite;
 				if ((m_pData[nRowIndex] as SequenceMetadata).Valid)
 				{
 					pWarningIcon.visible = false;
@@ -259,8 +256,6 @@ package Elixys.Components
 				else
 				{
 					pWarningIcon.visible = true;
-					pWarningIcon.height = pHitArea.height * WARNING_ICON_PERCENT / 100;
-					pWarningIcon.scaleX = pWarningIcon.scaleY;
 					pWarningIcon.x = m_pColumnWidths[0] - pWarningIcon.width - DataGrid.TEXT_INDENT;
 					pWarningIcon.y = pHitArea.y + ((pHitArea.height - pWarningIcon.height) / 2) + WARNING_ICON_OFFSET;
 				}
@@ -298,23 +293,6 @@ package Elixys.Components
 					nOffset += m_pColumnWidths[nColumnIndex];
 				}
 			}
-		}
-
-		// Create a new text label
-		protected function AddLabel():UILabel
-		{
-			var pXML:XML =
-				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={m_sFontFace} size={m_nFontSize} />
-				</label>;
-			var pLabel:UILabel = (_slider as Form).CreateLabel(pXML, attributes);
-			var pTextFormat:TextFormat = pLabel.getTextFormat();
-			pTextFormat.align = TextFormatAlign.CENTER;
-			pLabel.setTextFormat(pTextFormat);
-			pLabel.textColor = m_nTextColor;
-			pLabel.multiline = false;
-			pLabel.wordWrap = false;
-			return pLabel;
 		}
 
 		// Format the label text

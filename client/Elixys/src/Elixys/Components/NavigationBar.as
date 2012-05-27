@@ -8,11 +8,11 @@ package Elixys.Components
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
@@ -106,18 +106,17 @@ package Elixys.Components
 			// Set the background skin
 			if (xml.@skin.length() > 0)
 			{
-				m_pMainSkin = AddSkin(xml.@skin[0]);
-				m_pMainSkin.width = nWidth;
-				m_pMainSkin.height = nHeight;
+				m_pMainSkin = Utils.AddSkin(getDefinitionByName(xml.@skin[0]) as Class, true, this,
+					nWidth, nHeight);
 			}
 
 			// Create the visual components
-			var nForegroundSkinHeight:int = 0;
+			var nForegroundSkinHeight:int = 0, pSkinSize:Point, pSkinPosition:Point, pSkin:Sprite;
 			for (var nButton:int = 0; nButton < pButtonText.length; ++nButton)
 			{
 				// Create the label
-				m_pButtonLabels.push(AddLabel(pButtonText[nButton], m_pButtonFontFaces[nButton], m_pButtonFontSizes[nButton],
-					m_pButtonFontDisabledColor[nButton]));
+				m_pButtonLabels.push(Utils.AddLabel(pButtonText[nButton], this, m_pButtonFontFaces[nButton], 
+					m_pButtonFontSizes[nButton], m_pButtonFontDisabledColor[nButton]));
 
 				// Skip remaining steps for blank buttons
 				if (m_pButtonBlankFlags[nButton])
@@ -132,10 +131,16 @@ package Elixys.Components
 				}
 
 				// Create the button background skins
+				pSkinSize = CalculateBackgroundSkinSize(nButton, pButtonText.length, nWidth, nHeight);
 				if (pBackgroundSkinUpName[nButton] != null)
 				{
-					m_pBackgroundSkinUp.push(AddSkin(pBackgroundSkinUpName[nButton]));
-					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinUp[nButton]);
+					pSkin = Utils.AddSkin(getDefinitionByName(pBackgroundSkinUpName[nButton]) as Class, true,
+						this, pSkinSize.x, pSkinSize.y);
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, pButtonText.length, nWidth,
+						nHeight, pSkin);
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
+					m_pBackgroundSkinUp.push(pSkin);
 				}
 				else
 				{
@@ -143,8 +148,13 @@ package Elixys.Components
 				}
 				if (pBackgroundSkinDownName[nButton] != null)
 				{
-					m_pBackgroundSkinDown.push(AddSkin(pBackgroundSkinDownName[nButton]));
-					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinDown[nButton]);
+					pSkin = Utils.AddSkin(getDefinitionByName(pBackgroundSkinDownName[nButton]) as Class, true,
+						this, pSkinSize.x, pSkinSize.y);
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, pButtonText.length, nWidth,
+						nHeight, pSkin);
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
+					m_pBackgroundSkinDown.push(pSkin);
 				}
 				else
 				{
@@ -152,8 +162,13 @@ package Elixys.Components
 				}
 				if (pBackgroundSkinDisabledName[nButton] != null)
 				{
-					m_pBackgroundSkinDisabled.push(AddSkin(pBackgroundSkinDisabledName[nButton]));
-					SetBackgroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight, m_pBackgroundSkinDisabled[nButton]);
+					pSkin = Utils.AddSkin(getDefinitionByName(pBackgroundSkinDisabledName[nButton]) as Class, true,
+						this, pSkinSize.x, pSkinSize.y);
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, pButtonText.length, nWidth,
+						nHeight, pSkin);
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
+					m_pBackgroundSkinDisabled.push(pSkin);
 				}
 				else
 				{
@@ -163,11 +178,17 @@ package Elixys.Components
 				// Create the foreground skins
 				if ((m_pForegroundSkinWidths[nButton] != null) || (m_pForegroundSkinHeights[nButton] != null))
 				{
+					pSkinSize = CalculateForegroundSkinSize(nButton, pButtonText.length, nWidth, nHeight);
 					if (pForegroundSkinUpName[nButton] != null)
 					{
-						m_pForegroundSkinUp.push(AddSkin(pForegroundSkinUpName[nButton]));
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
-							m_pForegroundSkinUp[nButton]);
+						pSkin = Utils.AddSkin(getDefinitionByName(pForegroundSkinUpName[nButton]) as Class, true,
+							this, pSkinSize.x, pSkinSize.y);
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, pButtonText.length, nWidth,
+							nHeight, pSkin);
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						m_pForegroundSkinUp.push(pSkin);
+						nForegroundSkinHeight = pSkin.height;
 					}
 					else
 					{
@@ -175,9 +196,14 @@ package Elixys.Components
 					}
 					if (pForegroundSkinDownName[nButton] != null)
 					{
-						m_pForegroundSkinDown.push(AddSkin(pForegroundSkinDownName[nButton]));
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
-							m_pForegroundSkinDown[nButton]);
+						pSkin = Utils.AddSkin(getDefinitionByName(pForegroundSkinDownName[nButton]) as Class, true,
+							this, pSkinSize.x, pSkinSize.y);
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, pButtonText.length, nWidth,
+							nHeight, pSkin);
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						m_pForegroundSkinDown.push(pSkin);
+						nForegroundSkinHeight = pSkin.height;
 					}
 					else
 					{
@@ -185,9 +211,14 @@ package Elixys.Components
 					}
 					if (pForegroundSkinDisabledName[nButton] != null)
 					{
-						m_pForegroundSkinDisabled.push(AddSkin(pForegroundSkinDisabledName[nButton]));
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, pButtonText.length, nWidth, nHeight,
-							m_pForegroundSkinDisabled[nButton]);
+						pSkin = Utils.AddSkin(getDefinitionByName(pForegroundSkinDisabledName[nButton]) as Class, true,
+							this, pSkinSize.x, pSkinSize.y);
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, pButtonText.length, nWidth,
+							nHeight, pSkin);
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						m_pForegroundSkinDisabled.push(pSkin);
+						nForegroundSkinHeight = pSkin.height;
 					}
 					else
 					{
@@ -214,103 +245,82 @@ package Elixys.Components
 		 * Member functions
 		 **/
 
-		// Add a skin
-		protected function AddSkin(sClassName:String):MovieClip
-		{
-			var pClass:Class = getDefinitionByName(sClassName) as Class;
-			var pMovieClip:MovieClip = new pClass() as MovieClip;
-			addChild(pMovieClip);
-			return pMovieClip;
-		}
-		
-		// Add a label
-		protected function AddLabel(sText:String, sFontFace:String, nFontSize:uint, sTextColor:String):UILabel
-		{
-			var pXML:XML =
-				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={sFontFace} color={sTextColor} size={nFontSize}>
-						{sText}
-					</font>
-				</label>;
-			var pLabel:UILabel = CreateLabel(pXML, attributes);
-			var pTextFormat:TextFormat = pLabel.getTextFormat();
-			pTextFormat.align = TextFormatAlign.CENTER;
-			pLabel.setTextFormat(pTextFormat);
-			return pLabel;
-		}
-
-		// Sets the background skin position
-		protected function SetBackgroundSkinPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, pSkin:MovieClip):void
+		// Calculates the background skin size and position
+		protected function CalculateBackgroundSkinSize(nButton:int, nButtonCount:int, nTotalWidth:int, nTotalHeight:int):Point
 		{
 			// Determine the skin width and height
-			var nSkinWidth:Number, nSkinHeight:Number;
-			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
+			var nSkinWidth:Number = 0, nSkinHeight:Number = 0;
+			var nButtonWidth:int = (nTotalWidth - m_nRightPadding) / nButtonCount;
 			if (m_pBackgroundSkinWidths[nButton] != null)
 			{
 				nSkinWidth = nTotalWidth * m_pBackgroundSkinWidths[nButton] / 100;
-				nSkinHeight = nSkinWidth * (pSkin.height / pSkin.width);
 			}
 			else if (m_pBackgroundSkinHeights[nButton] != null)
 			{
-				nSkinHeight = nHeight * m_pBackgroundSkinHeights[nButton] / 100;
-				nSkinWidth = nSkinHeight * (pSkin.width / pSkin.height);
+				nSkinHeight = nTotalHeight * m_pBackgroundSkinHeights[nButton] / 100;
 			}
 			else
 			{
-				nSkinWidth = nTotalWidth;
-				nSkinHeight = nHeight;
+				nSkinWidth = nButtonWidth;
+				nSkinHeight = nTotalHeight;
 			}
-
-			// Set the skin position
-			pSkin.x = (nTotalWidth * nButton) + ((nTotalWidth - nSkinWidth) / 2);
-			pSkin.y = m_nVerticalOffset + ((nHeight - nSkinHeight) / 2);
-			pSkin.width = nSkinWidth;
-			pSkin.height = nSkinHeight;
+			
+			// Return the skin size
+			return new Point(nSkinWidth, nSkinHeight);
+		}
+		protected function CalculateBackgroundSkinPosition(nButton:int, nButtonCount:int, nTotalWidth:Number, 
+														   nTotalHeight:Number, pSkin:Sprite):Point
+		{
+			// Return the skin position
+			var nButtonWidth:Number = (nTotalWidth - m_nRightPadding) / nButtonCount;
+			return new Point((nButtonWidth * nButton) + ((nButtonWidth - pSkin.width) / 2),
+				m_nVerticalOffset + ((nTotalHeight - pSkin.height) / 2));
 		}
 
-		// Set the foreground skin position
-		protected function SetForegroundSkinPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, pSkin:MovieClip):int
+		// Calculates the foreground skin size and position
+		protected function CalculateForegroundSkinSize(nButton:int, nButtonCount:int, nWidth:int, nHeight:int):Point
 		{
 			// Determine the skin width and height
-			var nSkinWidth:int, nSkinHeight:int;
-			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
+			var nSkinWidth:Number = 0, nSkinHeight:Number = 0;
+			var nButtonWidth:Number = (nWidth - m_nRightPadding) / nButtonCount;
 			if (m_pForegroundSkinWidths[nButton] != null)
 			{
-				nSkinWidth = nTotalWidth * m_pForegroundSkinWidths[nButton] / 100;
-				nSkinHeight = nSkinWidth * (pSkin.height / pSkin.width);
+				nSkinWidth = nButtonWidth * m_pForegroundSkinWidths[nButton] / 100;
 			}
 			else
 			{
 				nSkinHeight = nHeight * m_pForegroundSkinHeights[nButton] / 100;
-				nSkinWidth = nSkinHeight * (pSkin.width / pSkin.height);
 			}
 			
+			// Return the skin size
+			return new Point(nSkinWidth, nSkinHeight);
+		}
+		protected function CalculateForegroundSkinPosition(nButton:int, nButtonTotal:int, nTotalWidth:Number, 
+														   nTotalHeight:Number, pSkin:Sprite):Point
+		{
 			// Get the text height
 			var nTextHeight:int = 0;
 			if (m_pButtonLabels.length > nButton)
 			{
 				nTextHeight = UILabel(m_pButtonLabels[nButton]).textHeight;
 			}
-			
-			// Set the skin position
-			pSkin.x = (nTotalWidth * nButton) + (nTotalWidth - nSkinWidth) / 2;
-			pSkin.y = m_nVerticalOffset + ((nHeight - nTextHeight - nSkinHeight - BUTTON_GAP) / 2);
-			pSkin.width = nSkinWidth;
-			pSkin.height = nSkinHeight;
-			
-			// Return the skin height
-			return nSkinHeight;
+
+			// Return the skin position
+			var nButtonWidth:Number = (nTotalWidth - m_nRightPadding) / nButtonTotal;
+			return new Point((nButtonWidth * nButton) + (nButtonWidth - pSkin.width) / 2,
+				m_nVerticalOffset + ((nTotalHeight - nTextHeight - pSkin.height - BUTTON_GAP) / 2));
 		}
 
 		// Set the label position
-		protected function SetLabelPosition(nButton:int, nTotal:int, nWidth:int, nHeight:int, nForegroundSkinHeight:int):void
+		protected function SetLabelPosition(nButton:int, nButtonCount:int, nTotalWidth:int, 
+											nTotalHeight:int, nForegroundSkinHeight:int):void
 		{
 			var pLabel:UILabel = m_pButtonLabels[nButton];
-			var nTotalWidth:int = (nWidth - m_nRightPadding) / nTotal;
-			pLabel.width = nTotalWidth;
-			pLabel.x = nTotalWidth * nButton;
+			var nButtonWidth:int = (nTotalWidth - m_nRightPadding) / nButtonCount;
+			pLabel.width = nButtonWidth;
+			pLabel.x = (nButtonWidth * nButton) + ((nButtonWidth - pLabel.textWidth) / 2);
 			pLabel.y = m_nVerticalOffset + nForegroundSkinHeight +
-				((nHeight - pLabel.height - nForegroundSkinHeight + BUTTON_GAP) / 2);
+				((nTotalHeight - pLabel.height - nForegroundSkinHeight + BUTTON_GAP) / 2);
 		}
 		
 		// Called when the stage resizes
@@ -328,21 +338,30 @@ package Elixys.Components
 			}
 			
 			// Update the visual components
-			var nForegroundSkinHeight:int = 0;
+			var nForegroundSkinHeight:int = 0, pSkinPosition:Point, pSkin:Sprite;
 			for (var nButton:int = 0; nButton < m_pButtonNames.length; ++nButton)
 			{
 				// Set the background skin positions
 				if (m_pBackgroundSkinUp[nButton] != null)
 				{
-					SetBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, m_pBackgroundSkinUp[nButton]);
+					pSkin = m_pBackgroundSkinUp[nButton] as Sprite;
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
 				}
 				if (m_pBackgroundSkinDown[nButton] != null)
 				{
-					SetBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, m_pBackgroundSkinDown[nButton]);
+					pSkin = m_pBackgroundSkinDown[nButton] as Sprite;
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
 				}
 				if (m_pBackgroundSkinDisabled[nButton] != null)
 				{
-					SetBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, m_pBackgroundSkinDisabled[nButton]);
+					pSkin = m_pBackgroundSkinDisabled[nButton] as Sprite;
+					pSkinPosition = CalculateBackgroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+					pSkin.x = pSkinPosition.x;
+					pSkin.y = pSkinPosition.y;
 				}
 				
 				// Set the foreground skin positions
@@ -350,18 +369,27 @@ package Elixys.Components
 				{
 					if (m_pForegroundSkinUp[nButton] != null)
 					{
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, m_pButtonNames.length, width, height, 
-							m_pForegroundSkinUp[nButton]);
+						pSkin = m_pForegroundSkinUp[nButton] as Sprite;
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						nForegroundSkinHeight = pSkin.height;
 					}
 					if (m_pForegroundSkinDown[nButton] != null)
 					{
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, m_pButtonNames.length, width, height,
-							m_pForegroundSkinDown[nButton]);
+						pSkin = m_pForegroundSkinDown[nButton] as Sprite;
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						nForegroundSkinHeight = pSkin.height;
 					}
 					if (m_pForegroundSkinDisabled[nButton] != null)
 					{
-						nForegroundSkinHeight = SetForegroundSkinPosition(nButton, m_pButtonNames.length, width, height,
-							m_pForegroundSkinDisabled[nButton]);
+						pSkin = m_pForegroundSkinDisabled[nButton] as Sprite;
+						pSkinPosition = CalculateForegroundSkinPosition(nButton, m_pButtonNames.length, width, height, pSkin); 
+						pSkin.x = pSkinPosition.x;
+						pSkin.y = pSkinPosition.y;
+						nForegroundSkinHeight = pSkin.height;
 					}
 				}
 				
@@ -462,29 +490,29 @@ package Elixys.Components
 				// Set background skin visibility
 				if (m_pBackgroundSkinUp[nButton] != null)
 				{
-					(m_pBackgroundSkinUp[nButton] as MovieClip).visible = bUp;
+					(m_pBackgroundSkinUp[nButton] as Sprite).visible = bUp;
 				}
 				if (m_pBackgroundSkinDown[nButton] != null)
 				{
-					(m_pBackgroundSkinDown[nButton] as MovieClip).visible = bDown;
+					(m_pBackgroundSkinDown[nButton] as Sprite).visible = bDown;
 				}
 				if (m_pBackgroundSkinDisabled[nButton] != null)
 				{
-					(m_pBackgroundSkinDisabled[nButton] as MovieClip).visible = bDisabled;
+					(m_pBackgroundSkinDisabled[nButton] as Sprite).visible = bDisabled;
 				}
 
 				// Set foreground skin visibility
 				if (m_pForegroundSkinUp[nButton] != null)
 				{
-					(m_pForegroundSkinUp[nButton] as MovieClip).visible = bUp;
+					(m_pForegroundSkinUp[nButton] as Sprite).visible = bUp;
 				}
 				if (m_pForegroundSkinDown[nButton] != null)
 				{
-					(m_pForegroundSkinDown[nButton] as MovieClip).visible = bDown;
+					(m_pForegroundSkinDown[nButton] as Sprite).visible = bDown;
 				}
 				if (m_pForegroundSkinDisabled[nButton] != null)
 				{
-					(m_pForegroundSkinDisabled[nButton] as MovieClip).visible = bDisabled;
+					(m_pForegroundSkinDisabled[nButton] as Sprite).visible = bDisabled;
 				}
 				
 				// Set text color
@@ -551,7 +579,7 @@ package Elixys.Components
 		 **/
 		
 		// Main background skin
-		protected var m_pMainSkin:MovieClip;
+		protected var m_pMainSkin:Sprite;
 		
 		/// Navigation bar buttons
 		protected var m_pButtonNames:Array = new Array();

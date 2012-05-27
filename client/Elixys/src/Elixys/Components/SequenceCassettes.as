@@ -14,7 +14,6 @@ package Elixys.Components
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
@@ -77,7 +76,7 @@ package Elixys.Components
 			addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
 
 			// Add the quick view label
-			m_pQuickView = AddLabel(m_sQuickViewFontFace, m_nQuickViewFontSize, false);
+			m_pQuickView = Utils.AddLabel("", this, m_sQuickViewFontFace, m_nQuickViewFontSize, m_nQuickViewColor);
 		}
 		
 		/***
@@ -110,10 +109,10 @@ package Elixys.Components
 			// Adjust the number of cassette skins, labels and hit areas
 			while (m_pUpSkins.length < m_nCassettes)
 			{
-				m_pUpSkins.push(AddSkin(tools_btn_up));
-				m_pDownSkins.push(AddSkin(tools_btn_down));
-				m_pActiveSkins.push(AddSkin(tools_btn_active));
-				m_pLabels.push(AddLabel(m_sFontFace, m_nFontSize, true));
+				m_pUpSkins.push(Utils.AddSkin(tools_btn_up, true, this, m_nButtonWidth));
+				m_pDownSkins.push(Utils.AddSkin(tools_btn_down, true, this, m_nButtonWidth));
+				m_pActiveSkins.push(Utils.AddSkin(tools_btn_active, true, this, m_nButtonWidth));
+				m_pLabels.push(Utils.AddLabel("", this, m_sFontFace, m_nFontSize, m_nEnabledTextColor));
 				m_pHitAreas.push(new Rectangle());
 			}
 			while (m_pUpSkins.length > m_nCassettes)
@@ -145,16 +144,16 @@ package Elixys.Components
 				// Update the buttons and labels
 				m_nSelectedIndex = -1;
 				var nIndex:int, pComponent:SequenceComponent, pLabel:UILabel, pHitArea:Rectangle;
-				var pUpSkin:MovieClip, pDownSkin:MovieClip, pActiveSkin:MovieClip;
+				var pUpSkin:Sprite, pDownSkin:Sprite, pActiveSkin:Sprite;
 				var nOffsetX:Number = (attributes.width - (m_nButtonWidth * m_nCassettes) -
 					(BUTTON_HORIZONTAL_GAP * (m_nCassettes - 1))) / 2;
 				for (nIndex = 0; nIndex < m_nCassettes; ++nIndex)
 				{
 					// Set the skin visibility
 					pComponent = m_pSequence.Components[nIndex] as SequenceComponent;
-					pUpSkin = m_pUpSkins[nIndex] as MovieClip;
-					pDownSkin = m_pDownSkins[nIndex] as MovieClip;
-					pActiveSkin = m_pActiveSkins[nIndex] as MovieClip;
+					pUpSkin = m_pUpSkins[nIndex] as Sprite;
+					pDownSkin = m_pDownSkins[nIndex] as Sprite;
+					pActiveSkin = m_pActiveSkins[nIndex] as Sprite;
 					if (pComponent.ID == m_nComponentID)
 					{
 						m_nSelectedIndex = nIndex;
@@ -162,8 +161,6 @@ package Elixys.Components
 					ReleaseButton(nIndex);
 					
 					// Set the skin size and position
-					pUpSkin.width = pDownSkin.width = pActiveSkin.width = m_nButtonWidth;
-					pUpSkin.scaleY = pDownSkin.scaleY = pActiveSkin.scaleY = pUpSkin.scaleX;
 					pUpSkin.x = pDownSkin.x = pActiveSkin.x = nOffsetX;
 					pUpSkin.y = pDownSkin.y = pActiveSkin.y = BUTTON_VERTICAL_GAP;
 					
@@ -240,32 +237,6 @@ package Elixys.Components
 			}
 		}
 
-		// Adds a skin
-		protected function AddSkin(pClass:Class):MovieClip
-		{
-			var pSkin:MovieClip = new pClass() as MovieClip;
-			pSkin.buttonMode = false;
-			addChild(pSkin);
-			return pSkin;
-		}
-
-		// Adds a label
-		protected function AddLabel(sFontFace:String, nFontSize:int, bCenter:Boolean):UILabel
-		{
-			var pXML:XML =
-				<label useEmbedded="true" alignH="left" alignV="bottom">
-					<font face={sFontFace} size={nFontSize} />
-				</label>;
-			var pLabel:UILabel = CreateLabel(pXML, attributes);
-			if (bCenter)
-			{
-				var pTextFormat:TextFormat = pLabel.getTextFormat();
-				pTextFormat.align = TextFormatAlign.CENTER;
-				pLabel.setTextFormat(pTextFormat);
-			}
-			return pLabel;
-		}
-		
 		// Called when the user presses the mouse button
 		protected function OnMouseDown(event:MouseEvent):void
 		{
@@ -303,18 +274,18 @@ package Elixys.Components
 		// Draws the button in the pressed state
 		protected function PressButton(nIndex:int):void
 		{
-			(m_pUpSkins[nIndex] as MovieClip).visible = false;
-			(m_pDownSkins[nIndex] as MovieClip).visible = true;
-			(m_pActiveSkins[nIndex] as MovieClip).visible = false;
+			(m_pUpSkins[nIndex] as Sprite).visible = false;
+			(m_pDownSkins[nIndex] as Sprite).visible = true;
+			(m_pActiveSkins[nIndex] as Sprite).visible = false;
 			(m_pLabels[nIndex] as UILabel).textColor = m_nPressedTextColor;
 		}
 		
 		// Draws the button in the released state
 		protected function ReleaseButton(nIndex:int):void
 		{
-			(m_pUpSkins[nIndex] as MovieClip).visible = (nIndex != m_nSelectedIndex);
-			(m_pDownSkins[nIndex] as MovieClip).visible = false;
-			(m_pActiveSkins[nIndex] as MovieClip).visible = (nIndex == m_nSelectedIndex);
+			(m_pUpSkins[nIndex] as Sprite).visible = (nIndex != m_nSelectedIndex);
+			(m_pDownSkins[nIndex] as Sprite).visible = false;
+			(m_pActiveSkins[nIndex] as Sprite).visible = (nIndex == m_nSelectedIndex);
 			if (nIndex == m_nSelectedIndex)
 			{
 				(m_pLabels[nIndex] as UILabel).textColor = m_nActiveTextColor;

@@ -7,7 +7,6 @@ package Elixys.Extended
 	
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.TimerEvent;
 	import flash.text.AntiAliasType;
@@ -269,9 +268,9 @@ package Elixys.Extended
 			}
 			
 			// Refer to the visibility flags of other objects
-			if (child is MovieClip)
+			if (child is Sprite)
 			{
-				return MovieClip(child).visible;
+				return Sprite(child).visible;
 			}
 			if (child is UILabel)
 			{

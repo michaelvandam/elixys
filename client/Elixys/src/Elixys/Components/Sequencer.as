@@ -9,7 +9,6 @@ package Elixys.Components
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.utils.*;
@@ -29,9 +28,7 @@ package Elixys.Components
 			var nHeight:int = Form.FindHeight(screen);
 
 			// Add the background skin
-			m_pBackgroundSkin = AddSkin(sequencer_windowBackground);
-			m_pBackgroundSkin.width = nWidth;
-			m_pBackgroundSkin.height = nHeight;
+			m_pBackgroundSkin = Utils.AddSkin(sequencer_windowBackground, true, this, nWidth, nHeight);
 
 			// Get our mode
 			if (xml.@mode.length() > 0)
@@ -74,14 +71,6 @@ package Elixys.Components
 			
 			// Call the base implementation
 			super.layout(attributes);
-		}
-
-		// Add a skin
-		protected function AddSkin(pClass:Class):MovieClip
-		{
-			var pMovieClip:MovieClip = new pClass() as MovieClip;
-			addChild(pMovieClip);
-			return pMovieClip;
 		}
 
 		// Called when the underlying sequence or component changes
@@ -128,7 +117,7 @@ package Elixys.Components
 		}
 
 		// Called to start dragging an existing unit operation
-		public function StartDraggingExisting(pDragTarget:Sprite, nDraggingID:int, pUpSkin:MovieClip, pDeleteSkin:MovieClip):void
+		public function StartDraggingExisting(pDragTarget:Sprite, nDraggingID:int, pUpSkin:Sprite, pDeleteSkin:Sprite):void
 		{
 			// Remember the ID and skins and clear the operation
 			m_nDraggingID = nDraggingID;
@@ -264,15 +253,15 @@ package Elixys.Components
 		protected var m_sMode:String = "";
 		
 		// Components
-		protected var m_pBackgroundSkin:MovieClip;
+		protected var m_pBackgroundSkin:Sprite;
 		protected var m_pSequencerHeader:SequencerHeader;
 		protected var m_pSequencerBody:SequencerBody;
 		
 		// Drag-and-drop variables
 		protected var m_pDragTarget:Sprite;
 		protected var m_nDraggingID:int = -1;
-		protected var m_pDragTargetUpSkin:MovieClip;
-		protected var m_pDragTargetDeleteSkin:MovieClip;
+		protected var m_pDragTargetUpSkin:Sprite;
+		protected var m_pDragTargetDeleteSkin:Sprite;
 		protected var m_sDraggingOperation:String = "";
 
 		// Constants

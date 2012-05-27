@@ -1,6 +1,7 @@
 package Elixys.Subviews
 {
 	import Elixys.Assets.*;
+	import Elixys.Components.Utils;
 	import Elixys.Extended.Form;
 	import Elixys.JSON.Components.ComponentTransfer;
 	import Elixys.Views.SequenceRun;
@@ -8,7 +9,6 @@ package Elixys.Subviews
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.geom.Point;
 
@@ -38,8 +38,8 @@ package Elixys.Subviews
 				m_pVideoContainerParent = Form(findViewById("videobase_videocontainerparent"));
 				
 				// Add the video icons
-				m_pVideoIconSkin1 = AddSkinAt(videoIcon_mc, 0);
-				m_pVideoIconSkin2 = AddSkinAt(videoIcon_mc, 0);
+				m_pVideoIconSkin1 = Utils.AddSkin(videoIcon_mc, true, this, 0, 0, 0);
+				m_pVideoIconSkin2 = Utils.AddSkin(videoIcon_mc, true, this, 0, 0, 0);
 
 				// Create the video containers
 				m_pVideoContainerSingle = new Form(m_pVideoContainerParent, RUN_VIDEOCONTAINER1, m_pVideoContainerParent.attributes);
@@ -207,11 +207,11 @@ package Elixys.Subviews
 		protected var m_pVideoIconContainer1:Form;
 		protected var m_pVideoLabel1:UILabel;
 		protected var m_pVideoLabelContainer1:Form;
-		protected var m_pVideoIconSkin1:MovieClip;
+		protected var m_pVideoIconSkin1:Sprite;
 		protected var m_pVideoIconContainer2:Form;
 		protected var m_pVideoLabel2:UILabel;
 		protected var m_pVideoLabelContainer2:Form;
-		protected var m_pVideoIconSkin2:MovieClip;
+		protected var m_pVideoIconSkin2:Sprite;
 		protected var m_pVideoContainerParent:Form;
 		protected var m_pVideoContainerSingle:Form;
 		protected var m_pVideoContainerDual1:Form;

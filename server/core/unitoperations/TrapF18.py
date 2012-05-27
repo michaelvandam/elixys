@@ -9,7 +9,7 @@ componentType = "TRAPF18"
 # Create a unit operation from a component object
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
   pParams = {}
-  pParams["cyclotronFlag"] = pComponent["cyclotronflag"]
+  pParams["cyclotronFlag"] = int(pComponent["cyclotronflag"])
   pParams["trapTime"] = pComponent["traptime"]
   pParams["trapPressure"] = pComponent["trappressure"]
   pTrapF18 = TrapF18(systemModel, pParams, username, nSequenceID, pComponent["id"], database)

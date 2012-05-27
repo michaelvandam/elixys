@@ -2,6 +2,7 @@ package Elixys.Views
 {
 	import Elixys.Assets.*;
 	import Elixys.Components.Button;
+	import Elixys.Components.Utils;
 	import Elixys.Components.Video;
 	import Elixys.Events.ButtonEvent;
 	import Elixys.Events.ElixysEvents;
@@ -20,7 +21,6 @@ package Elixys.Views
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.geom.Point;
@@ -54,14 +54,14 @@ package Elixys.Views
 			m_pUnitOperationStatus = UILabel(findViewById("sequencerun_status"));
 			
 			// Add the unit operation number background skin
-			 m_pUnitOperationNumberBackground = new sequencer_titleBar_mc() as MovieClip;
-			 m_pUnitOperationNumber.parent.addChildAt(m_pUnitOperationNumberBackground, 0);
+			m_pUnitOperationNumberBackground = Utils.AddSkin(sequencer_titleBar_mc, true, 
+				m_pUnitOperationNumber.parent as Sprite, 0, 0, 0);
 			 
-			 // Add event listeners
-			 m_pUnitOperationButton.addEventListener(ButtonEvent.CLICK, OnButtonClick);
+			// Add event listeners
+			m_pUnitOperationButton.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			 
-			 // Initialize the layout
-			 AdjustPositions();
+			// Initialize the layout
+			AdjustPositions();
 		}
 
 		/***
@@ -487,7 +487,7 @@ package Elixys.Views
 		
 		// View components
 		protected var m_pUnitOperationNumber:UILabel;
-		protected var m_pUnitOperationNumberBackground:MovieClip;
+		protected var m_pUnitOperationNumberBackground:Sprite;
 		protected var m_pUnitOperationName:UILabel;
 		protected var m_pUnitOperationDescription:UILabel;
 		protected var m_pUnitOperationTimeDescription:UILabel;

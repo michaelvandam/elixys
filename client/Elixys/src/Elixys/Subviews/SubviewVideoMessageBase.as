@@ -1,13 +1,13 @@
 package Elixys.Subviews
 {
 	import Elixys.Assets.*;
+	import Elixys.Components.Utils;
 	import Elixys.Extended.Form;
 	import Elixys.Views.SequenceRun;
 	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObjectContainer;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.geom.Point;
 
@@ -35,7 +35,7 @@ package Elixys.Subviews
 				m_pRunLabel = UILabel(findViewById("prompt_runlabel"));
 				
 				// Add the video icon
-				m_pVideoIconSkin = AddSkinAt(videoIcon_mc, 0);
+				m_pVideoIconSkin = Utils.AddSkin(videoIcon_mc, true, this, 0, 0, 0);
 				
 				// Find the parent sequence run
 				var pParent:DisplayObjectContainer = screen;
@@ -191,7 +191,7 @@ package Elixys.Subviews
 		protected var m_pVideoIconContainer:Form;
 		protected var m_pVideoLabel:UILabel;
 		protected var m_pVideoLabelContainer:Form;
-		protected var m_pVideoIconSkin:MovieClip;
+		protected var m_pVideoIconSkin:Sprite;
 		protected var m_pVideoContainer:Form;
 		protected var m_pRunLabel:UILabel;
 		

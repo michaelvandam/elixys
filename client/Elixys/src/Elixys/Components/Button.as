@@ -7,7 +7,6 @@ package Elixys.Components
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -57,43 +56,52 @@ package Elixys.Components
 				nHeight = (screen as Form).attributes.height;
 			}
 			
-			// Set the foreground skins first
-			if (xml.@foregroundskinup.length() > 0)
-			{
-				m_pForegroundSkinUp = AddSkin(xml.@foregroundskinup[0]);
-			}
-			if (xml.@foregroundskindown.length() > 0)
-			{
-				m_pForegroundSkinDown = AddSkin(xml.@foregroundskindown[0]);
-			}
-			if (xml.@foregroundskindisabled.length() > 0)
-			{
-				m_pForegroundSkinDisabled = AddSkin(xml.@foregroundskindisabled[0]);
-			}
-
-			// Set the background skins next
-			if (xml.@backgroundskinup.length() > 0)
-			{
-				m_pBackgroundSkinUp = AddSkin(xml.@backgroundskinup[0]);
-				PositionBackgroundSkin(m_pBackgroundSkinUp, nWidth, nHeight);
-			}
-			if (xml.@backgroundskindown.length() > 0)
-			{
-				m_pBackgroundSkinDown = AddSkin(xml.@backgroundskindown[0]);
-				PositionBackgroundSkin(m_pBackgroundSkinDown, nWidth, nHeight);
-			}
-			if (xml.@backgroundskindisabled.length() > 0)
-			{
-				m_pBackgroundSkinDisabled = AddSkin(xml.@backgroundskindisabled[0]);
-				PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
-			}
-
 			// Set any foreground skin scale
 			if (xml.@foregroundskinscale.length() > 0)
 			{
 				m_nForegroundSkinScale = parseFloat(String(xml.@foregroundskinscale[0]));
 			}
-			
+
+			// Set the foreground skins
+			if (xml.@foregroundskinup.length() > 0)
+			{
+				m_pForegroundSkinUp = Utils.AddSkinScale(getDefinitionByName(xml.@foregroundskinup[0]) as Class, 
+					true, this, m_nForegroundSkinScale, 0);
+				m_pForegroundSkinUp.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+			if (xml.@foregroundskindown.length() > 0)
+			{
+				m_pForegroundSkinDown = Utils.AddSkinScale(getDefinitionByName(xml.@foregroundskindown[0]) as Class, 
+					true, this, m_nForegroundSkinScale, 0);
+				m_pForegroundSkinDown.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+			if (xml.@foregroundskindisabled.length() > 0)
+			{
+				m_pForegroundSkinDisabled = Utils.AddSkinScale(getDefinitionByName(xml.@foregroundskindisabled[0]) as Class, 
+					true, this, m_nForegroundSkinScale, 0);
+				m_pForegroundSkinDisabled.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+
+			// Set the background skins next
+			if (xml.@backgroundskinup.length() > 0)
+			{
+				m_pBackgroundSkinUp = Utils.AddSkin(getDefinitionByName(xml.@backgroundskinup[0]) as Class, 
+					true, this, nWidth, nHeight, 0);
+				m_pBackgroundSkinUp.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+			if (xml.@backgroundskindown.length() > 0)
+			{
+				m_pBackgroundSkinDown = Utils.AddSkin(getDefinitionByName(xml.@backgroundskindown[0]) as Class, 
+					true, this, nWidth, nHeight, 0);
+				m_pBackgroundSkinDown.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+			if (xml.@backgroundskindisabled.length() > 0)
+			{
+				m_pBackgroundSkinDisabled = Utils.AddSkin(getDefinitionByName(xml.@backgroundskindisabled[0]) as Class, 
+					true, this, nWidth, nHeight, 0);
+				m_pBackgroundSkinDisabled.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
+			}
+
 			// Position the foreground skins
 			if (m_pForegroundSkinUp != null)
 			{
@@ -158,27 +166,9 @@ package Elixys.Components
 			return m_bEnabled;
 		}
 
-		// Add a skin
-		protected function AddSkin(sClassName:String):MovieClip
+		// Positions the foreground skin
+		protected function PositionForegroundSkin(pSkin:Sprite, pBackgroundSkin:Sprite):void
 		{
-			var pClass:Class = getDefinitionByName(sClassName) as Class;
-			var pSkin:MovieClip = new pClass() as MovieClip;
-			pSkin.buttonMode = false;
-			pSkin.addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
-			addChildAt(pSkin, 0);
-			return pSkin;
-		}
-
-		// Positions the background or foreground skin
-		protected function PositionBackgroundSkin(pSkin:MovieClip, nWidth:int, nHeight:int):void
-		{
-			pSkin.width = nWidth;
-			pSkin.height = nHeight;
-		}
-		protected function PositionForegroundSkin(pSkin:MovieClip, pBackgroundSkin:MovieClip):void
-		{
-			pSkin.scaleX = m_nForegroundSkinScale;
-			pSkin.scaleY = m_nForegroundSkinScale;
 			pSkin.x = pBackgroundSkin.x + ((pBackgroundSkin.width - pSkin.width) / 2);
 			pSkin.y = pBackgroundSkin.y + ((pBackgroundSkin.height - pSkin.height) / 2);
 		}
@@ -210,15 +200,18 @@ package Elixys.Components
 					// Update the background skins
 					if (m_pBackgroundSkinUp != null)
 					{
-						PositionBackgroundSkin(m_pBackgroundSkinUp, nWidth, nHeight);
+						m_pBackgroundSkinUp.width = nWidth;
+						m_pBackgroundSkinUp.height = nHeight;
 					}
 					if (m_pBackgroundSkinDown != null)
 					{
-						PositionBackgroundSkin(m_pBackgroundSkinDown, nWidth, nHeight);
+						m_pBackgroundSkinDown.width = nWidth;
+						m_pBackgroundSkinDown.height = nHeight;
 					}
 					if (m_pBackgroundSkinDisabled != null)
 					{
-						PositionBackgroundSkin(m_pBackgroundSkinDisabled, nWidth, nHeight);
+						m_pBackgroundSkinDisabled.width = nWidth;
+						m_pBackgroundSkinDisabled.height = nHeight;
 					}
 
 					// Update the foreground skins
@@ -401,12 +394,12 @@ package Elixys.Components
 		 **/
 
 		// Skins
-		protected var m_pBackgroundSkinUp:MovieClip;
-		protected var m_pBackgroundSkinDown:MovieClip;
-		protected var m_pBackgroundSkinDisabled:MovieClip;
-		protected var m_pForegroundSkinUp:MovieClip;
-		protected var m_pForegroundSkinDown:MovieClip;
-		protected var m_pForegroundSkinDisabled:MovieClip;
+		protected var m_pBackgroundSkinUp:Sprite;
+		protected var m_pBackgroundSkinDown:Sprite;
+		protected var m_pBackgroundSkinDisabled:Sprite;
+		protected var m_pForegroundSkinUp:Sprite;
+		protected var m_pForegroundSkinDown:Sprite;
+		protected var m_pForegroundSkinDisabled:Sprite;
 		protected var m_nForegroundSkinScale:Number = 1.0;
 		
 		// Button enabled flag

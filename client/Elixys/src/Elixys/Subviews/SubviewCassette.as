@@ -1,6 +1,7 @@
 package Elixys.Subviews
 {
 	import Elixys.Assets.*;
+	import Elixys.Components.Utils;
 	import Elixys.Extended.Form;
 	import Elixys.Extended.Input;
 	import Elixys.Interfaces.ITextBox;
@@ -12,7 +13,6 @@ package Elixys.Subviews
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.FocusEvent;
 	import flash.events.KeyboardEvent;
@@ -38,6 +38,7 @@ package Elixys.Subviews
 			// Call the base constructor
 			super(screen, sMode, pElixys, ComponentCassette.COMPONENTTYPE, nButtonWidth, VIEW_CASSETTE, 
 				EDIT_CASSETTE, RUN_CASSETTE, attributes);
+			m_nButtonWidth = nButtonWidth;
 			
 			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
 			{
@@ -63,13 +64,13 @@ package Elixys.Subviews
 				for (var nIndex:int = 0; nIndex < REAGENTCOUNT; ++nIndex)
 				{
 					// Create the skins
-					m_pUpSkins.push(AddSkinWidth(tools_btn_up, m_nButtonWidth));
-					m_pDownSkins.push(AddSkinWidth(tools_btn_down, m_nButtonWidth));
-					m_pDisabledSkins.push(AddSkinWidth(tools_btn_disabled, m_nButtonWidth));
-					m_pActiveSkins.push(AddSkinWidth(tools_btn_active, m_nButtonWidth));
+					m_pUpSkins.push(Utils.AddSkin(tools_btn_up, true, this, m_nButtonWidth));
+					m_pDownSkins.push(Utils.AddSkin(tools_btn_down, true, this, m_nButtonWidth));
+					m_pDisabledSkins.push(Utils.AddSkin(tools_btn_disabled, true, this, m_nButtonWidth));
+					m_pActiveSkins.push(Utils.AddSkin(tools_btn_active, true, this, m_nButtonWidth));
 	
 					// Create the labels
-					m_pLabels.push(AddLabel(FONTFACE, FONTSIZE, TextFormatAlign.CENTER));
+					m_pLabels.push(Utils.AddLabel("", this, FONTFACE, FONTSIZE, Styling.AS3Color(Styling.TEXT_BLACK)));
 					
 					// Create an initial hit area and enabled flag
 					m_pHitAreas.push(new Rectangle());
@@ -143,19 +144,20 @@ package Elixys.Subviews
 			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
 			{
 				// Update if our dimensions have changed
+				var pReagentContainerPosition:Point = globalToLocal(m_pReagentContainer.localToGlobal(new Point(0, 0)));
 				if ((m_pReagentContainer.attributes.width != m_nLastWidth) ||
 					(m_pReagentContainer.attributes.height != m_nLastHeight))
 				{
 					// Initialize offsets
-					var nInitialOffsetX:Number = m_pReagentContainer.x + (m_pReagentContainer.attributes.width - 
-						((m_pUpSkins[0] as MovieClip).width * 5) - (BUTTON_HORIZONTAL_GAP * 4)) / 2;
+					var nInitialOffsetX:Number = pReagentContainerPosition.x + (m_pReagentContainer.attributes.width - 
+						((m_pUpSkins[0] as Sprite).width * 5) - (BUTTON_HORIZONTAL_GAP * 4)) / 2;
 					var nOffsetX:Number = nInitialOffsetX;
-					var nOffsetY:Number = m_pReagentContainer.y + (m_pReagentContainer.attributes.height - 
-						((m_pUpSkins[0] as MovieClip).height * 4) - (BUTTON_VERTICAL_GAP * 3)) / 2;
+					var nOffsetY:Number = pReagentContainerPosition.y + (m_pReagentContainer.attributes.height - 
+						((m_pUpSkins[0] as Sprite).height * 4) - (BUTTON_VERTICAL_GAP * 3)) / 2;
 					
 					// Iterate over all 20 positions in the 5 x 4 grid
-					var nIndex:int, pRectangle:Rectangle, pUpSkin:MovieClip, pDownSkin:MovieClip, 
-						pActiveSkin:MovieClip, pDisabledSkin:MovieClip, pLabel:UILabel, nReagentIndex:int = 0;
+					var nIndex:int, pRectangle:Rectangle, pUpSkin:Sprite, pDownSkin:Sprite, 
+						pActiveSkin:Sprite, pDisabledSkin:Sprite, pLabel:UILabel, nReagentIndex:int = 0;
 					for (nIndex = 0; nIndex < 20; ++nIndex)
 					{
 						// Select for reagent positions
@@ -173,10 +175,10 @@ package Elixys.Subviews
 							case 18:
 							case 19:
 								// Set the skin positions
-								pUpSkin = m_pUpSkins[nReagentIndex] as MovieClip;
-								pDownSkin = m_pDownSkins[nReagentIndex] as MovieClip;
-								pActiveSkin = m_pActiveSkins[nReagentIndex] as MovieClip;
-								pDisabledSkin = m_pDisabledSkins[nReagentIndex] as MovieClip;
+								pUpSkin = m_pUpSkins[nReagentIndex] as Sprite;
+								pDownSkin = m_pDownSkins[nReagentIndex] as Sprite;
+								pActiveSkin = m_pActiveSkins[nReagentIndex] as Sprite;
+								pDisabledSkin = m_pDisabledSkins[nReagentIndex] as Sprite;
 								pUpSkin.x = pDownSkin.x = pActiveSkin.x = pDisabledSkin.x = nOffsetX;
 								pUpSkin.y = pDownSkin.y = pActiveSkin.y = pDisabledSkin.y = nOffsetY;
 								
@@ -200,18 +202,18 @@ package Elixys.Subviews
 						}
 						if (((nIndex + 1) % 5) != 0)
 						{
-							nOffsetX += (m_pUpSkins[0] as MovieClip).width + BUTTON_HORIZONTAL_GAP;
+							nOffsetX += (m_pUpSkins[0] as Sprite).width + BUTTON_HORIZONTAL_GAP;
 						}
 						else
 						{
 							nOffsetX = nInitialOffsetX;
-							nOffsetY += (m_pUpSkins[0] as MovieClip).height + BUTTON_VERTICAL_GAP;
+							nOffsetY += (m_pUpSkins[0] as Sprite).height + BUTTON_VERTICAL_GAP;
 						}
 					}
 	
 					// Update the input area of interest
 					m_nInputAreaOfInterestTop = m_pCassetteLabel.getBounds(stage).top;
-					m_nInputAreaOfInterestBottom = (m_pUpSkins[REAGENTCOUNT - 1] as MovieClip).getBounds(stage).bottom;
+					m_nInputAreaOfInterestBottom = (m_pUpSkins[REAGENTCOUNT - 1] as Sprite).getBounds(stage).bottom;
 	
 					// Remember the new dimensions
 					m_nLastWidth = m_pReagentContainer.attributes.width;
@@ -286,10 +288,10 @@ package Elixys.Subviews
 		// Presses the specified button
 		protected function PressButton(nIndex:int):void
 		{
-			(m_pUpSkins[nIndex] as MovieClip).visible = false;
-			(m_pDownSkins[nIndex] as MovieClip).visible = true;
-			(m_pDisabledSkins[nIndex] as MovieClip).visible = false;
-			(m_pActiveSkins[nIndex] as MovieClip).visible = false;
+			(m_pUpSkins[nIndex] as Sprite).visible = false;
+			(m_pDownSkins[nIndex] as Sprite).visible = true;
+			(m_pDisabledSkins[nIndex] as Sprite).visible = false;
+			(m_pActiveSkins[nIndex] as Sprite).visible = false;
 			(m_pLabels[nIndex] as UILabel).textColor = PRESSEDTEXTCOLOR;
 		}
 		
@@ -316,10 +318,10 @@ package Elixys.Subviews
 				bDisabledVisible = true;
 				nTextColor = DISABLEDTEXTCOLOR;
 			}
-			(m_pUpSkins[nIndex] as MovieClip).visible = bUpVisible;
-			(m_pDownSkins[nIndex] as MovieClip).visible = bDownVisible;
-			(m_pDisabledSkins[nIndex] as MovieClip).visible = bDisabledVisible;
-			(m_pActiveSkins[nIndex] as MovieClip).visible = bActiveVisible;
+			(m_pUpSkins[nIndex] as Sprite).visible = bUpVisible;
+			(m_pDownSkins[nIndex] as Sprite).visible = bDownVisible;
+			(m_pDisabledSkins[nIndex] as Sprite).visible = bDisabledVisible;
+			(m_pActiveSkins[nIndex] as Sprite).visible = bActiveVisible;
 			(m_pLabels[nIndex] as UILabel).textColor = nTextColor;
 		}
 

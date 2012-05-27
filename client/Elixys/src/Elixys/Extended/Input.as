@@ -5,11 +5,9 @@ package Elixys.Extended
 	import Elixys.Components.*;
 	import Elixys.Interfaces.ITextBox;
 	
-	import com.christiancantrell.nativetext.NativeText;
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.FocusEvent;
@@ -70,11 +68,8 @@ package Elixys.Extended
 				pTextBox.borderColor = 0xFFFFFF;
 				
 				// Load the skin
-				var pClass:Class = getDefinitionByName(xml.@skin[0]) as Class;
-				m_pSkin = new pClass() as MovieClip;
-				m_pSkin.width = width;
-				m_pSkin.height = height;
-				screen.addChildAt(m_pSkin, screen.getChildIndex(this));
+				m_pSkinClass = getDefinitionByName(xml.@skin[0]) as Class;
+				m_pSkin = Utils.AddSkin(m_pSkinClass, true, screen, width, height, screen.getChildIndex(this));
 			}
 			
 			// Set the keyboard type and return label after adding it to the display list
@@ -176,9 +171,11 @@ package Elixys.Extended
 					x = m_nFixX;
 					y = m_nFixY;
 
-					// Update the skin
-					m_pSkin.width = nWidth;
-					m_pSkin.height = nHeight;
+					// Remove and reload the skin to prevent distortion
+					parent.removeChild(m_pSkin);
+					m_pSkin = Utils.AddSkin(m_pSkinClass, true, parent as Sprite, nWidth, nHeight, parent.getChildIndex(this));
+
+					// Update the skin position
 					m_pSkin.x = m_nFixX;
 					m_pSkin.y = m_nFixY;
 					
@@ -253,7 +250,8 @@ package Elixys.Extended
 		 **/
 		
 		// Skin
-		protected var m_pSkin:MovieClip;
+		protected var m_pSkin:Sprite;
+		protected var m_pSkinClass:Class;
 		
 		// Fixed offset and size
 		protected var m_nFixX:Number = 0;

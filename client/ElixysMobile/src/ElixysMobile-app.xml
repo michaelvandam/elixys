@@ -111,6 +111,7 @@
 		<autoOrients>false</autoOrients>
         <fullScreen>true</fullScreen>
         <visible>true</visible>
+        <renderMode>gpu</renderMode>
     </initialWindow>
 
 	<!-- We recommend omitting the supportedProfiles element, -->

@@ -12,7 +12,6 @@ package Elixys.Components
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
@@ -49,11 +48,8 @@ package Elixys.Components
 			{
 				case Constants.EDIT:
 					// Add the trash skin
-					var pSkin:MovieClip = new sequencer_trashIcon_up() as MovieClip;
-					pSkin.buttonMode = false;
-					m_pTrash.addChild(pSkin);
-					pSkin.width = m_pTrash.attributes.width;
-					pSkin.height = m_pTrash.attributes.height;
+					m_pTrash.addChild(Utils.AddSkin(sequencer_trashIcon_up, true, this, 
+						m_pTrash.attributes.width, m_pTrash.attributes.height));
 					
 					// Intentional fall-through
 					

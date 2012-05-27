@@ -10,7 +10,6 @@ package Elixys.Views
 	
 	import com.danielfreeman.madcomponents.*;
 	
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.utils.*;
 	

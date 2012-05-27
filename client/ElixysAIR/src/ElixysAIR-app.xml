@@ -106,6 +106,7 @@
 		<autoOrients>false</autoOrients>
         <fullScreen>false</fullScreen>
         <visible>true</visible>
+        <renderMode>cpu</renderMode>
     </initialWindow>
 
 	<!-- We recommend omitting the supportedProfiles element, -->
