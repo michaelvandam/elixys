@@ -9,14 +9,27 @@ import json
 # Core server proxy
 class CoreServerProxy():
     def __init__(self):
-        self.__pCoreServer = rpyc.connect("localhost", 18862)
+        self.__pCoreServer = None
+
+    def Connect(self):
+        try:
+            self.__pCoreServer = rpyc.connect("localhost", 18862)
+            return True
+        except Exception, ex:
+            print "## Failed to connect to core server"
+            self.__pCoreServer = None
+            return False
 
     def GetServerState(self, sUsername):
-        pGetServerState = self.__pCoreServer.root.GetServerState(sUsername)
-        if pGetServerState["success"]:
-            return json.loads(pGetServerState["return"])
-        else:
-            raise Exception("Failed to obtain server state from core server")
+        try:
+            if self.__pCoreServer != None:
+                pGetServerState = self.__pCoreServer.root.GetServerState(sUsername)
+                if pGetServerState["success"]:
+                    return json.loads(pGetServerState["return"])
+        except Exception, ex:
+            print "## Failed to get server state"
+            pass
+        return None
 
     def RunSequence(self, sUsername, nSequenceID):
         pRunSequence = self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)

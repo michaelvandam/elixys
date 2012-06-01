@@ -195,6 +195,9 @@ package
 		// Creates a connection to the server
 		public function ConnectToServer(sServer:String, sUsername:String, sPassword:String):void
 		{
+			// Set our state
+			m_nConnectionState = CONNECTING;
+
 			// Drop all existing connection and clear the error text
 			m_pHTTPConnectionPool.DropAllConnections();
 			m_pLogin.SetError("");
@@ -259,11 +262,8 @@ package
 					// We're loading the state.  Parse the HTTP response
 					m_pState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
 
-					// Clean up
-					CleanUpConnection();
-					RemoveConnectingEventListeners();
-
 					// We've connected successfully to the server
+					CleanUpConnection();
 					ConnectedToServer();
 				}
 			}
@@ -337,10 +337,9 @@ package
 		// Cleans up the connection state
 		protected function CleanUpConnection():void
 		{
-			// Clean up
+			// Stop connecting
 			m_pConnectingTimer.stop();
 			HideConnectionPopup();
-			m_pHTTPConnectionPool.DropAllConnections();
 			RemoveConnectingEventListeners();
 		}
 
@@ -380,6 +379,9 @@ package
 		// Called when we've connected successfully to the server
 		protected function ConnectedToServer():void
 		{
+			// Set our state
+			m_nConnectionState = CONNECTED;
+
 			// Fade out the login screen
 			m_pLogin.addEventListener(TransitionCompleteEvent.TRANSITIONCOMPLETE, OnLoginFadeTransitionComplete);
 			m_pLogin.Fade(1, 0, 350);
@@ -426,6 +428,12 @@ package
 		{
 			try
 			{
+				// Only handle responses when we're connected to the server
+				if (m_nConnectionState != CONNECTED)
+				{
+					return;
+				}
+
 				// Make sure the request succeeded
 				if (event.m_pHTTPResponse.m_nStatusCode != 200)
 				{
@@ -480,8 +488,7 @@ package
 		{
 			if (event.status != 200)
 			{
-				// HTTP request failed, clean up and display the error
-				CleanUpConnection();
+				// HTTP request failed
 				ShowLoginScreen("Connection to server failed");
 			}
 		}
@@ -506,15 +513,12 @@ package
 		// Called when the user clicks the log out button on the connection popup
 		protected function OnConnectedLogOut(event:ButtonEvent):void
 		{
-			CleanUpConnection();
 			ShowLoginScreen("");
 		}
 
 		// Called when an HTTP exception event is dispatched while connected to the server
 		protected function OnConnectedHTTPExceptionEvent(event:ExceptionEvent):void
 		{
-			// Clean up and display the error
-			CleanUpConnection();
 			ShowLoginScreen("Connection to server failed");
 		}
 		
@@ -575,16 +579,23 @@ package
 		// Show the log in screen with optional error message
 		protected function ShowLoginScreen(sError:String):void
 		{
+			// Set our state
+			m_nConnectionState = DISCONNECTED;
+
 			// Stop the state update timer
 			if ((m_pUpdateTimer != null) && (m_pUpdateTimer.running))
 			{
 				m_pUpdateTimer.stop();
 			}
-			
+
+			// Drop all connections to server
+			m_pHTTPConnectionPool.DropAllConnections();
+
 			// Set the error text
 			m_pLogin.SetError(sError);
 			
-			// Hide the popup screen
+			// Hide the popups
+			HideConnectionPopup();
 			if (m_pPopup.visible)
 			{
 				m_pPopup.visible = false;
@@ -837,13 +848,19 @@ package
 		
 		// XML page list
 		protected static const PAGES:XML = 
-			//<pages id="Pages" width="2048" height="1536" autoResize="false">
 			<pages id="Pages" width="1024" height="768" autoResize="false">
 				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;
+		//<pages id="Pages" width="2048" height="1536" autoResize="false">
 		
 		// Pages
 		protected var m_pPages:UIPages;
+		
+		// Connection state
+		protected static const DISCONNECTED:uint = 0;
+		protected static const CONNECTING:uint = 1;
+		protected static const CONNECTED:uint = 2;
+		protected var m_nConnectionState:uint = DISCONNECTED;
 		
 		// Loading variables
 		protected var m_pLoading:Loading;
@@ -905,6 +922,6 @@ package
 		
 		// Constants
 		protected static const CONNECTING_POPUP_TIMEOUT:int = 150;
-		protected static const STATE_UPDATE_TIME:int = 500;
+		protected static const STATE_UPDATE_TIME:int = 1000;
 	}
 }

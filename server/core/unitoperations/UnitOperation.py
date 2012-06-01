@@ -318,9 +318,32 @@ class UnitOperation(threading.Thread):
     if bRestorePressure:
       self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
-    #Move to the correct position and raise the reactor
-    self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
+    # Move to the correct position, retrying up to three times
+    bSuccess = False
+    nRetryCount = 0
+    while not bSuccess and (nRetryCount < 3):
+      self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
+      try:
+        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
+        bSuccess = True
+      except UnitOpError, ex:
+        # Check for abort first, then cycle the reactor robot to give it a kick
+        self.logError("## A")
+        self.checkAbort()
+        self.error = ""
+        self.logError("## B")
+        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+        time.sleep(0.5)
+        self.logError("## C")
+        self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()
+        time.sleep(0.5)
+        self.logError("## D")
+        nRetryCount += 1
+    if not bSuccess:
+      self.logError("## F")
+      self.abortOperation("ERROR: Failed to move reactor to the desired position. Operation aborted.")
+
+    # Raise the reactor
     self.systemModel[ReactorID]['Motion'].moveReactorUp()
     if reactorPosition == INSTALL:
       # Sleep briefly since we don't have up sensors for the install position
@@ -349,10 +372,21 @@ class UnitOperation(threading.Thread):
       self.systemModel['ReagentDelivery'].setEnableRobots()
       self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
 
-    #Move to the reagent position
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
-      self.reagentPosition, 0, 0),EQUAL,5)
+    #Move to the reagent position, retrying up to three times
+    bSuccess = False
+    nRetryCount = 0
+    while not bSuccess and (nRetryCount < 3):
+      self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
+      try:
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
+          self.reagentPosition, 0, 0),EQUAL,5)
+        bSuccess = True
+      except UnitOpError, ex:
+        self.checkAbort()
+        self.error = ""
+        nRetryCount += 1
+    if not bSuccess:
+      self.abortOperation("ERROR: Failed to move the robot to desired position. Operation aborted.")
 
     #Move down, close and up
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
@@ -362,14 +396,27 @@ class UnitOperation(threading.Thread):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
 
-    #Move to the delivery or elute position
-    if nElute == 0:
-      self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
-        0, self.reagentLoadPosition, 0),EQUAL,5)
-    else:
-      self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReactorID[-1]))
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, 0, 1),EQUAL,5)
+    #Move to the delivery or elute position, retrying up to three times
+    bSuccess = False
+    nRetryCount = 0
+    while not bSuccess and (nRetryCount < 3):
+      if nElute == 0:
+        self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
+      else:
+        self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReactorID[-1]))
+      try:
+        if nElute == 0:
+          self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
+            0, self.reagentLoadPosition, 0),EQUAL,5)
+        else:
+          self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, 0, 1),EQUAL,5)
+        bSuccess = True
+      except UnitOpError, ex:
+        self.checkAbort()
+        self.error = ""
+        nRetryCount += 1
+    if not bSuccess:
+      self.abortOperation("ERROR: Failed to move robot to the deliver or elute position. Operation aborted.")
     
     #Lower and turn on the gas transfer
     self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
@@ -417,9 +464,22 @@ class UnitOperation(threading.Thread):
     self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,3)
 
-    #Move to ReagentPosition, then down and open
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
+    #Move to the reagent position, retrying up to three times
+    bSuccess = False
+    nRetryCount = 0
+    while not bSuccess and (nRetryCount < 3):
+      self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReagentReactorID[-1]),self.reagentPosition)
+      try:
+        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
+        bSuccess = True
+      except UnitOpError, ex:
+        self.checkAbort()
+        self.error = ""
+        nRetryCount += 1
+    if not bSuccess:
+      self.abortOperation("ERROR: Failed to move the robot to reagent position. Operation aborted.")
+
+    #Move down and open
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     #self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
     time.sleep(2)  # This is a workaround in case the gripper slipped a little bit and the reagent vial is lower than usual

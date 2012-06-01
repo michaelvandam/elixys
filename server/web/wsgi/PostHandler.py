@@ -7,6 +7,7 @@ import sys
 sys.path.append("/opt/elixys/core")
 import SequenceManager
 import Exceptions
+from CoreServer import InitialRunState
 
 # Directs the user to the appropriate select screen (also used by ExceptionHandler.py)
 def DirectToLastSelectScreen(pClientState):
@@ -480,7 +481,7 @@ class PostHandler:
     def __HandlePostPrompt(self):
         # Make sure we are on Prompt
         if not self.__pClientState["prompt"]["show"] or not self.__pClientState["prompt"]["screen"].startswith("PROMPT"):
-            raise Exception("State misalignment");
+            raise Exceptions.StateMisalignmentException()
 
         # Parse the JSON string in the body
         pJSON = json.loads(self.__pBody)
@@ -493,7 +494,7 @@ class PostHandler:
 
         # The only recognized action from a prompt is a button click
         if sActionType != "BUTTONCLICK":
-            raise Exception("State misalignment")
+            raise Exceptions.StateMisalignmentException()
 
         # Interpret the response in context of the client state
         if self.__pClientState["prompt"]["screen"] == "PROMPT_CREATESEQUENCE":
@@ -642,7 +643,7 @@ class PostHandler:
 
         # Save the reagent
         pReagent = json.loads(self.__pBody)
-        self.__pDatabase.UpdateReagent(self.__sRemoteUser, nReagentID, pReagent["available"], pReagent["name"], pReagent["description"])
+        self.__pDatabase.UpdateReagent(self.__sRemoteUser, nReagentID, pReagent["name"], pReagent["description"])
 
         # Flag the sequence validation as dirty
         self.__pDatabase.UpdateSequenceDirtyFlag(self.__sRemoteUser, nSequenceID, True)
@@ -659,12 +660,11 @@ class PostHandler:
     # Initializes and/or returns the cached server state
     def __GetServerState(self):
         if self.__pServerState == None:
-            try:
-                self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
-            except Exception, ex:
-                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed: " + str(ex) + ", assuming hardware off")
+            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            if self.__pServerState == None:
+                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed, assuming hardware off")
                 self.__pServerState = {"type":"serverstate"}
-                self.__pServerState["runstate"] = {"type":"runstate"}
+                self.__pServerState["runstate"] = InitialRunState()
                 self.__pServerState["runstate"]["status"] = "Offline"
                 self.__pServerState["runstate"]["username"] = ""
         return self.__pServerState

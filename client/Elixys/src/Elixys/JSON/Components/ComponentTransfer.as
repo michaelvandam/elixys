@@ -73,8 +73,8 @@ package Elixys.JSON.Components
 			"SourceReactor", 
 			"TargetReactor", 
 			"Mode", 
-			"Pressure",
-			"Duration"
+			"Duration",
+			"Pressure"
 		];
 		
 		// Data wrappers

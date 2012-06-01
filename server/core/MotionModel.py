@@ -130,6 +130,7 @@ class MotionModel(ComponentModel):
     self.hardwareComm.MoveReactor(self.reactor, sPosition)
   
   def moveToHome(self):
+    """Moves the reactor home"""
     self.hardwareComm.HomeReactorRobot(self.reactor)
     
   def updateState(self, sSetPosition, sCurrentPosition, nSetPositionRaw, nCurrentPositionRaw, bSetReactorUp, bSetReactorDown, bCurrentReactorUp, bCurrentReactorDown, 

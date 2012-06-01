@@ -14,9 +14,10 @@ def createNewComponent(sRunError):
   pComponent["note"] = ""
   if sRunError == "":
     pComponent["successflag"] = 1
+    pComponent["message"] = "Run completed successfully"
   else:
     pComponent["successflag"] = 0
-  pComponent["message"] = sRunError
+    pComponent["message"] = sRunError
   return pComponent
 
 # Create a unit operation from a component object

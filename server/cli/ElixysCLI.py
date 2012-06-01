@@ -86,6 +86,7 @@ class ElixysCLI(BaseCLI.BaseCLI):
             while not bContinue:
                 try:
                     self.pCoreServer = CoreServerProxy.CoreServerProxy()
+                    self.pCoreServer.Connect()
                     bContinue = True
                 except Exception as ex:
                     if not bErrorMessageShown:

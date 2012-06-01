@@ -30,6 +30,10 @@ import TimedLock
 
 # Initialize global variables
 gCoreServerLock = None
+gServerStateLock = None
+gServerState = None
+gServerStateString = ""
+gServerStateTime = 0
 gDatabase = None
 gHardwareComm = None
 gSystemModel = None
@@ -61,92 +65,113 @@ class CoreServerService(rpyc.Service):
     def exposed_GetServerState(self, sUsername):
         """Returns the state of the server"""
         global gCoreServerLock
+        global gServerStateLock
+        global gServerState
+        global gServerStateString
+        global gServerStateTime
         global gDatabase
         global gSystemModel
         global gRunUsername
         global gRunSequence
-        bLocked = False
+        bServerStateLocked = False
+        bCoreServerLocked = False
         try:
-            # Acquire the lock
-            gCoreServerLock.Acquire(1)
-            bLocked = True
+            # Acquire the server state lock
+            gServerStateLock.Acquire(1)
+            bServerStateLocked = True
             gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.GetServerState()")
 
-            # Get the server state
-            pServerState = gSystemModel.GetStateObject()
-            if pServerState == None:
-                raise Exception("Failed to get server state")
+            # Update the server state twice per second
+            if (gServerState == None) or ((time.time() - gServerStateTime) > 0.5):
+                # Acquire the core server lock
+                gCoreServerLock.Acquire(1)
+                bCoreServerLocked = True
+                gDatabase.SystemLog(LOG_INFO, sUsername, "## Updating server state")
 
-            # Initialize the run state
-            pServerState["runstate"] = {"type":"runstate"}
-            pServerState["runstate"]["description"] = ""
-            pServerState["runstate"]["status"] = ""
-            pServerState["runstate"]["running"] = False
-            pServerState["runstate"]["prompt"] = {"type":"promptstate",
-                "show":False}
-            pServerState["runstate"]["username"] = ""
-            pServerState["runstate"]["sequenceid"] = 0
-            pServerState["runstate"]["componentid"] = 0
-            pServerState["runstate"]["time"] = ""
-            pServerState["runstate"]["timedescription"] = ""
-            pServerState["runstate"]["useralert"] = ""
-            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                "text":"",
-                "id":""}
-            pServerState["runstate"]["waitingforuserinput"] = False
-            pServerState["runstate"]["runcomplete"] = False
+                # Get the server state
+                gServerState = gSystemModel.GetStateObject()
+                gServerStateTime = time.time()
+                if gServerState == None:
+                    raise Exception("Failed to get server state")
 
-            # Check if the system is running or idle
-            if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
-                # System is running
-                pServerState["runstate"]["runcomplete"] = gRunSequence.isRunComplete()
-                pServerState["runstate"]["running"] = True
-                pServerState["runstate"]["username"] = gRunUsername
-                nSequenceID, nComponentID = gRunSequence.getIDs()
-                pServerState["runstate"]["sequenceid"] = nSequenceID
-                pServerState["runstate"]["componentid"] = nComponentID
-                pUnitOperation = gSystemModel.GetUnitOperation()
-                if pUnitOperation != None:
-                    pServerState["runstate"]["description"] = pUnitOperation.description
-                    pServerState["runstate"]["status"] = pUnitOperation.status
-                    sTimerStatus = pUnitOperation.getTimerStatus()
-                    if (sTimerStatus == "Running"):
-                        pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
-                        pServerState["runstate"]["timedescription"] = "TIME REMAINING"
-                        if gRunUsername == sUsername:
-                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                "text":"OVERRIDE TIMER",
-                                "id":"TIMEROVERRIDE"}
-                    elif (sTimerStatus == "Overridden"):
-                        pServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
-                        pServerState["runstate"]["timedescription"] = "TIME ELAPSED"
-                        if gRunUsername == sUsername:
-                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                "text":"FINISH UNIT OPERATION",
-                                "id":"TIMERCONTINUE"}
-                    elif pUnitOperation.waitingForUserInput:
-                        pServerState["runstate"]["waitingforuserinput"] = True
-                        if gRunUsername == sUsername:
-                            pServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                "text":"CONTINUE",
-                                "id":"USERINPUT"}
-                    if gRunSequence.willRunPause():
-                        pServerState["runstate"]["useralert"] = "Run will pause after the current operation."
+                # Get the initial run state
+                gServerState["runstate"] = InitialRunState()
+
+                # Initialize the run state
+                gServerState["runstate"] = {"type":"runstate"}
+                gServerState["runstate"]["description"] = ""
+                gServerState["runstate"]["status"] = ""
+                gServerState["runstate"]["running"] = False
+                gServerState["runstate"]["prompt"] = {"type":"promptstate",
+                    "show":False}
+                gServerState["runstate"]["username"] = ""
+                gServerState["runstate"]["sequenceid"] = 0
+                gServerState["runstate"]["componentid"] = 0
+                gServerState["runstate"]["time"] = ""
+                gServerState["runstate"]["timedescription"] = ""
+                gServerState["runstate"]["useralert"] = ""
+                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                    "text":"",
+                    "id":""}
+                gServerState["runstate"]["waitingforuserinput"] = False
+                gServerState["runstate"]["runcomplete"] = False
+
+                # Check if the system is running or idle
+                if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
+                    # System is running
+                    gServerState["runstate"]["runcomplete"] = gRunSequence.isRunComplete()
+                    gServerState["runstate"]["running"] = True
+                    gServerState["runstate"]["username"] = gRunUsername
+                    nSequenceID, nComponentID = gRunSequence.getIDs()
+                    gServerState["runstate"]["sequenceid"] = nSequenceID
+                    gServerState["runstate"]["componentid"] = nComponentID
+                    pUnitOperation = gSystemModel.GetUnitOperation()
+                    if pUnitOperation != None:
+                        gServerState["runstate"]["description"] = pUnitOperation.description
+                        gServerState["runstate"]["status"] = pUnitOperation.status
+                        sTimerStatus = pUnitOperation.getTimerStatus()
+                        if (sTimerStatus == "Running"):
+                            gServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
+                            gServerState["runstate"]["timedescription"] = "TIME REMAINING"
+                            if gRunUsername == sUsername:
+                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                    "text":"OVERRIDE TIMER",
+                                    "id":"TIMEROVERRIDE"}
+                        elif (sTimerStatus == "Overridden"):
+                            gServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
+                            gServerState["runstate"]["timedescription"] = "TIME ELAPSED"
+                            if gRunUsername == sUsername:
+                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                    "text":"FINISH UNIT OPERATION",
+                                    "id":"TIMERCONTINUE"}
+                        elif pUnitOperation.waitingForUserInput:
+                            gServerState["runstate"]["waitingforuserinput"] = True
+                            if gRunUsername == sUsername:
+                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                                    "text":"CONTINUE",
+                                    "id":"USERINPUT"}
+                        if gRunSequence.willRunPause():
+                            gServerState["runstate"]["useralert"] = "Run will pause after the current operation."
+                else:
+                    # The system is idle
+                    gRunSequence = None
+                    gRunUsername = ""
+                    gServerState["runstate"]["status"] = "Idle"
+                gServerStateString = json.dumps(gServerState)
             else:
-                # The system is idle
-                gRunSequence = None
-                gRunUsername = ""
-                pServerState["runstate"]["status"] = "Idle"
+                gDatabase.SystemLog(LOG_INFO, sUsername, "## Not updating server state")
 
             # Format the server state as a JSON string
-            pResult = self.SuccessResult(json.dumps(pServerState))
+            pResult = self.SuccessResult(gServerStateString)
         except Exception, ex:
             # Log the error
             gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.GetServerState() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
-        if bLocked:
+        if bServerStateLocked:
+            gServerStateLock.Release()
+        if bCoreServerLocked:
             gCoreServerLock.Release()
         return pResult
 
@@ -165,15 +190,16 @@ class CoreServerService(rpyc.Service):
             gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.RunSequence(" + str(nSequenceID) + ")")
 
             # Make sure we aren't already running a sequence
-            if gRunSequence != None:
-              if gRunSequence.running:
-                raise Exception("A sequence is already running, cannot run another")
-
-            # Create and start the sequence
-            gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSystemModel)
-            gRunSequence.setDaemon(True)
-            gRunSequence.start()
-            gRunUsername = sUsername
+            if (gRunSequence != None) and gRunSequence.running:
+                # Throw an exception if we aren't the user running the system
+                if gRunUsername != sUsername:
+                    raise Exception("A sequence is already running, cannot run another")
+            else:
+                # Create and start the sequence
+                gRunSequence = Sequences.Sequence(sUsername, nSequenceID, gSystemModel)
+                gRunSequence.setDaemon(True)
+                gRunSequence.start()
+                gRunUsername = sUsername
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
@@ -639,6 +665,27 @@ class CoreServerService(rpyc.Service):
         sTime += str(nSeconds) + "\""
         return sTime
 
+# Function that create an initial run state
+def InitialRunState():
+    pRunState = {"type":"runstate"}
+    pRunState["description"] = ""
+    pRunState["status"] = ""
+    pRunState["running"] = False
+    pRunState["prompt"] = {"type":"promptstate",
+        "show":False}
+    pRunState["username"] = ""
+    pRunState["sequenceid"] = 0
+    pRunState["componentid"] = 0
+    pRunState["time"] = ""
+    pRunState["timedescription"] = ""
+    pRunState["useralert"] = ""
+    pRunState["unitoperationbutton"] = {"type":"button",
+        "text":"",
+        "id":""}
+    pRunState["waitingforuserinput"] = False
+    pRunState["runcomplete"] = False
+    return pRunState
+
 # Core server daemon exit function
 gCoreServerDaemon = None
 def OnExit(pCoreServerDaemon, signal, func=None):
@@ -658,6 +705,7 @@ class CoreServerDaemon(daemon):
     def run(self):
         """Runs the core server daemon"""
         global gCoreServerLock
+        global gServerStateLock
         global gDatabase
         global gHardwareComm
         global gSystemModel
@@ -666,8 +714,9 @@ class CoreServerDaemon(daemon):
         pCoreServerThread = None
         while not self.bTerminate:
             try:
-                # Create the lock and database connection
+                # Create the locks and database connection
                 gCoreServerLock = TimedLock.TimedLock()
+                gServerStateLock = TimedLock.TimedLock()
                 gDatabase = DBComm()
                 gDatabase.Connect()
                 gDatabase.SystemLog(LOG_INFO, "System", "CoreServer starting")
@@ -728,6 +777,8 @@ class CoreServerDaemon(daemon):
                     gDatabase = None
                 if gCoreServerLock != None:
                     gCoreServerLock = None
+                if gServerStateLock != None:
+                    gServerStateLock = None
 
             # Sleep for a second before we respawn
             if not self.bTerminate:

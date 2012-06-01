@@ -6,7 +6,7 @@ Reagent Delivery Model Class
 # Imports
 import sys
 sys.path.append("/opt/elixys/hardware/")
-from HardwareComm import HardwareComm
+from HardwareComm import HardwareComm, ROBOT_POSITION_LIMIT
 from ComponentModel import ComponentModel
 
 # Reagent delivery model
@@ -311,8 +311,9 @@ class ReagentDeliveryModel(ComponentModel):
         sName2 = "Delivery " + str(nDelivery)
       else:
         sName2 = "Elute"
-    else:
-      if (nRawX == 0) and (nRawY == 0):
+    else:	
+      if (nRawX > -ROBOT_POSITION_LIMIT) and (nRawX < ROBOT_POSITION_LIMIT) and \
+         (nRawY > -ROBOT_POSITION_LIMIT) and (nRawY < ROBOT_POSITION_LIMIT):
         sName1 = "Home"
       else:
         sName1 = "Unknown"

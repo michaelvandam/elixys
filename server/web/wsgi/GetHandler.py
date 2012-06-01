@@ -9,6 +9,7 @@ import copy
 from DBComm import *
 from operator import itemgetter
 import Exceptions
+from CoreServer import InitialRunState
 
 # Function used to sort strings in a case-insensitive manner
 def LowerIfPossible(x):
@@ -485,12 +486,11 @@ class GetHandler:
     # Initializes and/or returns the cached server state
     def __GetServerState(self):
         if self.__pServerState == None:
-            try:
-                self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
-            except Exception, ex:
-                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed: " + str(ex) + ", assuming hardware off")
+            self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
+            if self.__pServerState == None:
+                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed, assuming hardware off")
                 self.__pServerState = {"type":"serverstate"}
-                self.__pServerState["runstate"] = {"type":"runstate"}
+                self.__pServerState["runstate"] = InitialRunState()
                 self.__pServerState["runstate"]["status"] = "Offline"
                 self.__pServerState["runstate"]["username"] = ""
         return self.__pServerState

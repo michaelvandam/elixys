@@ -21,12 +21,8 @@ import CoreServerProxy
 import Exceptions
 from DBComm import *
 
-# Create a RPC connection to the core server
-gCoreServer = CoreServerProxy.CoreServerProxy()
-
 def application(pEnvironment, fStartResponse):
     # Handle the request
-    global gCoreServer
     pDatabase = None
     try:
         # Take a starting timestamp
@@ -43,6 +39,11 @@ def application(pEnvironment, fStartResponse):
         pDatabase = DBComm()
         pDatabase.Connect()
 
+        # Likewise, create a new RPC connection to the core server or we will start having thread-specific
+        # issues if the hardware is turned on and off
+        pCoreServer = CoreServerProxy.CoreServerProxy()
+        pCoreServer.Connect()
+
         # Load the client state and log the request
         pClientState = pDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
         pDatabase.SystemLog(LOG_INFO, sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath)
@@ -52,13 +53,13 @@ def application(pEnvironment, fStartResponse):
         pBody = None
         nBodyLength = 0
         if sRequestMethod == "GET":
-            pHandler = GetHandler.GetHandler(gCoreServer, pDatabase)
+            pHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
         elif sRequestMethod == "POST":
             nBodyLength = int(pEnvironment["CONTENT_LENGTH"])
             pBody = pEnvironment["wsgi.input"].read(nBodyLength)
-            pHandler = PostHandler.PostHandler(gCoreServer, pDatabase)
+            pHandler = PostHandler.PostHandler(pCoreServer, pDatabase)
         elif sRequestMethod == "DELETE":
-            pHandler = DeleteHandler.DeleteHandler(gCoreServer, pDatabase)
+            pHandler = DeleteHandler.DeleteHandler(pCoreServer, pDatabase)
         else:
             raise Exception("Unknown request method: " + sRequestMethod)
 
@@ -67,14 +68,14 @@ def application(pEnvironment, fStartResponse):
             pResponse = pHandler.HandleRequest(pClientState, sRemoteUser, sPath, pBody, nBodyLength)
         except Exceptions.StateMisalignmentException as ex:
             # The client state is misaligned, send the correct state as our response
-            pGetHandler = GetHandler.GetHandler(gCoreServer, pDatabase)
+            pGetHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
             pResponse = pGetHandler.HandleRequest(pClientState, sRemoteUser, "/state", None, 0)
     except Exceptions.SequenceNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleSequenceNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
+        pResponse = ExceptionHandler.HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
     except Exceptions.ComponentNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleComponentNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
+        pResponse = ExceptionHandler.HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
     except Exceptions.ReagentNotFoundException as ex:
-        pResponse = ExceptionHandler.HandleReagentNotFound(gCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
+        pResponse = ExceptionHandler.HandleReagentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
     except Exceptions.InvalidSequenceException as ex:
         pResponse = ExceptionHandler.HandleInvalidSequence(pDatabase, sRemoteUser, ex.nSequenceID)
     except Exception as ex:
