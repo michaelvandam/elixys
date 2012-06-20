@@ -35,6 +35,10 @@ package Elixys.JSON.State
 			}
 			return m_pUser;
 		}
+		public function get Timestamp():Number
+		{
+			return super.flash_proxy::getProperty("timestamp");
+		}
 		public function get ServerState():Elixys.JSON.State.ServerState
 		{
 			// Parse the server state

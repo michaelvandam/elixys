@@ -396,6 +396,9 @@ class UnitOperation(threading.Thread):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
 
+    #Make sure we have a vial
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+
     #Move to the delivery or elute position, retrying up to three times
     bSuccess = False
     nRetryCount = 0
@@ -496,50 +499,71 @@ class UnitOperation(threading.Thread):
     startTime = time.time()
     self.delay = 500
     self.checkAbort()
+    bConditionMet = False
     if comparator == EQUAL:
-      while not(function() == condition):
-        self.stateCheckInterval(self.delay)
-        if not(timeout == 65535):
-          if self.isTimerExpired(startTime,timeout):
-            self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-            self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
-            break
+      while not bConditionMet:
+        value = function()
+        bConditionMet = (value == condition)
+        if not bConditionMet:
+          self.logInfo("Function %s is %s, waiting to be EQUAL TO %s" % (str(function.__name__),str(value),str(condition)))
+          self.stateCheckInterval(self.delay)
+          if not(timeout == 65535):
+            if self.isTimerExpired(startTime,timeout):
+              self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
+              break
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
-          self.updateStatus(self.updateStatusWhileWaiting(function()))
+          self.updateStatus(self.updateStatusWhileWaiting(value))
+      self.logInfo("Function %s is EQUAL TO %s, continuing" % (str(function.__name__),str(value)))
     elif comparator == NOTEQUAL:
-      while (function() == condition):
-        self.stateCheckInterval(self.delay)
-        if not(timeout == 65535):
-          if self.isTimerExpired(startTime,timeout):
-            self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-            self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
-            break
+      while not bConditionMet:
+        value = function()
+        bConditionMet = (value != condition)
+        if not bConditionMet:
+          self.logInfo("Function %s is %s, waiting to be NOT EQUAL TO %s" % (str(function.__name__),str(value),str(condition)))
+          self.stateCheckInterval(self.delay)
+          if not(timeout == 65535):
+            if self.isTimerExpired(startTime,timeout):
+              self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
+              break
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
-          self.updateStatus(self.updateStatusWhileWaiting(function()))
+          self.updateStatus(self.updateStatusWhileWaiting(value))
+      self.logInfo("Function %s is NOT EQUAL TO %s, continuing" % (str(function.__name__),str(value)))
     elif comparator == GREATER:
-      while not(function() >= condition):
-        self.stateCheckInterval(self.delay)
-        if not(timeout == 65535):
-          if self.isTimerExpired(startTime,timeout):
-            self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-            self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
-            break            
+      while not bConditionMet:
+        value = function()
+        bConditionMet = (value >= condition)
+        if not bConditionMet:
+          self.logInfo("Function %s is %s, waiting to be GREATER THAN %s" % (str(function.__name__),str(value),str(condition)))
+          self.stateCheckInterval(self.delay)
+          if not(timeout == 65535):
+            if self.isTimerExpired(startTime,timeout):
+              self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
+              break
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
-          self.updateStatus(self.updateStatusWhileWaiting(function()))
+          self.updateStatus(self.updateStatusWhileWaiting(value))
+      self.logInfo("Function %s is GREATER THAN %s, continuing" % (str(function.__name__),str(value)))
     elif comparator == LESS:
-      while not(function() <=condition):
-        self.stateCheckInterval(self.delay)
-        if not(timeout == 65535):
-          if self.isTimerExpired(startTime,timeout):
-            self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-            self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(function()),str(condition)))
-            break
+      while not bConditionMet:
+        value = function()
+        bConditionMet = (value <= condition)
+        if not bConditionMet:
+          self.logInfo("Function %s is %s, waiting to be LESS THAN %s" % (str(function.__name__),str(value),str(condition)))
+          self.stateCheckInterval(self.delay)
+          if not(timeout == 65535):
+            if self.isTimerExpired(startTime,timeout):
+              self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
+              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
+              break
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
-          self.updateStatus(self.updateStatusWhileWaiting(function()))
+          self.updateStatus(self.updateStatusWhileWaiting(value))
+      self.logInfo("Function %s is LESS EQUAL to %s, continuing" % (str(function.__name__),str(value)))
     else:
       self.logError("Invalid comparator: " + comparator)
       self.abortOperation("Invalid comparator: " + comparator)

@@ -10,6 +10,7 @@ from DBComm import *
 from operator import itemgetter
 import Exceptions
 from CoreServer import InitialRunState
+import time
 
 # Function used to sort strings in a case-insensitive manner
 def LowerIfPossible(x):
@@ -78,7 +79,8 @@ class GetHandler:
         pState = {"type":"state",
             "user":pUser,
             "serverstate":pServerState,
-            "clientstate":self.__pClientState}
+            "clientstate":self.__pClientState,
+            "timestamp":time.time()}
 
         # Complete the state with the values specific to this page
         if self.__pClientState["screen"] == "HOME":
@@ -490,6 +492,7 @@ class GetHandler:
             if self.__pServerState == None:
                 self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed, assuming hardware off")
                 self.__pServerState = {"type":"serverstate"}
+                self.__pServerState["timestamp"] = time.time()
                 self.__pServerState["runstate"] = InitialRunState()
                 self.__pServerState["runstate"]["status"] = "Offline"
                 self.__pServerState["runstate"]["username"] = ""

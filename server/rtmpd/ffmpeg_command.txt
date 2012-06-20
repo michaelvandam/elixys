@@ -1,0 +1,1 @@
+ffmpeg -i rtsp://192.168.1.201/live.sdp -re -vcodec flv -b:v 2000KB -an -f flv rtmp://192.168.1.4:1935/flvplayback/Reactor1

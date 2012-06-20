@@ -300,8 +300,8 @@ package Elixys.HTTP
 				// Is this request is complete?
 				if (m_pHTTPResponseBody.length == m_nContentLength)
 				{
-					// Yes.  Dispatch a server responded event if we are retrying
-					if (m_nRetryCount)
+					// Yes.  Dispatch a server responded event if we are retrying a post
+					if (m_nRetryCount && (m_pOutstandingRequest.m_sMethod == "POST"))
 					{
 						var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERRESPONDED);
 						m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
@@ -391,15 +391,35 @@ package Elixys.HTTP
 				// Send the failed request again
 				SendRequestInternal(m_pOutstandingRequest);
 				
-				// Dispatch a server not responding event
-				var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERNOTRESPONDING);
-				m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
+				// Dispatch a server not responding event if we're posting
+				if (m_pOutstandingRequest.m_sMethod == "POST")
+				{
+					var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERNOTRESPONDING);
+					m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
+				}
 			}
 			else
 			{
-				// Give up and send an exception event
-				var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Server not responding");
-				m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
+				// Give up
+				if (m_pOutstandingRequest.m_sMethod == "POST")
+				{
+					// Send an exception event if we're posting
+					var pExceptionEvent:ExceptionEvent = new ExceptionEvent("Server not responding");
+					m_pHTTPConnectionPool.dispatchEvent(pExceptionEvent);
+				}
+				else
+				{
+					// Reset our state and inform the connection pool that we are available otherwise
+					m_pHTTPResponseHeader.clear();
+					m_nHTTPResponseHeader = 0;
+					m_pHTTPResponseHeaders = null;
+					m_nStatusCode = 0;
+					m_nContentLength = 0;
+					m_pHTTPResponseBody.clear();
+					m_pOutstandingRequest = null;
+					m_bWaitingForResponse = false;
+					m_pHTTPConnectionPool.OnConnectionAvailable(this);
+				}
 			}
 		}
 

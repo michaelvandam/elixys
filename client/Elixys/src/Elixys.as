@@ -255,12 +255,13 @@ package
 					
 					// Load the system state
 					m_pState = null;
+					m_pConnectingState = null;
 					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 				}
 				else
 				{
 					// We're loading the state.  Parse the HTTP response
-					m_pState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
+					m_pConnectingState = ParseHTTPResponse(event, getQualifiedClassName(State)) as State;
 
 					// We've connected successfully to the server
 					CleanUpConnection();
@@ -398,9 +399,10 @@ package
 
 			// Start the state update timer
 			m_pUpdateTimer.start();
+			m_nStateTimestamp = 0;
 
 			// Show the current screen
-			UpdateState();
+			UpdateState(m_pConnectingState);
 		}
 
 		// Adds connected event listeners
@@ -446,8 +448,7 @@ package
 				// Call the appropriate update function
 				if (pResponse is State)
 				{
-					m_pState = pResponse as State;
-					UpdateState();
+					UpdateState(pResponse as State);
 				}
 				else if (pResponse is Configuration)
 				{
@@ -525,6 +526,25 @@ package
 		// Called to update the client state
 		protected function OnUpdateTimer(event:TimerEvent):void
 		{
+			// Check how much time has elasped since our last state update
+			if (m_nStateTimestamp != 0)
+			{
+				var nElapsed:int = getTimer() - m_nStateTimestamp;
+				if (nElapsed > 5000)
+				{
+					ShowConnectionPopup("Waiting", "Waiting for server to respond", "LOG OUT", OnConnectedLogOut);
+				}
+				else if (nElapsed > 10000)
+				{
+					ShowLoginScreen("Connection to server failed");
+				}
+				else
+				{
+					HideConnectionPopup();
+				}
+			}
+			
+
 			// Load the system state
 			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
 		}
@@ -615,8 +635,16 @@ package
 		 **/
 		
 		// Update the current state
-		protected function UpdateState():void
+		protected function UpdateState(pState:State):void
 		{
+			// Only process the state if it is newer than the previous
+			if (m_pState && (m_pState.Timestamp >= pState.Timestamp))
+			{
+				return;
+			}
+			m_pState = pState;
+			m_nStateTimestamp = getTimer();
+			
 			// Check if we are displaying a popup
 			if (m_pState.ClientState.PromptState.Show)
 			{
@@ -908,9 +936,11 @@ package
 		protected var m_pHTTPConnectionPool:HTTPConnectionPool;
 		protected var m_pConnectingTimer:Timer;
 
-		// Server configuration and move recent client state
+		// Server configuration and most recent client state
 		protected var m_pConfiguration:Configuration;
+		protected var m_pConnectingState:State;
 		protected var m_pState:State;
+		protected var m_nStateTimestamp:int = 0;
 		protected var m_pSequence:Sequence;
 		protected var m_pComponent:ComponentBase;
 		

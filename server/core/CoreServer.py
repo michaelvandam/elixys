@@ -32,7 +32,6 @@ import TimedLock
 gCoreServerLock = None
 gServerStateLock = None
 gServerState = None
-gServerStateString = ""
 gServerStateTime = 0
 gDatabase = None
 gHardwareComm = None
@@ -67,7 +66,6 @@ class CoreServerService(rpyc.Service):
         global gCoreServerLock
         global gServerStateLock
         global gServerState
-        global gServerStateString
         global gServerStateTime
         global gDatabase
         global gSystemModel
@@ -133,23 +131,11 @@ class CoreServerService(rpyc.Service):
                         if (sTimerStatus == "Running"):
                             gServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
                             gServerState["runstate"]["timedescription"] = "TIME REMAINING"
-                            if gRunUsername == sUsername:
-                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                    "text":"OVERRIDE TIMER",
-                                    "id":"TIMEROVERRIDE"}
                         elif (sTimerStatus == "Overridden"):
                             gServerState["runstate"]["time"] = self.FormatTime(pUnitOperation.getTime())
                             gServerState["runstate"]["timedescription"] = "TIME ELAPSED"
-                            if gRunUsername == sUsername:
-                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                    "text":"FINISH UNIT OPERATION",
-                                    "id":"TIMERCONTINUE"}
                         elif pUnitOperation.waitingForUserInput:
                             gServerState["runstate"]["waitingforuserinput"] = True
-                            if gRunUsername == sUsername:
-                                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                                    "text":"CONTINUE",
-                                    "id":"USERINPUT"}
                         if gRunSequence.willRunPause():
                             gServerState["runstate"]["useralert"] = "Run will pause after the current operation."
                 else:
@@ -157,12 +143,27 @@ class CoreServerService(rpyc.Service):
                     gRunSequence = None
                     gRunUsername = ""
                     gServerState["runstate"]["status"] = "Idle"
-                gServerStateString = json.dumps(gServerState)
-            else:
-                gDatabase.SystemLog(LOG_INFO, sUsername, "## Not updating server state")
+
+            # Update the user-specific parts of the state
+            gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                "text":"",
+                "id":""}
+            if gRunUsername == sUsername:
+                if gServerState["runstate"]["timedescription"] == "TIME REMAINING":
+                    gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                        "text":"OVERRIDE TIMER",
+                        "id":"TIMEROVERRIDE"}
+                elif gServerState["runstate"]["timedescription"] == "TIME ELAPSED":
+                    gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                        "text":"FINISH UNIT OPERATION",
+                        "id":"TIMERCONTINUE"}
+                elif gServerState["runstate"]["waitingforuserinput"]:
+                    gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
+                        "text":"CONTINUE",
+                        "id":"USERINPUT"}
 
             # Format the server state as a JSON string
-            pResult = self.SuccessResult(gServerStateString)
+            pResult = self.SuccessResult(json.dumps(gServerState))
         except Exception, ex:
             # Log the error
             gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.GetServerState() failed: " + str(ex))

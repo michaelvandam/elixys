@@ -26,7 +26,7 @@ configuration=
 			name="appselector",
 			description="Application for selecting the rest of the applications",
 			protocol="dynamiclinklibrary",
-			validateHandshake=true,
+			validateHandshake=false,
 			default=true,
 			acceptors = 
 			{
@@ -49,21 +49,6 @@ configuration=
 			},
 			externalStreams = 
 			{
-				{
-					uri="rtsp://192.168.1.201/live.sdp",
-					localStreamName="Reactor1",
-					forceTcp=true
-				},
-				{
-					uri="rtsp://192.168.1.201/live2.sdp",
-					localStreamName="Reactor2",
-					forceTcp=true
-				},
-				{
-					uri="rtsp://192.168.1.201/live3.sdp",
-					localStreamName="Reactor3",
-					forceTcp=true
-				},
 			},
 			validateHandshake=true,
 			keyframeSeek=true,

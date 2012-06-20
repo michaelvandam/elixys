@@ -760,7 +760,7 @@ class HardwareComm():
             if bValue:
                 self.__FakePLC_pMemory[nWordOffset] = self.__FakePLC_pMemory[nWordOffset] | (bValue << nBitOffset)
             else:
-                self.__FakePLC_pMemory[nWordOffset] = self.__FakePLC_pMemory[nWordOffset] & ~(1 << nBitOffset)
+                self.__FakePLC_pMemory[nWordOffset] = int(self.__FakePLC_pMemory[nWordOffset]) & ~(1 << nBitOffset)
 
     # Set integer value by hardware name
     def __SetIntegerValue(self, sHardwareName, nValue):
@@ -1047,7 +1047,7 @@ class HardwareComm():
         # Extract the return the value
         sWord = self.__sState[((nWordOffset - self.__nMemoryLower) * 4):((nWordOffset - self.__nMemoryLower + 1) * 4)]
         nWord = int(sWord, 0x10)
-        nBit = (nWord >> nBitOffset) & 1
+        nBit = (nWord >> int(nBitOffset)) & 1
         return nBit != 0
 
     # Get integer value
@@ -1114,7 +1114,7 @@ class HardwareComm():
         nWordOffset, nBitOffset = self.__LookUpThermocontrollerDecimalOffset(sHardwareName)
         sWord = self.__sState[((nWordOffset - self.__nMemoryLower) * 4):((nWordOffset - self.__nMemoryLower + 1) * 4)]
         nWord = int(sWord, 0x10)
-        bDecimalPointFlag = bool((nWord >> nBitOffset) & 0x1)
+        bDecimalPointFlag = bool((nWord >> int(nBitOffset)) & 0x1)
 
         # Remember and return the flag
         self.__pThermocontrollerDecimalPointFlags[sHardwareName] = bDecimalPointFlag
@@ -1163,7 +1163,7 @@ class HardwareComm():
     # Get the robot status, error code and check and control words (see ACON_PCON_SPEC.PDF, page 89)
     def __GetRobotStatus(self, nAxis):
         # Get the check word and extract the flags of interest
-        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4))
+        nCheckWord = int(self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4)))
         bHomeComplete = (nCheckWord >> ROBONET_STATUS_HOMECOMPLETE) & 1
         bMoving = (nCheckWord >> ROBONET_STATUS_MOVING) & 1
         bAlarm = (nCheckWord >> ROBONET_STATUS_ALARM) & 1
@@ -1187,10 +1187,10 @@ class HardwareComm():
                 return "Init"
     def __GetRobotError(self, nAxis):
         # See if the alarm bit is set in the check word
-        nCheckWord = self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4))
+        nCheckWord = int(self.__GetIntegerValueRaw(ROBONET_CHECK + (nAxis * 4)))
         if ((nCheckWord >> ROBONET_STATUS_ALARM) & 1):
             # Yes, so get the error code
-            return (self.__GetIntegerValueRaw(ROBONET_ERROR + (nAxis * 4)) & 0x3FF)
+            return (int(self.__GetIntegerValueRaw(ROBONET_ERROR + (nAxis * 4))) & 0x3FF)
         else:
             # No, so there is no error code
             return 0
@@ -1460,7 +1460,7 @@ class HardwareComm():
     # Converts from an unsigned integer to a signed integer
     def __UnsignedToSigned(self, nUnsignedInt):
         # Is the MSB set?
-        if nUnsignedInt & (1 << 15):
+        if int(nUnsignedInt) & (1 << 15):
             # Yes, so this is a negative number.  Take the complement of the entire number
             nSignedInt = nUnsignedInt - 0xffff
         else:
