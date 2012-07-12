@@ -93,9 +93,10 @@ class UnitOperationsWrapper:
         pInstall.start()
         return pInstall
         
-    def TrapF18(self, bCyclotronFlag, nTrapTime, nTrapPressure):
+    def TrapF18(self, sReactor, bCyclotronFlag, nTrapTime, nTrapPressure):
         """Performs a Trap F18 unit operation"""
-        pParams = {"cyclotronFlag":int(bCyclotronFlag),
+        pParams = {"ReactorID":sReactor,
+                   "cyclotronFlag":int(bCyclotronFlag),
                    "trapTime":nTrapTime,
                    "trapPressure":nTrapPressure}
         pTrapF18 = TrapF18(self.__pSystemModel, pParams, username = "CLI", database = self.__pDatabase)
@@ -103,9 +104,10 @@ class UnitOperationsWrapper:
         pTrapF18.start()
         return pTrapF18
 
-    def EluteF18(self, nEluteTime, nElutePressure, sReagentReactor, nReagentPosition):
+    def EluteF18(self, sReactor, nEluteTime, nElutePressure, sReagentReactor, nReagentPosition):
         """Performs an Elute F18 unit operation"""
-        pParams = {"eluteTime":nEluteTime,
+        pParams = {"ReactorID":sReactor,
+                   "eluteTime":nEluteTime,
                    "elutePressure":nElutePressure,
                    "ReagentReactorID":sReagentReactor,
                    "ReagentPosition":nReagentPosition}

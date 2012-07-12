@@ -48,9 +48,7 @@ class ElixysCLI(BaseCLI.BaseCLI):
     def DeliverUserInput(self):
         """Deliver user input to the current unit operation"""
         # Ask the core server to deliver user input to the current unit operation
-        bSuccess = self.pCoreServer.DeliverUserInput("CLI")
-        if not bSuccess:
-            print "Failed to deliver user input"
+        self.pCoreServer.DeliverUserInput("CLI")
 
     def PauseTimer(self):
         """Pauses the currently running unit operation timer"""

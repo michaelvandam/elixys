@@ -33,7 +33,7 @@ class Initialize(UnitOperation):
       for self.ReactorID in self.ReactorTuple:
         self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
         self.setStopcockPosition(TRANSFERDEFAULT,self.ReactorID)
-      self.setStopcockPosition(F18DEFAULT,"Reactor1")
+        self.setStopcockPosition(F18DEFAULT,self.ReactorID)
       self.systemModel['Valves'].setF18LoadValveOpen(OFF)
 
       #Initialize cooling, vacuum, heaters and stir motors

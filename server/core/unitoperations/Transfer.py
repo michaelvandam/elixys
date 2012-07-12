@@ -46,7 +46,9 @@ class Transfer(UnitOperation):
   def run(self):
     try:
       self.setStatus("Moving reactors")
+      self.setStirSpeed(500)
       self.setReactorPosition(TRANSFER)
+      self.setStirSpeed(0)
       self.setReactorPosition(ADDREAGENT,self.transferReactorID)
       self.setStatus("Moving robot")
       self.setRobotPosition()

@@ -270,7 +270,7 @@ class BaseCLI(threading.Thread):
                 print "                                 'React2','Transfer'"
             elif sCommand == "help Add":
                 # Add unit operation
-                print "Adds the specified reagent to the reactor"
+                print "Adds the specified reagent to the reactor."
                 print ""
                 print "  Add(sReactor,                   Reactor where the reagent will be"
                 print "                                  added ('Reactor1','Reactor2','Reactor3')"
@@ -291,28 +291,30 @@ class BaseCLI(threading.Thread):
                 print "            nStopAtTemperature)       '1' to stop stirring at temperature"
             elif sCommand == "help Install":
                 # Install unit operation
-                print "Moves a reactor to the install position"
+                print "Moves a reactor to the install position."
                 print ""
                 print "  Install(sReactor)               'Reactor1','Reactor2','Reactor3'"
             elif sCommand == "help TrapF18":
                 # Trap F18 unit operation
-                print "Traps F18 on the cartridge attached to Reactor 1."
+                print "Traps F18 on the QMA cartridge."
                 print ""
-                print "  TrapF18(bCyclotronFlag,    1 for cyclotron push, 0 for Elixys push"
+                print "  TrapF18(sReactor,          'Reactor1','Reactor2','Reactor3'"
+                print "          bCyclotronFlag,    1 for cyclotron push, 0 for Elixys push"
                 print "          nTrapTime,         Seconds (only used if cyclotron flag is 0)"
                 print "          nTrapPressure)     PSI (only used if cyclotron flag is 0)"
             elif sCommand == "help EluteF18":
                 # Elute F18 unit operation
-                print "Elutes F18 off the cartridge attached to Reactor 1."
+                print "Elutes F18 off the QMA cartridge."
                 print ""
-                print "  EluteF18(nEluteTime,        Seconds"
+                print "  EluteF18(sReactor,          'Reactor1','Reactor2','Reactor3'"
+                print "           nEluteTime,        Seconds"
                 print "           nElutePressure,    PSI"
                 print "           nReagentReactor,   Reactor of the cassette where the reagent"
                 print "                              resides ('Reactor1','Reactor2','Reactor3')"
                 print "           nReagentPosition)  1-11"
             elif sCommand == "help Transfer":
                 # Transfer unit operation
-                print "Transfer the contents of one reactor to another through a cartridge"
+                print "Transfer the contents of one reactor to another through a cartridge."
                 print ""
                 print "  Transfer(sSourceReactor,      'Reactor1','Reactor2','Reactor3'"
                 print "           sTargetReactor,      'Reactor1','Reactor2','Reactor3'"
@@ -326,23 +328,23 @@ class BaseCLI(threading.Thread):
                 # React unit operation
                 print "Heats the reactor in the transfer position for temperature profiling."
                 print ""
-                print " TempProfile(sReactor,           'Reactor1','Reactor2','Reactor3'"
-                print "             nProfileTemp,       Celsius"
-                print "             nProfileTime,       Seconds"
-                print "             nFinalTemperature,  Celsius"
-                print "             nLiquidTCReactor,   Reactor of the liquid thermocouple"
-                print "             nLiquidTCCollet,    Collet of the liquid thermocouple"
-                print "             nStirSpeed)         Suggested 500"
+                print "  TempProfile(sReactor,           'Reactor1','Reactor2','Reactor3'"
+                print "              nProfileTemp,       Celsius"
+                print "              nProfileTime,       Seconds"
+                print "              nFinalTemperature,  Celsius"
+                print "              nLiquidTCReactor,   Reactor of the liquid thermocouple"
+                print "              nLiquidTCCollet,    Collet of the liquid thermocouple"
+                print "              nStirSpeed)         Suggested 500"
             elif sCommand == "help RampPressure":
                 # Ramp pressure unit operation
-                print "Ramps the pressure of one of the pressure regulators over a period of time"
+                print "Ramps the pressure of one of the pressure regulators over a period of time."
                 print ""
                 print "  RampPressure(nPressureRegulator,      1 or 2"
                 print "               nTargetPressure,         PSI"
                 print "               nDuration)               Seconds"
             elif sCommand == "help Mix":
                 # Mix unit operation
-                print "Mixes the contents of the given reactor"
+                print "Mixes the contents of the specified reactor."
                 print ""
                 print "  Mix(sReactor,             'Reactor1','Reactor2','Reactor3'"
                 print "      nStirSpeed,           Suggested 500"
@@ -371,6 +373,7 @@ class BaseCLI(threading.Thread):
                 print "  * SetPressureRegulator(nPressureRegulator, nPressure)"
                 print "  * MoveRobotToElute(nReactor)      MoveRobotToReagent(nReactor, nReagent)"
                 print "  * MoveRobotToDelivery(nReactor, nPosition)"
+                print "  * MoveRobotToX(nX)    * MoveRobotToY(nY)"
                 print "  * GripperUp()         * GripperDown()    * GripperOpen()   * GripperClose()"
                 print "  * GasTransferUp()     * GasTransferDown()"
                 print "  * GasTransferStart()  * GasTransferStop()"

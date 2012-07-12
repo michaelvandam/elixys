@@ -509,15 +509,19 @@ class SystemModel:
       sReactor1Stopcock2 = self.model["Reactor1"]["Stopcock2"].getPosition(False)
       sReactor1Stopcock3 = self.model["Reactor1"]["Stopcock3"].getPosition(False)
       sReactor2Stopcock1 = self.model["Reactor2"]["Stopcock1"].getPosition(False)
+      sReactor2Stopcock2 = self.model["Reactor2"]["Stopcock2"].getPosition(False)
+      sReactor2Stopcock3 = self.model["Reactor2"]["Stopcock3"].getPosition(False)
       sReactor3Stopcock1 = self.model["Reactor3"]["Stopcock1"].getPosition(False)
+      sReactor3Stopcock2 = self.model["Reactor3"]["Stopcock2"].getPosition(False)
+      sReactor3Stopcock3 = self.model["Reactor3"]["Stopcock3"].getPosition(False)
       self.__pStateObject["hardwarestate"]["reactors"][0]["transferposition"] = self.__GetTransferPosition(sReactor1Stopcock1)
       self.__pStateObject["hardwarestate"]["reactors"][0]["columnposition"] = self.__GetColumnPosition(sReactor1Stopcock2, sReactor1Stopcock3)
       self.__pStateObject["hardwarestate"]["reactors"][1]["transferposition"] = self.__GetTransferPosition(sReactor2Stopcock1)
       self.__pStateObject["hardwarestate"]["reactors"][2]["transferposition"] = self.__GetTransferPosition(sReactor3Stopcock1)
       self.__sStateString += self.__PadString("Stopcock positions (1/2/3)", STATEREACTORCOLUMN1WIDTH)
       self.__sStateString += self.__PadString(str(sReactor1Stopcock1) + "/" + str(sReactor1Stopcock2) + "/" + str(sReactor1Stopcock3), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(sReactor2Stopcock1), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(sReactor3Stopcock1), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(sReactor2Stopcock1) + "/" + str(sReactor2Stopcock2) + "/" + str(sReactor2Stopcock3), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(sReactor3Stopcock1) + "/" + str(sReactor3Stopcock2) + "/" + str(sReactor3Stopcock3), STATEREACTORCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Reactor heaters
@@ -601,8 +605,8 @@ class SystemModel:
       self.__pStateObject["hardwarestate"]["reactors"][2]["activitytime"] = ""
       self.__sStateString += self.__PadString("Radiation detector", STATEREACTORCOLUMN1WIDTH)
       self.__sStateString += self.__PadString(str(fReactor1RadiationDetector), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(fReactor1RadiationDetector), STATEREACTORCOLUMN2WIDTH)
-      self.__sStateString += self.__PadString(str(fReactor1RadiationDetector), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(fReactor2RadiationDetector), STATEREACTORCOLUMN2WIDTH)
+      self.__sStateString += self.__PadString(str(fReactor3RadiationDetector), STATEREACTORCOLUMN2WIDTH)
       self.__sStateString += "\n"
 
       # Reactor video

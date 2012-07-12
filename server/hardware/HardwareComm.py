@@ -418,6 +418,18 @@ class HardwareComm():
                 raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         self.__SetRobotPosition(self.__nReagentXAxis, 0)
         self.__SetRobotPosition(self.__nReagentYAxis, 0)
+    def MoveRobotToX(self, nX):
+        if self.__pSystemModel != None:
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
+        self.__SetRobotPosition(self.__nReagentXAxis, int(nX))
+    def MoveRobotToY(self, nY):
+        if self.__pSystemModel != None:
+            if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
+               not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
+                raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
+        self.__SetRobotPosition(self.__nReagentYAxis, int(nY))
     def GripperUp(self):
         self.__SetBinaryValue("ReagentRobot_SetGripperDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", True)
@@ -994,6 +1006,8 @@ class HardwareComm():
                 self.__GetBinaryValue("Reactor2_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(2)), self.__GetRobotError(self.__LookUpReactorAxis(2)),
                 self.__GetRobotControlWord(self.__LookUpReactorAxis(2)), self.__GetRobotCheckWord(self.__LookUpReactorAxis(2)))
             pModel["Reactor2"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor2_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor2_Stopcock1ValveCCW"))
+            pModel["Reactor2"]["Stopcock2"].updateState(self.__GetBinaryValue("Reactor2_Stopcock2ValveCW"), self.__GetBinaryValue("Reactor2_Stopcock2ValveCCW"))
+            pModel["Reactor2"]["Stopcock3"].updateState(self.__GetBinaryValue("Reactor2_Stopcock3ValveCW"), self.__GetBinaryValue("Reactor2_Stopcock3ValveCCW"))
             pModel["Reactor2"]["Stir"].updateState(self.__GetAnalogValue("Reactor2_StirMotor"))
             pModel["Reactor2"]["Thermocouple"].updateState(self.__GetHeaterOn(2, 1), self.__GetHeaterOn(2, 2), self.__GetHeaterOn(2, 3),
                 self.__GetThermocontrollerSetValue("Reactor2_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor2_TemperatureController2"),
@@ -1005,6 +1019,8 @@ class HardwareComm():
                 self.__GetBinaryValue("Reactor3_ReactorDown"), self.__GetRobotStatus(self.__LookUpReactorAxis(3)), self.__GetRobotError(self.__LookUpReactorAxis(3)),
                 self.__GetRobotControlWord(self.__LookUpReactorAxis(3)), self.__GetRobotCheckWord(self.__LookUpReactorAxis(3)))
             pModel["Reactor3"]["Stopcock1"].updateState(self.__GetBinaryValue("Reactor3_Stopcock1ValveCW"), self.__GetBinaryValue("Reactor3_Stopcock1ValveCCW"))
+            pModel["Reactor3"]["Stopcock2"].updateState(self.__GetBinaryValue("Reactor3_Stopcock2ValveCW"), self.__GetBinaryValue("Reactor3_Stopcock2ValveCCW"))
+            pModel["Reactor3"]["Stopcock3"].updateState(self.__GetBinaryValue("Reactor3_Stopcock3ValveCW"), self.__GetBinaryValue("Reactor3_Stopcock3ValveCCW"))
             pModel["Reactor3"]["Stir"].updateState(self.__GetAnalogValue("Reactor3_StirMotor"))
             pModel["Reactor3"]["Thermocouple"].updateState(self.__GetHeaterOn(3, 1), self.__GetHeaterOn(3, 2), self.__GetHeaterOn(3, 3),
                 self.__GetThermocontrollerSetValue("Reactor3_TemperatureController1"), self.__GetThermocontrollerSetValue("Reactor3_TemperatureController2"),

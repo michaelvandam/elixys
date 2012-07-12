@@ -10,6 +10,7 @@ componentType = "ELUTEF18"
 # Create a unit operation from a component object
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
   pParams = {}
+  pParams["ReactorID"] =  "Reactor" + str(pComponent["reactor"])
   pParams["eluteTime"] = pComponent["elutetime"]
   pParams["elutePressure"] = pComponent["elutepressure"]
   pParams["ReagentReactorID"] = "Reactor0"   #We'll get the actual value once we initialize the component
@@ -32,23 +33,28 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class EluteF18(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
-    expectedParams = {ELUTETIME:INT,ELUTEPRESSURE:FLOAT,REAGENTREACTORID:STR,REAGENTPOSITION:INT}
+    expectedParams = {REACTORID:STR,ELUTETIME:INT,ELUTEPRESSURE:FLOAT,REAGENTREACTORID:STR,REAGENTPOSITION:INT}
     paramError = self.validateParams(params,expectedParams)
     if self.paramsValid:
       self.setParams(params)
-      self.ReactorID='Reactor1'
     else:
       raise UnitOpError(paramError)
     self.reagentName = ""
-
-  def setDescription(self):
-    self.description = "Eluting F18 with " + urllib.unquote(str(self.reagentName)) + " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
+    self.description = "Eluting F18 off the QMA attached to reactor " + str(self.ReactorID[-1]) + \
+      " with the reagent in cassette " + str(self.ReagentReactorID[-1]) + " position " + str(self.reagentPosition) + \
+      " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
 
     #Should have parameters listed below:
+    #self.ReactorID
     #self.eluteTime
     #self.elutePressure
     #self.ReagentReactorID
-    #self.ReagentPosition
+    #self.reagentPosition
+
+  def setDescription(self):
+    self.description = "Eluting F18 off the QMA attached to reactor " + str(self.ReactorID[-1]) + " with " + \
+      urllib.unquote(str(self.reagentName)) + " for " + str(self.eluteTime) + " seconds using " + \
+      str(self.elutePressure) + " psi nitrogen.";
 
   def run(self):
     try:
@@ -74,6 +80,8 @@ class EluteF18(UnitOperation):
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent
+    if not self.component.has_key("reactorvalidation"):
+      self.component.update({"reactorvalidation":""})
     if not self.component.has_key("elutepressurevalidation"):
       self.component.update({"elutepressurevalidation":""})
     if not self.component.has_key("elutetimevalidation"):
@@ -85,6 +93,7 @@ class EluteF18(UnitOperation):
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
     self.component["note"] = ""
+    self.component["reactorvalidation"] = "type=enum-number; values=1,2,3; required=true"
     self.component["elutetimevalidation"] = "type=number; min=0; max=7200; required=true"
     self.component["elutepressurevalidation"] = "type=number; min=0; max=25"
     self.component["reagentvalidation"] = "type=enum-reagent; values=" + self.listReagents(pAvailableReagents) + "; required=true"
@@ -103,7 +112,8 @@ class EluteF18(UnitOperation):
     """Performs a quick validation on the component"""
     #Validate all fields
     bValidationError = False
-    if not self.validateComponentField(self.component["elutetime"], self.component["elutetimevalidation"]) or \
+    if not self.validateComponentField(self.component["reactor"], self.component["reactorvalidation"]) or \
+       not self.validateComponentField(self.component["elutetime"], self.component["elutetimevalidation"]) or \
        not self.validateComponentField(self.component["elutepressure"], self.component["elutepressurevalidation"]) or \
        not self.validateComponentField(self.component["reagent"], self.component["reagentvalidation"]):
       bValidationError = True
@@ -118,6 +128,7 @@ class EluteF18(UnitOperation):
     pDBComponent = self.database.GetComponent(self.username, self.component["id"])
 
     # Copy the validation fields
+    pDBComponent["reactorvalidation"] = self.component["reactorvalidation"]
     pDBComponent["elutetimevalidation"] = self.component["elutetimevalidation"]
     pDBComponent["elutepressurevalidation"] = self.component["elutepressurevalidation"]
     pDBComponent["reagentvalidation"] = self.component["reagentvalidation"]
@@ -149,6 +160,7 @@ class EluteF18(UnitOperation):
     UnitOperation.updateComponentDetails(self, pTargetComponent)
 
     # Update the fields we want to save
+    pTargetComponent["reactor"] = self.component["reactor"]
     pTargetComponent["elutetime"] = self.component["elutetime"]
     pTargetComponent["elutepressure"] = self.component["elutepressure"]
     pTargetComponent["reagent"] = self.component["reagent"]
