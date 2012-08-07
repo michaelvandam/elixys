@@ -14,7 +14,8 @@ package Elixys.Components
 	{
 		// Add a skin targets to a given width and height
 		public static function AddSkin(pClass:Class, bVisible:Boolean, pParent:Sprite,
-									   nWidth:Number = 0, nHeight:Number = 0, nIndex:int = -1):Sprite
+									   nWidth:Number = 0, nHeight:Number = 0, nIndex:int = -1,
+									   nX:Number = 0, nY:Number = 0):Sprite
 		{
 			var pSkin:CachedSprite = new CachedSprite(pClass, false, 1, nWidth, nHeight);
 			pSkin.visible = bVisible;
@@ -23,6 +24,8 @@ package Elixys.Components
 				nIndex = pParent.numChildren;
 			}
 			pParent.addChildAt(pSkin, nIndex);
+			pSkin.x = nX;
+			pSkin.y = nY;
 			return pSkin as Sprite;
 		}
 

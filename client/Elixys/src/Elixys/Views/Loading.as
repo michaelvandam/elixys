@@ -4,7 +4,7 @@ package Elixys.Views
 	import Elixys.Components.*;
 	import Elixys.Events.*;
 	import Elixys.Extended.Form;
-
+	
 	import com.danielfreeman.madcomponents.*;
 	
 	import flash.display.Sprite;
@@ -22,7 +22,16 @@ package Elixys.Views
 		public function Loading(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
-			super(screen, LOADING, attributes, row, inGroup);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = LOADING_FULLSCREEN;
+			}
+			else
+			{
+				pXML = LOADING_SMALLSCREEN;
+			}
+			super(screen, pXML, attributes, row, inGroup);
 		}
 		
 		/***
@@ -96,7 +105,7 @@ package Elixys.Views
 
 
 		// Loading view XML
-		protected static const LOADING:XML = 
+		protected static const LOADING_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND}>
 				<rows gapV="0" border="false" heights="18%,64%,9%,9%" background={Styling.APPLICATION_BACKGROUND}>
 					<frame />
@@ -108,7 +117,15 @@ package Elixys.Views
 					<progressbar id="Progress" />
 				</rows>
 			</frame>;
-		
+		protected static const LOADING_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND}>
+				<rows gapV="0" border="false" heights="40%,38%,20%" background={Styling.APPLICATION_BACKGROUND}>
+					<logo id="Logo" visible="false" />
+					<frame />
+					<progressbar id="Progress" />
+				</rows>
+			</frame>;
+
 		// References to components
 		protected var m_pLogo:Logo;
 		protected var m_pProgressBar:ProgressBar;

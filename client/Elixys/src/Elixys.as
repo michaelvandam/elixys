@@ -50,6 +50,18 @@ package
 				screen.addChild(this);
 			}
 			
+			// Check the screen size
+			if ((width < 1024) || (height < 768))
+			{
+				Styling.bSmallScreenDevice = true;
+				m_sStateURL = "/Elixys/runstate";
+			}
+			else
+			{
+				Styling.bSmallScreenDevice = false;
+				m_sStateURL = "/Elixys/state";
+			}
+			
 			// Set the stage scaling mode and crank up the frame rate
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.frameRate = 60;
@@ -256,7 +268,7 @@ package
 					// Load the system state
 					m_pState = null;
 					m_pConnectingState = null;
-					m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+					m_pHTTPConnectionPool.SendRequestA("GET", m_sStateURL, HTTPConnectionPool.MIME_JSON);
 				}
 				else
 				{
@@ -428,8 +440,8 @@ package
 		// Called when an HTTP response is received while connected to the server
 		protected function OnConnectedHTTPResponseEvent(event:HTTPResponseEvent):void
 		{
-			try
-			{
+			//try
+			//{
 				// Only handle responses when we're connected to the server
 				if (m_nConnectionState != CONNECTED)
 				{
@@ -477,11 +489,13 @@ package
 				{
 					throw new Error("Unhandled response type " + pResponse);
 				}
+			/*
 			}
 			catch (err:Error)
 			{
 				ShowLoginScreen(err.message);
 			}
+			*/
 		}
 
 		// Called when the status of the HTTP request is known while connected to the server
@@ -546,7 +560,7 @@ package
 			
 
 			// Load the system state
-			m_pHTTPConnectionPool.SendRequestA("GET", "/Elixys/state", HTTPConnectionPool.MIME_JSON);
+			m_pHTTPConnectionPool.SendRequestA("GET", m_sStateURL, HTTPConnectionPool.MIME_JSON);
 		}
 
 		// Called when a screen wants to send something to the server
@@ -873,22 +887,26 @@ package
 		/***
 		 * Member variables
 		 **/
-		
+
 		// XML page list
+		// 	iPad 2 and 3:
+		// 		<pages id="Pages" width="1024" height="768" autoResize="false"> */
+		// 	iPhone:
+		// 		<pages id="Pages" width="320" height="480" autoResize="false"> */
 		protected static const PAGES:XML = 
-			<pages id="Pages" width="1024" height="768" autoResize="false">
+			<pages id="Pages" width="320" height="480" autoResize="false">
 				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;
-		//<pages id="Pages" width="2048" height="1536" autoResize="false">
 		
 		// Pages
 		protected var m_pPages:UIPages;
-		
+
 		// Connection state
 		protected static const DISCONNECTED:uint = 0;
 		protected static const CONNECTING:uint = 1;
 		protected static const CONNECTED:uint = 2;
 		protected var m_nConnectionState:uint = DISCONNECTED;
+		protected var m_sStateURL:String;
 		
 		// Loading variables
 		protected var m_pLoading:Loading;

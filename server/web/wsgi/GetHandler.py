@@ -44,6 +44,8 @@ class GetHandler:
             return self.__HandleGetConfiguration()
         if self.__sPath == "/state":
             return self.__HandleGetState()
+        if self.__sPath == "/runstate":
+            return self.__HandleGetRunState()
         if self.__sPath.startswith("/sequence/"):
             if self.__sPath.find("/component/") != -1:
                 return self.__HandleGetComponent()
@@ -97,6 +99,34 @@ class GetHandler:
             pState.update(self.__HandleGetStateRun())
         else:
             raise Exception("Unknown screen: " + self.__pClientState["screen"])
+
+        print "### Getting state for " + self.__sRemoteUser + ":"
+        print str(pState)
+
+        # Return the state
+        return pState
+
+    # Handle GET /runstate request
+    def __HandleGetRunState(self):
+        # Get the user information and server state
+        pUser = self.__pDatabase.GetUser(self.__sRemoteUser, self.__sRemoteUser)
+        pServerState = self.__GetServerState()
+
+        # Start the state object
+        pState = {"type":"state",
+            "user":pUser,
+            "serverstate":pServerState,
+            "clientstate":copy.deepcopy(self.__pClientState),
+            "timestamp":time.time()}
+
+        # Complete with either the run or home states
+        if pServerState["runstate"]["running"]:
+            pState.update(self.__HandleGetStateRun())
+            pState["clientstate"]["screen"] = "RUN"
+        else:
+            pState.update(self.__HandleGetStateHome())
+            pState["clientstate"]["screen"] = "HOME"
+            pState["clientstate"]["prompt"]["show"] = False
 
         # Return the state
         return pState
@@ -490,7 +520,7 @@ class GetHandler:
         if self.__pServerState == None:
             self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
             if self.__pServerState == None:
-                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandle.__GetServerState() failed, assuming hardware off")
+                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandler.__GetServerState() failed, assuming hardware off")
                 self.__pServerState = {"type":"serverstate"}
                 self.__pServerState["timestamp"] = time.time()
                 self.__pServerState["runstate"] = InitialRunState()

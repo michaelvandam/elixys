@@ -25,7 +25,16 @@ package Elixys.Views
 		public function Home(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
-			super(screen, pElixys, HOME, attributes, row, inGroup);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = HOME_FULLSCREEN;
+			}
+			else
+			{
+				pXML = HOME_SMALLSCREEN;
+			}
+			super(screen, pElixys, pXML, attributes, row, inGroup);
 		}
 
 		/***
@@ -46,7 +55,10 @@ package Elixys.Views
 				// Step 2 is loading the logo
 				if (m_nChildrenLoaded == 1)
 				{
-					LoadLogo();
+					if (!Styling.bSmallScreenDevice)
+					{
+						LoadLogo();
+					}
 				}
 				
 				// Increment and return
@@ -68,11 +80,20 @@ package Elixys.Views
 			
 			// Load the navigation bar
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
-			m_pNavigationBar = new NavigationBar(pContainer, NAVIGATION, pAttributes);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = NAVIGATION_FULLSCREEN;
+			}
+			else
+			{
+				pXML = NAVIGATION_SMALLSCREEN;
+			}
+			m_pNavigationBar = new NavigationBar(pContainer, pXML, pAttributes);
 			m_pNavigationBar.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			
 			// Append the navigation bar to the XML and refresh
-			pContainer.xml.appendChild(NAVIGATION);
+			pContainer.xml.appendChild(pXML);
 			pContainer.AppendChild(m_pNavigationBar);
 			layout(attributes);
 		}
@@ -126,16 +147,27 @@ package Elixys.Views
 		 **/
 
 		// Home screen XML
-		protected static const HOME:XML = 
+		protected static const HOME_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
 				<rows gapV="0" border="false" heights="18%,64%" alignH="fill" alignV="fill">
 					<frame id="home_navigationbar_container" alignV="fill" alignH="fill" />
 					<columns id="home_logo_container" gapH="0" widths="34%,66%" alignH="fill" alignV="fill" />
 				</rows>
 			</frame>;
+		protected static const HOME_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
+				<rows gapV="0" border="false" heights="18%,82%" alignH="fill" alignV="fill">
+					<frame id="home_navigationbar_container" alignV="fill" alignH="fill" />
+					<label useEmbedded="true" alignH="centre" alignV="centre">
+						<font face="GothamMedium" color={Styling.TEXT_BLACK} size="24">
+							System is idle.
+						</font>
+					</label>
+				</rows>
+			</frame>;
 
 		// Navigation bar XML
-		protected static const NAVIGATION:XML =
+		protected static const NAVIGATION_FULLSCREEN:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)} verticaloffset="-11">
 				<navigationbaroption name="SEQUENCER" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
 						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
@@ -172,6 +204,16 @@ package Elixys.Views
 						foregroundskindisabled={getQualifiedClassName(mainNav_activeRun_disabled)}>
 					VIEW ACTIVE RUN
 				</navigationbaroption>
+				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}
+						foregroundskindown={getQualifiedClassName(mainNav_logOut_down)} 
+						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_disabled)}>
+					LOG OUT
+				</navigationbaroption>
+			</navigationbar>;
+		protected static const NAVIGATION_SMALLSCREEN:XML =
+			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(navigationBar_mc)} verticaloffset="-6">
 				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="35" fontSize="12" fontFace="GothamMedium"
 						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
 						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}

@@ -2,6 +2,7 @@
 
 # Imports
 from UnitOperation import *
+import time
 
 # Component type
 componentType = "EVAPORATE"
@@ -78,7 +79,9 @@ class Evaporate(UnitOperation):
       if self.stopAtTemperature == 0:
         self.setStirSpeed(OFF)
         self.logInfo("###Temp### Evaporate stopping after cooling")    # Temp
-      self.setStatus("Completing") 
+      self.setStatus("Completing")
+      self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
+      self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,"=",10)
       self.setStatus("Moving robot")
       self.setGasTransferValve(OFF)
       self.setVacuumSystem(OFF)
@@ -109,9 +112,9 @@ class Evaporate(UnitOperation):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
 
   def removeRobotPosition(self):
-    #Make sure we are down
-    if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
-      self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
+    #Make sure we are down - Disabled until the gas transfer down Hall effect sensor has been adjusted
+    #if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
+    #  self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
 
     #Raise the gas transfer
     self.setGasTransferValve(OFF)

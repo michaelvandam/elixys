@@ -107,7 +107,8 @@
 
 		<transparent>false</transparent>
 		<softKeyboardBehavior>none</softKeyboardBehavior>
-        <aspectRatio>landscape</aspectRatio>
+        <!-- <aspectRatio>landscape</aspectRatio> -->
+        <aspectRatio>portrait</aspectRatio>
 		<autoOrients>false</autoOrients>
         <fullScreen>true</fullScreen>
         <visible>true</visible>
@@ -277,4 +278,10 @@
 		]]></InfoAdditions>
         <requestedDisplayResolution>high</requestedDisplayResolution>
     </iPhone>
+    
+	<!--
+    <extensions>
+    	<extensionID>com.AppTouch</extensionID>
+    </extensions>
+	-->
 </application>

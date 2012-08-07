@@ -47,29 +47,47 @@ package Elixys.JSON.Components
 		}
 
 		// Static field details
-		public static var FIELDCOUNT:int = 3;
+		public static var FIELDCOUNT:int = 4;
 		public static var FIELDLABELS:Array = [
+			"REACTOR", 
 			"CYCLOTRON PUSH", 
 			"DURATION", 
 			"PRESSURE"
 		];
 		public static var FIELDTYPES:Array = [
+			Constants.TYPE_DROPDOWN, 
 			Constants.TYPE_CHECKBOX,
 			Constants.TYPE_INPUT, 
 			Constants.TYPE_INPUT
 		];
 		public static var FIELDUNITS:Array = [
 			"", 
+			"", 
 			"SECONDS", 
 			"PSI"
 		];
 		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
 			"CyclotronFlag", 
 			"TrapTime", 
 			"TrapPressure"
 		];
 		
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return super.flash_proxy::getProperty("reactor");
+		}
+		public function set Reactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("reactor", value);
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+
 		public function get CyclotronFlag():uint
 		{
 			return super.flash_proxy::getProperty("cyclotronflag");
@@ -115,7 +133,8 @@ package Elixys.JSON.Components
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sTrapF18Details:String = JSONDataObject("cyclotronflag", CyclotronFlag);
+			var sTrapF18Details:String = JSONDataObject("reactor", Reactor);
+			sTrapF18Details += JSONDataObject("cyclotronflag", CyclotronFlag);
 			sTrapF18Details += JSONDataObject("traptime", TrapTime);
 			sTrapF18Details += JSONDataObject("trappressure", TrapPressure, false);
 			return sTrapF18Details;
@@ -126,6 +145,10 @@ package Elixys.JSON.Components
 		{
 			var pComponentTrapF18A:ComponentTrapF18 = new ComponentTrapF18(null, pComponentA);
 			var pComponentTrapF18B:ComponentTrapF18 = new ComponentTrapF18(null, pComponentB);
+			if (pComponentTrapF18A.Reactor != pComponentTrapF18B.Reactor)
+			{
+				return false;
+			}
 			if (pComponentTrapF18A.CyclotronFlag != pComponentTrapF18B.CyclotronFlag)
 			{
 				return false;
@@ -144,12 +167,17 @@ package Elixys.JSON.Components
 		// Validates the transfer component
 		public override function Validate():void
 		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
 			m_sCyclotronFlagError = ValidateField(CyclotronFlag, CyclotronFlagValidation);
 			m_sTrapTimeError = ValidateField(TrapTime, TrapTimeValidation);
 			m_sTrapPressureError = ValidateField(TrapPressure, TrapPressureValidation);
 		}
 		
 		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
 		public function get CyclotronFlagError():String
 		{
 			return m_sCyclotronFlagError;
@@ -169,11 +197,13 @@ package Elixys.JSON.Components
 			"\"componenttype\":\"TRAPF18\"," +
 			"\"id\":0," +
 			"\"note\":\"\"," +
+			"\"reactor\":0," +
 			"\"cyclotronflag\":0," +
 			"\"traptime\":0," +
 			"\"trappressure\":0}";
 		
 		// Validation errors
+		protected var m_sReactorError:String = "";
 		protected var m_sCyclotronFlagError:String = "";
 		protected var m_sTrapTimeError:String = "";
 		protected var m_sTrapPressureError:String = "";

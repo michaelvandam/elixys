@@ -48,29 +48,47 @@ package Elixys.JSON.Components
 		}
 
 		// Static field details
-		public static var FIELDCOUNT:int = 3;
+		public static var FIELDCOUNT:int = 4;
 		public static var FIELDLABELS:Array = [
+			"REACTOR", 
 			"REAGENT", 
 			"DURATION", 
 			"PRESSURE"
 		];
 		public static var FIELDTYPES:Array = [
 			Constants.TYPE_DROPDOWN, 
+			Constants.TYPE_DROPDOWN, 
 			Constants.TYPE_INPUT, 
 			Constants.TYPE_INPUT
 		];
 		public static var FIELDUNITS:Array = [
 			"", 
+			"", 
 			"SECONDS", 
 			"PSI"
 		];
 		public static var FIELDPROPERTIES:Array = [
+			"Reactor", 
 			"EluteReagent", 
 			"EluteTime", 
 			"ElutePressure"
 		];
 		
 		// Data wrappers
+		public function get Reactor():uint
+		{
+			return super.flash_proxy::getProperty("reactor");
+		}
+		public function set Reactor(value:uint):void
+		{
+			super.flash_proxy::setProperty("reactor", value);
+		}
+		
+		public function get ReactorValidation():String
+		{
+			return super.flash_proxy::getProperty("reactorvalidation");
+		}
+		
 		public function get EluteTime():uint
 		{
 			return super.flash_proxy::getProperty("elutetime");
@@ -121,7 +139,8 @@ package Elixys.JSON.Components
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			var sEluteF18Details:String = JSONDataObject("elutetime", EluteTime);
+			var sEluteF18Details:String = JSONDataObject("reactor", Reactor);
+			sEluteF18Details += JSONDataObject("elutetime", EluteTime);
 			sEluteF18Details += JSONDataObject("elutepressure", ElutePressure);
 			sEluteF18Details += JSONDataObject("reagent", EluteReagent.ReagentID, false);
 			return sEluteF18Details;
@@ -132,6 +151,10 @@ package Elixys.JSON.Components
 		{
 			var pComponentEluteF18A:ComponentEluteF18 = new ComponentEluteF18(null, pComponentA);
 			var pComponentEluteF18B:ComponentEluteF18 = new ComponentEluteF18(null, pComponentB);
+			if (pComponentEluteF18A.Reactor != pComponentEluteF18B.Reactor)
+			{
+				return false;
+			}
 			if (pComponentEluteF18A.EluteTime != pComponentEluteF18B.EluteTime)
 			{
 				return false;
@@ -154,12 +177,17 @@ package Elixys.JSON.Components
 		// Validates the transfer component
 		public override function Validate():void
 		{
+			m_sReactorError = ValidateField(Reactor, ReactorValidation);
 			m_sEluteTimeError = ValidateField(EluteTime, EluteTimeValidation);
 			m_sElutePressureError = ValidateField(ElutePressure, ElutePressureValidation);
 			m_sEluteReagentError = ValidateField(EluteReagent, EluteReagentError);
 		}
 		
 		// Validation fields
+		public function get ReactorError():String
+		{
+			return m_sReactorError;
+		}
 		public function get EluteTimeError():String
 		{
 			return m_sEluteTimeError;
@@ -182,11 +210,13 @@ package Elixys.JSON.Components
 			"\"componenttype\":\"ELUTEF18\"," +
 			"\"id\":0," +
 			"\"note\":\"\"," +
+			"\"reactor\":0," +
 			"\"elutetime\":0," +
 			"\"elutepressure\":0," +
 			"\"reagent\":" + Reagent.DEFAULT + "}";
 		
 		// Validation errors
+		protected var m_sReactorError:String = "";
 		protected var m_sEluteTimeError:String = "";
 		protected var m_sElutePressureError:String = "";
 		protected var m_sEluteReagentError:String = "";

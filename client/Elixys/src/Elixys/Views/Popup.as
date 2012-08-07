@@ -30,6 +30,9 @@ package Elixys.Views
 		
 		public function Popup(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
+			// Initialize popup sizing variables
+			InitializePopupSizes();
+
 			// Call the base constructor
 			super(screen, pElixys, POPUP, attributes, row, inGroup);
 			
@@ -63,6 +66,27 @@ package Elixys.Views
 			m_pButton2.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 		}
 
+		// Initialize popup sizing variables based on the screen size
+		public static function InitializePopupSizes():void
+		{
+			if (!Styling.bSmallScreenDevice)
+			{
+				POPUP_PERCENT_WIDTH = 50;
+			}
+			else
+			{
+				POPUP_PERCENT_WIDTH = 90;
+			}
+			POPUP_BORDER = 38;
+			POPUP_GAP_BIG = 15;
+			POPUP_GAP_SMALL = 5;
+			POPUP_CURVE = 15;
+			POPUP_BUTTON_WIDTH = 110;
+			POPUP_BUTTON_HEIGHT = 35;
+			INPUT_WIDTH = 200;
+			INPUT_HEIGHT = 33;
+		}
+		
 		/***
 		 * Loading functions
 		 **/
@@ -403,14 +427,14 @@ package Elixys.Views
 		protected var m_nInputAreaOfInterestBottom:uint;
 
 		// Constants
-		public static const POPUP_PERCENT_WIDTH:int = 50;
-		public static const POPUP_BORDER:int = 38;
-		public static const POPUP_GAP_BIG:int = 15;
-		public static const POPUP_GAP_SMALL:int = 5;
-		public static const POPUP_CURVE:uint = 15;
-		public static const POPUP_BUTTON_WIDTH:int = 110;
-		public static const POPUP_BUTTON_HEIGHT:int = 35;
-		protected static const INPUT_WIDTH:int = 200;
-		protected static const INPUT_HEIGHT:int = 33;
+		public static var POPUP_PERCENT_WIDTH:int;
+		public static var POPUP_BORDER:int;
+		public static var POPUP_GAP_BIG:int;
+		public static var POPUP_GAP_SMALL:int;
+		public static var POPUP_CURVE:uint;
+		public static var POPUP_BUTTON_WIDTH:int;
+		public static var POPUP_BUTTON_HEIGHT:int;
+		protected static var INPUT_WIDTH:int;
+		protected static var INPUT_HEIGHT:int;
 	}
 }

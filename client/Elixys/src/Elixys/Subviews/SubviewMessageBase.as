@@ -18,7 +18,16 @@ package Elixys.Subviews
 										 sComponentType:String, attributes:Attributes)
 		{
 			// Call the base constructor
-			super(screen, sMode, pElixys, nButtonWidth, sComponentType, RUN_MESSAGE, attributes);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = RUN_MESSAGE_FULLSCREEN;
+			}
+			else
+			{
+				pXML = RUN_MESSAGE_SMALLSCREEN;
+			}
+			super(screen, sMode, pElixys, nButtonWidth, sComponentType, pXML, attributes);
 			
 			// Get references to the view components
 			if (sMode == Constants.RUN)
@@ -87,12 +96,21 @@ package Elixys.Subviews
 		 **/
 		
 		// Run XML
-		protected static const RUN_MESSAGE:XML = 
+		protected static const RUN_MESSAGE_FULLSCREEN:XML = 
 			<columns widths="10%,80%,10%" gapH="0" background={Styling.APPLICATION_BACKGROUND}>
 				<frame />
 				<frame>
 					<label id="prompt_runlabel" useEmbedded="true">
 						<font face="GothamMedium" color={Styling.TEXT_BLACK} size="18" />
+					</label>
+				</frame>
+			</columns>;
+		protected static const RUN_MESSAGE_SMALLSCREEN:XML = 
+			<columns widths="10%,80%,10%" gapH="0" background={Styling.APPLICATION_BACKGROUND}>
+				<frame />
+				<frame>
+					<label id="prompt_runlabel" useEmbedded="true">
+						<font face="GothamMedium" color={Styling.TEXT_BLACK} size="13" />
 					</label>
 				</frame>
 			</columns>;

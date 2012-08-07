@@ -33,6 +33,12 @@ package Elixys.Views
 		// Loads the next child component and return true or returns false if the load is complete
 		public override function LoadNext():Boolean
 		{
+			// This view isn't used on small screen devices
+			if (Styling.bSmallScreenDevice)
+			{
+				return false;
+			}
+
 			if (m_nChildrenLoaded < LOAD_STEPS)
 			{
 				// Step 1 is loading the navigation bar

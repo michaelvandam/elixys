@@ -22,7 +22,16 @@ package Elixys.Subviews
 										 sComponentType:String, attributes:Attributes)
 		{
 			// Call the base constructor
-			super(screen, sMode, pElixys, nButtonWidth, sComponentType, RUN_VIDEOMESSAGE, attributes);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = RUN_VIDEOMESSAGE_FULLSCREEN;
+			}
+			else
+			{
+				pXML = RUN_VIDEOMESSAGE_SMALLSCREEN;
+			}
+			super(screen, sMode, pElixys, nButtonWidth, sComponentType, pXML, attributes);
 			
 			// Initialize run mode
 			if (m_sMode == Constants.RUN)
@@ -35,7 +44,12 @@ package Elixys.Subviews
 				m_pRunLabel = UILabel(findViewById("prompt_runlabel"));
 				
 				// Add the video icon
-				m_pVideoIconSkin = Utils.AddSkin(videoIcon_mc, true, this, 0, 0, 0);
+				var nWidth:Number = 0;
+				if (Styling.bSmallScreenDevice)
+				{
+					nWidth = SubviewVideoBase.VIDEOICON_WIDTH_SMALLSCREEN;
+				}
+				m_pVideoIconSkin = Utils.AddSkin(videoIcon_mc, true, this, nWidth, 0, 0);
 				
 				// Find the parent sequence run
 				var pParent:DisplayObjectContainer = screen;
@@ -155,7 +169,7 @@ package Elixys.Subviews
 		 **/
 		
 		// Run XML
-		protected static const RUN_VIDEOMESSAGE:XML = 
+		protected static const RUN_VIDEOMESSAGE_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
 				<rows id="unitoperationcontainer" heights="3%,6%,5%,45%,5%,25%,11%" gapV="0">
 					<frame />
@@ -180,6 +194,37 @@ package Elixys.Subviews
 						<frame>
 							<label id="prompt_runlabel" useEmbedded="true">
 								<font face="GothamMedium" color={Styling.TEXT_BLACK} size="18" />
+							</label>
+						</frame>
+					</columns>;
+					<frame />
+				</rows>
+			</frame>;
+		protected static const RUN_VIDEOMESSAGE_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
+				<rows id="unitoperationcontainer" heights="10,10%,10,55%,10,35%,15" gapV="0">
+					<frame />
+					<columns widths="19,7%,5,93%" gapH="0">
+						<frame />
+						<frame id="videobase_iconcontainer" />
+						<frame />
+						<frame id="videobase_labelcontainer">
+							<label id="videobase_label" useEmbedded="true">
+								<font face="GothamBold" color={Styling.TEXT_BLACK} size="11" />
+							</label>
+						</frame>
+					</columns>
+					<frame />
+					<columns widths="10%,80%,10%" gapH="0">
+						<frame />
+						<frame id="videobase_videocontainer" />
+					</columns>
+					<frame />
+					<columns widths="10%,80%,10%" gapH="0">
+						<frame />
+						<frame>
+							<label id="prompt_runlabel" useEmbedded="true">
+								<font face="GothamMedium" color={Styling.TEXT_BLACK} size="12" />
 							</label>
 						</frame>
 					</columns>;

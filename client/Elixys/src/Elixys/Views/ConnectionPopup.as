@@ -19,6 +19,9 @@ package Elixys.Views
 		
 		public function ConnectionPopup(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
+			// Initialize popup sizing variables
+			Popup.InitializePopupSizes();
+
 			// Call the base constructor
 			super(screen, pElixys, CONNECTION_POPUP, attributes, row, inGroup);
 			

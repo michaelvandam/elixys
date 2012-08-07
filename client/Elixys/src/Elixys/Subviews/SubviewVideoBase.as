@@ -22,7 +22,16 @@ package Elixys.Subviews
 										 sComponentType:String, attributes:Attributes)
 		{
 			// Call the base constructor
-			super(screen, sMode, pElixys, nButtonWidth, sComponentType, RUN_VIDEO, attributes);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = RUN_VIDEO_FULLSCREEN;
+			}
+			else
+			{
+				pXML = RUN_VIDEO_SMALLSCREEN;
+			}
+			super(screen, sMode, pElixys, nButtonWidth, sComponentType, pXML, attributes);
 			
 			// Initialize run mode
 			if (m_sMode == Constants.RUN)
@@ -34,7 +43,12 @@ package Elixys.Subviews
 				m_pVideoContainer = Form(findViewById("videobase_videocontainer"));
 				
 				// Add the video icon
-				m_pVideoIconSkin = Utils.AddSkin(videoIcon_mc, true, this, 0, 0, 0);
+				var nWidth:Number = 0;
+				if (Styling.bSmallScreenDevice)
+				{
+					nWidth = VIDEOICON_WIDTH_SMALLSCREEN;
+				}
+				m_pVideoIconSkin = Utils.AddSkin(videoIcon_mc, true, this, nWidth, 0, 0);
 			
 				// Find the parent sequence run
 				var pParent:DisplayObjectContainer = screen;
@@ -101,7 +115,7 @@ package Elixys.Subviews
 				
 				// Adjust the video label position
 				m_pVideoLabel.x = 0;
-				m_pVideoLabel.y = (m_pVideoLabelContainer.attributes.height - m_pVideoLabel.textHeight) / 2;
+				m_pVideoLabel.y = ((m_pVideoLabelContainer.attributes.height - m_pVideoLabel.textHeight) / 2) - 2;
 			}
 			else
 			{
@@ -121,7 +135,7 @@ package Elixys.Subviews
 		 **/
 		
 		// Run XML
-		protected static const RUN_VIDEO:XML = 
+		protected static const RUN_VIDEO_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
 				<rows id="unitoperationcontainer" heights="3%,6%,5%,75%,11%" gapV="0">
 					<frame />
@@ -143,6 +157,31 @@ package Elixys.Subviews
 					<frame />
 				</rows>
 			</frame>;
+		protected static const RUN_VIDEO_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
+				<rows id="unitoperationcontainer" heights="10,10%,10,90%,15" gapV="0">
+					<frame />
+					<columns widths="19,7%,5,93%" gapH="0">
+						<frame />
+						<frame id="videobase_iconcontainer" />
+						<frame />
+						<frame id="videobase_labelcontainer">
+							<label id="videobase_label" useEmbedded="true">
+								<font face="GothamBold" color={Styling.TEXT_BLACK} size="11" />
+							</label>
+						</frame>
+					</columns>
+					<frame />
+					<columns widths="10%,80%,10%" gapH="0">
+						<frame />
+						<frame id="videobase_videocontainer" />
+					</columns>
+					<frame />
+				</rows>
+			</frame>;
+		
+		// Video size
+		public static const VIDEOICON_WIDTH_SMALLSCREEN:uint = 20;
 		
 		// View components
 		protected var m_pVideoIconContainer:Form;

@@ -36,5 +36,8 @@ package Elixys.Assets
 			sColor = sColor.replace("#", "0x");
 			return uint(sColor);
 		}
+		
+		// Flag that indicates if we are running on a small screen device
+		public static var bSmallScreenDevice:Boolean = false;
 	}
 }

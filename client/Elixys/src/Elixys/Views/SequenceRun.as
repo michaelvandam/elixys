@@ -38,16 +38,28 @@ package Elixys.Views
 		public function SequenceRun(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
-			super(screen, pElixys, SEQUENCERUN, attributes, row, inGroup);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = SEQUENCERUN_FULLSCREEN;
+			}
+			else
+			{
+				pXML = SEQUENCERUN_SMALLSCREEN;
+			}
+			super(screen, pElixys, pXML, attributes, row, inGroup);
 
 			// Set our mode
 			m_sMode = Constants.RUN;
-			
+
 			// Get references to the view components
 			m_pUnitOperationNumber = UILabel(findViewById("unitoperationnumber"));
 			m_pUnitOperationName = UILabel(findViewById("unitoperationname"));
 			m_pUnitOperationDescription = UILabel(findViewById("sequencerun_description"));
-			m_pUnitOperationTimeDescription = UILabel(findViewById("sequencerun_timedescription"));
+			if (!Styling.bSmallScreenDevice)
+			{
+				m_pUnitOperationTimeDescription = UILabel(findViewById("sequencerun_timedescription"));
+			}
 			m_pUnitOperationTime = UILabel(findViewById("sequencerun_time"));
 			m_pUnitOperationButton = Button(findViewById("sequencerun_button"));
 			m_pUnitOperationAlert = UILabel(findViewById("sequencerun_alert"));
@@ -77,20 +89,32 @@ package Elixys.Views
 				// Step 1 is loading the navigation bar
 				if (m_nChildrenLoaded == 0)
 				{
-					LoadNavigationBar("sequencerun_navigationbar_container", NAVIGATION);
+					var pXML:XML;
+					if (!Styling.bSmallScreenDevice)
+					{
+						pXML = NAVIGATION_FULLSCREEN;
+					}
+					else
+					{
+						pXML = NAVIGATION_SMALLSCREEN;
+					}
+					LoadNavigationBar("sequencerun_navigationbar_container", pXML);
 				}
 				
 				// Step 2 is loading the sequencer
 				if (m_nChildrenLoaded == 1)
 				{
-					LoadSequencer("sequencerun_sequencer_container", SEQUENCER);
+					if (!Styling.bSmallScreenDevice)
+					{
+						LoadSequencer("sequencerun_sequencer_container", SEQUENCER);
+					}
 				}
 
 				// Increment and return
 				++m_nChildrenLoaded;
 				return true;
 			}
-			
+
 			// Call the base function to load the base children
 			return LoadNextBase(LOAD_STEPS);
 		}
@@ -254,14 +278,24 @@ package Elixys.Views
 			// Set the time
 			if (pRunState.Time != "")
 			{
-				m_pUnitOperationTimeDescription.text = pRunState.TimeDescription;
-				m_pUnitOperationTime.text = pRunState.Time;
-				m_pUnitOperationTimeDescription.visible = true;
+				if (!Styling.bSmallScreenDevice)
+				{
+					m_pUnitOperationTimeDescription.text = pRunState.TimeDescription;
+					m_pUnitOperationTimeDescription.visible = true;
+					m_pUnitOperationTime.text = pRunState.Time;
+				}
+				else
+				{
+					m_pUnitOperationTime.text = pRunState.TimeDescription + ": " + pRunState.Time;
+				}
 				m_pUnitOperationTime.visible = true;
 			}
 			else
 			{
-				m_pUnitOperationTimeDescription.visible = false;
+				if (!Styling.bSmallScreenDevice)
+				{
+					m_pUnitOperationTimeDescription.visible = false;
+				}
 				m_pUnitOperationTime.visible = false;
 			}
 
@@ -290,7 +324,7 @@ package Elixys.Views
 			// Set the status
 			if (pRunState.Status != "")
 			{
-				m_pUnitOperationStatus.text = "STATUS:\n" + pRunState.Status;
+				m_pUnitOperationStatus.text = "STATUS: " + pRunState.Status;
 				m_pUnitOperationStatus.visible = true;
 			}
 			else
@@ -333,8 +367,8 @@ package Elixys.Views
 			{
 				pParent = m_pUnitOperationAlert.parent as Form;
 				m_pUnitOperationAlert.width = pParent.attributes.width;
-				m_pUnitOperationAlert.x = (pParent.attributes.width - m_pUnitOperationAlert.textWidth) / 2;
-				m_pUnitOperationAlert.y = (pParent.attributes.height - m_pUnitOperationAlert.textHeight) / 2;
+				m_pUnitOperationAlert.x = ((pParent.attributes.width - m_pUnitOperationAlert.textWidth) / 2) - 3;
+				m_pUnitOperationAlert.y = ((pParent.attributes.height - m_pUnitOperationAlert.textHeight) / 2) - 3;
 			}
 		}
 		
@@ -365,7 +399,7 @@ package Elixys.Views
 		 **/
 
 		// Sequence run XML
-		protected static const SEQUENCERUN:XML = 
+		protected static const SEQUENCERUN_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
 				<rows gapV="0" border="false" heights="18%,61%,21%" alignH="fill" alignV="fill">
 					<frame id="sequencerun_navigationbar_container" alignV="fill" alignH="fill" />
@@ -436,9 +470,67 @@ package Elixys.Views
 					<frame id="sequencerun_sequencer_container" alignV="fill" alignH="fill" />
 				</rows>
 			</frame>;
+		protected static const SEQUENCERUN_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND} alignH="fill" alignV="fill">
+				<rows gapV="0" border="false" heights="12%,40%,48%" alignH="fill" alignV="fill">
+					<frame id="sequencerun_navigationbar_container" alignV="fill" alignH="fill" />
+					<columns widths="8,100%,8" gapH="0" alignV="fill" alignH="fill">
+						<frame />
+						<rows heights="11%,5,13%,30%,10%,5,13%,5,13%,10%" gapV="0" alignV="fill" alignH="fill">
+							<frame id="sequence_title_container" />
+							<frame />
+							<columns gapH="0" widths="14%,86%">
+								<frame>
+									<label id="unitoperationnumber" useEmbedded="true">
+										<font face="GothamMedium" color={Styling.TEXT_WHITE} size="12" />
+									</label>
+								</frame>
+								<frame>
+									<label id="unitoperationname" useEmbedded="true">
+										<font face="GothamBold" color={Styling.TEXT_BLACK} size="12" />
+									</label>
+								</frame>
+							</columns>
+							<frame>
+								<label id="sequencerun_description" useEmbedded="true">
+									<font face="GothamMedium" color={Styling.TEXT_BLACK} size="11" />
+								</label>
+							</frame>
+							<frame>
+								<label id="sequencerun_time" useEmbedded="true">
+									<font face="GothamMedium" color={Styling.TEXT_BLACK} size="11" />
+								</label>
+							</frame>
+							<frame />
+							<frame>
+								<button id="sequencerun_button" alignH="fill" alignV="fill"
+										useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1} 
+										disabledTextColor={Styling.TEXT_GRAY1} pressedTextColor={Styling.TEXT_WHITE}
+										backgroundskinup={getQualifiedClassName(sequencer_timerBtn_up)}
+										backgroundskindown={getQualifiedClassName(sequencer_timerBtn_down)}
+										backgroundskindisabled={getQualifiedClassName(sequencer_timerBtn_up)}>
+									<font face="GothamMedium" size="12" />
+								</button>
+							</frame>
+							<frame />
+							<frame background={Styling.TEXT_BLUE1}>
+								<label id="sequencerun_alert" useEmbedded="true">
+									<font face="GothamMedium" color={Styling.TEXT_WHITE} size="11" />
+								</label>
+							</frame>
+							<frame alignV="centre">
+								<label id="sequencerun_status" useEmbedded="true">
+									<font face="GothamBold" color={Styling.TEXT_BLACK} size="11" />
+								</label>
+							</frame>
+						</rows>
+					</columns>
+					<frame id="unitoperation_container" />
+				</rows>	
+			</frame>;
 		
 		// Navigation bar XML
-		protected static const NAVIGATION:XML =
+		protected static const NAVIGATION_FULLSCREEN:XML =
 			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} rightpadding="20">
 				<navigationbaroption name="SEQUENCER" backgroundskinheightpercent="72" foregroundskinheightpercent="30"
 						fontSize="12" fontFace="GothamMedium"
@@ -476,7 +568,32 @@ package Elixys.Views
 					LOG OUT
 				</navigationbaroption>
 			</navigationbar>;
-		
+		protected static const NAVIGATION_SMALLSCREEN:XML =
+			<navigationbar alignH="fill" alignV="fill" skin={getQualifiedClassName(blueNavigationBar_mc)} verticaloffset="1"
+						backgroundx="-40" backgroundwidth="360">
+				<navigationbaroption name="PAUSERUN" foregroundskinheightpercent="30" fontSize="10" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
+						foregroundskinup={getQualifiedClassName(sequencerNav_pauseRun_up)}
+						foregroundskindown={getQualifiedClassName(sequencerNav_pauseRun_down)} 
+						foregroundskindisabled={getQualifiedClassName(sequencerNav_pauseRun_disabled)}>
+					PAUSE RUN
+				</navigationbaroption>
+				<navigationbaroption name="ABORTRUN" foregroundskinheightpercent="30" fontSize="10" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_BLUE3}
+						foregroundskinup={getQualifiedClassName(sequencerNav_abortRun_up)}
+						foregroundskindown={getQualifiedClassName(sequencerNav_abortRun_down)} 
+						foregroundskindisabled={getQualifiedClassName(sequencerNav_abortRun_disabled)}>
+					ABORT RUN
+				</navigationbaroption>
+				<navigationbaroption name="LOGOUT" foregroundskinheightpercent="30" fontSize="10" fontFace="GothamMedium"
+						enabledTextColor={Styling.TEXT_WHITE} disabledTextColor={Styling.TEXT_GRAY4}
+						foregroundskinup={getQualifiedClassName(mainNav_logOut_up)}
+						foregroundskindown={getQualifiedClassName(mainNav_logOut_down)} 
+						foregroundskindisabled={getQualifiedClassName(mainNav_logOut_disabled)}>
+					LOG OUT
+				</navigationbaroption>
+			</navigationbar>;
+
 		// Sequencer XML
 		protected static const SEQUENCER:XML =
 			<sequencer mode={Constants.RUN} alignH="fill" alignV="fill"/>;

@@ -22,6 +22,16 @@ package Elixys.Views
 		
 		public function SequenceBase(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
+			// Set constants
+			if (!Styling.bSmallScreenDevice)
+			{
+				TITLE_PADDING = TITLE_PADDING_FULLSCREEN;
+			}
+			else
+			{
+				TITLE_PADDING = TITLE_PADDING_SMALLSCREEN;
+			}
+
 			// Call the base constructor
 			super(screen, pElixys, xml, attributes, row, inGroup);
 			
@@ -91,10 +101,19 @@ package Elixys.Views
 			// Load the title bar
 			var pAttributes:Attributes = new Attributes(0, 0, pContainer.attributes.width, 
 				pContainer.attributes.height);
-			m_pTitle = new Form(pContainer, TITLE, pAttributes);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = TITLE_FULLSCREEN;
+			}
+			else
+			{
+				pXML = TITLE_SMALLSCREEN;
+			}
+			m_pTitle = new Form(pContainer, pXML, pAttributes);
 			
 			// Append the title bar to the XML and refresh
-			pContainer.xml.appendChild(TITLE);
+			pContainer.xml.appendChild(pXML);
 			pContainer.AppendChild(m_pTitle);
 			layout(attributes);
 			
@@ -228,7 +247,10 @@ package Elixys.Views
 				{
 					m_pSequenceCassettes.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
 				}
-				m_pSequencer.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
+				if (m_pSequencer != null)
+				{
+					m_pSequencer.UpdateSelectedComponent(pStateSequence.ClientState.ComponentID);
+				}
 			}
 
 			// Update the tools
@@ -266,7 +288,10 @@ package Elixys.Views
 				{
 					(m_pSubviews[nIndex] as SubviewBase).UpdateSequence(pSequence);
 				}
-				m_pSequencer.UpdateSequence(pSequence);
+				if (m_pSequencer != null)
+				{
+					m_pSequencer.UpdateSequence(pSequence);
+				}
 			}
 			
 			// Update the title label
@@ -350,10 +375,16 @@ package Elixys.Views
 		 **/
 		
 		// Title XML
-		protected static const TITLE:XML =
+		protected static const TITLE_FULLSCREEN:XML =
 			<frame>
 				<label id="titlelabel" useEmbedded="true">
 					<font face="GothamBold" color={Styling.TEXT_WHITE} size="18"/>
+				</label>
+			</frame>;
+		protected static const TITLE_SMALLSCREEN:XML =
+			<frame>
+				<label id="titlelabel" useEmbedded="true">
+					<font face="GothamBold" color={Styling.TEXT_WHITE} size="12"/>
 				</label>
 			</frame>;
 
@@ -411,6 +442,8 @@ package Elixys.Views
 
 		// Constants
 		protected static var TITLE_TEXT_OFFSET:int = 8;
-		protected static var TITLE_PADDING:int = 20;
+		protected static var TITLE_PADDING:int;
+		protected static var TITLE_PADDING_FULLSCREEN:int = 20;
+		protected static var TITLE_PADDING_SMALLSCREEN:int = 0;
 	}
 }

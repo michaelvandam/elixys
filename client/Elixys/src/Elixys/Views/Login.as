@@ -31,7 +31,16 @@ package Elixys.Views
 		public function Login(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
 			// Call the base constructor
-			super(screen, pElixys, LOGIN_SCREEN, attributes, row, inGroup);
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = LOGIN_FULLSCREEN;
+			}
+			else
+			{
+				pXML = LOGIN_SMALLSCREEN;
+			}
+			super(screen, pElixys, pXML, attributes, row, inGroup);
 		}
 
 		/***
@@ -89,12 +98,21 @@ package Elixys.Views
 			var pContainer:Form = Form(findViewById("login_container"));
 			
 			// Load the login
+			var pXML:XML;
+			if (!Styling.bSmallScreenDevice)
+			{
+				pXML = LOGIN_FULL;
+			}
+			else
+			{
+				pXML = LOGIN_SMALL;
+			}
 			var pAttributes:Attributes = new Attributes(0, 0, width, height);
-			m_pLogin = new Screen(pContainer, m_pElixys, LOGIN, pAttributes);
+			m_pLogin = new Screen(pContainer, m_pElixys, pXML, pAttributes);
 			m_pLogin.visible = false;
 			
 			// Append the logo to the XML and refresh
-			pContainer.xml.appendChild(LOGIN);
+			pContainer.xml.appendChild(pXML);
 			pContainer.AppendChild(m_pLogin);
 			layout(attributes);
 			
@@ -252,12 +270,17 @@ package Elixys.Views
 		 **/
 		
 		// Login screen XML
-		protected static const LOGIN_SCREEN:XML = 
+		protected static const LOGIN_FULLSCREEN:XML = 
 			<frame background={Styling.APPLICATION_BACKGROUND} alignV="fill" alignH="fill">
 				<rows gapV="0" border="false" heights="18%,64%" background={Styling.APPLICATION_BACKGROUND}>
 					<frame />
 					<columns id="login_container" gapH="0" widths="34%,66%" />
 				</rows>
+			</frame>;
+		protected static const LOGIN_SMALLSCREEN:XML = 
+			<frame background={Styling.APPLICATION_BACKGROUND} alignV="fill" alignH="fill">
+				<rows id="login_container" gapV="0" border="false" heights="40%,50%" 
+						background={Styling.APPLICATION_BACKGROUND} />
 			</frame>;
 
 		// Logo XML
@@ -265,7 +288,7 @@ package Elixys.Views
 			<logo id="Logo" />;
 		
 		// Login component XML
-		protected static const LOGIN:XML =
+		protected static const LOGIN_FULL:XML =
 			<rows gapV="5" heights="35%,7%,9%,7%,9%,5%,9%,19%">
 				<frame />
 				<label useEmbedded="true" alignH="left" alignV="bottom">
@@ -323,7 +346,62 @@ package Elixys.Views
 					</label>
 				</columns>
 			</rows>;
-
+		protected static const LOGIN_SMALL:XML =
+			<columns gapH="0" widths="10%,80%,10%">
+				<frame />
+				<rows gapV="5" heights="4%,18%,3%,4%,18%,3%,4%,18%,2%,16%,3%,4%">
+					<label useEmbedded="true" alignH="left" alignV="bottom">
+						<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
+							SERVER
+						</font>
+					</label>
+					<frame alignH="fill" alignV="fill">
+						<input id="server" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="24" skin={getQualifiedClassName(login_serverFieldBackground_mc)} 
+							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+			`		</frame>
+					<frame />
+					<label useEmbedded="true" alignH="left" alignV="bottom">
+						<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
+							USERNAME
+						</font>
+					</label>
+					<frame alignH="fill">
+						<input id="username" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="24" skin={getQualifiedClassName(login_loginFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
+					</frame>
+					<frame />
+					<label useEmbedded="true" alignH="left" alignV="bottom">
+						<font face="GothamBold" color={Styling.TEXT_GRAY7} size="12">
+							PASSWORD
+						</font>
+					</label>
+					<frame alignH="fill">
+						<input id="password" alignH="fill" color={Styling.TEXT_GRAY1}
+							size="24" skin={getQualifiedClassName(login_loginFieldBackground_mc)}
+							returnKeyLabel={Constants.RETURNKEYLABEL_GO} displayAsPassword="true" />
+					</frame>
+					<frame />
+					<frame alignH="fill" alignV="fill">
+						<button id="login" alignH="fill" alignV="fill" enabled="false" 
+								useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
+								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
+								backgroundskinup={getQualifiedClassName(login_signIn_up)}
+								backgroundskindown={getQualifiedClassName(login_signIn_down)}
+								backgroundskindisabled={getQualifiedClassName(login_signIn_disabled)}>
+							<font face="GothamMedium" size="14">
+								Sign in
+							</font>
+						</button>
+					</frame>
+					<frame />
+					<label id="login_error_text" useEmbedded="true" alignH="fill" alignV="top">
+						<font face="GothamMedium" color={Styling.TEXT_RED} size="14" />
+					</label>
+				</rows>
+			</columns>;
+		
 		// Screen components
 		protected var m_pLogo:Logo;
 		protected var m_pLogin:Form;

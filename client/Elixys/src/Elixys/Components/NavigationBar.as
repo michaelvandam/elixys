@@ -28,6 +28,16 @@ package Elixys.Components
 		public function NavigationBar(screen:Sprite, xml:XML, attributes:Attributes = null, row:Boolean = false,
 			inGroup:Boolean = false)
 		{
+			// Set the button gap
+			if (!Styling.bSmallScreenDevice)
+			{
+				BUTTON_GAP = BUTTON_GAP_FULLSCREEN;
+			}
+			else
+			{
+				BUTTON_GAP = BUTTON_GAP_SMALLSCREEN;
+			}
+
 			// Process the navigation bar options
 			var pButtonText:Array = new Array();
 			var pForegroundSkinUpName:Array = new Array();
@@ -106,8 +116,17 @@ package Elixys.Components
 			// Set the background skin
 			if (xml.@skin.length() > 0)
 			{
+				var nBackgroundX:Number = 0, nBackgroundWidth:Number = nWidth;
+				if (xml.@backgroundx.length() > 0)
+				{
+					nBackgroundX = xml.@backgroundx[0];
+				}
+				if (xml.@backgroundwidth.length() > 0)
+				{
+					nBackgroundWidth = xml.@backgroundwidth[0];
+				}
 				m_pMainSkin = Utils.AddSkin(getDefinitionByName(xml.@skin[0]) as Class, true, this,
-					nWidth, nHeight);
+					nBackgroundWidth, nHeight, -1, nBackgroundX, 0);
 			}
 
 			// Create the visual components
@@ -606,7 +625,9 @@ package Elixys.Components
 		protected var m_nVerticalOffset:int = 0;
 		
 		// Gap between the foreground skin and text
-		protected static var BUTTON_GAP:int = 8;
+		protected static var BUTTON_GAP:int;
+		protected static const BUTTON_GAP_FULLSCREEN:int = 8;
+		protected static const BUTTON_GAP_SMALLSCREEN:int = 3;
 		
 		// Padding to the right of our buttons
 		protected var m_nRightPadding:int = 0;

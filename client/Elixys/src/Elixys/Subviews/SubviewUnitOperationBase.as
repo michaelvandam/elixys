@@ -48,6 +48,16 @@ package Elixys.Subviews
 		public function SubviewUnitOperationBase(screen:Sprite, sMode:String, pElixys:Elixys, nButtonWidth:Number,
 										sComponentType:String, pRunXML:XML, attributes:Attributes)
 		{
+			// Set the padding
+			if (!Styling.bSmallScreenDevice)
+			{
+				UNITOPERATIONHEADERPADDING = UNITOPERATIONHEADERPADDING_FULLSCREEN;
+			}
+			else
+			{
+				UNITOPERATIONHEADERPADDING = UNITOPERATIONHEADERPADDING_SMALLSCREEN;
+			}
+
 			// Call the base constructor
 			super(screen, sMode, pElixys, sComponentType, nButtonWidth, VIEW_UNITOPERATION, 
 				EDIT_UNITOPERATION, pRunXML, attributes);
@@ -1173,7 +1183,9 @@ package Elixys.Subviews
 		protected var m_sDropdownErrorMessage:String;
 
 		// Constants
-		public static const UNITOPERATIONHEADERPADDING:int = 5;
+		public static var UNITOPERATIONHEADERPADDING:int;
+		public static const UNITOPERATIONHEADERPADDING_FULLSCREEN:int = 5;
+		public static const UNITOPERATIONHEADERPADDING_SMALLSCREEN:int = 2;
 		public static const HORIZONTALGAP:int = 10;
 		protected static const RIGHTGAP:int = 20;
 		public static const ROWCONTENTHEIGHT:int = 65;

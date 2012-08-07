@@ -1,17 +1,19 @@
 package Elixys.Components
 {
+	import com.AppTouch.Video;
+	
 	import fl.core.UIComponent;
 	
 	import flash.display.DisplayObject;
 	import flash.display.Sprite;
+	import flash.events.Event;
 	import flash.events.NetStatusEvent;
 	import flash.events.TimerEvent;
-	import flash.media.Video;
 	import flash.net.NetConnection;
 	import flash.net.NetStream;
 	import flash.utils.Timer;
 	
-	// This tab bar component is an extension of the UI component class
+	// This video component is an extension of the UI component class
 	public class Video extends UIComponent
 	{
 		/***
@@ -32,6 +34,11 @@ package Elixys.Components
 			m_pWatchTimer.addEventListener(TimerEvent.TIMER, OnWatchTimer);
 			m_pHiddenTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnHiddenTimerComplete);
 			m_pReconnectTimer.addEventListener(TimerEvent.TIMER_COMPLETE, OnReconnectTimerComplete);
+			
+			// Grab the appropriate implementation
+			m_pVideo = new com.AppTouch.Video();
+			m_pVideo.SetParent(this);
+			m_pVideo.addEventListener(VideoBase.VIDEO_RESIZE, OnVideoResize);
 			
 			// Start the watch timer
 			m_pWatchTimer.start();
@@ -67,38 +74,13 @@ package Elixys.Components
 			DropVideoConnection();
 
 			// Create the video and net connection
-			m_pVideo = new flash.media.Video();
-			addChild(m_pVideo);
-			m_pNetConnection = new NetConnection();
-			m_pNetConnection.addEventListener(NetStatusEvent.NET_STATUS, OnNetConnection);
-			m_pNetConnection.client = {};
-			m_pNetConnection.client.onBWDone = OnBWDone;
-			m_pNetConnection.connect(m_sFullURL);
-					
-			// Bandwidth handler
-			function OnBWDone():void
-			{
-			}
+			m_pVideo.CreateVideoConnection(m_sFullURL, m_sStreamName);
 		}
 	
 		// Drops any existing video connection to the server
 		protected function DropVideoConnection():void
 		{
-			if (m_pVideo != null)
-			{
-				removeChild(m_pVideo);
-			}
-			if (m_pNetConnection != null)
-			{
-				m_pNetConnection.close();
-			}
-			if (m_pNetStream != null)
-			{
-				m_pNetStream.close();
-			}
-			m_pVideo = null;
-			m_pNetConnection = null;
-			m_pNetStream = null;
+			m_pVideo.DropVideoConnection();
 			m_bPlaying = false;
 		}
 				
@@ -120,22 +102,30 @@ package Elixys.Components
 		protected function UpdateVideoDimensions():void
 		{
 			// Resize and center the video
-			var fUIComponent:Number = (parent.width * parent.scaleX) / (parent.height * parent.scaleY);
-			var fVideo:Number = m_nVideoWidth / m_nVideoHeight;
-			if (fUIComponent < fVideo)
+			var fUIComponent:Number = width / height;
+			var nCurrentWidth:uint = m_pVideo.GetVideoWidth();
+			var nCurrentHeight:uint = m_pVideo.GetVideoHeight();
+			if (nCurrentWidth && nCurrentHeight)
 			{
-				m_pVideo.height = parent.width * (parent.scaleX / parent.scaleY) / fVideo;
-				m_pVideo.width = parent.width;
-				m_pVideo.x = 0;
-				m_pVideo.y = (parent.height - m_pVideo.height) / 2;
+				var nNewWidth:uint = 0, nNewHeight:uint = 0;
+				var nX:int = 0, nY:int = 0;
+				var fVideo:Number = nCurrentWidth / nCurrentHeight;
+				if (fUIComponent < fVideo)
+				{
+					nNewHeight = nCurrentHeight * (width / nCurrentWidth);
+					nNewWidth = width;
+					nY = (height - nNewHeight) / 2;
+				}
+				else if (fUIComponent > fVideo)
+				{
+					nNewWidth = nCurrentWidth * (height / nCurrentHeight);
+					nNewHeight = height;
+					nX = (width - nNewWidth) / 2;
+				}
+				m_pVideo.SetVideoPosition(nX, nY, nNewWidth, nNewHeight);
 			}
-			else if (fUIComponent > fVideo)
-			{
-				m_pVideo.width = parent.height * (parent.scaleY / parent.scaleX) * fVideo;
-				m_pVideo.height = parent.height;
-				m_pVideo.x = (parent.width - m_pVideo.width) / 2;
-				m_pVideo.y = 0;
-			}
+				
+			// Remember our new size
 			m_nWidth = width;
 			m_nHeight = height;
 		}
@@ -143,58 +133,6 @@ package Elixys.Components
 		/***
 		 * Message handlers
 		 **/
-	
-		protected function OnNetConnection(event:NetStatusEvent):void
-		{
-			if (event.info.code == "NetConnection.Connect.Success")
-			{
-				// Create the net stream and play the stream
-				m_pNetStream = new NetStream(m_pNetConnection);
-				m_pNetStream.client = {};
-				m_pNetStream.client.onMetaData = OnMetaData;
-				m_pNetStream.bufferTime = 0;
-				m_pNetStream.play(m_sStreamName);
-				m_pVideo.attachNetStream(m_pNetStream);
-				m_pNetStream.addEventListener(NetStatusEvent.NET_STATUS, OnNetStatus);
-
-				// Metadata handler
-				function OnMetaData(item:Object):void
-				{
-					// Update the video dimensions
-					m_nVideoWidth = item.width;
-					m_nVideoHeight = item.height;
-					UpdateVideoDimensions();
-				}
-			}
-			else if((event.info.code == "NetConnection.Connect.Closed") || (event.info.code == "NetConnection.Connect.Failed"))
-			{
-				// Make sure we're visible
-				if (m_bVisible)
-				{
-					// We can't call connect from here so set the reconnect timer
-					m_pReconnectTimer.start();
-				}
-			}
-		}
-	
-		protected function OnNetStatus(event:NetStatusEvent):void
-		{
-			// Set the playing flag
-			if (event.info.code == "NetStream.Play.Start")
-			{
-				m_bPlaying = true;
-			}
-			if (event.info.code == "NetStream.Play.Stop")
-			{
-				m_bPlaying = false;
-			}
-	
-			// Check for the end of the video stream (stop followed by empty)
-			if (!m_bPlaying && (event.info.code == "NetStream.Buffer.Empty"))
-			{
-				m_pNetStream.play(m_sStreamName);
-			}
-		}
 	
 		// Called when the watch timer triggers
 		protected function OnWatchTimer(event:TimerEvent):void
@@ -206,15 +144,17 @@ package Elixys.Components
 			}
 			
 			// Check if we've been shown or hidden
+			/*
 			var bVisible:Boolean = CheckVisibility(this);
 			if (bVisible && !m_bVisible)
 			{
 				// We've been shown.  Stop the hidden timer if it's running
+				trace("A");
 				if (m_pHiddenTimer.running)
 				{
 					m_pHiddenTimer.stop();
 				}
-						
+
 				// Recreate the video connection if we're not playing
 				if (!m_bPlaying)
 				{
@@ -223,11 +163,13 @@ package Elixys.Components
 			}
 			else if (!bVisible && m_bVisible)
 			{
+				trace("B");
 				// We've been hidden.  Start the hidden timer
 				m_pHiddenTimer.start();
 			}
 			m_bVisible = bVisible;
-	
+			*/
+			
 			// Check if our dimensions have changed
 			if ((m_nWidth != width) || (m_nHeight != height))
 			{
@@ -249,20 +191,25 @@ package Elixys.Components
 			CreateVideoConnection();
 		}
 	
+		// Called when the video size updates
+		protected function OnVideoResize(event:Event):void
+		{
+			// Resize the video
+			UpdateVideoDimensions();
+		}
+
 		/***
 		 * Member variables
 		 **/
-				
+		
+		// Video implementation
+		protected var m_pVideo:com.AppTouch.Video;
+
 		// Stream URLs and name
 		protected var m_sRootURL:String = "";
 		protected var m_sFullURL:String = "";
 		protected var m_sStreamName:String = "";
 	
-		// Video, net connection and stream
-		protected var m_pVideo:flash.media.Video;
-		protected var m_pNetConnection:NetConnection;
-		protected var m_pNetStream:NetStream;
-		
 		// Source video dimensions
 		protected var m_nVideoWidth:int = 0;
 		protected var m_nVideoHeight:int = 0;
