@@ -71,6 +71,13 @@ class ElixysCLI(BaseCLI.BaseCLI):
         if not bSuccess:
             print "Failed to stop timer"
 
+    def Broadcast(self, sMessage):
+        """Broadcasts a message"""
+        # Ask the core server to broadcast the message
+        bSuccess = self.pCoreServer.CLIBroadcast("CLI", sMessage)
+        if not bSuccess:
+            print "Failed to broadcast message"
+
     def Run(self):
         """Main CLI function"""
         # Run loop

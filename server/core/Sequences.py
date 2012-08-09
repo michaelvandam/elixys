@@ -4,16 +4,17 @@ Elixys Sequences
 """
 
 import sys
+sys.path.append("/opt/elixys/core")
 sys.path.append("/opt/elixys/core/unitoperations")
 import UnitOperations
 import Cassette
 import Summary
-import CoreServer
 from threading import Thread 
 import time
 from DBComm import *
 import json
 from SequenceManager import SequenceManager
+from Messaging import Messaging
 
 class Sequence(Thread):
   def __init__(self, sRemoteUser, nSourceSequenceID, pSystemModel):
@@ -41,6 +42,9 @@ class Sequence(Thread):
     self.database = DBComm()
     self.database.Connect()
     self.sequenceManager = SequenceManager(self.database)
+
+    # Create messaging object
+    self.messaging = Messaging(self.username, self.database)
 
     # Fetch the sequence from the database and make sure it is valid
     self.sourceSequence = self.sequenceManager.GetSequence(self.username, self.sourceSequenceID)
@@ -111,7 +115,10 @@ class Sequence(Thread):
     self.userSourceIDs = True
     try:
       # Main sequence run loop
-      self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Run started")
+      sMessage = "Run of sequence \"" + self.sourceSequence["metadata"]["name"] + "\" started."
+      self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, sMessage)
+      self.messaging.broadcastMessage(sMessage)
+
       nComponentCount = len(self.sourceSequence["components"])
       nCurrentComponent = 0
       while nCurrentComponent < nComponentCount:
@@ -217,6 +224,9 @@ class Sequence(Thread):
     pSummaryUnitOperation.setDaemon(True)
     pSummaryUnitOperation.start()
     self.systemModel.SetUnitOperation(pSummaryUnitOperation)
+
+    # Broadcast the summary unit operation message
+    self.messaging.broadcastMessage(pSummaryComponent["message"])
 
     # Wait until the operation completes
     while pSummaryUnitOperation.is_alive():

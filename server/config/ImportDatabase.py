@@ -53,7 +53,8 @@ if __name__ == '__main__':
     print "Creating users..."
     for pUser in pDatabase["users"]:
         print "  " + pUser["username"]
-        pDBComm.CreateUser("System", pUser["username"], pUser["passwordhash"], pUser["firstname"], pUser["lastname"], pUser["role"])
+        pDBComm.CreateUser("System", pUser["username"], pUser["passwordhash"], pUser["firstname"], pUser["lastname"], \
+            pUser["role"], pUser["email"], pUser["phone"], pUser["messagelevel"])
 
     # Import the saved sequences
     print "Importing saved sequences..."

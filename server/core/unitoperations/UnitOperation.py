@@ -67,6 +67,7 @@ SUMMARYFLAG = "summaryFlag"
 SUMMARYMESSAGE = "summaryMessage"
 EXTERNALREAGENTNAME = "externalReagentName"
 STOPATTEMPERATURE = "stopAtTemperature"
+BROADCASTFLAG = 'broadcastFlag'
 
 STR   = 'str'
 INT   = 'int'
@@ -208,6 +209,8 @@ class UnitOperation(threading.Thread):
         self.externalReagentName = params['externalReagentName']
       elif paramname=="stopAtTemperature":
         self.stopAtTemperature = params['stopAtTemperature']
+      elif paramname=="broadcastFlag":
+        self.broadcastFlag = params['broadcastFlag']
       else:
         raise Exception("Unknown parameter: " + paramname)
 

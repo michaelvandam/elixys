@@ -71,6 +71,9 @@ class DBComm:
       pDisallowedPosition["cassette"] = int(pPositionComponents[0])
       pDisallowedPosition["reagent"] = int(pPositionComponents[1])
       self.__pConfiguration["disallowedreagentpositions"].append(pDisallowedPosition)
+    self.__pConfiguration["twilioaccount"] = self.__pSystemConfiguration["TwilioAccount"]
+    self.__pConfiguration["twiliotoken"] = self.__pSystemConfiguration["TwilioToken"]
+    self.__pConfiguration["twiliofromphone"] = self.__pSystemConfiguration["TwilioFromPhone"]
 
     # Interpret the log level
     self.__nLogLevel = ParseLogLevel(self.__pSystemConfiguration["LogLevel"])
@@ -281,9 +284,10 @@ class DBComm:
         raise Exception("User " + sUsername + " not found")
     return pPasswordHash[0][0]
 
-  def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName):
+  def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel):
     """Creates a new user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateUser(%s, %s, %s, %s, %s)" % (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateUser(%s, %s, %s, %s, %s, %s, %s, %i)" % (sUsername, sPasswordHash, sFirstName, sLastName, \
+        sRoleName, sEmail, sPhone, nMessageLevel))
     pDefaultClientState = {"type":"clientstate",
       "screen":"HOME",
       "sequenceid":0,
@@ -308,12 +312,14 @@ class DBComm:
       "runhistorysort":{"type":"sort",
         "column":"date&time",
         "mode":"down"}}
-    return self.__CallStoredProcedure("CreateUser", (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName, json.dumps(pDefaultClientState)))
+    return self.__CallStoredProcedure("CreateUser", (sUsername, sPasswordHash, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel, \
+        json.dumps(pDefaultClientState)))
 
-  def UpdateUser(self, sCurrentUsername, sUsername, sFirstName, sLastName, sRoleName):
+  def UpdateUser(self, sCurrentUsername, sUsername, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel):
     """Updates an existing user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateUser(%s, %s, %s, %s)" % (sUsername, sFirstName, sLastName, sRoleName))
-    return self.__CallStoredProcedure("UpdateUser", (sUsername, sFirstName, sLastName, sRoleName))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateUser(%s, %s, %s, %s, %s, %s, %i)" % (sUsername, sFirstName, sLastName, sRoleName, \
+      sEmail, sPhone, nMessageLevel))
+    return self.__CallStoredProcedure("UpdateUser", (sUsername, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel))
 
   def UpdateUserPassword(self, sCurrentUsername, sUsername, sPasswordHash):
     """Updates an existing user's password"""
@@ -712,6 +718,9 @@ class DBComm:
     pUser["firstname"] = pUserRaw[1]
     pUser["lastname"] = pUserRaw[2]
     pUser["accesslevel"] = pUserRaw[3]
+    pUser["email"] = pUserRaw[4]
+    pUser["phone"] = pUserRaw[5]
+    pUser["messagelevel"] = pUserRaw[6]
     return pUser
 
   def __GetComponent(self, nComponentID):

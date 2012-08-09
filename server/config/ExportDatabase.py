@@ -56,7 +56,10 @@ if __name__ == '__main__':
             "firstname":pUser["firstname"],
             "lastname":pUser["lastname"],
             "passwordhash":sPasswordHash,
-            "role":pUser["accesslevel"]})
+            "role":pUser["accesslevel"],
+            "email":pUser["email"],
+            "phone":pUser["phone"],
+            "messagelevel":pUser["messagelevel"]})
 
     # Add the saved sequences
     print "Exporting saved sequences..."

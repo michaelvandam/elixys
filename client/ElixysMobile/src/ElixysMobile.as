@@ -10,10 +10,10 @@ package
 	import flash.display.StageScaleMode;
 	
 	// iPad 1 and 2
-	//[SWF(width="1024",height="768")]
+	[SWF(width="1024",height="768")]
 	
 	// iPhone
-	[SWF(width="320",height="480")]
+	//[SWF(width="320",height="480")]
 
 	public class ElixysMobile extends Elixys
 	{

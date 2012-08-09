@@ -242,6 +242,9 @@ CREATE PROCEDURE GetAllUsers()
         DECLARE lFirstName VARCHAR(20);
         DECLARE lLastName VARCHAR(20);
         DECLARE lRoleName VARCHAR(30);
+        DECLARE lEmail VARCHAR(30);
+        DECLARE lPhone VARCHAR(20);
+        DECLARE lMessageLevel INT UNSIGNED;
         DECLARE lNoMoreRows BOOLEAN default FALSE;
         DECLARE lUsersCursor CURSOR FOR SELECT UserID FROM Users;
 
@@ -256,7 +259,10 @@ CREATE PROCEDURE GetAllUsers()
             Username VARCHAR(30) NOT NULL,
             FirstName VARCHAR(20) NOT NULL,
             LastName VARCHAR(20) NOT NULL,
-            RoleName VARCHAR(30) NOT NULL
+            RoleName VARCHAR(30) NOT NULL,
+            Email VARCHAR(30) NOT NULL,
+            Phone VARCHAR(20) NOT NULL,
+            MessageLevel INT UNSIGNED NOT NULL
         ) ENGINE=Memory COMMENT="Temporary users";
 
         -- Open the cursor
@@ -274,8 +280,8 @@ CREATE PROCEDURE GetAllUsers()
             END IF;
 
             -- Call the internal function and insert into the temporary table
-            CALL Internal_GetUserByID(lUserID, lUsername, lFirstName, lLastName, lRoleName);
-            INSERT INTO tmp_Users VALUES (lUsername, lFirstName, lLastName, lRoleName);
+            CALL Internal_GetUserByID(lUserID, lUsername, lFirstName, lLastName, lRoleName, lEmail, lPhone, lMessageLevel);
+            INSERT INTO tmp_Users VALUES (lUsername, lFirstName, lLastName, lRoleName, lEmail, lPhone, lMessageLevel);
         END LOOP UsersLoop;
 
         -- Return the result set
@@ -292,6 +298,9 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
         DECLARE lLastName VARCHAR(20);
         DECLARE lRoleID INT UNSIGNED;
         DECLARE lRoleName VARCHAR(30);
+        DECLARE lEmail VARCHAR(30);
+        DECLARE lPhone VARCHAR(20);
+        DECLARE lMessageLevel INT UNSIGNED;
 
         -- Create a temporary table to hold the user data
         DROP TEMPORARY TABLE IF EXISTS tmp_User;
@@ -300,14 +309,17 @@ CREATE PROCEDURE GetUser(IN iUsername VARCHAR(30))
             Username VARCHAR(30) NOT NULL,
             FirstName VARCHAR(20) NOT NULL,
             LastName VARCHAR(20) NOT NULL,
-            RoleName VARCHAR(30) NOT NULL
+            RoleName VARCHAR(30) NOT NULL,
+            Email VARCHAR(30) NOT NULL,
+            Phone VARCHAR(20) NOT NULL,
+            MessageLevel INT UNSIGNED NOT NULL
         ) ENGINE=Memory COMMENT="Temporary user data";
 
         -- Call the internal function
-        CALL Internal_GetUserByName(iUsername, lFirstName, lLastName, lRoleName);
+        CALL Internal_GetUserByName(iUsername, lFirstName, lLastName, lRoleName, lEmail, lPhone, lMessageLevel);
 
         -- Fill and return the user result set
-        INSERT INTO tmp_User VALUES (iUsername, lFirstName, lLastName, lRoleName);
+        INSERT INTO tmp_User VALUES (iUsername, lFirstName, lLastName, lRoleName, lEmail, lPhone, lMessageLevel);
         SELECT * FROM tmp_User WHERE Username = iUsername;
     END //
 
@@ -327,11 +339,14 @@ CREATE PROCEDURE GetUserPasswordHash(IN iUsername VARCHAR(30))
  *   IN FirstName - User's first name
  *   IN LastName - User's last name
  *   IN RoleName - User's role
+ *   IN Email - User's email
+ *   IN Phont - User's phone
+ *   IN MessageLevel - Message log level (0-2)
  *   IN ClientState - Initial user state
  */
 DROP PROCEDURE IF EXISTS CreateUser;
 CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), 
-      IN iRoleName VARCHAR(20), IN iClientState VARCHAR(2048))
+      IN iRoleName VARCHAR(20), IN iEmail VARCHAR(30), IN iPhone VARCHAR(20), IN iMessageLevel INT UNSIGNED, IN iClientState VARCHAR(2048))
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -339,7 +354,7 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
         CALL Internal_GetRoleID(iRoleName, lRoleID);
 
         -- Create the user
-        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, iClientState);
+        INSERT INTO Users VALUES (NULL, iUsername, iPassword, iFirstName, iLastName, lRoleID, iEmail, iPhone, iMessageLevel, iClientState);
     END //
 
 /* Updates an existing user:
@@ -347,9 +362,13 @@ CREATE PROCEDURE CreateUser(IN iUsername VARCHAR(30), IN iPassword VARCHAR(30), 
  *   IN FirstName - User's first name
  *   IN LastName - User's last name
  *   IN RoleName - User's role
+ *   IN Email - User's email
+ *   IN Phont - User's phone
+ *   IN MessageLevel - Message log level (0-2)
  */
 DROP PROCEDURE IF EXISTS UpdateUser;
-CREATE PROCEDURE UpdateUser(IN iUsername VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), IN iRoleName VARCHAR(20))
+CREATE PROCEDURE UpdateUser(IN iUsername VARCHAR(30), IN iFirstName VARCHAR(20), IN iLastName VARCHAR(20), IN iRoleName VARCHAR(20), 
+      IN iEmail VARCHAR(30), IN iPhone VARCHAR(20), IN iMessageLevel INT UNSIGNED)
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -357,7 +376,8 @@ CREATE PROCEDURE UpdateUser(IN iUsername VARCHAR(30), IN iFirstName VARCHAR(20),
         CALL Internal_GetRoleID(iRoleName, lRoleID);
 
         -- Update the user
-        UPDATE Users SET FirstName = iFirstName, LastName = iLastName, RoleID = lRoleID WHERE Username = iUsername;
+        UPDATE Users SET FirstName = iFirstName, LastName = iLastName, RoleID = lRoleID, Email = iEmail, Phone = iPhone, 
+          MessageLevel = iMessageLevel WHERE Username = iUsername;
     END //
  
 /* Updates a user's password:
@@ -887,7 +907,8 @@ CREATE PROCEDURE DeleteComponent(IN iComponentID INT UNSIGNED)
 
 /* Gets information about the specified user */
 DROP PROCEDURE IF EXISTS Internal_GetUserByName;
-CREATE PROCEDURE Internal_GetUserByName(IN iUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30))
+CREATE PROCEDURE Internal_GetUserByName(IN iUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30),
+      OUT oEmail VARCHAR(30), OUT oPhone VARCHAR(20), OUT oMessageLevel INT UNSIGNED)
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -895,6 +916,9 @@ CREATE PROCEDURE Internal_GetUserByName(IN iUsername VARCHAR(30), OUT oFirstName
         SELECT FirstName FROM Users WHERE Username = iUsername INTO oFirstName;
         SELECT LastName FROM Users WHERE Username = iUsername INTO oLastName;
         SELECT RoleID FROM Users WHERE Username = iUsername INTO lRoleID;
+        SELECT Email FROM Users WHERE Username = iUsername INTO oEmail;
+        SELECT Phone FROM Users WHERE Username = iUsername INTO oPhone;
+        SELECT MessageLevel FROM Users WHERE Username = iUsername INTO oMessageLevel;
 
         -- Look up the role name
         SELECT RoleName FROM Roles WHERE RoleID = lRoleID INTO oRoleName;
@@ -902,7 +926,8 @@ CREATE PROCEDURE Internal_GetUserByName(IN iUsername VARCHAR(30), OUT oFirstName
 
 /* Gets information about the specified user */
 DROP PROCEDURE IF EXISTS Internal_GetUserByID;
-CREATE PROCEDURE Internal_GetUserByID(IN iUserID INT UNSIGNED, OUT oUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30))
+CREATE PROCEDURE Internal_GetUserByID(IN iUserID INT UNSIGNED, OUT oUsername VARCHAR(30), OUT oFirstName VARCHAR(20), OUT oLastName VARCHAR(20), OUT oRoleName VARCHAR(30),
+      OUT oEmail VARCHAR(30), OUT oPhone VARCHAR(20), OUT oMessageLevel INT UNSIGNED)
     BEGIN
         DECLARE lRoleID INT UNSIGNED;
 
@@ -911,6 +936,9 @@ CREATE PROCEDURE Internal_GetUserByID(IN iUserID INT UNSIGNED, OUT oUsername VAR
         SELECT FirstName FROM Users WHERE UserID = iUserID INTO oFirstName;
         SELECT LastName FROM Users WHERE UserID = iUserID INTO oLastName;
         SELECT RoleID FROM Users WHERE UserID = iUserID INTO lRoleID;
+        SELECT Email FROM Users WHERE UserID = iUserID INTO oEmail;
+        SELECT Phone FROM Users WHERE UserID = iUserID INTO oPhone;
+        SELECT MessageLevel FROM Users WHERE UserID = iUserID INTO oMessageLevel;
 
         -- Look up the role name
         SELECT RoleName FROM Roles WHERE RoleID = lRoleID INTO oRoleName;

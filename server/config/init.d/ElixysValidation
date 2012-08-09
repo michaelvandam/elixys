@@ -58,7 +58,7 @@ case "$1" in
 	RETVAL=$?
 	;;
   *)
-	echo $"Usage: service ElixysFakePLC {start|stop|restart|status}"
+	echo $"Usage: service ElixysValidation {start|stop|restart|status}"
 	RETVAL=2
 esac
 

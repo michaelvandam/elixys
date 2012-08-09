@@ -47,18 +47,22 @@ package Elixys.JSON.Components
 		}
 
 		// Static field details
-		public static var FIELDCOUNT:int = 1;
+		public static var FIELDCOUNT:int = 2;
 		public static var FIELDLABELS:Array = [
-			"COMMENT"
+			"COMMENT",
+			"BROADCAST"
 		];
 		public static var FIELDTYPES:Array = [
-			Constants.TYPE_MULTILINEINPUT
+			Constants.TYPE_MULTILINEINPUT,
+			Constants.TYPE_CHECKBOX
 		];
 		public static var FIELDUNITS:Array = [
+			"",
 			""
 		];
 		public static var FIELDPROPERTIES:Array = [
-			"Comment"
+			"Comment",
+			"BroadcastFlag"
 		];
 
 		// Data wrappers
@@ -76,10 +80,26 @@ package Elixys.JSON.Components
 			return super.flash_proxy::getProperty("commentvalidation");
 		}
 
+		public function get BroadcastFlag():uint
+		{
+			return super.flash_proxy::getProperty("broadcastflag");
+		}
+		public function set BroadcastFlag(value:uint):void
+		{
+			super.flash_proxy::setProperty("broadcastflag", value);
+		}
+		
+		public function get BroadcastFlagValidation():String
+		{
+			return super.flash_proxy::getProperty("broadcastflagvalidation");
+		}
+
 		// Format additional component details
 		protected override function FormatComponentDetails():String
 		{
-			return JSONDataString("comment", escape(Comment), false);
+			var sComponentDetails:String = JSONDataString("comment", escape(Comment));
+			sComponentDetails += JSONDataObject("broadcastflag", BroadcastFlag, false);
+			return sComponentDetails;
 		}
 		
 		// Component comparison function.  Returns true if the components are equal, false otherwise.
@@ -91,6 +111,10 @@ package Elixys.JSON.Components
 			{
 				return false;
 			}
+			if (pComponentCommentA.BroadcastFlag != pComponentCommentB.BroadcastFlag)
+			{
+				return false;
+			}
 			return true;
 		}
 
@@ -98,12 +122,17 @@ package Elixys.JSON.Components
 		public override function Validate():void
 		{
 			m_sCommentError = ValidateField(Comment, CommentValidation);
+			m_sBroadcastFlagError = ValidateField(BroadcastFlag, BroadcastFlagValidation);
 		}
 		
 		// Validation fields
 		public function get CommentError():String
 		{
 			return m_sCommentError;
+		}
+		public function get BroadcastFlagError():String
+		{
+			return m_sBroadcastFlagError;
 		}
 
 		// Default format
@@ -112,9 +141,11 @@ package Elixys.JSON.Components
 			"\"componenttype\":\"COMMENT\"," +
 			"\"id\":0," +
 			"\"note\":\"\"," +
-			"\"comment\":\"\"}";
+			"\"comment\":\"\"," +
+			"\"broadcastflag\":0}";
 		
 		// Validation errors
 		protected var m_sCommentError:String = "";
+		protected var m_sBroadcastFlagError:String = "";
 	}
 }

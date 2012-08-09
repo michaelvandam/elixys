@@ -97,3 +97,6 @@ class CoreServerProxy():
     def CLIGetState(self, sUsername):
         return self.__pCoreServer.root.CLIGetState(sUsername)
 
+    def CLIBroadcast(self, sUsername, sMessage):
+        return self.__pCoreServer.root.CLIBroadcast(sUsername, sMessage)
+

@@ -2,6 +2,10 @@
 
 # Imports
 from UnitOperation import *
+import sys
+sys.path.append("/opt/elixys/core")
+from Messaging import Messaging
+import urllib
 
 # Component type
 componentType = "COMMENT"
@@ -10,6 +14,7 @@ componentType = "COMMENT"
 def createFromComponent(nSequenceID, pComponent, username, database, systemModel):
   pParams = {}
   pParams["userMessage"] = pComponent["comment"]
+  pParams["broadcastFlag"] = pComponent["broadcastflag"]
   pComment = Comment(systemModel, pParams, username, nSequenceID, pComponent["id"], database)
   pComment.initializeComponent(pComponent)
   return pComment
@@ -22,28 +27,41 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class Comment(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
+    expectedParams = {USERMESSAGE:STR,BROADCASTFLAG:INT}
+    paramError = self.validateParams(params,expectedParams)
+    if self.paramsValid:
+      self.setParams(params)
+    else:
+      raise UnitOpError(paramError)
 
   def run(self):
-    #This unit operation doesn't do anything when run
-    pass
+    if self.broadcastFlag:
+      pMessaging = Messaging(self.username, self.database)
+      pMessaging.broadcastMessage(urllib.unquote(self.userMessage))
   
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent
     if not self.component.has_key("commentvalidation"):
       self.component.update({"commentvalidation":""})
+    if not self.component.has_key("broadcastflagvalidation"):
+      self.component.update({"broadcastflagvalidation":""})
     self.addComponentDetails()
 
   def validateFull(self, pAvailableReagents):
     """Performs a full validation on the component"""
     self.component["note"] = ""
     self.component["commentvalidation"] = "type=string"
+    self.component["broadcastflagvalidation"] = "type=enum-number; values=0,1; required=true"
     return self.validateQuick()
 
   def validateQuick(self):
     """Performs a quick validation on the component"""
     #Validate all fields
-    bValidationError = not self.validateComponentField(self.component["comment"], self.component["commentvalidation"])
+    bValidationError = False
+    if not self.validateComponentField(self.component["comment"], self.component["commentvalidation"]) or \
+       not self.validateComponentField(self.component["broadcastflag"], self.component["broadcastflagvalidation"]):
+      bValidationError = True
 
     # Set the validation error field
     self.component.update({"validationerror":bValidationError})
@@ -56,6 +74,7 @@ class Comment(UnitOperation):
 
     # Copy the validation fields
     pDBComponent["commentvalidation"] = self.component["commentvalidation"]
+    pDBComponent["broadcastflagvalidation"] = self.component["broadcastflagvalidation"]
     pDBComponent["validationerror"] = self.component["validationerror"]
 
     # Save the component
@@ -68,3 +87,5 @@ class Comment(UnitOperation):
 
     # Update the field we want to save
     pTargetComponent["comment"] = self.component["comment"]
+    pTargetComponent["broadcastflag"] = self.component["broadcastflag"]
+

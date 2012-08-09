@@ -12,6 +12,7 @@ import sys
 sys.path.append("/opt/elixys/database")
 sys.path.append("/opt/elixys/hardware")
 sys.path.append("/opt/elixys/cli")
+sys.path.append("/opt/elixys/core")
 sys.path.append("/opt/elixys/core/unitoperations")
 from DBComm import *
 from HardwareComm import HardwareComm
@@ -27,6 +28,7 @@ from daemon import daemon
 import signal
 import logging
 import TimedLock
+from Messaging import Messaging
 
 # Initialize global variables
 gCoreServerLock = None
@@ -39,6 +41,7 @@ gSystemModel = None
 gUnitOperationsWrapper = None
 gRunUsername = ""
 gRunSequence = None
+gMessaging = None
 
 # Handler that redirects rpyc error messages to the database
 class RpycLogHandler(logging.StreamHandler):
@@ -639,6 +642,34 @@ class CoreServerService(rpyc.Service):
             gCoreServerLock.Release()
         return sResult
 
+    def exposed_CLIBroadcast(self, sUsername, sMessage):
+        """Gets the state for the CLI"""
+        global gCoreServerLock
+        global gDatabase
+        global gMessaging
+        bLocked = False
+        try:
+            # Acquire the lock
+            gCoreServerLock.Acquire(1)
+            bLocked = True
+            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIBroadcast(" + sMessage + ")")
+
+            # Create the messaging object and broadcast the message
+            if gMessaging == None:
+                gMessaging = Messaging("System", gDatabase)
+            gMessaging.broadcastMessage(sMessage)
+            bResult = True
+        except Exception as ex:
+            # Log the error
+            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLIBroadcast() failed: " + str(ex))
+            gMessaging = None
+            bResult = False
+
+        # Release the lock and return
+        if bLocked:
+            gCoreServerLock.Release()
+        return bResult
+
     def SuccessResult(self, pReturn = None):
         """Formats a successful result"""
         if pReturn != None:
@@ -712,6 +743,7 @@ class CoreServerDaemon(daemon):
         global gSystemModel
         global gUnitOperationsWrapper
         global gCoreServerDaemon
+        global gMessaging
         pCoreServerThread = None
         while not self.bTerminate:
             try:
@@ -737,7 +769,7 @@ class CoreServerDaemon(daemon):
                 pLogHandler = RpycLogHandler()
                 pLogger.addHandler(pLogHandler)
                 pCoreServer = ThreadedServer(CoreServerService, port = 18862, logger = pLogger)
-    
+
                 # Start the core server thread
                 pCoreServerThread = CoreServerThread()
                 pCoreServerThread.SetParameters(pCoreServer)

@@ -143,6 +143,10 @@ class BaseCLI(threading.Thread):
         """Deliver user input to the current unit operation"""
         raise Exception("Subclasses must implement DeliverUserInput")
 
+    def Broadcast(self, sMessage):
+        """Broadcasts a message"""
+        raise Exception("Subclasses must implement Broadcast")
+
     def OpenScript(self, sCommand):
         """Opens the script"""
         # Strip off the trailing parenthesis from the command and split into the function name and script parameter
@@ -217,6 +221,7 @@ class BaseCLI(threading.Thread):
                 print "  help hardware          Lists available hardware functions"
                 print "  help script            List available script functions"
                 print "  help send              Display a brief description of the PLC command format" 
+                print "  help broadcast         Broadcasts a message" 
                 print "  get state              Displays the current state of the system"
                 print "  send [command]         Send the raw command to the PLC"
             elif sCommand == "help unit operations":
@@ -413,6 +418,10 @@ class BaseCLI(threading.Thread):
                 print "    0701 - Controller Read Clock"
                 print "  Example:"
                 print "    0101800000020001"
+            elif sCommand == "help broadcast":
+                # Broadcasts a message
+                print "Broadcasts a message to all users based on their individual messaging options:"
+                print "  broadcast [message]"
             elif sCommand == "get state":
                 # Dump the state to standard out
                 print self.GetState()
@@ -436,6 +445,9 @@ class BaseCLI(threading.Thread):
                 # Restart the script
                 bRunningScript = True
                 nScriptStep = 0
+            elif sCommand.startswith("broadcast "):
+                # Broadcast the message
+                self.Broadcast(str(sCommand[10:]))
             else:
                 # Are we running a script and executing the next command?
                 if bRunningScript and (sCommand == ""):

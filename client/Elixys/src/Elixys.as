@@ -51,15 +51,20 @@ package
 			}
 			
 			// Check the screen size
-			if ((width < 1024) || (height < 768))
+			var pXML:XML = PAGES;
+			if ((stage.nativeWindow.width < 1024) || (stage.nativeWindow.height < 768))
 			{
 				Styling.bSmallScreenDevice = true;
 				m_sStateURL = "/Elixys/runstate";
+				pXML.@width = 320;
+				pXML.@height = 480;
 			}
 			else
 			{
 				Styling.bSmallScreenDevice = false;
 				m_sStateURL = "/Elixys/state";
+				pXML.@width = 1024;
+				pXML.@height = 768;
 			}
 			
 			// Set the stage scaling mode and crank up the frame rate
@@ -69,7 +74,7 @@ package
 			
 			// Create the initial UI
 			ElixysUI.Initialize();
-			UI.create(this, PAGES, stage.stageWidth, stage.stageHeight);
+			UI.create(this, pXML, stage.stageWidth, stage.stageHeight);
 			m_pPages = UIPages(UI.findViewById("Pages"));
 			
 			// Get a reference to the loading view and inform it that creation is complete
@@ -889,12 +894,8 @@ package
 		 **/
 
 		// XML page list
-		// 	iPad 2 and 3:
-		// 		<pages id="Pages" width="1024" height="768" autoResize="false"> */
-		// 	iPhone:
-		// 		<pages id="Pages" width="320" height="480" autoResize="false"> */
 		protected static const PAGES:XML = 
-			<pages id="Pages" width="320" height="480" autoResize="false">
+			<pages id="Pages" autoResize="false">
 				<loading id="Loading" border="false" alignV="fill" alignH="fill"/>
 			</pages>;
 		

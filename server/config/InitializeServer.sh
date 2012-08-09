@@ -68,6 +68,13 @@ python setup.py install
 cd ..
 rm -rf MySQL-python-1.2.3*
 
+# Install Twilio for Python
+git clone --depth=1 https://github.com/twilio/twilio-python.git
+cd twilio-python
+python setup.py install
+cd ..
+rm -rf twilio-python
+
 # Add the services scripts
 cp elixys/server/config/init.d/ElixysCoreServer /etc/init.d
 cp elixys/server/config/init.d/ElixysFakePLC /etc/init.d

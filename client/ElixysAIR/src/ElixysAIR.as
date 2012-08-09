@@ -5,10 +5,10 @@ package
 	import flash.display.Sprite;
 
 	// iPad 1 and 2
-	//[SWF(width="1024",height="768")]
+	[SWF(width="1024",height="768")]
 	
 	// iPhone
-	[SWF(width="320",height="480")]
+	//[SWF(width="320",height="480")]
 	
 	// This is the root of the Elixys application
 	public class ElixysAIR extends Elixys
