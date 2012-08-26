@@ -30,8 +30,8 @@ package Elixys.Views
 		
 		public function Popup(screen:Sprite, pElixys:Elixys, xml:XML, attributes:Attributes = null, row:Boolean = false, inGroup:Boolean = false)
 		{
-			// Initialize popup sizing variables
-			InitializePopupSizes();
+			// Initialize popup width
+			InitializePopupWidth();
 
 			// Call the base constructor
 			super(screen, pElixys, POPUP, attributes, row, inGroup);
@@ -65,9 +65,9 @@ package Elixys.Views
 			m_pButton1.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			m_pButton2.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 		}
-
-		// Initialize popup sizing variables based on the screen size
-		public static function InitializePopupSizes():void
+		
+		// Initialize popup width
+		public static function InitializePopupWidth():void
 		{
 			if (!Styling.bSmallScreenDevice)
 			{
@@ -77,16 +77,8 @@ package Elixys.Views
 			{
 				POPUP_PERCENT_WIDTH = 90;
 			}
-			POPUP_BORDER = 38;
-			POPUP_GAP_BIG = 15;
-			POPUP_GAP_SMALL = 5;
-			POPUP_CURVE = 15;
-			POPUP_BUTTON_WIDTH = 110;
-			POPUP_BUTTON_HEIGHT = 35;
-			INPUT_WIDTH = 200;
-			INPUT_HEIGHT = 33;
 		}
-		
+
 		/***
 		 * Loading functions
 		 **/
@@ -223,7 +215,7 @@ package Elixys.Views
 				m_pInput1.parent.y = nOffset;
 				m_pInput1.parent.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
 				m_pInput1.fixwidth = m_pInput1.parent.width;
-				nOffset += m_pInput1.height;
+				nOffset += INPUT_HEIGHT;
 			}
 			nOffset += POPUP_GAP_BIG;
 			
@@ -249,7 +241,7 @@ package Elixys.Views
 				m_pInput2.parent.y = nOffset;
 				m_pInput2.parent.width = m_pContents.attributes.width - (POPUP_BORDER * 2);
 				m_pInput2.fixwidth = m_pInput2.parent.width;
-				nOffset += m_pInput2.height;
+				nOffset += INPUT_HEIGHT;
 			}
 			
 			// Adjust the buttons
@@ -371,20 +363,20 @@ package Elixys.Views
 					<label id="popup_text1" useEmbedded="true" width="350" includeInLayout="false">
 						<font face="GothamMedium" size="18" />
 					</label>
-					<frame width={INPUT_WIDTH} height={INPUT_HEIGHT}>
-						<input id="popup_input1" color={Styling.TEXT_GRAY1} width={INPUT_WIDTH} height={INPUT_HEIGHT}
+					<frame width={Popup.INPUT_WIDTH} height={Popup.INPUT_HEIGHT}>
+						<input id="popup_input1" color={Styling.TEXT_GRAY1}
 							size="24" skin={getQualifiedClassName(login_serverFieldBackground_mc)}
 							returnKeyLabel={Constants.RETURNKEYLABEL_NEXT} />
 					</frame>
 					<label id="popup_text2" useEmbedded="true" width="350">
 						<font face="GothamMedium" size="18" />
 					</label>
-					<frame width={INPUT_WIDTH} height={INPUT_HEIGHT}>
-						<input id="popup_input2" color={Styling.TEXT_GRAY1} width={INPUT_WIDTH} height={INPUT_HEIGHT}
+					<frame width={Popup.INPUT_WIDTH} height={Popup.INPUT_HEIGHT}>
+						<input id="popup_input2" color={Styling.TEXT_GRAY1}
 							size="24" skin={getQualifiedClassName(login_serverFieldBackground_mc)}
 							returnKeyLabel={Constants.RETURNKEYLABEL_GO} />
 					</frame>
-					<frame id="popup_button1_container" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT}>
+					<frame id="popup_button1_container" width={Popup.POPUP_BUTTON_WIDTH} height={Popup.POPUP_BUTTON_HEIGHT}>
 						<button id="popup_button1" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
 								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
 								backgroundskinup={getQualifiedClassName(popupBtn_up)}
@@ -392,7 +384,7 @@ package Elixys.Views
 							<font face="GothamMedium" size="14" />
 						</button>
 					</frame>
-					<frame id="popup_button2_container" width={POPUP_BUTTON_WIDTH} height={POPUP_BUTTON_HEIGHT}>
+					<frame id="popup_button2_container" width={Popup.POPUP_BUTTON_WIDTH} height={Popup.POPUP_BUTTON_HEIGHT}>
 						<button id="popup_button2" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
 								disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
 								backgroundskinup={getQualifiedClassName(popupBtn_up)}
@@ -428,13 +420,13 @@ package Elixys.Views
 
 		// Constants
 		public static var POPUP_PERCENT_WIDTH:int;
-		public static var POPUP_BORDER:int;
-		public static var POPUP_GAP_BIG:int;
-		public static var POPUP_GAP_SMALL:int;
-		public static var POPUP_CURVE:uint;
-		public static var POPUP_BUTTON_WIDTH:int;
-		public static var POPUP_BUTTON_HEIGHT:int;
-		protected static var INPUT_WIDTH:int;
-		protected static var INPUT_HEIGHT:int;
+		public static const POPUP_BORDER:int = 15;
+		public static const POPUP_GAP_BIG:int = 15;
+		public static const POPUP_GAP_SMALL:int = 5;
+		public static const POPUP_CURVE:uint = 15;
+		public static const POPUP_BUTTON_WIDTH:int = 110;
+		public static const POPUP_BUTTON_HEIGHT:int = 35;
+		protected static const INPUT_WIDTH:int = 200;
+		protected static const INPUT_HEIGHT:int = 33;
 	}
 }

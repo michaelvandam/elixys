@@ -52,7 +52,7 @@ package
 			
 			// Check the screen size
 			var pXML:XML = PAGES;
-			if ((stage.nativeWindow.width < 1024) || (stage.nativeWindow.height < 768))
+			if ((stage.fullScreenWidth < 1024) || (stage.fullScreenHeight < 768))
 			{
 				Styling.bSmallScreenDevice = true;
 				m_sStateURL = "/Elixys/runstate";
