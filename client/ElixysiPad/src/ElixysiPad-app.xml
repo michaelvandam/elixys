@@ -107,8 +107,8 @@
 
 		<transparent>false</transparent>
 		<softKeyboardBehavior>none</softKeyboardBehavior>
-        <!-- <aspectRatio>landscape</aspectRatio> -->
-        <aspectRatio>portrait</aspectRatio>
+        <!-- iPad 1 and 2 -->
+		<aspectRatio>landscape</aspectRatio>
 		<autoOrients>false</autoOrients>
         <fullScreen>true</fullScreen>
         <visible>true</visible>
