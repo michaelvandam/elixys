@@ -49,6 +49,21 @@ configuration=
 			},
 			externalStreams = 
 			{
+                {
+                    uri="rtsp://192.168.1.201/live.sdp",
+                    localStreamName="Reactor1",
+                    forceTcp=true
+                },
+                {
+                    uri="rtsp://192.168.1.201/live2.sdp",
+                    localStreamName="Reactor2",
+                    forceTcp=true
+                },
+                {
+                    uri="rtsp://192.168.1.201/live3.sdp",
+                    localStreamName="Reactor3",
+                    forceTcp=true
+                },
 			},
 			validateHandshake=true,
 			keyframeSeek=true,
@@ -58,4 +73,3 @@ configuration=
 		--#INSERTION_MARKER# DO NOT REMOVE THIS. USED BY appscaffold SCRIPT.
 	}
 }
-
