@@ -4,7 +4,7 @@
 from UnitOperation import *
 
 class TempProfile(UnitOperation):
-  def __init__(self,systemModel,params):
+  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel)
     expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,LIQUIDTCREACTOR:INT,LIQUIDTCCOLLET:INT,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)

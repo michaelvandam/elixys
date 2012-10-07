@@ -53,7 +53,7 @@
   <buildCSSFiles/>
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
   <buildTargets>
-    <buildTarget buildTargetName="com.adobe.flexide.multiplatform.ios.platform" iosSettingsVersion="1" provisioningFile="C:/AppleDevCerts/Elixys_MarkiPhone.mobileprovision" releasePackageType="ipa-ad-hoc">
+    <buildTarget buildTargetName="com.adobe.flexide.multiplatform.ios.platform" iosSettingsVersion="1" provisioningFile="C:/AppleDevCerts/Elixys_PatrickiPhone.mobileprovision" releasePackageType="ipa-ad-hoc">
       <multiPlatformSettings enabled="true" includePlatformLibs="false" platformID="com.adobe.flexide.multiplatform.ios.platform" version="2"/>
       <airSettings airCertificatePath="C:/AppleDevCerts/ShaneDeveloperCertificates.p12" airTimestamp="true" version="1">
         <airExcludes/>

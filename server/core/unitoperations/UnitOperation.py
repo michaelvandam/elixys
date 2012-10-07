@@ -722,9 +722,10 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
     if coolingDelay > 0:
       self.startTimer(coolingDelay)
-      self.waitForTimer()
+      coolingDelay = self.waitForTimer()
     self.updateStatusWhileWaiting = None
     self.setCoolingSystem(OFF)
+    return coolingDelay
     
   def setStirSpeed(self,stirSpeed):
     if (stirSpeed == OFF): #Fix issue with False being misinterpreted.

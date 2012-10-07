@@ -24,6 +24,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
 # Updates a component object based on a unit operation
 def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
   pComponent["duration"] = int(pUnitOperation.reactTime)
+  pComponent["coolingdelay"] = int(pUnitOperation.coolingDelay)
 
 # React class
 class React(UnitOperation):
@@ -72,7 +73,7 @@ class React(UnitOperation):
       self.reactTime = self.waitForTimer()
       self.setStatus("Cooling")
       self.setHeater(OFF)
-      self.setCool(self.coolingDelay)
+      self.coolingDelay = self.setCool(self.coolingDelay)
       if self.stopAtTemperature == 0:
         self.setStirSpeed(OFF)
         self.logInfo("###Temp### React stopping after cooling")    # Temp

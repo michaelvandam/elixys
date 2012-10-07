@@ -1032,11 +1032,14 @@ package Elixys.Subviews
 		// Shows the dropdown list
 		protected function ShowDropdownList():void
 		{
-			m_pSequenceEdit.ShowDropdownList(m_pDropdownValues, m_sDropdownCurrentValue, m_pUnitOperationContainer, 
-				this, m_pDropdownData, m_sDropdownErrorMessage);
-			m_pUnitOperationScroll.visible = false;
-			m_pUnitOperationFadeTop.visible = false;
-			m_pUnitOperationFadeBottom.visible = false;
+			if (m_pSequenceEdit)
+			{
+				m_pSequenceEdit.ShowDropdownList(m_pDropdownValues, m_sDropdownCurrentValue, m_pUnitOperationContainer, 
+					this, m_pDropdownData, m_sDropdownErrorMessage);
+				m_pUnitOperationScroll.visible = false;
+				m_pUnitOperationFadeTop.visible = false;
+				m_pUnitOperationFadeBottom.visible = false;
+			}
 		}
 		
 		// Hides the dropdown list

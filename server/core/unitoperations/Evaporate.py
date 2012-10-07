@@ -23,7 +23,7 @@ def createFromComponent(nSequenceID, pComponent, username, database, systemModel
 
 # Updates a component object based on a unit operation
 def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, database, systemModel):
-  pComponent["duration"] = int(pUnitOperation.reactTime)
+  pComponent["duration"] = int(pUnitOperation.evapTime)
 
 # Evaporate class
 class Evaporate(UnitOperation):

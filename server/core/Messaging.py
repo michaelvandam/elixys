@@ -3,7 +3,7 @@
 Elixys Messaging
 """
 
-from twilio.rest import TwilioRestClient
+from MessagingThread import *
 
 # Messaging class
 class Messaging:
@@ -12,11 +12,6 @@ class Messaging:
     # Initialize messaging variables
     self.username = sUsername
     self.database = pDatabase
-    self.systemConfiguration = pDatabase.GetConfiguration(sUsername)
-    self.twilioClient = None
-    if (self.systemConfiguration["twilioaccount"] != "") and (self.systemConfiguration["twiliotoken"] != "") and \
-        (self.systemConfiguration["twiliofromphone"] != ""):
-      self.twilioClient = TwilioRestClient(self.systemConfiguration["twilioaccount"], self.systemConfiguration["twiliotoken"])
 
     # Create list of emails and phone numbers
     pAllUsers = pDatabase.GetAllUsers(sUsername)
@@ -30,17 +25,9 @@ class Messaging:
 
   def broadcastMessage(self, sMessage):
     """Broadcasts a message"""
-    for sEmail in self.emailAddresses:
-      self.emailMessage(sMessage, sEmail)
-    for sPhone in self.phoneNumbers:
-      self.smsMessage(sMessage, sPhone)
-
-  def emailMessage(self, sMessage, sEmailAddress):
-    """Sends an email to the address"""
-    print "### Send email to: " + sEmailAddress
-
-  def smsMessage(self, sMessage, sPhoneNumber):
-    """Send an SMS to the phone number"""
-    if self.twilioClient != None:
-      self.twilioClient.sms.messages.create(to=sPhoneNumber, from_=self.systemConfiguration["twiliofromphone"], body=sMessage)
+    pMessagingThread = MessagingThread()
+    pMessagingThread.SetParameters(self.username, self.database, self.emailAddresses, \
+      self.phoneNumbers, sMessage)
+    pMessagingThread.setDaemon(True)
+    pMessagingThread.start()
 
