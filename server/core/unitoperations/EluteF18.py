@@ -44,13 +44,6 @@ class EluteF18(UnitOperation):
       " with the reagent in cassette " + str(self.ReagentReactorID[-1]) + " position " + str(self.reagentPosition) + \
       " for " + str(self.eluteTime) + " seconds using " + str(self.elutePressure) + " psi nitrogen.";
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.eluteTime
-    #self.elutePressure
-    #self.ReagentReactorID
-    #self.reagentPosition
-
   def setDescription(self):
     self.description = "Eluting F18 off the QMA attached to reactor " + str(self.ReactorID[-1]) + " with " + \
       urllib.unquote(str(self.reagentName)) + " for " + str(self.eluteTime) + " seconds using " + \

@@ -46,40 +46,23 @@ class Add(UnitOperation):
     self.description = "Adding " + urllib.unquote(str(self.reagentName)) + " to reactor " + str(self.ReactorID[-1]) + " position " + str(self.reagentLoadPosition) + ".  Delivering with " + \
       str(self.pressure) + " psi nitrogen for " + str(self.duration) + " seconds.";
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.ReagentReactorID
-    #self.ReagentPosition
-    #self.reagentLoadPosition
-    #self.duration
-    #self.pressure
-
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
-      self.setPressureRegulator(1,self.pressure)      #Set delivery pressure
+      self.setPressureRegulator(1,self.pressure)
       self.setStatus("Moving reactor")
-      self.setReactorPosition(ADDREAGENT)             #Move reactor to position
+      self.setReactorPosition(ADDREAGENT)
       self.setStatus("Picking up vial")
-      self.setGripperPlace(0)                         #Move reagent to the addition position
+      self.setGripperPlace(0)
       self.setStatus("Delivering reagent")
-      self.startTimer(self.duration)                  #In seconds
-      self.duration = self.waitForTimer()             #Wait for Dispense reagent
+      self.startTimer(self.duration)
+      self.duration = self.waitForTimer()
       self.setStatus("Returning vial")
-      self.removeGripperPlace()                       #Return vial to its starting location
+      self.removeGripperPlace()
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)
   
-  """def setParams(self,currentParams):
-    expectedParams = ['ReactorID','ReagentPosition','reagentLoadPosition']
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        #Log Error
-      self.paramsValidated = True"""
-    
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent

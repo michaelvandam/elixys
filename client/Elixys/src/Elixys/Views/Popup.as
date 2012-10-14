@@ -46,8 +46,10 @@ package Elixys.Views
 			m_pInput2 = findViewById("popup_input2") as Input;
 			m_pButton1Container = findViewById("popup_button1_container") as Form;
 			m_pButton2Container = findViewById("popup_button2_container") as Form;
+			m_pButton3Container = findViewById("popup_button3_container") as Form;
 			m_pButton1 = findViewById("popup_button1") as Elixys.Components.Button;
 			m_pButton2 = findViewById("popup_button2") as Elixys.Components.Button;
+			m_pButton3 = findViewById("popup_button3") as Elixys.Components.Button;
 			
 			// Set the background transparency and center the popup
 			m_pBackground.alpha = 0.8;
@@ -64,6 +66,7 @@ package Elixys.Views
 			m_pInput2.addEventListener(TextEvent.TEXT_INPUT, OnInputChanged);
 			m_pButton1.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 			m_pButton2.addEventListener(ButtonEvent.CLICK, OnButtonClick);
+			m_pButton3.addEventListener(ButtonEvent.CLICK, OnButtonClick);
 		}
 		
 		// Initialize popup width
@@ -165,6 +168,16 @@ package Elixys.Views
 			{
 				m_pButton2.visible = false;
 			}
+			if (m_pPromptState.Buttons.length > 2)
+			{
+				pButton = m_pPromptState.Buttons[2] as Elixys.JSON.State.Button;
+				m_pButton3.text = pButton.Text;
+				m_pButton3.visible = true;
+			}
+			else
+			{
+				m_pButton3.visible = false;
+			}
 			layout(attributes);
 
 			// Render
@@ -246,20 +259,31 @@ package Elixys.Views
 			
 			// Adjust the buttons
 			nOffset += POPUP_GAP_BIG;
-			if (!m_pButton2.visible)
+			if (m_pButton1.visible && !m_pButton2.visible && !m_pButton3.visible)
 			{
 				// Center the single button
 				m_pButton1Container.x = m_pContents.attributes.width - m_pButton1.width;
 				m_pButton1Container.y = nOffset;
 				nOffset += m_pButton1.height + POPUP_BORDER;
 			}
-			else
+			else if (m_pButton1.visible && m_pButton2.visible && !m_pButton3.visible)
 			{
-				// Center both buttons
+				// Center the two buttons
 				m_pButton1Container.x = (m_pContents.attributes.width / 2) - POPUP_GAP_BIG - m_pButton1.width;
 				m_pButton1Container.y = nOffset;
 				m_pButton2Container.x = (m_pContents.attributes.width / 2) + POPUP_GAP_BIG;
 				m_pButton2Container.y = nOffset;
+				nOffset += m_pButton1.height + POPUP_BORDER;
+			}
+			else
+			{
+				// Center all three buttons
+				m_pButton1Container.x = ((m_pContents.attributes.width - m_pButton2.width) / 2) - POPUP_GAP_BIG - m_pButton1.width;
+				m_pButton1Container.y = nOffset;
+				m_pButton2Container.x = (m_pContents.attributes.width - m_pButton2.width) / 2;
+				m_pButton2Container.y = nOffset;
+				m_pButton3Container.x = ((m_pContents.attributes.width + m_pButton2.width) / 2) + POPUP_GAP_BIG;
+				m_pButton3Container.y = nOffset;
 				nOffset += m_pButton1.height + POPUP_BORDER;
 			}
 			
@@ -293,9 +317,13 @@ package Elixys.Views
 			{
 				pPostPrompt.TargetID = (m_pPromptState.Buttons[0] as Elixys.JSON.State.Button).ID;
 			}
-			else
+			else if (event.button == "popup_button2")
 			{
 				pPostPrompt.TargetID = (m_pPromptState.Buttons[1] as Elixys.JSON.State.Button).ID;
+			}
+			else
+			{
+				pPostPrompt.TargetID = (m_pPromptState.Buttons[2] as Elixys.JSON.State.Button).ID;
 			}
 			if (m_pPromptState.Edit1)
 			{
@@ -392,6 +420,14 @@ package Elixys.Views
 							<font face="GothamMedium" size="14" />
 						</button>
 					</frame>
+					<frame id="popup_button3_container" width={Popup.POPUP_BUTTON_WIDTH} height={Popup.POPUP_BUTTON_HEIGHT}>
+						<button id="popup_button3" enabled="true" useEmbedded="true" enabledTextColor={Styling.TEXT_GRAY1}
+							disabledTextColor={Styling.TEXT_GRAY6} pressedTextColor={Styling.TEXT_WHITE}
+							backgroundskinup={getQualifiedClassName(popupBtn_up)}
+							backgroundskindown={getQualifiedClassName(popupBtn_down)}>
+						<font face="GothamMedium" size="14" />
+					</button>
+					</frame>
 				</frame>
 			</frame>;
 
@@ -411,8 +447,10 @@ package Elixys.Views
 		protected var m_pInput2:Input;
 		protected var m_pButton1Container:Form;
 		protected var m_pButton2Container:Form;
+		protected var m_pButton3Container:Form;
 		protected var m_pButton1:Elixys.Components.Button;
 		protected var m_pButton2:Elixys.Components.Button;
+		protected var m_pButton3:Elixys.Components.Button;
 		
 		// Input area of interest
 		protected var m_nInputAreaOfInterestTop:uint;

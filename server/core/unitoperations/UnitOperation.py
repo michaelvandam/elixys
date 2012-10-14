@@ -10,6 +10,9 @@ sys.path.append("/opt/elixys/database")
 from DBComm import *
 import urllib
 
+# TEMP
+import random
+
 #Reactor Y Positions
 REACT_A    = 'React1'
 REACT_B    = 'React2'
@@ -103,7 +106,24 @@ DEFAULT_STIRSPEED = 500
 DEFAULT_TRANSFER_DURATION = 45
 DEFAULT_TRANSFER_PRESSURE = 10
 
+# Soft error values
+SOFTERROR_NONE = 0
+SOFTERROR_RETRY = 1
+SOFTERROR_IGNORE = 2
+SOFTERROR_ABORT = 4
+SOFTERROR_RETRY_DESCRIPTION = "Retry"
+SOFTERROR_IGNORE_DESCRIPTION = "Ignore"
+SOFTERROR_ABORT_DESCRIPTION = "Abort"
+
+# This exception is thrown on a serious error
 class UnitOpError(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return str(self.value)
+
+# This exception is thrown when an operation times out
+class UnitOpTimeout(Exception):
   def __init__(self, value):
     self.value = value
   def __str__(self):
@@ -133,6 +153,9 @@ class UnitOperation(threading.Thread):
     self.timerStopped = False
     self.waitingForUserInput = False
     self.error = ""
+    self.softError = ""
+    self.softErrorOptions = 0
+    self.softErrorDecision = SOFTERROR_NONE
     self.description = ""
     self.stopAtTemperature = False
     self.cyclotronFlag = False
@@ -288,94 +311,207 @@ class UnitOperation(threading.Thread):
   def getError(self):
     return self.error
 
+  def setSoftError(self, error, options):
+    """Sets the flags when a soft error is encountered"""
+    self.softError = error
+    self.softErrorOptions = options
+    self.softErrorDecision = SOFTERROR_NONE
+    self.logError("Soft error encountered: " + error)
+
+  def getSoftError(self):
+    """Called by the core server to check if a soft error has occurred"""
+    optionsArray = []
+    if self.softErrorOptions & SOFTERROR_RETRY:
+      optionsArray.append(SOFTERROR_RETRY_DESCRIPTION)
+    if self.softErrorOptions & SOFTERROR_IGNORE:
+      optionsArray.append(SOFTERROR_IGNORE_DESCRIPTION)
+    if self.softErrorOptions & SOFTERROR_ABORT:
+      optionsArray.append(SOFTERROR_ABORT_DESCRIPTION)
+    return (self.softError, optionsArray)
+
+  def setSoftErrorDecision(self, decision):
+    """Called by the core server set the user's decision"""
+    self.softError = ""
+    self.softErrorOptions = 0
+    if decision == SOFTERROR_RETRY_DESCRIPTION:
+      self.softErrorDecision = SOFTERROR_RETRY
+    elif decision == SOFTERROR_IGNORE_DESCRIPTION:
+      self.softErrorDecision = SOFTERROR_IGNORE
+    elif decision == SOFTERROR_ABORT_DESCRIPTION:
+      self.softErrorDecision = SOFTERROR_ABORT
+
+  def waitForSoftErrorDecision(self):
+    """Pauses and waits for the user to decide what to do"""
+    previousStatus = self.status
+    self.setStatus("Error, waiting for user input")
+    while self.softErrorDecision == SOFTERROR_NONE:
+      time.sleep(0.25)
+    self.setStatus(previousStatus)
+    return self.softErrorDecision
+
+  def doStep(self, function, error):
+    """Performs the step with error handling"""
+    success = False
+    while not success:
+      try:
+        function()
+        success = True
+      except UnitOpTimeout:
+        self.setSoftError(error, SOFTERROR_RETRY | SOFTERROR_IGNORE | SOFTERROR_ABORT)
+        option = self.waitForSoftErrorDecision()
+        if option == SOFTERROR_IGNORE:
+          success = True
+        elif option == SOFTERROR_ABORT:
+          self.abortOperation(error)
+
   def setReactorPosition(self,reactorPosition,ReactorID=255):
-    motionTimeout = 10 #How long to wait before erroring out.
-    if (ReactorID==255):
-      ReactorID = self.ReactorID
+    #Determine the target reactor
+    if ReactorID == 255:
+      self.setReactorPosition_ReactorID = self.ReactorID
+    else:
+      self.setReactorPosition_ReactorID = ReactorID
 
     #Check if we are in the correct position
-    if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL):
+    if self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL):
       if not reactorPosition == INSTALL:
-        if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
+        if self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
           return
       else:
-        if not self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
+        if not self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL):
           return
           
     #Lower the pneumatic pressure if we are in one of the react positions and up
     bRestorePressure = False
-    if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,REACT_A,EQUAL) or \
-        self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,REACT_B,EQUAL):
-      if self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
+    if self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentPosition,REACT_A,EQUAL) or \
+        self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentPosition,REACT_B,EQUAL):
+      if self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL):
         self.setPressureRegulator(2,30)
         bRestorePressure = True
 
     #Lower the reactor and enable the robot
-    self.systemModel[ReactorID]['Motion'].moveReactorDown()
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,motionTimeout)
-    if not(self.checkForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
-      self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()      
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
+    self.doStep(self.setReactorPosition_Step1, "Failed to lower the reactor")
+    if not(self.checkForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL)):
+      self.doStep(self.setReactorPosition_Step2, "Failed to enable the reactor robot")
 
     #Restore the pneumatic pressure
     if bRestorePressure:
       self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
+    # Move to the correct position
+    self.setReactorPosition_reactorPosition = reactorPosition
+    self.doStep(self.setReactorPosition_Step3, "Failed to move the reactor")
+
+    # Raise the reactor and disable the robot
+    self.doStep(self.setReactorPosition_Step4, "Failed to raise the reactor")
+    self.doStep(self.setReactorPosition_Step5, "Failed to disable the reactor robot")
+
+  def setReactorPosition_Step1(self):
+    self.systemModel[self.setReactorPosition_ReactorID]['Motion'].moveReactorDown()
+    self.waitForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,10)
+
+  def setReactorPosition_Step2(self):
+    self.systemModel[self.setReactorPosition_ReactorID]['Motion'].setEnableReactorRobot()      
+    self.waitForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentRobotStatus,ENABLED,EQUAL,3)
+
+  def setReactorPosition_Step3(self):
     # Move to the correct position, retrying up to three times
     bSuccess = False
     nRetryCount = 0
     while not bSuccess and (nRetryCount < 3):
-      self.systemModel[ReactorID]['Motion'].moveToPosition(reactorPosition)
+      self.systemModel[self.setReactorPosition_ReactorID]['Motion'].moveToPosition(self.setReactorPosition_reactorPosition)
       try:
-        self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentPosition,reactorPosition,EQUAL,motionTimeout)
+        self.waitForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentPosition,self.setReactorPosition_reactorPosition,EQUAL,10)
         bSuccess = True
-      except UnitOpError, ex:
-        # Check for abort first, then cycle the reactor robot to give it a kick
-        self.logError("## A")
-        self.checkAbort()
+      except UnitOpTimeout, ex:
+        # Cycle the reactor robot to give it a kick
         self.error = ""
-        self.logError("## B")
-        self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
+        self.systemModel[self.setReactorPosition_ReactorID]['Motion'].setDisableReactorRobot()
         time.sleep(0.5)
-        self.logError("## C")
-        self.systemModel[ReactorID]['Motion'].setEnableReactorRobot()
+        self.systemModel[self.setReactorPosition_ReactorID]['Motion'].setEnableReactorRobot()
         time.sleep(0.5)
-        self.logError("## D")
         nRetryCount += 1
     if not bSuccess:
-      self.logError("## F")
-      self.abortOperation("ERROR: Failed to move reactor to the desired position. Operation aborted.")
+      raise UnitOpTimeout("Failed to move reactor to the desired position")
 
-    # Raise the reactor
-    self.systemModel[ReactorID]['Motion'].moveReactorUp()
-    if reactorPosition == INSTALL:
+  def setReactorPosition_Step4(self):
+    self.systemModel[self.setReactorPosition_ReactorID]['Motion'].moveReactorUp()
+    if self.setReactorPosition_reactorPosition == INSTALL:
       # Sleep briefly since we don't have up sensors for the install position
       time.sleep(0.5)
-    elif reactorPosition == ADDREAGENT:
-      # Nor do we have up sensors for the add position
+    elif self.setReactorPosition_reactorPosition == ADDREAGENT:
+      # Nor do the up sensor for the add position work properly
       time.sleep(2)
     else:
-      self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,motionTimeout)
+      self.waitForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentReactorUp,True,EQUAL,10)
 
-    #Disable the robot
-    self.systemModel[ReactorID]['Motion'].setDisableReactorRobot()
-    self.waitForCondition(self.systemModel[ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
-    
+  def setReactorPosition_Step5(self):
+    self.systemModel[self.setReactorPosition_ReactorID]['Motion'].setDisableReactorRobot()
+    self.waitForCondition(self.systemModel[self.setReactorPosition_ReactorID]['Motion'].getCurrentRobotStatus,DISABLED,EQUAL,3)
+
   def setGripperPlace(self, nElute):
     #Make sure we are open and up
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL):
-      self.abortOperation("ERROR: setGripperPlace called while gripper was not open. Operation aborted.")
+      self.doStep(self.setGripperPlace_Step1, "Failed to open gripper")
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
-      self.abortOperation("ERROR: setGripperPlace called while gripper was not up. Operation aborted.") 
+      self.doStep(self.setGripperPlace_Step2, "Failed to raise gripper")
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL):
-      self.abortOperation("ERROR: setGripperPlace called while gas transfer was not up. Operation aborted.") 
+      self.doStep(self.setGripperPlace_Step3, "Failed to raise gas transfer")
 
     #Make sure the reagent robots are enabled
     if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
-      self.systemModel['ReagentDelivery'].setEnableRobots()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+      self.doStep(self.setGripperPlace_Step4, "Failed to enable reagent robots")
 
-    #Move to the reagent position, retrying up to three times
+    #Move to the reagent position
+    self.doStep(self.setGripperPlace_Step5, "Failed to move robot to reagent position")
+
+    #Pick up the vial
+    bHaveVial = False
+    while not bHaveVial:
+      #Lowering, close and raise the gripper
+      self.doStep(self.setGripperPlace_Step6, "Failed to lower gripper")
+      self.doStep(self.setGripperPlace_Step7, "Failed to close gripper")
+      self.doStep(self.setGripperPlace_Step8, "Failed to raise gripper")
+
+      #Make sure we have a vial
+      if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
+        bHaveVial = True
+      else:
+        self.setSoftError("Failed to pick up vial", SOFTERROR_RETRY | SOFTERROR_IGNORE | SOFTERROR_ABORT)
+        option = self.waitForSoftErrorDecision()
+        if option == SOFTERROR_RETRY:
+          self.doStep(self.setGripperPlace_Step9, "Failed to open gripper")
+        elif option == SOFTERROR_IGNORE:
+          bHaveVial = True
+        elif option == SOFTERROR_ABORT:
+          self.abortOperation(error)
+
+    #Move to the delivery or elute position
+    self.setGripperPlace_elute = nElute
+    self.doStep(self.setGripperPlace_Step10, "Failed to move robot to the target position")
+    
+    #Lower and turn on the gas transfer and lower the vial
+    self.doStep(self.setGripperPlace_Step11, "Failed to lower gas transfer")
+    self.setGasTransferValve(ON)
+    self.doStep(self.setGripperPlace_Step12, "Failed to lower vial")
+
+  def setGripperPlace_Step1(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
+
+  def setGripperPlace_Step2(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
+
+  def setGripperPlace_Step3(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,3)
+
+  def setGripperPlace_Step4(self):
+    self.systemModel['ReagentDelivery'].setEnableRobots()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+
+  def setGripperPlace_Step5(self):
+    #Retry up to three times
     bSuccess = False
     nRetryCount = 0
     while not bSuccess and (nRetryCount < 3):
@@ -384,93 +520,119 @@ class UnitOperation(threading.Thread):
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]),
           self.reagentPosition, 0, 0),EQUAL,5)
         bSuccess = True
-      except UnitOpError, ex:
+      except UnitOpTimeout, ex:
         self.checkAbort()
         self.error = ""
         nRetryCount += 1
     if not bSuccess:
-      self.abortOperation("ERROR: Failed to move the robot to desired position. Operation aborted.")
+      raise UnitOpTimeout("Failed to move robot to the desired position")
 
-    #Move down, close and up
+  def setGripperPlace_Step6(self):
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,4)
+
+  def setGripperPlace_Step7(self):
     self.systemModel['ReagentDelivery'].setMoveGripperClose()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+
+  def setGripperPlace_Step8(self):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
 
-    #Make sure we have a vial
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+  def setGripperPlace_Step9(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
 
-    #Move to the delivery or elute position, retrying up to three times
+  def setGripperPlace_Step10(self):
+    #Retry up to three times
     bSuccess = False
     nRetryCount = 0
     while not bSuccess and (nRetryCount < 3):
-      if nElute == 0:
+      if self.setGripperPlace_elute == 0:
         self.systemModel['ReagentDelivery'].moveToDeliveryPosition(int(self.ReactorID[-1]),self.reagentLoadPosition)
       else:
         self.systemModel['ReagentDelivery'].moveToElutePosition(int(self.ReactorID[-1]))
       try:
-        if nElute == 0:
+        if self.setGripperPlace_elute == 0:
           self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
             0, self.reagentLoadPosition, 0),EQUAL,5)
         else:
           self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]), 0, 0, 1),EQUAL,5)
         bSuccess = True
-      except UnitOpError, ex:
+      except UnitOpTimeout, ex:
         self.checkAbort()
         self.error = ""
         nRetryCount += 1
     if not bSuccess:
-      self.abortOperation("ERROR: Failed to move robot to the deliver or elute position. Operation aborted.")
-    
-    #Lower and turn on the gas transfer
-    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,3)
-    self.setGasTransferValve(ON)
+      raise UnitOpTimeout("Failed to move robot to the target position")
 
-    #Lower the vial
+  def setGripperPlace_Step11(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,5)
+
+  def setGripperPlace_Step12(self):
     self.systemModel['ReagentDelivery'].setMoveGripperDown()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,20)
-    
+
   def removeGripperPlace(self):
-    #Make sure we are closed and down
+    #This function only makes sense if we just finished delivering a reagent and are in the closed and down position
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
-      self.abortOperation("ERROR: setGripperRemove called while gripper was not closed. Operation aborted.")
+      self.abortOperation("SetGripperRemove called while gripper was not closed")
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL):
-      self.abortOperation("ERROR: setGripperRemove called while gripper was not up. Operation aborted.")
+      self.abortOperation("SetGripperRemove called while gripper was not up")
 
     # Remove the vial
     bVialUp = False
     nFailureCount = 0
     time.sleep(1)
     while not bVialUp:
-      #Move the vial up
-      self.systemModel['ReagentDelivery'].setMoveGripperUp()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,6)
-
-      #Do we still have the vial?
+      self.doStep(self.removeGripperPlace_Step1, "Failed to raise gripper")
       if self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL):
-        #Yes
         bVialUp = True
       elif nFailureCount < 10:
-        #No, so pick it up again
-        self.systemModel['ReagentDelivery'].setMoveGripperOpen()
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
-        self.systemModel['ReagentDelivery'].setMoveGripperDown()
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
-        self.systemModel['ReagentDelivery'].setMoveGripperClose()
-        self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+        self.doStep(self.removeGripperPlace_Step2, "Failed to open gripper")
+        self.doStep(self.removeGripperPlace_Step3, "Failed to lower gripper")
+        self.doStep(self.removeGripperPlace_Step4, "Failed to close gripper")
         nFailureCount += 1
       else:
         raise Exception("Failed to remove vial")
 
     #Turn off and raise the transfer gas
     self.setGasTransferValve(OFF)
-    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,3)
+    self.doStep(self.removeGripperPlace_Step5, "Failed to raise gas transfer")
 
-    #Move to the reagent position, retrying up to three times
+    #Move to the reagent position, down and open
+    self.doStep(self.removeGripperPlace_Step6, "Failed to move the robot to reagent position")
+    self.systemModel['ReagentDelivery'].setMoveGripperDown()
+    time.sleep(2)  #The vial often slips in the gripper when raising so our down sensor won't register
+    self.doStep(self.removeGripperPlace_Step7, "Failed to open gripper")
+    
+    #Move up and to home
+    self.doStep(self.removeGripperPlace_Step8, "Failed to raise gripper")
+    self.doStep(self.removeGripperPlace_Step9, "Failed to move robot to home")
+
+  def removeGripperPlace_Step1(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,6)
+
+  def removeGripperPlace_Step2(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
+
+  def removeGripperPlace_Step3(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
+
+  def removeGripperPlace_Step4(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperClose()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperClose,True,EQUAL,3)
+
+  def removeGripperPlace_Step5(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,5)
+
+  def removeGripperPlace_Step6(self):
+    #Retry up to three times
     bSuccess = False
     nRetryCount = 0
     while not bSuccess and (nRetryCount < 3):
@@ -478,23 +640,22 @@ class UnitOperation(threading.Thread):
       try:
         self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReagentReactorID[-1]), self.reagentPosition, 0, 0),EQUAL,5)
         bSuccess = True
-      except UnitOpError, ex:
+      except UnitOpTimeout, ex:
         self.checkAbort()
         self.error = ""
         nRetryCount += 1
     if not bSuccess:
-      self.abortOperation("ERROR: Failed to move the robot to reagent position. Operation aborted.")
+      raise UnitOpTimeout("Failed to move the robot to reagent position")
 
-    #Move down and open
-    self.systemModel['ReagentDelivery'].setMoveGripperDown()
-    #self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperDown,True,EQUAL,3)
-    time.sleep(2)  # This is a workaround in case the gripper slipped a little bit and the reagent vial is lower than usual
+  def removeGripperPlace_Step7(self):
     self.systemModel['ReagentDelivery'].setMoveGripperOpen()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,3)
-    
-    #Move up and to home
+
+  def removeGripperPlace_Step8(self):
     self.systemModel['ReagentDelivery'].setMoveGripperUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,3)
+
+  def removeGripperPlace_Step9(self):
     self.systemModel['ReagentDelivery'].moveToHomeFast()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 
@@ -503,6 +664,12 @@ class UnitOperation(threading.Thread):
     self.delay = 500
     self.checkAbort()
     bConditionMet = False
+
+    # TEMP 1/3
+    ran = random.randint(1, 10)
+    if ran == 4:
+      raise UnitOpTimeout("waitForCondition")
+
     if comparator == EQUAL:
       while not bConditionMet:
         value = function()
@@ -513,8 +680,7 @@ class UnitOperation(threading.Thread):
           if not(timeout == 65535):
             if self.isTimerExpired(startTime,timeout):
               self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
-              break
+              raise UnitOpTimeout("waitForCondition")
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
           self.updateStatus(self.updateStatusWhileWaiting(value))
@@ -529,8 +695,7 @@ class UnitOperation(threading.Thread):
           if not(timeout == 65535):
             if self.isTimerExpired(startTime,timeout):
               self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
-              break
+              raise UnitOpTimeout("waitForCondition")
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
           self.updateStatus(self.updateStatusWhileWaiting(value))
@@ -545,8 +710,7 @@ class UnitOperation(threading.Thread):
           if not(timeout == 65535):
             if self.isTimerExpired(startTime,timeout):
               self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
-              break
+              raise UnitOpTimeout("waitForCondition")
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
           self.updateStatus(self.updateStatusWhileWaiting(value))
@@ -561,8 +725,7 @@ class UnitOperation(threading.Thread):
           if not(timeout == 65535):
             if self.isTimerExpired(startTime,timeout):
               self.logError("waitForCondition call timed out on function:%s class:%s" % (function.__name__,function.im_class))
-              self.abortOperation("Function %s == %s, expected %s" % (str(function.__name__),str(value),str(condition)))
-              break
+              raise UnitOpTimeout("waitForCondition")
         self.checkAbort()
         if self.updateStatusWhileWaiting != None:
           self.updateStatus(self.updateStatusWhileWaiting(value))
@@ -676,86 +839,147 @@ class UnitOperation(threading.Thread):
     self.error = error
     if raiseException:
       raise UnitOpError(error)
-    print error   # We need a way to get the error back to the CLI
+    print error
     
   def setStopcockPosition(self,stopcockPositions,ReactorID=255):
-    if (ReactorID==255):
-      ReactorID = self.ReactorID
+    # Set the reactor ID
+    if ReactorID == 255:
+      self.setStopcockPosition_ReactorID = self.ReactorID
+    else:
+      self.setStopcockPosition_ReactorID = ReactorID
+
+    # Set the stopcocks
     for stopcock in range(1,(len(stopcockPositions)+1)):
       if not stopcockPositions[stopcock-1] == NA:
+        self.setStopcockPosition_stopcock = "Stopcock" + str(stopcock)
         if stopcockPositions[stopcock-1] == CW:
-          self.systemModel[ReactorID]['Stopcock'+str(stopcock)].setCW()
-          self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getCW,True,EQUAL,3) 
+          self.doStep(self.setStopcockPosition_Step1, "Failed to set stopcock position")
         elif stopcockPositions[stopcock-1] == CCW:
-          self.systemModel[ReactorID]['Stopcock'+str(stopcock)].setCCW()
-          self.waitForCondition(self.systemModel[ReactorID]['Stopcock'+str(stopcock)].getCCW,True,EQUAL,3) 
+          self.doStep(self.setStopcockPosition_Step2, "Failed to set stopcock position")
         else:
           self.abortOperation("Unknown stopcock position: " + stopcockPosition[stopcock-1])
  
+  def setStopcockPosition_Step1(self):
+    self.systemModel[self.setStopcockPosition_ReactorID][self.setStopcockPosition_stopcock].setCW()
+    self.waitForCondition(self.systemModel[self.setStopcockPosition_ReactorID][self.setStopcockPosition_stopcock].getCW,True,EQUAL,3) 
+
+  def setStopcockPosition_Step2(self):
+    self.systemModel[self.setStopcockPosition_ReactorID][self.setStopcockPosition_stopcock].setCCW()
+    self.waitForCondition(self.systemModel[self.setStopcockPosition_ReactorID][self.setStopcockPosition_stopcock].getCCW,True,EQUAL,3) 
+
   def startTransfer(self,state):
+    self.doStep(self.startTransfer_Step1, "Failed to open transfer valve")
+
+  def startTransfer_Step1(self):
     self.systemModel[self.ReactorID]['Valves'].setTransferValveOpen(state)
     self.waitForCondition(self.systemModel[self.ReactorID]['Valves'].getTransferValveOpen,state,EQUAL,3)
- 
+
   def setHeater(self,heaterState):
     if heaterState == ON:
       self.updateStatusWhileWaiting = self.updateHeaterStatus
-      self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn()
-      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,True,EQUAL,3)
-      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,65535)
+      self.doStep(self.setHeater_Step1, "Failed to turn on heaters")
+
+      # TEMP 2/3
+      try:
+        self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,65535)
+      except UnitOpTimeout:
+        pass
+
       self.updateStatusWhileWaiting = None
     elif heaterState == OFF:
-      self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
-      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
+      self.doStep(self.setHeater_Step2, "Failed to turn off heaters")
+
+  def setHeater_Step1(self):
+    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOn()
+    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,True,EQUAL,3)
+
+  def setHeater_Step2(self):
+    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
+    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
 
   def updateHeaterStatus(self,currentTemp):
       return ("%i C" % currentTemp)
       
   def setTemp(self):
+    self.doStep(self.setTemp_Step1, "Failed to set temperature")
+
+  def setTemp_Step1(self):
     self.systemModel[self.ReactorID]['Thermocouple'].setSetPoint(self.reactTemp)
     self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getSetTemperature,self.reactTemp,EQUAL,3)
 
   def setCool(self,coolingDelay = 0):
-    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
-    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
+    self.doStep(self.setCool_Step1, "Failed to turn off heaters")
     self.setCoolingSystem(ON)
     self.updateStatusWhileWaiting = self.updateHeaterStatus
-    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
+
+    # TEMP 3/3
+    try:
+      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
+    except UnitOpTimeout:
+      pass
+
     if coolingDelay > 0:
       self.startTimer(coolingDelay)
       coolingDelay = self.waitForTimer()
     self.updateStatusWhileWaiting = None
     self.setCoolingSystem(OFF)
     return coolingDelay
+
+  def setCool_Step1(self):
+    self.systemModel[self.ReactorID]['Thermocouple'].setHeaterOff()
+    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getHeaterOn,False,EQUAL,3)
     
   def setStirSpeed(self,stirSpeed):
     if (stirSpeed == OFF): #Fix issue with False being misinterpreted.
       stirSpeed = 0
-    self.systemModel[self.ReactorID]['Stir'].setSpeed(stirSpeed) #Set analog value on PLC
-    self.waitForCondition(self.systemModel[self.ReactorID]['Stir'].getCurrentSpeed,stirSpeed,EQUAL,10) #Read value from PLC memory... should be equal
-  
+    self.setStirSpeed_stirSpeed = stirSpeed
+    self.doStep(self.setStirSpeed_Step1, "Failed to set stir speed")
+
+  def setStirSpeed_Step1(self):
+    self.systemModel[self.ReactorID]['Stir'].setSpeed(self.setStirSpeed_stirSpeed)
+    self.waitForCondition(self.systemModel[self.ReactorID]['Stir'].getCurrentSpeed,self.setStirSpeed_stirSpeed,EQUAL,3)
+
   def setGasTransferValve(self,valveSetting):
     if (valveSetting):
-      self.systemModel['Valves'].setGasTransferValveOpen(ON)
-      self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,True,EQUAL,3)     
+      self.doStep(self.setGasTransferValve_Step1, "Failed to open gas transfer valve")
     else:
-      self.systemModel['Valves'].setGasTransferValveOpen(OFF)
-      self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,False,EQUAL,3)      
+      self.doStep(self.setGasTransferValve_Step2, "Failed to close gas transfer valve")
+
+  def setGasTransferValve_Step1(self):
+    self.systemModel['Valves'].setGasTransferValveOpen(ON)
+    self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,True,EQUAL,3)     
+
+  def setGasTransferValve_Step2(self):
+    self.systemModel['Valves'].setGasTransferValveOpen(OFF)
+    self.waitForCondition(self.systemModel['Valves'].getGasTransferValveOpen,False,EQUAL,3)      
   
   def setVacuumSystem(self,systemOn):
     if (systemOn):
+      self.doStep(self.setVacuumSystem_Step1, "Failed to turn on the vacuum system")
+    else:
+      self.doStep(self.setVacuumSystem_Step2, "Failed to turn off the vacuum system")
+
+  def setVacuumSystem_Step1(self):
       self.systemModel['VacuumSystem'].setVacuumSystemOn()
       self.waitForCondition(self.systemModel['VacuumSystem'].getVacuumSystemOn,True,EQUAL,3)     
-    else:
+
+  def setVacuumSystem_Step2(self):
       self.systemModel['VacuumSystem'].setVacuumSystemOff()
       self.waitForCondition(self.systemModel['VacuumSystem'].getVacuumSystemOn,False,EQUAL,3)     
 
   def setCoolingSystem(self,systemOn):
     if (systemOn):
-      self.systemModel['CoolingSystem'].setCoolingSystemOn(ON)
-      self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,ON,EQUAL,3)
+      self.doStep(self.setCoolingSystem_Step1, "Failed to turn on the cooling system")
     else:
-      self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
-      self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,OFF,EQUAL,3)
+      self.doStep(self.setCoolingSystem_Step2, "Failed to turn off the cooling system")
+
+  def setCoolingSystem_Step1(self):
+    self.systemModel['CoolingSystem'].setCoolingSystemOn(ON)
+    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,ON,EQUAL,3)
+
+  def setCoolingSystem_Step2(self):
+    self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
+    self.waitForCondition(self.systemModel['CoolingSystem'].getCoolingSystemOn,OFF,EQUAL,3)
 
   def setPressureRegulator(self,regulator,pressureSetPoint,rampTime=0): #Time in seconds
     if (str(regulator) == '1') or (str(regulator) == 'PressureRegulator1'):
@@ -775,9 +999,12 @@ class UnitOperation(threading.Thread):
         self.checkAbort()
       if self.timerStopped:
         return
-    self.systemModel[self.pressureRegulator].setRegulatorPressure(pressureSetPoint)
     self.pressureSetPoint = pressureSetPoint
-    self.waitForCondition(self.pressureSet,True,EQUAL,4)
+    self.doStep(self.setPressureRegulator_Step1, "Failed to reach the target pressure")
+
+  def setPressureRegulator_Step1(self):
+    self.systemModel[self.pressureRegulator].setRegulatorPressure(self.pressureSetPoint)
+    self.waitForCondition(self.pressureSet,True,EQUAL,20)
 
   def pressureSet(self):
     return (self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint - 1,GREATER) and

@@ -38,12 +38,6 @@ class TrapF18(UnitOperation):
       self.description = "Trapping F18 on the QMA cartridge attached to reactor " + str(self.ReactorID[-1]) + \
         " for " + str(self.trapTime) + " seconds using " + str(self.trapPressure) + " psi nitrogen."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.cyclotronFlag
-    #self.trapTime
-    #self.trapPressure
-
   def run(self):
     try:
       self.setStatus("Adjusting pressure")
@@ -57,19 +51,25 @@ class TrapF18(UnitOperation):
         self.waitForUserInput()
       else:
         self.setStatus("Trapping")
-        self.systemModel['Valves'].setF18LoadValveOpen(ON)
-        self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,ON,EQUAL,5)
+        self.doStep(self.trapF18_Step1, "Failed to turn on F18 load valve")
         self.timerShowInStatus = False
         self.setPressureRegulator(1,self.trapPressure,5) #Set pressure after valve is opened
         self.startTimer(self.trapTime)
         self.trapTime = self.waitForTimer()
-        self.systemModel['Valves'].setF18LoadValveOpen(OFF)
-        self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,OFF,EQUAL,5)
+        self.doStep(self.trapF18_Step2, "Failed to turn off F18 load valve")
       self.setStatus("Completing")
       self.setStopcockPosition(F18DEFAULT)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)
+
+  def trapF18_Step1(self):
+    self.systemModel['Valves'].setF18LoadValveOpen(ON)
+    self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,ON,EQUAL,5)
+
+  def trapF18_Step2(self):
+    self.systemModel['Valves'].setF18LoadValveOpen(OFF)
+    self.waitForCondition(self.systemModel['Valves'].getF18LoadValveOpen,OFF,EQUAL,5)
 
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""

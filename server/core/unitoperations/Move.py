@@ -31,10 +31,6 @@ class Move(UnitOperation):
       raise UnitOpError(paramError)
     self.description = "Moving reactor " + str(self.ReactorID[-1]) + " to the " + str(self.reactPosition) + " position."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.reactPosition
-
   def run(self):
     try:
       self.setStatus("Moving")

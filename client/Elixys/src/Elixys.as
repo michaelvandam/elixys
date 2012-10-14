@@ -445,8 +445,8 @@ package
 		// Called when an HTTP response is received while connected to the server
 		protected function OnConnectedHTTPResponseEvent(event:HTTPResponseEvent):void
 		{
-			//try
-			//{
+			try
+			{
 				// Only handle responses when we're connected to the server
 				if (m_nConnectionState != CONNECTED)
 				{
@@ -494,13 +494,11 @@ package
 				{
 					throw new Error("Unhandled response type " + pResponse);
 				}
-			/*
 			}
 			catch (err:Error)
 			{
 				ShowLoginScreen(err.message);
 			}
-			*/
 		}
 
 		// Called when the status of the HTTP request is known while connected to the server

@@ -100,9 +100,6 @@ class GetHandler:
         else:
             raise Exception("Unknown screen: " + self.__pClientState["screen"])
 
-        print "### Getting state for " + self.__sRemoteUser + ":"
-        print str(pState)
-
         # Return the state
         return pState
 
@@ -419,16 +416,16 @@ class GetHandler:
         pServerState = self.__GetServerState()
         if (self.__pClientState["sequenceid"] != pServerState["runstate"]["sequenceid"]) or \
            (self.__pClientState["componentid"] != pServerState["runstate"]["componentid"]) or \
-           (self.__pClientState["prompt"]["show"] != pServerState["runstate"]["prompt"]["show"]):
+           (self.__pClientState["prompt"]["show"] != pServerState["runstate"]["prompt"]["show"]) or \
+           ((self.__pClientState["prompt"].has_key("screen")) and 
+            (pServerState["runstate"]["prompt"].has_key("screen")) and \
+            (self.__pClientState["prompt"]["screen"] != pServerState["runstate"]["prompt"]["screen"])):
             # Update the sequence and component IDs
             self.__pClientState["sequenceid"] = pServerState["runstate"]["sequenceid"]
             self.__pClientState["componentid"] = pServerState["runstate"]["componentid"]
 
-            # Update the prompt if it isn't abort
-            if (self.__pClientState["prompt"]["show"] == False) or \
-               (self.__pClientState["prompt"].has_key("screen") and \
-               self.__pClientState["prompt"]["screen"] != "PROMPT_ABORTSEQUENCERUN"):
-                self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
+            # Update the prompt
+            self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
 
             # Update the client state
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)

@@ -37,6 +37,7 @@ class Sequence(Thread):
     self.runWillPause = False
     self.runIsPaused = False
     self.runAborted = False
+    self.showAbortPrompt = False
 
     # Create database connection and sequence manager
     self.database = DBComm()
@@ -79,7 +80,7 @@ class Sequence(Thread):
     if not self.running:
       raise Exception("Sequence not running, cannot pause")
     if self.runWillPause:
-      raise Exception("Sequence already will paused, cannot pause")
+      raise Exception("Sequence already will pause, cannot pause")
     if self.runIsPaused:
       raise Exception("Sequence is already paused, cannot pause")
     self.runWillPause = True
@@ -104,10 +105,19 @@ class Sequence(Thread):
   def abortRun(self):
     """Aborts the current sequence run"""
     self.runAborted = True
+    self.showAbortPrompt = False
 
   def isRunComplete(self):
     """Returns true if the sequence run has completed and is waiting at the summary unit operation, false otherwise"""
     return not self.userSourceIDs
+
+  def setShowAbortPrompt(self, bShowAbortPrompt):
+    """Sets the flag that indicates if the abort sequence run prompt should be set in the run state"""
+    self.showAbortPrompt = bShowAbortPrompt
+
+  def getShowAbortPrompt(self):
+    """Returns the flag that indicates if the abort sequence run prompt should be set in the run state"""
+    return self.showAbortPrompt
 
   def run(self):
     """Thread entry point"""

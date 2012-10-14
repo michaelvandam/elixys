@@ -36,13 +36,6 @@ class Transfer(UnitOperation):
     else:
       self.description = "Error: unknown transfer mode."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.transferReactorID
-    #self.transferType
-    #self.transferTimer
-    #self.transferPressure
-
   def run(self):
     try:
       self.setStatus("Moving reactors")
@@ -73,37 +66,58 @@ class Transfer(UnitOperation):
       self.abortOperation(str(e), False)
       
   def setRobotPosition(self):
-    #Make sure the reagent robot is up
+    #Make sure we are up
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
-      self.abortOperation("ERROR: setRobotPosition called while gripper was not up. Operation aborted.") 
+      self.doStep(self.setRobotPosition_Step1, "Failed to raise gripper")
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL):
-      self.abortOperation("ERROR: setRobotPosition called while gas transfer was not up. Operation aborted.") 
+      self.doStep(self.setRobotPosition_Step2, "Failed to raise gas transfer")
 
     #Make sure the robots are enabled
     if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
-      self.systemModel['ReagentDelivery'].setEnableRobots()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+      self.doStep(self.setRobotPosition_Step3, "Failed to enable robots")
 
-    #Move to the transfer position
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReactorID[-1]),TRANSFERPOSITION)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
-      TRANSFERPOSITION, 0, 0),EQUAL,5)
-
-    #Lower the gas transfer
-    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+    #Move to the transfer position and lower the gas transfer
+    self.doStep(self.setRobotPosition_Step4, "Failed to move robot to transfer position")
+    self.doStep(self.setRobotPosition_Step5, "Failed to lower gas transfer")
 
   def removeRobotPosition(self):
     #Make sure we are down (this is causing problems due to actuator sinking)
     #if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
     #  self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
 
-    #Raise the gas transfer
+    #Shut off the transfer gas
     self.setGasTransferValve(OFF)
+
+    #Raise the gas transfer and move to home
+    self.doStep(self.setRobotPosition_Step6, "Failed to raise gas transfer")
+    self.doStep(self.setRobotPosition_Step7, "Failed to move robot to home")
+
+  def setRobotPosition_Step1(self):
+    self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
+    self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,10)
+
+  def setRobotPosition_Step2(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
+
+  def setRobotPosition_Step3(self):
+    self.systemModel['ReagentDelivery'].setEnableRobots()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+
+  def setRobotPosition_Step4(self):
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReactorID[-1]),TRANSFERPOSITION)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
+      TRANSFERPOSITION, 0, 0),EQUAL,5)
+
+  def setRobotPosition_Step5(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+
+  def setRobotPosition_Step6(self):
     self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
 
-    #Move to home
+  def setRobotPosition_Step7(self):
     self.systemModel['ReagentDelivery'].moveToHomeFast()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 

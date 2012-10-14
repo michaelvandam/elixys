@@ -51,6 +51,11 @@ class CoreServerProxy():
         if not pContinueSequence["success"]:
             raise Exception("Core server failed to continue sequence")
 
+    def ShowAbortSequencePrompt(self, sUsername, bShowAbortPrompt):
+        pShowAbortSequencePrompt = self.__pCoreServer.root.ShowAbortSequencePrompt(sUsername, bShowAbortPrompt)
+        if not pShowAbortSequencePrompt["success"]:
+            raise Exception("Core server failed to show abort sequence prompt")
+
     def AbortSequence(self, sUsername):
         pAbortSequence = self.__pCoreServer.root.AbortSequence(sUsername)
         if not pAbortSequence["success"]:
@@ -79,6 +84,18 @@ class CoreServerProxy():
         pStopTimer = self.__pCoreServer.root.StopTimer(sUsername)
         if not pStopTimer["success"]:
             raise Exception("Core server failed to stop timer")
+
+    def CheckSoftError(self, sUsername):
+        pCheckSoftError = self.__pCoreServer.root.CheckSoftError(sUsername)
+        if pCheckSoftError["success"]:
+            return pCheckSoftError["return"]
+        else:
+            raise Exception("Core server failed to check soft error")
+
+    def SetSoftErrorDecision(self, sUsername, sDecision):
+        pSetSoftErrorDecision = self.__pCoreServer.root.SetSoftErrorDecision(sUsername, sDecision)
+        if not pSetSoftErrorDecision["success"]:
+            raise Exception("Core server failed to set soft error decision")
 
     def DeliverUserInput(self, sUsername):
         pDeliverUserInput = self.__pCoreServer.root.DeliverUserInput(sUsername)

@@ -32,10 +32,6 @@ class Mix(UnitOperation):
       raise UnitOpError(paramError)
     self.description = "Mixing the contents of reactor " + str(self.ReactorID[-1]) + " for " + str(self.duration) + " seconds by stirring at " + str(self.stirSpeed) + ".";
 
-    # Should have the params listed below:
-    # self.ReactorID
-    # self.stirSpeed
-    # self.duration
   def run(self):
     try:
       self.setStatus("Mixing")

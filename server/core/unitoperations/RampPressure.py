@@ -12,10 +12,7 @@ class RampPressure(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-    # Should have the params listed below:
-    # self.pressureRegulator
-    # self.pressure
-    # self.duration
+
   def run(self):
     try:
       self.setStatus("Ramping pressure")

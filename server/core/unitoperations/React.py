@@ -45,21 +45,10 @@ class React(UnitOperation):
     if self.stopAtTemperature:
       self.description += "  Stirring will stop once temperature is reached."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.reactTemp
-    #self.reactTime
-    #self.coolTemp
-    #self.coolingDelay
-    #self.reactPosition
-    #self.stirSpeed
-    #self.stopAtTemperature
-
   def run(self):
     try:
-      self.logInfo("###Temp### React stop at temperature: " + str(self.stopAtTemperature))    # Temp
       self.setStatus("Moving reactor")
-      self.setReactorPosition(self.reactPosition)#REACTA OR REACTB
+      self.setReactorPosition(self.reactPosition)
       self.setStatus("Starting motor")
       self.setStirSpeed(self.stirSpeed)
       self.setStatus("Heating")
@@ -67,7 +56,6 @@ class React(UnitOperation):
       self.setHeater(ON)
       if self.stopAtTemperature > 0:
         self.setStirSpeed(OFF)
-        self.logInfo("###Temp### React stopping at temperature")    # Temp
       self.setStatus("Reacting")
       self.startTimer(self.reactTime)
       self.reactTime = self.waitForTimer()
@@ -76,8 +64,6 @@ class React(UnitOperation):
       self.coolingDelay = self.setCool(self.coolingDelay)
       if self.stopAtTemperature == 0:
         self.setStirSpeed(OFF)
-        self.logInfo("###Temp### React stopping after cooling")    # Temp
-      self.setStatus("Completing") 
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)

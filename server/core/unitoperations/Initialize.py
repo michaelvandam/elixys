@@ -48,37 +48,54 @@ class Initialize(UnitOperation):
       self.setPressureRegulator(1,GAS_TRANSFER_PRESSURE)
       self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
-      #Raise and open gripper    
+      #Raise and open gripper
       self.setStatus("Initializing robots")
-      self.systemModel['ReagentDelivery'].setMoveGripperUp()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,2)
-      self.systemModel['ReagentDelivery'].setMoveGripperOpen()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2) 
-      self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+      self.doStep(self.initialize_Step1, "Failed to move gripper up")
+      self.doStep(self.initialize_Step2, "Failed to open gripper")
+      self.doStep(self.initialize_Step3, "Failed to move gas transfer up")
  
       # Wait for the reactors to reach the down position
-      for self.ReactorID in self.ReactorTuple:
-        self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,3)
+      self.doStep(self.initialize_Step4, "Reactors failed to reach down positions")
 
-      #Home the robot once but don't check if it happens
+      #Home the robots once but don't check if it happens
       self.systemModel['ReagentDelivery'].moveToHome()
       for self.ReactorID in self.ReactorTuple:
         self.systemModel[self.ReactorID]['Motion'].moveToHome()
       time.sleep(2)
 
-      #Home the robot again and check for the proper state
-      self.systemModel['ReagentDelivery'].moveToHome()
-      for self.ReactorID in self.ReactorTuple:
-        self.systemModel[self.ReactorID]['Motion'].moveToHome()
-      time.sleep(2)
-      self.waitForCondition(self.areRobotsHomed,True,EQUAL,25)
+      #Home the robots again and wait for them to arrive
+      self.doStep(self.initialize_Step5, "Reactors failed to home")
+
+      #Raise the robots to the install position
       for self.ReactorID in self.ReactorTuple:
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)
   
+  def initialize_Step1(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,2)
+
+  def initialize_Step2(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperOpen()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperOpen,True,EQUAL,2) 
+
+  def initialize_Step3(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
+
+  def initialize_Step4(self):
+    for self.ReactorID in self.ReactorTuple:
+      self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,3)
+
+  def initialize_Step5(self):
+    self.systemModel['ReagentDelivery'].moveToHome()
+    for self.ReactorID in self.ReactorTuple:
+      self.systemModel[self.ReactorID]['Motion'].moveToHome()
+    time.sleep(2)
+    self.waitForCondition(self.areRobotsHomed,True,EQUAL,25)
+
   def areRobotsHomed(self):
     self.robotsHomed=True
     for self.ReactorID in self.ReactorTuple:

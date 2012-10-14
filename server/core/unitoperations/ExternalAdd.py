@@ -32,16 +32,12 @@ class ExternalAdd(UnitOperation):
       raise UnitOpError(paramError)
     self.description = "Externally adding " + urllib.unquote(str(self.externalReagentName)) + " to reactor " + str(self.ReactorID[-1]) + "."
 
-    #Should have parameters listed below: 
-    #self.ReactorID
-    #self.externalReagentName
-
   def run(self):
     try:
       self.setStatus("Moving reactor")
-      self.setReactorPosition(ADDREAGENT)             #Move reactor to position
+      self.setReactorPosition(ADDREAGENT)
       self.setStatus("Waiting for user input")
-      self.waitForUserInput()                         #Wait until user delivers reagent
+      self.waitForUserInput()
       self.setStatus("Complete")
     except Exception as e:
       self.abortOperation(str(e), False)

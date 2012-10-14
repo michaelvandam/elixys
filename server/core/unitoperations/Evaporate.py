@@ -42,17 +42,8 @@ class Evaporate(UnitOperation):
     if self.stopAtTemperature:
       self.description += "  Stirring will stop once temperature is reached."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.evapTemp
-    #self.evapTime
-    #self.coolTemp
-    #self.stirSpeed
-    #self.stopAtTemperature
-
   def run(self):
     try:
-      self.logInfo("###Temp### Evaporate stop at temperature: " + str(self.stopAtTemperature))    # Temp
       self.setStatus("Adjusting pressure")
       self.setPressureRegulator(1,self.pressure/3)
       self.setStatus("Moving reactor")
@@ -61,13 +52,12 @@ class Evaporate(UnitOperation):
       self.setStirSpeed(self.stirSpeed)
       self.setStatus("Moving robot")
       self.setRobotPosition()
+      self.setStatus("Heating")
       self.setGasTransferValve(ON)
       self.setVacuumSystem(ON)
-      self.setStatus("Heating")
       self.setTemp()
       self.setHeater(ON)
       if self.stopAtTemperature > 0:
-        self.logInfo("###Temp### Evaporate stopping at temperature")    # Temp
         self.setStirSpeed(OFF)
       self.setStatus("Evaporating")
       self.startTimer(self.evapTime)
@@ -78,10 +68,8 @@ class Evaporate(UnitOperation):
       self.setCool()
       if self.stopAtTemperature == 0:
         self.setStirSpeed(OFF)
-        self.logInfo("###Temp### Evaporate stopping after cooling")    # Temp
       self.setStatus("Completing")
-      self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
-      self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,"=",10)
+      self.doStep(self.evaporate_Step1, "Failed to lower reactor")
       self.setStatus("Moving robot")
       self.setGasTransferValve(OFF)
       self.setVacuumSystem(OFF)
@@ -91,49 +79,66 @@ class Evaporate(UnitOperation):
       self.abortOperation(str(e), False)
   
   def setRobotPosition(self):
-    #Make sure the reagent robot is up
+    #Make sure we are up
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL):
-      self.abortOperation("ERROR: setRobotPosition called while gripper was not up. Operation aborted.") 
+      self.doStep(self.evaporate_Step2, "Failed to raise gripper")
     if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL):
-      self.abortOperation("ERROR: setRobotPosition called while gas transfer was not up. Operation aborted.") 
+      self.doStep(self.evaporate_Step3, "Failed to raise gas transfer")
 
     #Make sure the robots are enabled
     if not(self.checkForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL)):
-      self.systemModel['ReagentDelivery'].setEnableRobots()
-      self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+      self.doStep(self.evaporate_Step4, "Failed to enable robots")
 
-    #Move to the evaporate position
-    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReactorID[-1]),EVAPORATEPOSITION)
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
-      EVAPORATEPOSITION, 0, 0),EQUAL,5)
-
-    #Lower the gas transfer
-    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
-    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+    #Move to the evaporate position and lower the gas transfer
+    self.doStep(self.evaporate_Step5, "Failed to move robot to evaporate position")
+    self.doStep(self.evaporate_Step6, "Failed to lower gas transfer")
 
   def removeRobotPosition(self):
-    #Make sure we are down - Disabled until the gas transfer down Hall effect sensor has been adjusted
+    #This function only makes sense if we are in the down position
+    #Temporarily disabled until the gas transfer down Hall effect sensor has been adjusted
     #if not self.checkForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL):
     #  self.abortOperation("ERROR: removeRobotPosition called while gas transfer was not down. Operation aborted.")
 
     #Raise the gas transfer
     self.setGasTransferValve(OFF)
+    self.doStep(self.evaporate_Step7, "Failed to raise gas transfer")
+
+    #Move to home
+    self.doStep(self.evaporate_Step8, "Failed to move to home")
+
+  def evaporate_Step1(self):
+    self.systemModel[self.ReactorID]['Motion'].moveReactorDown()
+    self.waitForCondition(self.systemModel[self.ReactorID]['Motion'].getCurrentReactorDown,True,EQUAL,10)
+
+  def evaporate_Step2(self):
+    self.systemModel['ReagentDelivery'].setMoveGripperUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGripperUp,True,EQUAL,4)
+
+  def evaporate_Step3(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,3)
+
+  def evaporate_Step4(self):
+    self.systemModel['ReagentDelivery'].setEnableRobots()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getRobotStatus,(ENABLED,ENABLED),EQUAL,3)
+
+  def evaporate_Step5(self):
+    self.systemModel['ReagentDelivery'].moveToReagentPosition(int(self.ReactorID[-1]),EVAPORATEPOSITION)
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(int(self.ReactorID[-1]),
+      EVAPORATEPOSITION, 0, 0),EQUAL,5)
+
+  def evaporate_Step6(self):
+    self.systemModel['ReagentDelivery'].setMoveGasTransferDown()
+    self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferDown,True,EQUAL,2)
+
+  def evaporate_Step7(self):
     self.systemModel['ReagentDelivery'].setMoveGasTransferUp()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentGasTransferUp,True,EQUAL,2)
 
-    #Move to home
+  def evaporate_Step8(self):
     self.systemModel['ReagentDelivery'].moveToHomeFast()
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 
-  """def setParams(self,currentParams):
-    expectedParams = ['ReactorID','evapTime','evapTemp','coolTemp','stirSpeed']
-    self.paramsValid = True
-    for parameter in expectedParams:
-      if not(parameter in currentParams):
-        self.paramsValid = False
-        #Log Error
-      self.paramsValidated = True"""
-      
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
     self.component = pComponent

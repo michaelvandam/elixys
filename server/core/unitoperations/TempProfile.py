@@ -4,7 +4,7 @@
 from UnitOperation import *
 
 class TempProfile(UnitOperation):
-  def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+  def __init__(self,systemModel,params):
     UnitOperation.__init__(self,systemModel)
     expectedParams = {REACTORID:STR,REACTTEMP:FLOAT,REACTTIME:INT,COOLTEMP:INT,LIQUIDTCREACTOR:INT,LIQUIDTCCOLLET:INT,STIRSPEED:INT}
     paramError = self.validateParams(params,expectedParams)
@@ -12,14 +12,6 @@ class TempProfile(UnitOperation):
       self.setParams(params)
     else:
       raise UnitOpError(paramError)
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.reactTemp
-    #self.reactTime
-    #self.coolTemp
-    #self.liquidTCReactor
-    #self.liquidTCCollet
-    #self.stirSpeed
 
   def run(self):
     try:

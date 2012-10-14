@@ -87,7 +87,6 @@ class CoreServerService(rpyc.Service):
                 # Acquire the core server lock
                 gCoreServerLock.Acquire(1)
                 bCoreServerLocked = True
-                gDatabase.SystemLog(LOG_INFO, sUsername, "## Updating server state")
 
                 # Get the server state
                 gServerState = gSystemModel.GetStateObject()
@@ -97,25 +96,6 @@ class CoreServerService(rpyc.Service):
 
                 # Get the initial run state
                 gServerState["runstate"] = InitialRunState()
-
-                # Initialize the run state
-                gServerState["runstate"] = {"type":"runstate"}
-                gServerState["runstate"]["description"] = ""
-                gServerState["runstate"]["status"] = ""
-                gServerState["runstate"]["running"] = False
-                gServerState["runstate"]["prompt"] = {"type":"promptstate",
-                    "show":False}
-                gServerState["runstate"]["username"] = ""
-                gServerState["runstate"]["sequenceid"] = 0
-                gServerState["runstate"]["componentid"] = 0
-                gServerState["runstate"]["time"] = ""
-                gServerState["runstate"]["timedescription"] = ""
-                gServerState["runstate"]["useralert"] = ""
-                gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
-                    "text":"",
-                    "id":""}
-                gServerState["runstate"]["waitingforuserinput"] = False
-                gServerState["runstate"]["runcomplete"] = False
 
                 # Check if the system is running or idle
                 if (gRunSequence != None) and (gRunSequence.initializing or gRunSequence.running):
@@ -141,6 +121,35 @@ class CoreServerService(rpyc.Service):
                             gServerState["runstate"]["waitingforuserinput"] = True
                         if gRunSequence.willRunPause():
                             gServerState["runstate"]["useralert"] = "Run will pause after the current operation."
+                        if gRunSequence.getShowAbortPrompt():
+                            gServerState["runstate"]["prompt"]["screen"] = "PROMPT_ABORTRUN"
+                            gServerState["runstate"]["prompt"]["show"] = True
+                            gServerState["runstate"]["prompt"]["title"] = "ABORT RUN"
+                            gServerState["runstate"]["prompt"]["text1"] = "Are you sure you want to abort this run?"
+                            gServerState["runstate"]["prompt"]["edit1"] = False
+                            gServerState["runstate"]["prompt"]["text2"] = ""
+                            gServerState["runstate"]["prompt"]["edit2"] = False
+                            gServerState["runstate"]["prompt"]["buttons"] = [{"type":"button",
+                                "text":"YES",
+                                "id":"YES"},
+                                {"type":"button",
+                                "text":"NO",
+                                "id":"NO"}]
+                        else:
+                            (sSoftError, pOptions) = pUnitOperation.getSoftError()
+                            if sSoftError != "":
+                                gServerState["runstate"]["prompt"]["screen"] = "PROMPT_SOFTERROR"
+                                gServerState["runstate"]["prompt"]["show"] = False
+                                gServerState["runstate"]["prompt"]["title"] = "ERROR"
+                                gServerState["runstate"]["prompt"]["text1"] = sSoftError
+                                gServerState["runstate"]["prompt"]["edit1"] = False
+                                gServerState["runstate"]["prompt"]["text2"] = ""
+                                gServerState["runstate"]["prompt"]["edit2"] = False
+                                gServerState["runstate"]["prompt"]["buttons"] = []
+                                for sOption in pOptions:
+                                    gServerState["runstate"]["prompt"]["buttons"].append({"type":"button",
+                                        "text":sOption,
+                                        "id":sOption})
                 else:
                     # The system is idle
                     gRunSequence = None
@@ -164,6 +173,8 @@ class CoreServerService(rpyc.Service):
                     gServerState["runstate"]["unitoperationbutton"] = {"type":"button",
                         "text":"CONTINUE",
                         "id":"USERINPUT"}
+                if gServerState["runstate"]["prompt"]["title"] != "":
+                    gServerState["runstate"]["prompt"]["show"] = True
 
             # Format the server state as a JSON string
             pResult = self.SuccessResult(json.dumps(gServerState))
@@ -377,6 +388,41 @@ class CoreServerService(rpyc.Service):
             gCoreServerLock.Release()
         return pResult
 
+    def exposed_ShowAbortSequencePrompt(self, sUsername, bShowAbortPrompt):
+        """Displays the abort sequence prompt in the run state"""
+        global gCoreServerLock
+        global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
+        bLocked = False
+        try:
+            # Acquire the lock
+            gCoreServerLock.Acquire(1)
+            bLocked = True
+            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.ShowAbortSequencePrompt()")
+
+            # Make sure the system is running
+            if (gRunSequence == None) or not gRunSequence.running:
+                raise Exception("No sequence running, cannot prompt for abort")
+
+            # Make sure we are the user running the system
+            if gRunUsername != sUsername:
+                raise Exception("Not the user running the sequence, cannot prompt for abort")
+
+            # Set the abort prompt flag
+            gRunSequence.setShowAbortPrompt(bShowAbortPrompt)
+            pResult = self.SuccessResult()
+        except Exception, ex:
+            # Log the error
+            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.ShowAbortSequencePrompt() failed: " + str(ex))
+            pResult = self.FailureResult()
+
+        # Release the lock and return
+        if bLocked:
+            gCoreServerLock.Release()
+        return pResult
+
     def exposed_AbortSequence(self, sUsername):
         """Quickly turns off the heaters and terminates the run, leaving the system in its current state"""
         global gCoreServerLock
@@ -496,8 +542,50 @@ class CoreServerService(rpyc.Service):
             gCoreServerLock.Release()
         return pResult
 
+    def exposed_SetSoftErrorDecision(self, sUsername, sDecision):
+        """Sets the user's decision on how to handle the soft error"""
+        global gCoreServerLock
+        global gDatabase
+        global gSystemModel
+        global gRunUsername
+        global gRunSequence
+        bLocked = False
+        try:
+            # Acquire the lock
+            gCoreServerLock.Acquire(1)
+            bLocked = True
+            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.SetSoftErrorDecision()")
+
+            # Perform additional checks if the user is someone other than the CLI
+            if sUsername != "CLI":
+                # Make sure the system is running
+                if (gRunSequence == None) or not gRunSequence.running:
+                    raise Exception("No sequence running, cannot set soft error decision")
+
+                # Make sure we are the user running the system
+                if gRunUsername != sUsername:
+                    raise Exception("Not the user running the sequence, cannot set soft error decision")
+
+            # Make sure we have a unit operation
+            pUnitOperation = gSystemModel.GetUnitOperation()
+            if pUnitOperation == None:
+                raise Exception("No unit operation, cannot set soft error decision")
+
+            # Check the unit operation for a soft error
+            pUnitOperation.setSoftErrorDecision(sDecision)
+            pResult = self.SuccessResult()
+        except Exception, ex:
+            # Log the error
+            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.SetSoftErrorDecision() failed: " + str(ex))
+            pResult = self.FailureResult()
+
+        # Release the lock and return
+        if bLocked:
+            gCoreServerLock.Release()
+        return pResult
+
     def exposed_DeliverUserInput(self, sUsername):
-        """Delivers user input to the current unit operation for the CLI"""
+        """Delivers user input to the current unit operation"""
         global gCoreServerLock
         global gDatabase
         global gSystemModel
@@ -537,7 +625,7 @@ class CoreServerService(rpyc.Service):
         if bLocked:
             gCoreServerLock.Release()
         return pResult
- 
+
     def exposed_CLIExecuteCommand(self, sUsername, sCommand):
         """Executes a command for the CLI"""
         global gCoreServerLock
@@ -704,7 +792,8 @@ def InitialRunState():
     pRunState["status"] = ""
     pRunState["running"] = False
     pRunState["prompt"] = {"type":"promptstate",
-        "show":False}
+        "show":False,
+        "title":""}
     pRunState["username"] = ""
     pRunState["sequenceid"] = 0
     pRunState["componentid"] = 0

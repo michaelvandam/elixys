@@ -45,10 +45,6 @@ class Summary(UnitOperation):
       raise UnitOpError(paramError)
     self.description = "Summary of sequence run."
 
-    #Should have parameters listed below:
-    #self.summaryFlag
-    #self.summaryMessage
-    
   def run(self):
     try:
       self.setStatus("Waiting for user input")

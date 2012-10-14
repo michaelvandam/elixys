@@ -400,10 +400,8 @@ class PostHandler:
         # Check which button the user clicked
         if sActionType == "BUTTONCLICK":
             if sActionTargetID == "ABORTRUN":
-                # Abort the run and return to the home page
-                self.__pCoreServer.AbortSequence(self.__sRemoteUser)
-                self.__pClientState["prompt"]["show"] = False
-                self.__pClientState["screen"] = "HOME"
+                # Show the abort confirmation prompt
+                self.__pCoreServer.ShowAbortSequencePrompt(self.__sRemoteUser, True)
                 return self.__SaveClientStateAndReturn()
             elif sActionTargetID == "SEQUENCER":
                 # Switch states to Home
@@ -473,7 +471,6 @@ class PostHandler:
                 except Exceptions.ComponentNotFoundException:
                     # Interger does not correspond to a component ID
                     pass
-
 
         # Tell the caller we didn't handle it
         return False
@@ -587,7 +584,20 @@ class PostHandler:
         elif self.__pClientState["prompt"]["screen"] == "PROMPT_UNITOPERATION":
             # Currently unused
             return self.__SaveClientStateAndReturn()
-
+        elif self.__pClientState["prompt"]["screen"] == "PROMPT_SOFTERROR":
+            # Pass the user's decision to the core server
+            self.__pCoreServer.SetSoftErrorDecision(self.__sRemoteUser, sActionTargetID)
+        elif self.__pClientState["prompt"]["screen"] == "PROMPT_ABORTRUN":
+            if sActionTargetID == "YES":
+                # Abort the run and return to the home page
+                self.__pCoreServer.AbortSequence(self.__sRemoteUser)
+                self.__pClientState["prompt"]["show"] = False
+                self.__pClientState["screen"] = "HOME"
+                return self.__SaveClientStateAndReturn()
+            if sActionTargetID == "NO":
+                # Hide the prompt
+                self.__pCoreServer.ShowAbortSequencePrompt(self.__sRemoteUser, False)
+                return self.__SaveClientStateAndReturn()
         # Unhandled use case
         raise Exceptions.StateMisalignmentException()
 

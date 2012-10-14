@@ -30,10 +30,6 @@ class Install(UnitOperation):
     else:
       self.description += "."
 
-    #Should have parameters listed below:
-    #self.ReactorID
-    #self.userMessage
-    
   def run(self):
     try:
       self.setStatus("Moving reactor")
