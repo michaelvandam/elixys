@@ -10,9 +10,6 @@ sys.path.append("/opt/elixys/database")
 from DBComm import *
 import urllib
 
-# TEMP
-import random
-
 #Reactor Y Positions
 REACT_A    = 'React1'
 REACT_B    = 'React2'
@@ -665,11 +662,6 @@ class UnitOperation(threading.Thread):
     self.checkAbort()
     bConditionMet = False
 
-    # TEMP 1/3
-    ran = random.randint(1, 10)
-    if ran == 4:
-      raise UnitOpTimeout("waitForCondition")
-
     if comparator == EQUAL:
       while not bConditionMet:
         value = function()
@@ -878,13 +870,7 @@ class UnitOperation(threading.Thread):
     if heaterState == ON:
       self.updateStatusWhileWaiting = self.updateHeaterStatus
       self.doStep(self.setHeater_Step1, "Failed to turn on heaters")
-
-      # TEMP 2/3
-      try:
-        self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,65535)
-      except UnitOpTimeout:
-        pass
-
+      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.reactTemp,GREATER,65535)
       self.updateStatusWhileWaiting = None
     elif heaterState == OFF:
       self.doStep(self.setHeater_Step2, "Failed to turn off heaters")
@@ -911,13 +897,7 @@ class UnitOperation(threading.Thread):
     self.doStep(self.setCool_Step1, "Failed to turn off heaters")
     self.setCoolingSystem(ON)
     self.updateStatusWhileWaiting = self.updateHeaterStatus
-
-    # TEMP 3/3
-    try:
-      self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
-    except UnitOpTimeout:
-      pass
-
+    self.waitForCondition(self.systemModel[self.ReactorID]['Thermocouple'].getCurrentTemperature,self.coolTemp,LESS,65535) 
     if coolingDelay > 0:
       self.startTimer(coolingDelay)
       coolingDelay = self.waitForTimer()
