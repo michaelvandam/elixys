@@ -75,6 +75,14 @@ python setup.py install
 cd ..
 rm -rf twilio-python
 
+# Install the six Python library for Twilio
+wget http://pypi.python.org/packages/source/s/six/six-1.2.0.tar.gz
+tar -xf six-1.2.0.tar.gz
+cd six-1.2.0
+python setup.py install
+cd ..
+rm -rf six-1.2.0
+
 # Add the services scripts
 cp elixys/server/config/init.d/ElixysCoreServer /etc/init.d
 cp elixys/server/config/init.d/ElixysFakePLC /etc/init.d
