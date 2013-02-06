@@ -530,6 +530,9 @@ class HardwareComm():
             if not self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown():
                 raise Exception("Cannot home reactor robot unless reactor is down")
 
+        # Set the reactor position to install before homing
+        self.MoveReactor(nReactor, "Install")
+
         # Turn on the reactor axis
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
         time.sleep(0.1)
