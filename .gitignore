@@ -9,3 +9,5 @@ client/ElixysAIR/bin-debug/
 client/ElixysAIR/release/
 client/ElixysiPad/bin-debug/
 client/ElixysiPad/bin-ipa/
+*.swo
+*.swp
