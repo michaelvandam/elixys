@@ -16,12 +16,10 @@
 #  and performs sequence runs.
 ### END INIT INFO
 
-# Source function library.
-. /etc/rc.d/init.d/functions
 
-coreserver=${CORESERVER-python /opt/elixys/core/CoreServer.py}
-pidfile=${PIDFILE-/var/run/ElixysCoreServer.pid}
-lockfile=${LOCKFILE-/var/lock/ElixysCoreServer}
+coreserver="python /opt/elixys/core/CoreServer.py"
+pidfile=/var/run/ElixysCoreServer.pid
+lockfile=/var/lock/ElixysCoreServer
 RETVAL=0
 
 start() {

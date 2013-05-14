@@ -16,12 +16,10 @@
 #  server to stream video.
 ### END INIT INFO
 
-# Source function library.
-. /etc/rc.d/init.d/functions
 
-rtmpd=${RTMPD-python /opt/elixys/rtmpd/RtmpdDaemon.py}
-pidfile=${PIDFILE-/var/run/ElixysRtmpd.pid}
-lockfile=${LOCKFILE-/var/lock/ElixysRtmpd}
+rtmpd=python /opt/elixys/rtmpd/RtmpdDaemon.py
+pidfile=/var/run/ElixysRtmpd.pid
+lockfile=/var/lock/ElixysRtmpd
 RETVAL=0
 
 start() {
