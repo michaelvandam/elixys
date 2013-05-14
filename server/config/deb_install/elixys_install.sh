@@ -19,6 +19,7 @@ then
 	echo "Update the Elixys repo"
 	cd $ELIXYS_SRC
 	git remote update
+	git pull
 else
 	# Git Clone the Repo
 	echo "Clone the Elixys Repo"
@@ -50,7 +51,7 @@ cp $ELIXYS_SRC/server/config/adobepolicyfile/crossdomain.xml \
 	/var/www/adobepolicyfile
 chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
-./elixys_install_database.sh
+$ELIXYS_DEB_INSTALL_PATH/elixys_install_database.sh
 
 # Copy over the crtmp server scripts
 cp $ELIXYS_SRC/server/rtmpd/*.lua $ELIXYS_RTMPD_PATH
@@ -62,4 +63,5 @@ cp -R $ELIXYS_SRC/server/rtmpd/applications/flvplayback/media/* $ELIXYS_RTMPD_PA
 cp $ELIXYS_SRC/server/config/elixys-web /etc/apache2/sites-available
 a2dissite default
 a2ensite elixys-web
-
+$ELIXYS_DEB_INSTALL_PATH/elixys_update.sh
+$ELIXYS_DEB_INSTALL_PATH/elixys_setup_demo.sh
