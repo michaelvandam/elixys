@@ -37,3 +37,19 @@ cp -R $ELIXYS_SRC/server/cli $ELIXYS_INSTALL_PATH
 cp -R $ELIXYS_SRC/server/core $ELIXYS_INSTALL_PATH
 cp -R $ELIXYS_SRC/server/hardware $ELIXYS_INSTALL_PATH
 cp -R $ELIXYS_SRC/server/database $ELIXYS_INSTALL_PATH
+
+cp -R $ELIXYS_SRC/server/config/init.d/ElixysCoreServer /etc/init.d/
+cp -R $ELIXYS_SRC/server/config/init.d/ElixysFakePLC /etc/init.d/
+cp -R $ELIXYS_SRC/server/config/init.d/ElixysRtmpd /etc/init.d/
+cp -R $ELIXYS_SRC/server/config/init.d/ElixysValidation /etc/init.d/
+
+chmod 755 /etc/init.d/ElixysCoreServer
+chmod 755 /etc/init.d/ElixysValidation
+chmod 755 /etc/init.d/ElixysFakePLC
+chmod 755 /etc/init.d/ElixysRtmpd
+
+
+update-rc.d ElixysFakePLC defaults 90
+update-rc.d ElixysCoreServer defaults 91
+update-rc.d ElixysCoreServer defaults 91
+update-rc.d ElixysRtmpd defaults 92
