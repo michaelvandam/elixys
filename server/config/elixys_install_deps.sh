@@ -16,7 +16,7 @@ pip install rpyc
 pip install twilio
 apt-get -q -y install vim git-core binutils
 apt-get -q -y install autojump
-echo "source /usr/share/autojump/autojump.bash" >> .bashrc
+echo "source /usr/share/autojump/autojump.bash" >> ~/.bashrc
 apt-get -q -y install mysql-common mysql-server
 apt-get -q -y install apache2 apache2-utils \
 			libapache2-mod-wsgi apache2-threaded-dev \
@@ -32,7 +32,6 @@ mkdir -p $ADOBE_POL_PATH_SRC
 cd $ADOBE_POL_PATH_SRC
 wget http://www.beamartyr.net/projects/mod_adobe_crossdomainpolicy.c
 apxs2 -cia mod_adobe_crossdomainpolicy.c
-cd
 
 a2enmod adobe_crossdomainpolicy
 a2enmod wsgi

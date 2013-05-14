@@ -3,6 +3,5 @@ export ELIXYS_SRC=/usr/local/src/elixys
 export ELIXYS_REPO=https://github.com/henryeherman/elixys.git
 export ELIXYS_INSTALL_PATH=/opt/elixys
 export ELIXYS_CONFIG_PATH=$ELIXYS_INSTALL_PATH/config
-export ELIXYS_LOG_PATH=$ELIXYS_INSTALL_PATH/log
+export ELIXYS_LOG_PATH=$ELIXYS_INSTALL_PATH/logs
 export ELIXYS_RTMPD_PATH=$ELIXYS_INSTALL_PATH/rtmpd
-export ELIXYS_DEB_INSTALL_PATH=$ELIXYS_SRC/server/config/deb_install
