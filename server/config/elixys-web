@@ -1,0 +1,23 @@
+ServerName Elixys
+
+# mod_dbd configuration
+DBDriver mysql
+DBDParams "host=localhost dbname=Elixys user=Apache pass=devel"
+DBDMin  10
+DBDKeep 10
+DBDMax  10
+
+<VirtualHost *:80>
+        WSGIScriptAlias /Elixys /var/www/wsgi/WebServer.py
+        DocumentRoot "/var/www/http"
+
+        <Directory /> 
+            Options FollowSymLinks
+            AllowOverride None
+            AuthType basic
+            AuthName "Elixys Server"
+            AuthBasicProvider dbd
+            AuthDBDUserPWQuery "SELECT Password FROM Users WHERE Username = %s"
+            Require valid-user
+        </Directory>
+</VirtualHost>

@@ -2,7 +2,7 @@
 
 if [ "$(whoami)" != "root" ]; then
 	echo "Elixys server install require root priveleges"
-	exit 1
+	exit 
 fi
 
 #Install Elixys Dependencies
@@ -19,7 +19,9 @@ apt-get -q -y install autojump
 echo "source /usr/share/autojump/autojump.bash" >> .bashrc
 apt-get -q -y install mysql-common mysql-server
 apt-get -q -y install apache2 apache2-utils \
-			libapache2-mod-wsgi apache2-threaded-dev 
+			libapache2-mod-wsgi apache2-threaded-dev \
+			libapache2-mod-auth-mysql \
+			libaprutil1-dbd-mysql 
 			# \ apache2-prefork-dev
 
 sudo apt-get -q -y install crtmpserver
@@ -37,4 +39,5 @@ a2enmod wsgi
 a2enmod authn_dbd
 a2enmod authz_host
 a2enmod authz_user
-
+a2enmod rewrite
+a2enmod auth_mysql
