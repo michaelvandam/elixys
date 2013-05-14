@@ -16,12 +16,10 @@
 #    run without the system.
 ### END INIT INFO
 
-# Source function library.
-. /etc/rc.d/init.d/functions
 
-fakeplc=${FAKEPLC-python /opt/elixys/hardware/fakeplc/FakePLC.py}
-pidfile=${PIDFILE-/var/run/ElixysFakePLC.pid}
-lockfile=${LOCKFILE-/var/lock/ElixysFakePLC}
+fakeplc="python /opt/elixys/hardware/fakeplc/FakePLC.py"
+pidfile=/var/run/ElixysFakePLC.pid
+lockfile=/var/lock/ElixysFakePLC
 RETVAL=0
 
 start() {

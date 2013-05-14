@@ -34,5 +34,5 @@ mysql Elixys < CreateDatabaseProcedures.sql
 # Restart the database
 echo "Restarting database..."
 service mysql restart
-#echo "Done"
+echo "Done With DB Config"
 

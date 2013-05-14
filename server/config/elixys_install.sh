@@ -8,7 +8,7 @@ fi
 source elixys_paths.sh
 
 # Remove old src
-rm -Rf $ELIXYS_SRC
+#rm -Rf $ELIXYS_SRC
 # Remove old configs
 rm -Rf $ELIXYS_INSTALL_PATH/*
 
@@ -30,6 +30,7 @@ fi
 mkdir -p $ELIXYS_INSTALL_PATH
 mkdir -p $ELIXYS_LOG_PATH
 mkdir -p $ELIXYS_CONFIG_PATH
+mkdir -p $ELIXYS_RTMPD_PATH
 
 # Copy the default configuration and setup scripts
 cp -R server/config/* $ELIXYS_CONFIG_PATH 
@@ -49,11 +50,12 @@ cp $ELIXYS_SRC/server/config/adobepolicyfile/crossdomain.xml \
 	/var/www/adobepolicyfile
 chmod 444 /var/www/adobepolicyfile/crossdomain.xml
 
-
-service mysql restart
 ./elixys_install_database.sh
 
 # Copy over the crtmp server scripts
-#cp $ELIXYS_SRC/server/rtmpd/* $ELIXYS_RTMPD_PATH
+cp $ELIXYS_SRC/server/rtmpd/*.lua $ELIXYS_RTMPD_PATH
+cp $ELIXYS_SRC/server/rtmpd/*.py $ELIXYS_RTMPD_PATH
+mkdir -p $ELIXYS_RTMPD_PATH/media
+cp -R $ELIXYS_SRC/server/rtmpd/applications/flvplayback/media/* $ELIXYS_RTMPD_PATH/media
 
 
