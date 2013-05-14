@@ -16,12 +16,9 @@
 #   in need of vaidation.
 ### END INIT INFO
 
-# Source function library.
-. /etc/rc.d/init.d/functions
-
-validation=${VALIDATION-python /opt/elixys/core/SequenceValidation.py}
-pidfile=${PIDFILE-/var/run/ElixysValidation.pid}
-lockfile=${LOCKFILE-/var/lock/ElixysValidation}
+validation="python /opt/elixys/core/SequenceValidation.py"
+pidfile=/var/run/ElixysValidation.pid
+lockfile=/var/lock/ElixysValidation
 RETVAL=0
 
 start() {
