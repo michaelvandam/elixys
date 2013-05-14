@@ -58,4 +58,8 @@ cp $ELIXYS_SRC/server/rtmpd/*.py $ELIXYS_RTMPD_PATH
 mkdir -p $ELIXYS_RTMPD_PATH/media
 cp -R $ELIXYS_SRC/server/rtmpd/applications/flvplayback/media/* $ELIXYS_RTMPD_PATH/media
 
+# Copy over the Apache config
+cp $ELIXYS_SRC/server/config/elixys-web /etc/apache2/sites-available
+a2dissite default
+a2ensite elixys-web
 

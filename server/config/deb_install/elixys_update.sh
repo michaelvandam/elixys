@@ -13,6 +13,7 @@ then
 	echo "Update the Elixys repo"
 	cd $ELIXYS_SRC
 	git remote update
+	git pull origin
 else
 	# Git Clone the Repo
 	echo "Clone the Elixys Repo"
@@ -51,5 +52,13 @@ chmod 755 /etc/init.d/ElixysRtmpd
 
 update-rc.d ElixysFakePLC defaults 90
 update-rc.d ElixysCoreServer defaults 91
-update-rc.d ElixysCoreServer defaults 91
-update-rc.d ElixysRtmpd defaults 92
+update-rc.d ElixysValidation defaults 91
+#update-rc.d ElixysRtmpd defaults 92
+update-rc.d apache2 defaults
+
+service mysql restart
+service apache2 restart
+service ElixysFakePLC restart
+service ElixysCoreServer restart
+service ElixysValidation restart
+#service ElixysRtmpd restart
