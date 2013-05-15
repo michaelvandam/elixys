@@ -49,7 +49,7 @@ class RtmpdDaemon(daemon):
                     sLuaFile = "crtmpserver.lua"
                 else:
                     sLuaFile = "crtmpdemoserver.lua"
-                pRtmpdProcess = subprocess.Popen(["/opt/elixys/rtmpd/crtmpserver", sLuaFile], stdin = pLogFile, stdout = pLogFile, cwd = "/opt/elixys/rtmpd")
+                pRtmpdProcess = subprocess.Popen(["crtmpserver", sLuaFile], stdin = pLogFile, stdout = pLogFile, cwd = "/opt/elixys/rtmpd")
 
                 # Run until we get the signal to stop
                 while not self.bTerminate and (pRtmpdProcess.returncode == None):

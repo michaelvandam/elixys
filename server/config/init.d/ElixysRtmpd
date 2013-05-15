@@ -17,7 +17,7 @@
 ### END INIT INFO
 
 
-rtmpd=python /opt/elixys/rtmpd/RtmpdDaemon.py
+rtmpd="python /opt/elixys/rtmpd/RtmpdDaemon.py"
 pidfile=/var/run/ElixysRtmpd.pid
 lockfile=/var/lock/ElixysRtmpd
 RETVAL=0
