@@ -4,6 +4,13 @@ if [ "$(whoami)" != "root" ]; then
 	echo "Elixys server install require root priveleges"
 	exit 1
 fi
+
+if [ ! -f elixys_paths.sh ];
+then
+	echo "elixys_paths.sh does not exist"
+	exit 1
+fi
+
 source elixys_paths.sh
 # Grab the source
 
@@ -53,7 +60,7 @@ chmod 755 /etc/init.d/ElixysRtmpd
 update-rc.d ElixysFakePLC defaults 90
 update-rc.d ElixysCoreServer defaults 91
 update-rc.d ElixysValidation defaults 91
-#update-rc.d ElixysRtmpd defaults 92
+update-rc.d ElixysRtmpd defaults 92
 update-rc.d apache2 defaults
 
 service mysql restart
@@ -61,4 +68,4 @@ service apache2 restart
 service ElixysFakePLC restart
 service ElixysCoreServer restart
 service ElixysValidation restart
-#service ElixysRtmpd restart
+service ElixysRtmpd restart

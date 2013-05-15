@@ -6,12 +6,15 @@ if [ "$(whoami)" != "root" ]; then
 fi
 
 ./elixys_install_deps.sh
+if [ ! -f elixys_paths.sh ];
+then
+	echo "elixys_paths.sh does not exist"
+	exit 1
+fi
 
 source elixys_paths.sh
 
 # Remove old src
-#rm -Rf $ELIXYS_SRC
-# Remove old configs
 rm -Rf $ELIXYS_INSTALL_PATH
 
 # Grab the source
@@ -59,8 +62,13 @@ cd $ELIXYS_CONFIG_PATH
 # Copy over the crtmp server scripts
 cp $ELIXYS_SRC/server/rtmpd/*.lua $ELIXYS_RTMPD_PATH
 cp $ELIXYS_SRC/server/rtmpd/*.py $ELIXYS_RTMPD_PATH
-mkdir -p $ELIXYS_RTMPD_PATH/media
-cp -R $ELIXYS_SRC/server/rtmpd/applications/flvplayback/media/* $ELIXYS_RTMPD_PATH/media
+# Copy over the application directory and media
+mkdir -p $ELIXYS_RTMPD_PATH/applications/flvplayback/media
+cp -R $ELIXYS_SRC/server/rtmpd/applications/flvplayback/media/*  \
+	$ELIXYS_RTMPD_PATH/applications/flvplayback/media
+
+
+
 
 # Copy over the Apache config
 cp $ELIXYS_SRC/server/config/elixys-web /etc/apache2/sites-available
