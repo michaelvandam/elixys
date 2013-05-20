@@ -43,14 +43,14 @@ def ParseLogLevel(sLogLevel):
 class DBComm:
   ### Construction / Destruction ###
 
-  def __init__(self):
+  def __init__(self, config =  "/opt/elixys/config/SystemConfiguration.ini"):
     """Initializes the DBComm class"""
     # Initialize variables
     self.__pDatabase = None
     self.__pDatabaseLock = TimedLock.TimedLock()
 
     # Open the system configuration
-    sSystemConfiguration = "/opt/elixys/config/SystemConfiguration.ini"
+    sSystemConfiguration = config
     if not os.path.exists(sSystemConfiguration):
         raise Exception("System configuration INI file not found")
     self.__pSystemConfiguration = ConfigObj(sSystemConfiguration)
@@ -80,11 +80,11 @@ class DBComm:
     if self.__nLogLevel == -1:
         raise Exception("Invalid log level in system configuration file")
 
-  def Connect(self):
+  def Connect(self,host="localhost"):
     """Connects to the database"""
     try:
       # Connect to the database
-      self.__pDatabase = MySQLdb.connect(host="localhost", user="Elixys", passwd="devel", db="Elixys")
+      self.__pDatabase = MySQLdb.connect(host=host, user="Elixys", passwd="devel", db="Elixys")
       self.__pDatabase.autocommit(True)
     except:
       raise Exception("Unable to connect to SQL database")

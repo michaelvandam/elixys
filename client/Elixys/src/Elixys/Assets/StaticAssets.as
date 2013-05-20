@@ -4,7 +4,7 @@ package Elixys.Assets
 	public class StaticAssets
 	{
 		[Embed(source="../../../../Elixys/res/Gotham-Light.otf", 
-			fontWeight="light",
+			// fontWeight="light",
 			fontName="GothamLight",
     	    fontFamily="Gotham",
 			advancedAntiAliasing="true",
@@ -12,7 +12,7 @@ package Elixys.Assets
 		public static var GothamLight:Class;
 
 		[Embed(source="../../../../Elixys/res/Gotham-Medium.otf", 
-			fontWeight="medium",
+			// fontWeight="normal",
 			fontName="GothamMedium",
     	    fontFamily="Gotham",
 			advancedAntiAliasing="true",

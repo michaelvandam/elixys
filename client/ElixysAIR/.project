@@ -3,6 +3,7 @@
 	<name>ElixysAIR</name>
 	<comment></comment>
 	<projects>
+		<project>Elixys</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

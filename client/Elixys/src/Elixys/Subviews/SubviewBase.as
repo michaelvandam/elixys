@@ -25,7 +25,6 @@ package Elixys.Subviews
 	import flash.text.TextFormatAlign;
 	import flash.utils.getQualifiedClassName;
 	
-	import flashx.textLayout.formats.TextAlign;
 
 	// This subview baset is an extension of our extended Form class
 	public class SubviewBase extends Form
@@ -118,7 +117,7 @@ package Elixys.Subviews
 			var pInput:Input = CreateInput(pXML, attributes, pParent);
 			var pTextBox:ITextBox = pInput.inputField as ITextBox;
 			pTextBox.borderColor = 0xFFFFFF;
-			pTextBox.textAlign = TextAlign.RIGHT;
+			pTextBox.textAlign = "right";
 			return pInput;
 		}
 		
@@ -139,7 +138,7 @@ package Elixys.Subviews
 			var pInput:Input = CreateMultilineInput(pXML, attributes, nLines, pParent);
 			var pTextBox:ITextBox = pInput.inputField as ITextBox;
 			pTextBox.borderColor = 0xFFFFFF;
-			pTextBox.textAlign = TextAlign.LEFT;
+			pTextBox.textAlign = "right";
 			return pInput;
 		}
 

@@ -1,8 +1,8 @@
 package skyboy.serialization {
 	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
 	import flash.utils.Endian;
 	import flash.utils.getQualifiedClassName;
-	import flash.utils.Dictionary;
 	/**
 	 * JSON by skyboy. June 28th 2010.
 	 * Visit http://github.com/skyboy for documentation, updates
@@ -55,7 +55,7 @@ package skyboy.serialization {
 	 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
 	final public class JSON {
-		private static var instance:JSON;
+		private static var instance:skyboy.serialization.JSON;
 		public function JSON() {
 			if (instance) throw new Error("This class has no instance methods.");
 			instance = this;
@@ -820,7 +820,7 @@ package skyboy.serialization {
 						rtn[inx] = handleLit(data, e, a);
 						a = i;
 					} else error(data, a, "Expected value.", 1);
-				} else if ((inx += int(p = (c === 0x2C)),p)) void;
+				} else if ((inx += int(p = (c === 0x2C)),p));
 				else error(data, a, "Expected , or ]");
 				c = data.charCodeAt(++a);
 			}
@@ -875,7 +875,7 @@ package skyboy.serialization {
 							} else error(data, a, "Expected value.", 1);
 						} else error(data, a, "Expected :");
 					} else error(data, a, "Expected \" or '");
-				} else if ((p = (c === 0x2C))) void;
+				} else if ((p = (c === 0x2C)));
 				else error(data, a, "Expected , or }");
 				c = data.charCodeAt(++a);
 			}
