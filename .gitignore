@@ -1,0 +1,11 @@
+client/.metadata/
+*.pyc
+.DS_Store
+server/rtmpd/applications/flvplayback/media
+client/ElixysAIR/release/
+client/Elixys/bin-debug/
+client/Elixys/bin-release/
+client/ElixysAIR/bin-debug/
+client/ElixysAIR/release/
+client/ElixysiPad/bin-debug/
+client/ElixysiPad/bin-ipa/
