@@ -50,7 +50,7 @@ class DBComm:
     self.__pDatabaseLock = TimedLock.TimedLock()
 
     # Open the system configuration
-	sSystemConfiguration = config
+    sSystemConfiguration = config
     if not os.path.exists(sSystemConfiguration):
         raise Exception("System configuration INI file not found")
     self.__pSystemConfiguration = ConfigObj(sSystemConfiguration)
