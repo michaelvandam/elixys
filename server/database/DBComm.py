@@ -50,7 +50,7 @@ class DBComm:
     self.__pDatabaseLock = TimedLock.TimedLock()
 
     # Open the system configuration
-    sSystemConfiguration = config
+	sSystemConfiguration = config
     if not os.path.exists(sSystemConfiguration):
         raise Exception("System configuration INI file not found")
     self.__pSystemConfiguration = ConfigObj(sSystemConfiguration)
@@ -62,29 +62,35 @@ class DBComm:
     self.__pConfiguration["debug"] = self.__pSystemConfiguration["Debug"] == "True"
     self.__pConfiguration["reactors"] = int(self.__pSystemConfiguration["Reactors"])
     self.__pConfiguration["reagentsperreactor"] = int(self.__pSystemConfiguration["ReagentsPerReactor"])
-    self.__pConfiguration["columnsperreactor"] = int(self.__pSystemConfiguration["ColumnsPerReactor"])
-    self.__pConfiguration["disallowedreagentpositions"] = []
-    for sDisallowedPosition in self.__pSystemConfiguration["DisallowedPositions"]:
-      pPositionComponents = sDisallowedPosition.split("-")
-      pDisallowedPosition = {}
-      pDisallowedPosition["type"] = "disallowedreagentposition"
-      pDisallowedPosition["cassette"] = int(pPositionComponents[0])
-      pDisallowedPosition["reagent"] = int(pPositionComponents[1])
-      self.__pConfiguration["disallowedreagentpositions"].append(pDisallowedPosition)
-    self.__pConfiguration["twilioaccount"] = self.__pSystemConfiguration["TwilioAccount"]
-    self.__pConfiguration["twiliotoken"] = self.__pSystemConfiguration["TwilioToken"]
-    self.__pConfiguration["twiliofromphone"] = self.__pSystemConfiguration["TwilioFromPhone"]
+    self.__pConfiguration["elutepositionsperreactor"] = int(self.__pSystemConfiguration["ElutePositionsPerReactor"])
+    self.__pConfiguration["deliverypositionsperreactor"] = int(self.__pSystemConfiguration["DeliveryPositionsPerReactor"])
+    self.__pConfiguration["reactorlayoutdimensions"] = self.__ParsePoint(self.__pSystemConfiguration["ReactorLayoutDimensions"])
+    self.__pConfiguration["reactorreagentpositions"] = []
+    for index in range(1, self.__pConfiguration["reagentsperreactor"] + 1):
+        self.__pConfiguration["reactorreagentpositions"].append(self.__ParsePoint(self.__pSystemConfiguration["ReactorReagent" + str(index)]))
+    self.__pConfiguration["reactordeliverypositions"] = []
+    for index in range(1, self.__pConfiguration["deliverypositionsperreactor"] + 1):
+        self.__pConfiguration["reactordeliverypositions"].append(self.__ParsePoint(self.__pSystemConfiguration["ReactorDelivery" + str(index)]))
+    self.__pConfiguration["reactorelutepositions"] = []
+    for index in range(1, self.__pConfiguration["elutepositionsperreactor"] + 1):
+        self.__pConfiguration["reactorelutepositions"].append(self.__ParsePoint(self.__pSystemConfiguration["ReactorElute" + str(index)]))
 
     # Interpret the log level
     self.__nLogLevel = ParseLogLevel(self.__pSystemConfiguration["LogLevel"])
     if self.__nLogLevel == -1:
         raise Exception("Invalid log level in system configuration file")
 
+    # Create the Twilio configuration
+    self.__pTwilioConfiguration = {}
+    self.__pTwilioConfiguration["account"] = self.__pSystemConfiguration["TwilioAccount"]
+    self.__pTwilioConfiguration["token"] = self.__pSystemConfiguration["TwilioToken"]
+    self.__pTwilioConfiguration["fromphone"] = self.__pSystemConfiguration["TwilioFromPhone"]
+	
   def Connect(self,host="localhost"):
     """Connects to the database"""
     try:
       # Connect to the database
-      self.__pDatabase = MySQLdb.connect(host=host, user="Elixys", passwd="devel", db="Elixys")
+      self.__pDatabase = MySQLdb.connect(host, user="Elixys", passwd="devel", db="Elixys")
       self.__pDatabase.autocommit(True)
     except:
       raise Exception("Unable to connect to SQL database")
@@ -211,6 +217,11 @@ class DBComm:
     """Returns the reactor positions"""
     self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReactorPositions()")
     return self.__pSystemConfiguration["ReactorPositions"]
+
+  def GetTwilioConfiguration(self, sCurrentUsername):
+    """Returns the Twilio configuration"""
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetTwilioConfiguration()")
+    return self.__pTwilioConfiguration
 
   ### Role functions ###
 
@@ -564,6 +575,14 @@ class DBComm:
     return self.__CallStoredProcedure("DeleteComponent", (nComponentID, ))
 
   ### Internal functions ###
+
+  def __ParsePoint(self, sPoint):
+    """Parses a point from the configuration file"""
+    pPoint = {}
+    pArray = sPoint.split(",")
+    pPoint["x"] = int(pArray[0])
+    pPoint["y"] = int(pArray[1])
+    return pPoint
 
   def __CallStoredProcedure(self, sProcedureName, pArguments):
     """Calls the given SQL stored procedure"""

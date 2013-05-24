@@ -394,8 +394,6 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToReagent(self, nReactor, nReagent):
-        if ((nReactor == 1) and (nReagent == 1)) or ((nReactor == 3) and (nReagent == 4)):
-            raise Exception("Reagent position is not allowed")
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():

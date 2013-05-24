@@ -18,11 +18,11 @@ class MessagingThread(threading.Thread):
     self.message = sMessage
 
     # Initialize SMS
-    self.systemConfiguration = pDatabase.GetConfiguration(sUsername)
+    self.twilioConfiguration = pDatabase.GetTwilioConfiguration(sUsername)
     self.twilioClient = None
-    if (self.systemConfiguration["twilioaccount"] != "") and (self.systemConfiguration["twiliotoken"] != "") and \
-        (self.systemConfiguration["twiliofromphone"] != ""):
-      self.twilioClient = TwilioRestClient(self.systemConfiguration["twilioaccount"], self.systemConfiguration["twiliotoken"])
+    if (self.twilioConfiguration["account"] != "") and (self.twilioConfiguration["token"] != "") and \
+        (self.twilioConfiguration["fromphone"] != ""):
+      self.twilioClient = TwilioRestClient(self.twilioConfiguration["account"], self.twilioConfiguration["token"])
 
   def run(self):
     """Main thread function"""
@@ -42,5 +42,5 @@ class MessagingThread(threading.Thread):
   def smsMessage(self, sMessage, sPhoneNumber):
     """Send an SMS to the phone number"""
     if self.twilioClient != None:
-      self.twilioClient.sms.messages.create(to=sPhoneNumber, from_=self.systemConfiguration["twiliofromphone"], body=sMessage)
+      self.twilioClient.sms.messages.create(to=sPhoneNumber, from_=self.twilioConfiguration["fromphone"], body=sMessage)
 

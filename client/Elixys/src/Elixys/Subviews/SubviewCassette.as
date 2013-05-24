@@ -8,8 +8,8 @@ package Elixys.Subviews
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
 	import Elixys.JSON.Configuration.Configuration;
-	import Elixys.JSON.Configuration.DisallowedReagentPosition;
 	import Elixys.JSON.State.Reagent;
+	import Elixys.JSON.State.Sequence;
 	
 	import com.danielfreeman.madcomponents.*;
 	
@@ -60,28 +60,8 @@ package Elixys.Subviews
 				}
 				m_pReagentContainer = Form(findViewById("reagentcontainer"));
 				
-				// Create the buttons
-				for (var nIndex:int = 0; nIndex < REAGENTCOUNT; ++nIndex)
-				{
-					// Create the skins
-					m_pUpSkins.push(Utils.AddSkin(tools_btn_up, true, this, m_nButtonWidth));
-					m_pDownSkins.push(Utils.AddSkin(tools_btn_down, true, this, m_nButtonWidth));
-					m_pDisabledSkins.push(Utils.AddSkin(tools_btn_disabled, true, this, m_nButtonWidth));
-					m_pActiveSkins.push(Utils.AddSkin(tools_btn_active, true, this, m_nButtonWidth));
-	
-					// Create the labels
-					m_pLabels.push(Utils.AddLabel("", this, FONTFACE, FONTSIZE, Styling.AS3Color(Styling.TEXT_BLACK)));
-					
-					// Create an initial hit area and enabled flag
-					m_pHitAreas.push(new Rectangle());
-					m_pEnabledFlags.push(true);
-				}
-				
 				// Add event listeners
 				addEventListener(MouseEvent.MOUSE_DOWN, OnMouseDown);
-				
-				// Initialize the button positions
-				AdjustPositions();
 			}
 		}
 		
@@ -92,35 +72,44 @@ package Elixys.Subviews
 		// Updates the component
 		public override function UpdateComponent(pComponent:ComponentBase):void
 		{
-			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
+			// Call the base implementation
+			super.UpdateComponent(pComponent);
+
+			// Initialize when the configuration becomes available
+			var nIndex:int;
+			if ((m_pConfiguration == null) && (m_pElixys.GetConfiguration() != null))
 			{
-				// Initialize the disallowed position reference
-				if (m_pDisallowedReagentPositions == null)
+				// Create the buttons
+				m_pConfiguration = m_pElixys.GetConfiguration();
+				m_nButtonCount = m_pConfiguration.ReactorReagentPositions.length + m_pConfiguration.ReactorDeliveryPositions.length + 
+					m_pConfiguration.ReactorElutePositions.length;
+				for (nIndex = 0; nIndex < m_nButtonCount; ++nIndex)
 				{
-					m_pDisallowedReagentPositions = m_pElixys.GetConfiguration().DisallowedReagentPositions;
+					// Create the skins
+					m_pUpSkins.push(Utils.AddSkin(tools_btn_up, true, this, m_nButtonWidth));
+					m_pDownSkins.push(Utils.AddSkin(tools_btn_down, true, this, m_nButtonWidth));
+					m_pDisabledSkins.push(Utils.AddSkin(tools_btn_disabled, true, this, m_nButtonWidth));
+					m_pActiveSkins.push(Utils.AddSkin(tools_btn_active, true, this, m_nButtonWidth));
+					
+					// Create the labels
+					m_pLabels.push(Utils.AddLabel("", this, FONTFACE, FONTSIZE, Styling.AS3Color(Styling.TEXT_BLACK)));
+					
+					// Create an initial hit area
+					m_pHitAreas.push(new Rectangle());
 				}
 				
-				// Start with all reagents enabled
-				var nIndex:int;
-				for (nIndex = 0; nIndex < REAGENTCOUNT; ++nIndex)
-				{
-					m_pEnabledFlags[nIndex] = true;
-				}
-	
-				// Disable any disallowed positions
+				// Initialize the button positions
+				AdjustPositions();
+			}
+
+			// We only are concerned with view and edit modes
+			if ((m_sMode == Constants.VIEW) || (m_sMode == Constants.EDIT))
+			{
+				// Remember the component
 				m_pComponent = new ComponentCassette(null, pComponent);
-				for (nIndex = 0; nIndex < m_pDisallowedReagentPositions.length; ++nIndex)
-				{
-					var pDisallowedReagentPosition:DisallowedReagentPosition = 
-						m_pDisallowedReagentPositions[nIndex] as DisallowedReagentPosition;
-					if (m_pComponent.Reactor == pDisallowedReagentPosition.Cassette)
-					{
-						m_pEnabledFlags[pDisallowedReagentPosition.Reagent - 1] = false;
-					}
-				}
-	
+				
 				// Press or release the buttons
-				for (nIndex = 0; nIndex < REAGENTCOUNT; ++nIndex)
+				for (nIndex = 0; nIndex < m_nButtonCount; ++nIndex)
 				{
 					if (nIndex == m_nPressedReagent)
 					{
@@ -148,73 +137,85 @@ package Elixys.Subviews
 				if ((m_pReagentContainer.attributes.width != m_nLastWidth) ||
 					(m_pReagentContainer.attributes.height != m_nLastHeight))
 				{
-					// Initialize offsets
-					var nInitialOffsetX:Number = pReagentContainerPosition.x + (m_pReagentContainer.attributes.width - 
-						((m_pUpSkins[0] as Sprite).width * 5) - (BUTTON_HORIZONTAL_GAP * 4)) / 2;
-					var nOffsetX:Number = nInitialOffsetX;
-					var nOffsetY:Number = pReagentContainerPosition.y + (m_pReagentContainer.attributes.height - 
-						((m_pUpSkins[0] as Sprite).height * 4) - (BUTTON_VERTICAL_GAP * 3)) / 2;
-					
-					// Iterate over all 20 positions in the 5 x 4 grid
-					var nIndex:int, pRectangle:Rectangle, pUpSkin:Sprite, pDownSkin:Sprite, 
-						pActiveSkin:Sprite, pDisabledSkin:Sprite, pLabel:UILabel, nReagentIndex:int = 0;
-					for (nIndex = 0; nIndex < 20; ++nIndex)
+					// Calculate scaling, adjusting for the size of the buttons
+					var nOffsetX:Number = pReagentContainerPosition.x + BUTTON_HORIZONTAL_GAP;
+					var nOffsetY:Number = pReagentContainerPosition.y + BUTTON_VERTICAL_GAP;
+					var nScaleX:Number = (m_pReagentContainer.attributes.width - (m_pUpSkins[0] as Sprite).width - (2 * BUTTON_HORIZONTAL_GAP)) / 
+						m_pConfiguration.ReactorLayoutDimensions.x;
+					var nScaleY:Number = (m_pReagentContainer.attributes.height - (m_pUpSkins[0] as Sprite).height - (2 * BUTTON_VERTICAL_GAP)) / 
+						m_pConfiguration.ReactorLayoutDimensions.y;
+
+					// Position each button
+					var nIndex:int, nDeliveryIndex:int, nEluteIndex:int, pRawButtonPosition:Point, sLabel:String, pUpSkin:Sprite, pDownSkin:Sprite, 
+						pActiveSkin:Sprite, pDisabledSkin:Sprite, pLabel:UILabel, pRectangle:Rectangle, nInputBottom:int = -1, nInputTop:int = -1, 
+						nInputBottomIndex:int = 0, nInputTopIndex:int = 0;
+					var pScaledButtonPosition:Point = new Point();
+					for (nIndex = 0; nIndex < m_nButtonCount; ++nIndex)
 					{
-						// Select for reagent positions
-						switch (nIndex + 1)
+						// Determine the button position
+						if (nIndex < m_pConfiguration.ReactorReagentPositions.length)
 						{
-							case 1:
-							case 2:
-							case 4:
-							case 5:
-							case 7:
-							case 9:
-							case 12:
-							case 14:
-							case 17:
-							case 18:
-							case 19:
-								// Set the skin positions
-								pUpSkin = m_pUpSkins[nReagentIndex] as Sprite;
-								pDownSkin = m_pDownSkins[nReagentIndex] as Sprite;
-								pActiveSkin = m_pActiveSkins[nReagentIndex] as Sprite;
-								pDisabledSkin = m_pDisabledSkins[nReagentIndex] as Sprite;
-								pUpSkin.x = pDownSkin.x = pActiveSkin.x = pDisabledSkin.x = nOffsetX;
-								pUpSkin.y = pDownSkin.y = pActiveSkin.y = pDisabledSkin.y = nOffsetY;
-								
-								// Set the label text and position
-								pLabel = m_pLabels[nReagentIndex] as UILabel;
-								pLabel.width = pUpSkin.width;
-								pLabel.text = (nReagentIndex + 1).toString();
-								pLabel.width = pLabel.textWidth + 5;
-								pLabel.x = pUpSkin.x + ((pUpSkin.width - pLabel.width) / 2);
-								pLabel.y = pUpSkin.y + ((pUpSkin.height - pLabel.height) / 2);
-	
-								// Set the hit area
-								pRectangle = m_pHitAreas[nReagentIndex] as Rectangle;
-								pRectangle.x = nOffsetX;
-								pRectangle.y = nOffsetY;
-								pRectangle.width = pUpSkin.width;
-								pRectangle.height = pUpSkin.height;
-	
-								// Increment the reagent index
-								++nReagentIndex;
+							pRawButtonPosition = m_pConfiguration.ReactorReagentPositions[nIndex] as Point;
+							sLabel = (nIndex + 1).toString();
 						}
-						if (((nIndex + 1) % 5) != 0)
+						else if (nIndex < (m_pConfiguration.ReactorReagentPositions.length + m_pConfiguration.ReactorDeliveryPositions.length))
 						{
-							nOffsetX += (m_pUpSkins[0] as Sprite).width + BUTTON_HORIZONTAL_GAP;
+							nDeliveryIndex = nIndex - m_pConfiguration.ReactorReagentPositions.length;
+							pRawButtonPosition = m_pConfiguration.ReactorDeliveryPositions[nDeliveryIndex] as Point;
+							sLabel = "A" + (nDeliveryIndex + 1).toString();
 						}
 						else
 						{
-							nOffsetX = nInitialOffsetX;
-							nOffsetY += (m_pUpSkins[0] as Sprite).height + BUTTON_VERTICAL_GAP;
+							nEluteIndex = nIndex - m_pConfiguration.ReactorReagentPositions.length - m_pConfiguration.ReactorDeliveryPositions.length;
+							pRawButtonPosition = m_pConfiguration.ReactorElutePositions[nEluteIndex] as Point;
+							sLabel = "E";
+						}
+						pScaledButtonPosition.x = pRawButtonPosition.x * nScaleX;
+						pScaledButtonPosition.y = pRawButtonPosition.y * nScaleY;
+
+						// Set the skin positions
+						pUpSkin = m_pUpSkins[nIndex] as Sprite;
+						pDownSkin = m_pDownSkins[nIndex] as Sprite;
+						pActiveSkin = m_pActiveSkins[nIndex] as Sprite;
+						pDisabledSkin = m_pDisabledSkins[nIndex] as Sprite;
+						pUpSkin.x = pDownSkin.x = pActiveSkin.x = pDisabledSkin.x = pReagentContainerPosition.x + pScaledButtonPosition.x;
+						pUpSkin.y = pDownSkin.y = pActiveSkin.y = pDisabledSkin.y = pReagentContainerPosition.y + pScaledButtonPosition.y;
+
+						// Set the label text and position
+						pLabel = m_pLabels[nIndex] as UILabel;
+						pLabel.width = pUpSkin.width;
+						pLabel.text = sLabel;
+						pLabel.width = pLabel.textWidth + 5;
+						pLabel.x = pUpSkin.x + ((pUpSkin.width - pLabel.width) / 2);
+						pLabel.y = pUpSkin.y + ((pUpSkin.height - pLabel.height) / 2);
+						
+						// Set the hit area
+						pRectangle = m_pHitAreas[nIndex] as Rectangle;
+						pRectangle.x = pUpSkin.x;
+						pRectangle.y = pUpSkin.y;
+						pRectangle.width = pUpSkin.width;
+						pRectangle.height = pUpSkin.height;
+
+						// Update the input area of interest
+						if ((nInputTop == -1) || (nInputTop > pUpSkin.y))
+						{
+							nInputTopIndex = nIndex;
+							nInputTop = pUpSkin.y;
+						}
+						if ((nInputBottom == -1) || (nInputBottom < (pUpSkin.y + pUpSkin.height)))
+						{
+							nInputBottomIndex = nIndex;
+							nInputBottom = pUpSkin.y + pUpSkin.height;
 						}
 					}
-	
+
 					// Update the input area of interest
-					m_nInputAreaOfInterestTop = m_pCassetteLabel.getBounds(stage).top;
-					m_nInputAreaOfInterestBottom = (m_pUpSkins[REAGENTCOUNT - 1] as Sprite).getBounds(stage).bottom;
-	
+					if ((nInputTop != -1) && (nInputBottom != -1))
+					{
+						m_nInputAreaOfInterestTop = (m_pUpSkins[nInputTopIndex] as Sprite).getBounds(stage).top;
+						m_nInputAreaOfInterestBottom = (m_pUpSkins[nInputBottomIndex] as Sprite).getBounds(stage).bottom;
+					}
+					
 					// Remember the new dimensions
 					m_nLastWidth = m_pReagentContainer.attributes.width;
 					m_nLastHeight = m_pReagentContainer.attributes.height;
@@ -229,50 +230,30 @@ package Elixys.Subviews
 			{
 				// Set the label, name and description
 				m_pCassetteLabel.text = "CASSETTE " + m_pComponent.Reactor + " : VIAL " + (nReagentIndex + 1).toString();
-				if (m_pEnabledFlags[nReagentIndex])
+				if (m_sMode == Constants.VIEW)
 				{
-					if (m_sMode == Constants.VIEW)
+					m_pReagentNameLabel.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
+					var nMaxTextWidth:Number = (m_pReagentDescriptionLabel.parent as Form).attributes.width;
+					m_pReagentDescriptionLabel.width = nMaxTextWidth;
+					m_pReagentDescriptionLabel.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
+					if (m_pReagentDescriptionLabel.textWidth > nMaxTextWidth)
 					{
-						m_pReagentNameLabel.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
-						var nMaxTextWidth:Number = (m_pReagentDescriptionLabel.parent as Form).attributes.width;
-						m_pReagentDescriptionLabel.width = nMaxTextWidth;
-						m_pReagentDescriptionLabel.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
-						if (m_pReagentDescriptionLabel.textWidth > nMaxTextWidth)
-						{
-							AddEllipsis(m_pReagentDescriptionLabel, nMaxTextWidth);
-						}
-					}
-					else
-					{
-						if (m_pKeyboardFocusTextBox != m_pReagentNameInput.inputField)
-						{
-							m_pReagentNameInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
-							m_pReagentNameTextBox.editable = true;
-							m_pReagentNameTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
-						}
-						if (m_pKeyboardFocusTextBox != m_pReagentDescriptionInput.inputField)
-						{
-							m_pReagentDescriptionInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
-							m_pReagentDescriptionTextBox.editable = true;
-							m_pReagentDescriptionTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
-						}
+						AddEllipsis(m_pReagentDescriptionLabel, nMaxTextWidth);
 					}
 				}
 				else
 				{
-					if (m_sMode == Constants.VIEW)
+					if (m_pKeyboardFocusTextBox != m_pReagentNameInput.inputField)
 					{
-						m_pReagentNameLabel.text = "[Position not allowed]";
-						m_pReagentDescriptionLabel.text = "";
+						m_pReagentNameInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Name;
+						m_pReagentNameTextBox.editable = true;
+						m_pReagentNameTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
 					}
-					else
+					if (m_pKeyboardFocusTextBox != m_pReagentDescriptionInput.inputField)
 					{
-						m_pReagentNameInput.text = "[Position not allowed]";
-						m_pReagentNameTextBox.editable = false;
-						m_pReagentNameTextBox.color = Styling.AS3Color(Styling.TEXT_GRAY5);
-						m_pReagentDescriptionInput.text = "";
-						m_pReagentDescriptionTextBox.editable = false;
-						m_pReagentDescriptionTextBox.color = Styling.AS3Color(Styling.TEXT_GRAY5);
+						m_pReagentDescriptionInput.text = (m_pComponent.Reagents[nReagentIndex] as Reagent).Description;
+						m_pReagentDescriptionTextBox.editable = true;
+						m_pReagentDescriptionTextBox.color = Styling.AS3Color(Styling.TEXT_BLACK);
 					}
 				}
 				
@@ -300,7 +281,7 @@ package Elixys.Subviews
 		{
 			var bUpVisible:Boolean = false, bDownVisible:Boolean = false, bActiveVisible:Boolean = false,
 				bDisabledVisible:Boolean = false, nTextColor:uint = 0;
-			if (m_pEnabledFlags[nIndex])
+			if (nIndex < m_pConfiguration.ReactorReagentPositions.length)
 			{
 				if (nIndex == m_nSelectedReagent)
 				{
@@ -316,7 +297,6 @@ package Elixys.Subviews
 			else
 			{
 				bDisabledVisible = true;
-				nTextColor = DISABLEDTEXTCOLOR;
 			}
 			(m_pUpSkins[nIndex] as Sprite).visible = bUpVisible;
 			(m_pDownSkins[nIndex] as Sprite).visible = bDownVisible;
@@ -345,20 +325,17 @@ package Elixys.Subviews
 		protected function OnMouseDown(event:MouseEvent):void
 		{
 			// Check for button clicks
-			for (var nIndex:int = 0; nIndex < REAGENTCOUNT; ++nIndex)
+			for (var nIndex:int = 0; nIndex < m_nButtonCount; ++nIndex)
 			{
 				if ((m_pHitAreas[nIndex] as Rectangle).contains(mouseX, mouseY))
 				{
-					// Ignore clicks on disabled buttons
-					if (!m_pEnabledFlags[nIndex])
+					if ((m_pDisabledSkins[nIndex] as Sprite).visible == false)
 					{
-						return;
+						// Press the button and wait for mouse up
+						m_nPressedReagent = nIndex;
+						PressButton(m_nPressedReagent);
+						stage.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
 					}
-					
-					// Press the button and wait for mouse up
-					m_nPressedReagent = nIndex;
-					PressButton(m_nPressedReagent);
-					stage.addEventListener(MouseEvent.MOUSE_UP, OnMouseUp);
 					break;
 				}
 			}
@@ -493,17 +470,18 @@ package Elixys.Subviews
 		protected var m_pReagentDescriptionTextBox:ITextBox;
 		protected var m_pReagentContainer:Form;
 
-		// Cassette arrays
+		// Cassette arrays go in the following order:
+		// 1. Reagent buttons
+		// 2. Delivery buttons
+		// 3. Elute buttons
+		protected var m_pConfiguration:Configuration;
+		protected var m_nButtonCount:uint;
 		protected var m_pUpSkins:Array = new Array();
 		protected var m_pDownSkins:Array = new Array();
 		protected var m_pDisabledSkins:Array = new Array();
 		protected var m_pActiveSkins:Array = new Array();
 		protected var m_pLabels:Array = new Array();
 		protected var m_pHitAreas:Array = new Array();
-		protected var m_pEnabledFlags:Array = new Array();
-
-		// Disallowed reagent positions
-		protected var m_pDisallowedReagentPositions:Array;
 
 		// Current cassette and selected reagent index
 		protected var m_pComponent:ComponentCassette;
@@ -515,7 +493,6 @@ package Elixys.Subviews
 		protected var m_nLastHeight:Number = 0;
 		
 		// Constants
-		protected static const REAGENTCOUNT:int = 11;
 		protected static const FONTFACE:String = "GothamBold";
 		protected static const FONTSIZE:int = 34;
 		protected static const ENABLEDTEXTCOLOR:uint = Styling.AS3Color(Styling.TEXT_GRAY2);

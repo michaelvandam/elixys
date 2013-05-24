@@ -2,6 +2,7 @@ package Elixys.JSON.Configuration
 {
 	import Elixys.JSON.JSONObject;
 	
+	import flash.geom.Point;
 	import flash.utils.flash_proxy;
 	
 	public class Configuration extends JSONObject
@@ -51,28 +52,74 @@ package Elixys.JSON.Configuration
 		{
 			return super.flash_proxy::getProperty("reagentsperreactor");
 		}
-		public function get ColumnsPerReactor():uint
+		public function get DeliveryPositionsPerReactor():uint
 		{
-			return super.flash_proxy::getProperty("columnsperreactor");
+			return super.flash_proxy::getProperty("deliverypositionsperreactor");
 		}
-		public function get DisallowedReagentPositions():Array
+		public function get ElutePositionsPerReactor():uint
 		{
-			// Parse the disallowed reagent positions
-			if (m_pDisallowedReagentPositions == null)
+			return super.flash_proxy::getProperty("elutepositionsperreactor");
+		}
+		public function get ReactorLayoutDimensions():Point
+		{
+			// Parse the reactor layout dimensions
+			if (m_pReactorLayoutDimensions == null)
 			{
-				m_pDisallowedReagentPositions = new Array();
-				var pDisallowedReagentPositions:Array = super.flash_proxy::getProperty("disallowedreagentpositions");
-				for each (var pDisallowedReagentPositionObject:Object in pDisallowedReagentPositions)
+				m_pReactorLayoutDimensions = ParsePoint(super.flash_proxy::getProperty("reactorlayoutdimensions"));
+			}
+			return m_pReactorLayoutDimensions;
+		}
+		public function get ReactorReagentPositions():Array
+		{
+			// Parse the reactor reagent positions
+			if (m_pReactorReagentPositions == null)
+			{
+				m_pReactorReagentPositions = new Array();
+				var pReactorReagentPositions:Array = super.flash_proxy::getProperty("reactorreagentpositions");
+				for each (var pReactorReagentPositionObject:Object in pReactorReagentPositions)
 				{
-					var pDisallowedReagentPosition:DisallowedReagentPosition = 
-						new DisallowedReagentPosition(null, pDisallowedReagentPositionObject);
-					m_pDisallowedReagentPositions.push(pDisallowedReagentPosition);
+					m_pReactorReagentPositions.push(ParsePoint(pReactorReagentPositionObject));
 				}
 			}
-			return m_pDisallowedReagentPositions;
+			return m_pReactorReagentPositions;
+		}
+		public function get ReactorDeliveryPositions():Array
+		{
+			// Parse the reactor delivery positions
+			if (m_pReactorDeliveryPositions == null)
+			{
+				m_pReactorDeliveryPositions = new Array();
+				var pReactorDeliveryPositions:Array = super.flash_proxy::getProperty("reactordeliverypositions");
+				for each (var pReactorDeliveryPositionObject:Object in pReactorDeliveryPositions)
+				{
+					m_pReactorDeliveryPositions.push(ParsePoint(pReactorDeliveryPositionObject));
+				}
+			}
+			return m_pReactorDeliveryPositions;
+		}
+		public function get ReactorElutePositions():Array
+		{
+			// Parse the reactor elute positions
+			if (m_pReactorElutePositions == null)
+			{
+				m_pReactorElutePositions = new Array();
+				var pReactorElutePositions:Array = super.flash_proxy::getProperty("reactorelutepositions");
+				for each (var pReactorElutePositionObject:Object in pReactorElutePositions)
+				{
+					m_pReactorElutePositions.push(ParsePoint(pReactorElutePositionObject));
+				}
+			}
+			return m_pReactorElutePositions;
+		}
+		public function ParsePoint(pPointObject:Object):Point
+		{
+			return new Point(pPointObject.x, pPointObject.y);
 		}
 		
 		// State components
-		protected var m_pDisallowedReagentPositions:Array;
+		protected var m_pReactorLayoutDimensions:Point;
+		protected var m_pReactorReagentPositions:Array;
+		protected var m_pReactorDeliveryPositions:Array;
+		protected var m_pReactorElutePositions:Array;
 	}
 }

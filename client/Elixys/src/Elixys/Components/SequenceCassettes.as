@@ -7,7 +7,6 @@ package Elixys.Components
 	import Elixys.JSON.Components.ComponentBase;
 	import Elixys.JSON.Components.ComponentCassette;
 	import Elixys.JSON.Configuration.Configuration;
-	import Elixys.JSON.Configuration.DisallowedReagentPosition;
 	import Elixys.JSON.State.Reagent;
 	import Elixys.JSON.State.Sequence;
 	import Elixys.JSON.State.SequenceComponent;
@@ -97,13 +96,12 @@ package Elixys.Components
 			// Remember the sequence
 			m_pSequence = pSequence;
 
-			// Remember the number of cassettes, reagents and disallowed reagent positions
+			// Remember the number of cassettes and reagents
 			if (m_nCassettes == -1)
 			{
 				var pConfiguration:Configuration = m_pElixys.GetConfiguration();
 				m_nCassettes = pConfiguration.Reactors;
 				m_nReagents = pConfiguration.ReagentsPerReactor;
-				m_pDisallowedReagentPositions = pConfiguration.DisallowedReagentPositions;
 			}
 
 			// Adjust the number of cassette skins, labels and hit areas
@@ -194,34 +192,13 @@ package Elixys.Components
 					m_pQuickView.height = attributes.height - m_pQuickView.y - QUICKVIEW_VERTICAL_GAP;
 
 					// Format text
-					var pDisallowedReagentPosition:DisallowedReagentPosition, pReagent:Reagent, bAllowed:Boolean;
+					var pReagent:Reagent;
 					var pReagents:Array = (new ComponentCassette(null, m_pComponent)).Reagents;
 					var sText:String = "QUICK VIEW\n\n";
 					for (var nReagent:int = 0; nReagent < m_nReagents; ++nReagent)
 					{
-						// Check if the reagent position is disallowed
-						bAllowed = true;
-						for (nIndex = 0; nIndex < m_pDisallowedReagentPositions.length; ++nIndex)
-						{
-							pDisallowedReagentPosition = m_pDisallowedReagentPositions[nIndex] as DisallowedReagentPosition;
-							if ((m_nSelectedIndex == (pDisallowedReagentPosition.Cassette - 1)) &&
-								(nReagent == (pDisallowedReagentPosition.Reagent - 1)))
-							{
-								bAllowed = false;
-								break;
-							}
-						}
-
-						// Format the text
-						if (bAllowed)
-						{
-							pReagent = pReagents[nReagent] as Reagent;
-							sText += (nReagent + 1) + ". " + pReagent.Name + "\n"
-						}
-						else
-						{
-							sText += (nReagent + 1) + ". [Position not allowed]\n";
-						}
+						pReagent = pReagents[nReagent] as Reagent;
+						sText += (nReagent + 1) + ". " + pReagent.Name + "\n"
 					}
 					
 					// Set text and visibility
@@ -307,10 +284,9 @@ package Elixys.Components
 		// Elixys reference
 		protected var m_pElixys:Elixys;
 		
-		// Number of cassettes and disallowed positions
+		// Number of cassettes and reagents
 		protected var m_nCassettes:int = -1;
 		protected var m_nReagents:int = -1;
-		protected var m_pDisallowedReagentPositions:Array;
 
 		// Button width
 		protected var m_nButtonWidth:Number;
