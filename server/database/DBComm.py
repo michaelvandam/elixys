@@ -422,10 +422,10 @@ class DBComm:
     # Return
     return pSequence
 
-  def CreateSequence(self, sCurrentUsername, sName, sComment, sType, nCassettes, nReagents, nColumns):
+  def CreateSequence(self, sCurrentUsername, sName, sComment, sType, nCassettes, nReagents):
     """Creates a new sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateSequence(%s, %s, %s, %i, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents, nColumns))
-    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents, nColumns))
+    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateSequence(%s, %s, %s, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents))
+    pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents))
     return pReturn[0][0]
 
   def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment, bValid):

@@ -33,8 +33,7 @@ class SequenceManager:
     """ Creates a copy of an existing sequence in the database """
     # Create the new saved sequence
     pConfiguration = self.database.GetConfiguration(sRemoteUser)
-    nNewSequenceID = self.database.CreateSequence(sRemoteUser, sName, sComment, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"],
-      pConfiguration["columnsperreactor"])
+    nNewSequenceID = self.database.CreateSequence(sRemoteUser, sName, sComment, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"])
 
     # Copy each component of the sequence
     pSequence = self.GetSequence(sRemoteUser, nSequenceID)
@@ -57,22 +56,32 @@ class SequenceManager:
 
     # Make sure the sequence hardware requirements meet our current system
     pConfiguration = self.database.GetConfiguration(sRemoteUser)
-    if (pSequence["reactors"] != pConfiguration["reactors"]) or (pSequence["reagentsperreactor"] != pConfiguration["reagentsperreactor"]) or \
-       (pSequence["columnsperreactor"] != pConfiguration["columnsperreactor"]):
+    if (pSequence["reactors"] != pConfiguration["reactors"]) or \
+	 (pSequence["reagentsperreactor"] != pConfiguration["reagentsperreactor"]):
       raise Exception("This sequence you are trying to import does not match the system hardware")
 
     # Create the sequence
-    if (pSequence["type"] == "sequence") and (pSequence["name"] != "") and (pSequence["reactors"] != 0) and (pSequence["reagentsperreactor"] != 0) and \
-       (pSequence["columnsperreactor"] != 0):
-      nSequenceID = self.database.CreateSequence(sRemoteUser, pSequence["name"], pSequence["description"], sType, pSequence["reactors"], 
-        pSequence["reagentsperreactor"], pSequence["columnsperreactor"])
+    if (pSequence["type"] == "sequence") and \
+	 (pSequence["name"] != "") and \
+	 (pSequence["reactors"] != 0) and \
+	(pSequence["reagentsperreactor"] != 0):
+      nSequenceID = self.database.CreateSequence(sRemoteUser, pSequence["name"], 
+						pSequence["description"], sType, 
+						pSequence["reactors"], 
+        					pSequence["reagentsperreactor"])
+						 
     else:
       raise Exception("Invalid sequence parameters")
 
     # Add the reagents
     for pReagent in pSequence["reagents"]:
-      if (pReagent["type"] == "reagent") and (pReagent["cassette"] != 0) and (pReagent["position"] != "") and (pReagent["name"] != ""):
-        self.database.UpdateReagentByPosition(sRemoteUser, nSequenceID, pReagent["cassette"], pReagent["position"], pReagent["name"], pReagent["description"])
+      if (pReagent["type"] == "reagent") and \
+	 (pReagent["cassette"] != 0) and \
+	(pReagent["position"] != "") and \
+	(pReagent["name"] != ""):
+        self.database.UpdateReagentByPosition(sRemoteUser, nSequenceID, 
+						pReagent["cassette"], pReagent["position"], 
+						pReagent["name"], pReagent["description"])
       else:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 
@@ -92,7 +101,11 @@ class SequenceManager:
           pComponent["reagent"] = pReagent["reagentid"]
 
         # Add the component
-        self.database.CreateComponent(sRemoteUser, nSequenceID, pComponent["componenttype"], "", json.dumps(pComponent))
+        self.database.CreateComponent(sRemoteUser, 
+					nSequenceID, 
+					pComponent["componenttype"], 
+					"", 
+					json.dumps(pComponent))
       else:
         raise Exception("Invalid reagent parameters in \"" + str(pReagent) + "\"")
 
