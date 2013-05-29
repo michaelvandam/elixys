@@ -41,6 +41,8 @@ rm -rf $ELIXYS_INSTALL_PATH/cli
 rm -rf $ELIXYS_INSTALL_PATH/core
 rm -rf $ELIXYS_INSTALL_PATH/hardware
 rm -rf $ELIXYS_INSTALL_PATH/database
+rm -rf $ELIXYS_INSTALL_PATH/config
+cp -R $ELIXYS_SRC/server/config $ELIXYS_INSTALL_PATH 
 cp -R $ELIXYS_SRC/server/cli $ELIXYS_INSTALL_PATH 
 cp -R $ELIXYS_SRC/server/core $ELIXYS_INSTALL_PATH
 cp -R $ELIXYS_SRC/server/hardware $ELIXYS_INSTALL_PATH
