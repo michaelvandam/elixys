@@ -1,4 +1,6 @@
 client/.metadata/
+*.swp
+*.swo
 *.pyc
 .DS_Store
 server/rtmpd/applications/flvplayback/media
