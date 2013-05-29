@@ -56,7 +56,7 @@ class Sequence(Thread):
     self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, 0, "Starting run of sequence " + str(self.sourceSequenceID) + " (" + self.sourceSequence["metadata"]["name"] + ")")
     pConfiguration = self.database.GetConfiguration(self.username)
     self.runSequenceID = self.database.CreateSequence(self.username, self.sourceSequence["metadata"]["name"], self.sourceSequence["metadata"]["comment"], "History", 
-      pConfiguration["reactors"], pConfiguration["reagentsperreactor"], pConfiguration["columnsperreactor"])
+      pConfiguration["reactors"], pConfiguration["reagentsperreactor"])
 
     # Copy the cassettes
     for pComponent in self.sourceSequence["components"]:

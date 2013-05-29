@@ -127,7 +127,6 @@ class SequenceManager:
     pSequence["description"] = pDBSequence["metadata"]["comment"]
     pSequence["reactors"] = pConfiguration["reactors"]
     pSequence["reagentsperreactor"] = pConfiguration["reagentsperreactor"]
-    pSequence["columnsperreactor"] = pConfiguration["columnsperreactor"]
     pSequence["reagents"] = []
     pSequence["components"] = []
 
