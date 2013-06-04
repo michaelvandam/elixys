@@ -56,8 +56,10 @@ class SequenceManager:
 
     # Make sure the sequence hardware requirements meet our current system
     pConfiguration = self.database.GetConfiguration(sRemoteUser)
+    #print "REACTORS " + str(pConfiguration['reagentsperreactor'])
+    #print "REACTORS " + str(pSequence["reagentsperreactor"]) 
     if (pSequence["reactors"] != pConfiguration["reactors"]) or \
-	 (pSequence["reagentsperreactor"] != pConfiguration["reagentsperreactor"]):
+	 (pSequence["reagentsperreactor"] >= pConfiguration["reagentsperreactor"]):
       raise Exception("This sequence you are trying to import does not match the system hardware")
 
     # Create the sequence

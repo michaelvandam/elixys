@@ -337,14 +337,17 @@ class GetHandler:
         # Do we have a component ID?
         if self.__pClientState["componentid"] == 0:
             # No, the component ID is missing.  Get the sequence and the ID of the first component
-            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, self.__pClientState["sequenceid"], False)
+            pSequence = self.__pSequenceManager.GetSequence(self.__sRemoteUser, 
+                    self.__pClientState["sequenceid"], False)
             self.__pClientState["componentid"] = pSequence["components"][0]["id"]
 
             # Save the client state
-            self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
+            self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, 
+                    self.__sRemoteUser, self.__pClientState)
 
         # Allow editing if this is a saved sequence
-        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, self.__pClientState["sequenceid"])
+        pSequenceMetadata = self.__pDatabase.GetSequenceMetadata(self.__sRemoteUser, 
+                self.__pClientState["sequenceid"])
         bEditAllowed = (pSequenceMetadata["sequencetype"] == "Saved")
 
         # Allow running if the system is not in use
@@ -354,7 +357,8 @@ class GetHandler:
         # Allow running from here if this is not a cassette
         bRunHereAllowed = False
         if bRunAllowed:
-            pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, self.__pClientState["componentid"], self.__pClientState["sequenceid"])
+            pComponent = self.__pSequenceManager.GetComponent(self.__sRemoteUser, 
+                    self.__pClientState["componentid"], self.__pClientState["sequenceid"])
             bRunHereAllowed = (pComponent["componenttype"] != "CASSETTE")
 
         # Return the state
