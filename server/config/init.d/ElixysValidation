@@ -9,19 +9,16 @@
 # Provides: ElixysValidation
 # Required-Start: $network
 # Required-Stop:
-# Default-Start: 3 5
-# Default-Stop: 0 1 2 6
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
 # Short-Description: start and stop Elixys sequence validation daemon
 # Description: The Elixys sequence validation thread scans the database for sequences
 #   in need of vaidation.
 ### END INIT INFO
 
-# Source function library.
-. /etc/rc.d/init.d/functions
-
-validation=${VALIDATION-python /opt/elixys/core/SequenceValidation.py}
-pidfile=${PIDFILE-/var/run/ElixysValidation.pid}
-lockfile=${LOCKFILE-/var/lock/ElixysValidation}
+validation="python /opt/elixys/core/SequenceValidation.py"
+pidfile=/var/run/ElixysValidation.pid
+lockfile=/var/lock/ElixysValidation
 RETVAL=0
 
 start() {

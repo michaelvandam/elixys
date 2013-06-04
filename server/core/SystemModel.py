@@ -615,9 +615,13 @@ class SystemModel:
         self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "Reactor2"
         self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "Reactor3"
       else:
-        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "mp4:elixys.mp4"
-        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "mp4:elixys.mp4"
-        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "mp4:elixys.mp4"
+        #self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "mp4:elixys.mp4"
+        #self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "mp4:elixys.mp4"
+        #self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "mp4:elixys.mp4"
+        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "elixys"
+        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "elixys"
+        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "elixys"
+
 
       # Unit operation
       if (self.__pUnitOperation != None) and self.__pUnitOperation.is_alive():

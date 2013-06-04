@@ -503,8 +503,7 @@ class PostHandler:
 
                 # Create the new sequence
                 pConfiguration = self.__pDatabase.GetConfiguration(self.__sRemoteUser)
-                nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"], 
-                    pConfiguration["columnsperreactor"])
+                nSequenceID = self.__pDatabase.CreateSequence(self.__sRemoteUser, sEdit1, sEdit2, "Saved", pConfiguration["reactors"], pConfiguration["reagentsperreactor"])
 
                 # Hide the prompt and move the client to the editing the new sequence
                 self.__pClientState["prompt"]["show"] = False

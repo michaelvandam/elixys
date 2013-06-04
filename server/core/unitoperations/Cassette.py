@@ -83,12 +83,6 @@ class Cassette(UnitOperation):
       pReagent = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], str(nReagent))
       self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], str(nReagent), pReagent["name"], pReagent["description"])
 
-    # Copy the column details
-    for nColumn in range(0, pConfiguration["columnsperreactor"]):
-      sPosition = chr(ord("A") + nColumn)
-      pColumn = self.database.GetReagentByPosition(self.username, self.component["sequenceid"], self.component["reactor"], sPosition)
-      self.database.UpdateReagentByPosition(self.username, nTargetSequenceID, self.component["reactor"], sPosition, pColumn["name"], pColumn["description"])
-
     # Return the cassette ID
     return pNewCassette["id"]
 
