@@ -25,6 +25,13 @@ import os
 from daemon import daemon
 import signal
 
+import logging
+import logging.config
+
+logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
+log = logging.getLogger("elixys.hw")
+log.info("Starting Elixys FakePLC Server")
+
 # Fake PLC class
 class FakePLC():
     def __init__(self):

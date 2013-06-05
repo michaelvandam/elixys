@@ -21,6 +21,13 @@ import CoreServerProxy
 import Exceptions
 from DBComm import *
 
+import logging.config
+import logging
+
+logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
+log = logging.getLogger("elixys.web")
+log.info("Starting Elixys Web Server")
+
 def application(pEnvironment, fStartResponse):
     # Handle the request
     pDatabase = None
@@ -46,8 +53,10 @@ def application(pEnvironment, fStartResponse):
 
         # Load the client state and log the request
         pClientState = pDatabase.GetUserClientState(sRemoteUser, sRemoteUser)
-        pDatabase.SystemLog(LOG_INFO, sRemoteUser, "Web server received " + sRequestMethod + " request for " + sPath)
-        pDatabase.SystemLog(LOG_DEBUG, sRemoteUser, "Client state = " + str(pClientState))
+
+        log.debug("Web server received " + sRequestMethod + 
+                " request for " + sPath)
+        log.debug("Client state = " + str(pClientState))
 
         # Create the appropriate handler
         pBody = None
@@ -89,9 +98,10 @@ def application(pEnvironment, fStartResponse):
     # Log the timestamp
     if pDatabase != None:
         nElapsed = time.time() - nStart
-        pDatabase.SystemLog(LOG_INFO, sRemoteUser, sRequestMethod + " " + sPath + " took " + str(nElapsed) + " seconds, returned " + str(len(sResponseJSON)) + " bytes")
+        log.info(sRequestMethod + " " + sPath + " took " + str(nElapsed) + 
+                " seconds, returned " + str(len(sResponseJSON)) + " bytes")
         if nElapsed > 0.15:
-            pDatabase.SystemLog(LOG_INFO, sRemoteUser, "  ##  Long request processing time ##")
+            log.info("##  Long request processing time ##")
         pDatabase.Disconnect()
 
     # Send the response

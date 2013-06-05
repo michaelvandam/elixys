@@ -16,6 +16,9 @@ import json
 from SequenceManager import SequenceManager
 from Messaging import Messaging
 
+import logging
+log = logging.getLogger("elixys.core")
+
 class Sequence(Thread):
   def __init__(self, sRemoteUser, nSourceSequenceID, pSystemModel):
     """Constructor"""
@@ -214,7 +217,7 @@ class Sequence(Thread):
         # Advance to the next component
         nCurrentComponent += 1
     except Exception as ex:
-      self.database.SystemLog(LOG_ERROR, self.username, "Sequence run failed: " + str(ex))
+      log.error("Sequence run failed: " + str(ex))
       sRunError = str(ex)
 
     # Add the Summary unit operation to the sequence

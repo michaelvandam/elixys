@@ -26,9 +26,16 @@ from UnitOperationsWrapper import UnitOperationsWrapper
 import os
 from daemon import daemon
 import signal
-import logging
 import TimedLock
 from Messaging import Messaging
+
+
+import logging.config
+import logging
+
+logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
+log = logging.getLogger("elixys.core")
+log.info("Starting Elixys Core Server")
 
 # Initialize global variables
 gCoreServerLock = None
@@ -44,24 +51,6 @@ gRunSequence = None
 gMessaging = None
 
 # Handler that redirects rpyc error messages to the database
-class RpycLogHandler(logging.StreamHandler):
-    def emit(self, record):
-        """Error message handler"""
-        # Format the multiline message into a single line
-        global gDatabase
-        sMultilineMessage = self.format(record)
-        pMultilineMessageComponents = sMultilineMessage.split("\n")
-        sLogMessage = "rpyc: " + pMultilineMessageComponents[0]
-        nLength = len(pMultilineMessageComponents)
-        if len(pMultilineMessageComponents) > 1:
-            sLogMessage += " (" + pMultilineMessageComponents[nLength - 1] + ")"
-
-        # Log the message
-        if gDatabase != None:
-            gDatabase.SystemLog(LOG_WARNING, "System", sLogMessage)
-        else:
-            print sLogMessage
-
 # Core server service
 class CoreServerService(rpyc.Service):
     def exposed_GetServerState(self, sUsername):
@@ -80,7 +69,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the server state lock
             gServerStateLock.Acquire(1)
             bServerStateLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.GetServerState()")
+            log.info("CoreServerService.GetServerState()")
 
             # Update the server state twice per second
             if (gServerState == None) or ((time.time() - gServerStateTime) > 0.5):
@@ -180,7 +169,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult(json.dumps(gServerState))
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.GetServerState() failed: " + str(ex))
+            log.error("CoreServerService.GetServerState() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -202,7 +191,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.RunSequence(" + str(nSequenceID) + ")")
+            log.info("CoreServerService.RunSequence(" + str(nSequenceID) + ")")
 
             # Make sure we aren't already running a sequence
             if (gRunSequence != None) and gRunSequence.running:
@@ -218,11 +207,10 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.RunSequence() failed: " + str(ex))
+            log.error("CoreServerService.RunSequence() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
-        if bLocked:
             gCoreServerLock.Release()
         return pResult
 
@@ -238,7 +226,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.RunSequenceFromComponent(" + str(nSequenceID) + ", " + str(nComponentID) + ")")
+            log.info("CoreServerService.RunSequenceFromComponent(" + str(nSequenceID) + ", " + str(nComponentID) + ")")
 
             # Make sure we aren't already running a sequence
             if gRunSequence != None:
@@ -254,7 +242,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.RunSequenceFromComponent() failed: " + str(ex))
+            log.error("CoreServerService.RunSequenceFromComponent() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -271,7 +259,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.PauseSequence()")
+            log.info("CoreServerService.PauseSequence()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -286,7 +274,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.PauseSequence() failed: " + str(ex))
+            log.error("CoreServerService.PauseSequence() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -303,7 +291,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.ContinueSequence()")
+            log.info("CoreServerService.ContinueSequence()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -318,7 +306,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.ContinueSequence() failed: " + str(ex))
+            log.error("CoreServerService.ContinueSequence() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -335,7 +323,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.WillSequencePause()")
+            log.info("CoreServerService.WillSequencePause()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -349,7 +337,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult(gRunSequence.willRunPause())
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.WillSequencePause() failed: " + str(ex))
+            log.error("CoreServerService.WillSequencePause() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -366,7 +354,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.IsSequencePaused()")
+            log.info("CoreServerService.IsSequencePaused()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -380,7 +368,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult(gRunSequence.isRunPaused())
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.IsSequencePaused() failed: " + str(ex))
+            log.error("CoreServerService.IsSequencePaused() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -400,7 +388,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.ShowAbortSequencePrompt()")
+            log.info("CoreServerService.ShowAbortSequencePrompt()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -415,7 +403,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.ShowAbortSequencePrompt() failed: " + str(ex))
+            log.error("CoreServerService.ShowAbortSequencePrompt() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -435,7 +423,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.AbortSequence()")
+            log.info("CoreServerService.AbortSequence()")
 
             # Make sure the system is running
             if (gRunSequence == None) or not gRunSequence.running:
@@ -450,7 +438,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.AbortSequence() failed: " + str(ex))
+            log.error("CoreServerService.AbortSequence() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -470,7 +458,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.OverrideTimer()")
+            log.info("CoreServerService.OverrideTimer()")
 
             # Perform additional checks if the user is someone other than the CLI
             if sUsername != "CLI":
@@ -492,7 +480,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.OverrideTimer() failed: " + str(ex))
+            log.error("CoreServerService.OverrideTimer() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -512,7 +500,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.StopTimer()")
+            log.info("CoreServerService.StopTimer()")
 
             # Perform additional checks if the user is someone other than the CLI
             if sUsername != "CLI":
@@ -534,7 +522,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.StopTimer() failed: " + str(ex))
+            log.error("CoreServerService.StopTimer() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -554,7 +542,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.SetSoftErrorDecision()")
+            log.info("CoreServerService.SetSoftErrorDecision()")
 
             # Perform additional checks if the user is someone other than the CLI
             if sUsername != "CLI":
@@ -576,7 +564,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.SetSoftErrorDecision() failed: " + str(ex))
+            log.error("CoreServerService.SetSoftErrorDecision() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -596,7 +584,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.DeliverUserInput()")
+            log.info("CoreServerService.DeliverUserInput()")
 
             # Perform additional check if the user is not the CLI
             if sUsername != "CLI":
@@ -618,7 +606,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult()
         except Exception, ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.DeliverUserInput() failed: " + str(ex))
+            log.error("CoreServerService.DeliverUserInput() failed: " + str(ex))
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -638,13 +626,13 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIExecuteCommand(" + sCommand + ")")
+            log.info("CoreServerService.CLIExecuteCommand(" + sCommand + ")")
 
             # Execute the command
             sResult = BaseCLI.ExecuteCommandImpl(sCommand, gUnitOperationsWrapper, gSystemModel, gHardwareComm)
         except Exception as ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLIExecuteCommand() failed: " + str(ex))
+            log.error("CoreServerService.CLIExecuteCommand() failed: " + str(ex))
             sResult = "Failed to execute command: " + str(ex)
 
         # Release the lock and return
@@ -662,13 +650,13 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLISendCommand(" + sCommand + ")")
+            log.info("CoreServerService.CLISendCommand(" + sCommand + ")")
 
             # Send the raw command
             sResult = BaseCLI.SendCommandImpl(sCommand, gHardwareComm)
         except Exception as ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLISendCommand() failed: " + str(ex))
+            log.error("CoreServerService.CLISendCommand() failed: " + str(ex))
             sResult = "Failed to send command: " + str(ex)
 
         # Release the lock and return
@@ -686,7 +674,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIAbortUnitOperation()")
+            log.info("CoreServerService.CLIAbortUnitOperation()")
 
             # Make sure we have a unit operation
             pUnitOperation = gSystemModel.GetUnitOperation()
@@ -698,7 +686,7 @@ class CoreServerService(rpyc.Service):
             bResult = True
         except Exception as ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLIAbortUnitOperation() failed: " + str(ex))
+            log.error("CoreServerService.CLIAbortUnitOperation() failed: " + str(ex))
             bResult = False
 
         # Release the lock and return
@@ -716,13 +704,13 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIGetState()")
+            log.info("CoreServerService.CLIGetState()")
 
             # Return the system state
             sResult = BaseCLI.GetStateImpl(gSystemModel)
         except Exception as ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLIGetState() failed: " + str(ex))
+            log.error("CoreServerService.CLIGetState() failed: " + str(ex))
             sResult = "Failed to get system state: " + str(ex)
 
         # Release the lock and return
@@ -740,7 +728,7 @@ class CoreServerService(rpyc.Service):
             # Acquire the lock
             gCoreServerLock.Acquire(1)
             bLocked = True
-            gDatabase.SystemLog(LOG_INFO, sUsername, "CoreServerService.CLIBroadcast(" + sMessage + ")")
+            log.info("CoreServerService.CLIBroadcast(" + sMessage + ")")
 
             # Create the messaging object and broadcast the message
             if gMessaging == None:
@@ -749,7 +737,7 @@ class CoreServerService(rpyc.Service):
             bResult = True
         except Exception as ex:
             # Log the error
-            gDatabase.SystemLog(LOG_ERROR, sUsername, "CoreServerService.CLIBroadcast() failed: " + str(ex))
+            log.error("CoreServerService.CLIBroadcast() failed: " + str(ex))
             gMessaging = None
             bResult = False
 
@@ -841,7 +829,7 @@ class CoreServerDaemon(daemon):
                 gServerStateLock = TimedLock.TimedLock()
                 gDatabase = DBComm()
                 gDatabase.Connect()
-                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer starting")
+                log.info("CoreServer starting")
 
                 # Create the hardware layer and system model
                 gHardwareComm = HardwareComm()
@@ -853,11 +841,8 @@ class CoreServerDaemon(daemon):
                 gUnitOperationsWrapper = UnitOperationsWrapper(gSystemModel, gDatabase)
 
                 # Create the core server and error message handler
-                pLogger = logging.getLogger("rpyc")
-                pLogger.setLevel(logging.ERROR)
-                pLogHandler = RpycLogHandler()
-                pLogger.addHandler(pLogHandler)
-                pCoreServer = ThreadedServer(CoreServerService, port = 18862, logger = pLogger)
+                pCoreServer = ThreadedServer(CoreServerService, port = 18862, 
+                        logger = log)
 
                 # Start the core server thread
                 pCoreServerThread = CoreServerThread()
@@ -867,19 +852,19 @@ class CoreServerDaemon(daemon):
 
                 # Install the kill signal handler
                 signal.signal(signal.SIGTERM, OnExit)
-                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer started")
+                log.info("CoreServer started")
 
                 # Run until we get the signal to stop
                 while not self.bTerminate:
                     gSystemModel.CheckForError()
                     pCoreServerThread.CheckForError()
                     time.sleep(0.25)
-                gDatabase.SystemLog(LOG_INFO, "System", "CoreServer received quit signal")
+                log.info("CoreServer received quit signal")
             except Exception as ex:
                 # Log the error
                 sError = "CoreServer failed: " + str(ex)
                 if gDatabase != None:
-                    gDatabase.SystemLog(LOG_ERROR, "System", sError)
+                    log.error(sError)
                 else:
                     print sError
             finally:
@@ -894,7 +879,7 @@ class CoreServerDaemon(daemon):
                     gHardwareComm.ShutDown()
                     gHardwareComm = None
                 if gDatabase != None:
-                    gDatabase.SystemLog(LOG_INFO, "System", "CoreServer stopped")
+                    log.info("CoreServer stopped")
                     gDatabase.Disconnect()
                     gDatabase = None
                 if gCoreServerLock != None:

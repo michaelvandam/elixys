@@ -15,6 +15,9 @@ import SequenceManager
 import time
 from daemon import daemon
 import signal
+import logging
+
+log = logging.getLogger("elixys.validation")
 
 # Sequence validation daemon exit function
 gSequenceValidationDaemon = None
@@ -42,14 +45,15 @@ class SequenceValidationDaemon(daemon):
                 # Connect to the database
                 pDatabase = DBComm()
                 pDatabase.Connect()
-                pDatabase.SystemLog(LOG_INFO, "System", "Validation process starting")
+                log.info("Validation process starting")
+
 
                 # Create the sequence manager
                 pSequenceManager = SequenceManager.SequenceManager(pDatabase)
 
                 # Install the kill signal handler
                 signal.signal(signal.SIGTERM, OnExit)
-                pDatabase.SystemLog(LOG_INFO, "System", "Validation process started")
+                log.info("Validation process started")
 
                 # Run until we get the signal to stop
                 while not self.bTerminate:
@@ -59,23 +63,23 @@ class SequenceValidationDaemon(daemon):
                     for pSequence in pSequences:
                        if pSequence["dirty"]:
                            # Perform a full validation on the sequence
-                           pDatabase.SystemLog(LOG_INFO, "System", "Performing full validation on sequence " + str(pSequence["id"]))
+                           log.info("Performing full validation on sequence " + str(pSequence["id"]))
                            pSequenceManager.ValidateSequenceFull("System", pSequence["id"])
                            bAllSequencesClean = False
 
                     # Nap for a bit if we didn't find any work to do
                     if bAllSequencesClean:
                         time.sleep(0.5)
-                pDatabase.SystemLog(LOG_INFO, "System", "Validation process received quit signal")
+                log.info("Validation process received quit signal")
             except Exception as ex:
                 # Log the error
-                pDatabase.SystemLog(LOG_ERROR, "System", "Validation process failed: " + str(ex))
+                log.info("Validation process failed: " + str(ex))
             finally:
                 if pSequenceManager != None:
                     pSequenceManager = SequenceManager.SequenceManager(pDatabase)
                     pSequenceManager = None
                 if pDatabase != None:
-                    pDatabase.SystemLog(LOG_INFO, "System", "Validation process exiting")
+                    log.info("Validation process exiting")
                     pDatabase.Disconnect()
                     pDatabase = None
 

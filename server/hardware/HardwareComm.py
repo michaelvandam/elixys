@@ -11,12 +11,22 @@ import time
 import os
 import sys
 
+
+import logging
+
+log = logging.getLogger("elixys.hw")
+log.info("Starting HW Comm")
+
+
 ### Constants ###
 
 # IP and port of the PLC.  Make sure only one PLC IP is defined
 REAL_PLC_IP = "192.168.1.200"    # Real PLC
+log.debug("PLC IP: %s" % REAL_PLC_IP)
 FAKE_PLC_IP = "127.0.0.1"        # Fake PLC for testing and demo
+log.debug("FAKE PLC IP: %s" % FAKE_PLC_IP)
 PLC_PORT = 9600
+log.debug("PLC Port: %s" % FAKE_PLC_IP)
 
 # Number of words used by each type of module
 DIGITALOUT_SIZE = 0x4
@@ -243,22 +253,27 @@ class HardwareComm():
     ### Public functions ###
 
     def StartUp(self):
+        log.info("Connecting to PLC")
         # Determine the PLC IP
         sDemoFile = "/opt/elixys/demomode"
         if not os.path.isfile(sDemoFile):
             nPLC_IP = REAL_PLC_IP
+            log.info("Using Real PLC")
         else:
             nPLC_IP = FAKE_PLC_IP
+            log.info("Using Fake PLC")
 
         # Spawn the socket thread
         self.__pSocketThread = SocketThread()
         self.__pSocketThreadTerminateEvent = threading.Event()
-        self.__pSocketThread.SetParameters(nPLC_IP, PLC_PORT, self, self.__pSocketThreadTerminateEvent)
+        self.__pSocketThread.SetParameters(nPLC_IP, PLC_PORT, self, 
+                self.__pSocketThreadTerminateEvent)
         self.__pSocketThread.setDaemon(True)
         self.__pSocketThread.start()
 
     def ShutDown(self):
         # Stop the socket thread
+        log.debug("Shutdown PLC Connection")
         self.__pSocketThreadTerminateEvent.set()
         self.__pSocketThread.join()
         
@@ -317,10 +332,12 @@ class HardwareComm():
         if not self.IsFakePLC():
             # We are in normal mode.  Make sure the socket thread is alive and well
             if self.__pSocketThread == None:
+                log.error("Hardware Thread does not exist")
                 raise Exception("Socket thread does not exist")
             if self.__pSocketThread.GetError() != "":
                 raise Exception(self.__pSocketThread.GetError())
             if not self.__pSocketThread.is_alive():
+                log.error("Hardware Thread quit unexpectedly")
                 raise Exception("Socket thread terminated unexpectedly")
 
             # Are we already in the processes of updating the state?
@@ -365,18 +382,23 @@ class HardwareComm():
 
     # Cooling system
     def CoolingSystemOn(self):
+        log.debug("Cooling System On")
         self.__SetBinaryValue("CoolingSystemOn", True)
     def CoolingSystemOff(self):
+        log.debug("Cooling System Off")
         self.__SetBinaryValue("CoolingSystemOn", False)
     
     # Vacuum system (currently not implemented in the hardware)
     def VacuumSystemOn(self):
+        log.debug("Vaccuum System On")
         self.__SetBinaryValue("VacuumSystemOn", True)
     def VacuumSystemOff(self):
+        log.debug("Vacuum System Off")
         self.__SetBinaryValue("VacuumSystemOn", False)
 
     # Pressure regulator
     def SetPressureRegulator(self, nPressureRegulator, nPressurePSI):
+        log.debug("Set Pressure Reg # %d @ @f" %(nPressureRegulator, nPressurePSI))
         nPressurePLC = (nPressurePSI * self.__nPressureRegulatorSetSlope) + self.__nPressureRegulatorSetIntercept
         if nPressurePLC < 0:
             nPressurePLC = 0
@@ -386,6 +408,7 @@ class HardwareComm():
 
     # Reagent robot
     def MoveRobotToElute(self, nReactor):
+        log.debug("Move Robot and Elute - Reactor %d" % nReactor)
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
@@ -394,6 +417,7 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToReagent(self, nReactor, nReagent):
+        log.info("Move Robot to Reagent:Reactor %d->Reagent %d" % (nReactor,nReagent))
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
@@ -402,6 +426,7 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToDelivery(self, nReactor, nPosition):
+        log.info("Move Robot & Deliver:Reactor %d->Reagent %d" % (nReactor,nReagent))
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
@@ -410,6 +435,7 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToHome(self):
+        log.debug("Move Robot Home")
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
@@ -417,52 +443,67 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, 0)
         self.__SetRobotPosition(self.__nReagentYAxis, 0)
     def MoveRobotToX(self, nX):
+        log.info("Move to X: %d" % nX)
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
                 raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         self.__SetRobotPosition(self.__nReagentXAxis, int(nX))
     def MoveRobotToY(self, nY):
+        log.info("Move to Y: %d" % nY)
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
                 raise Exception("Cannot move reagent robot unless gripper and gas transfer are up")
         self.__SetRobotPosition(self.__nReagentYAxis, int(nY))
     def GripperUp(self):
+        log.debug("Gripper Up")
         self.__SetBinaryValue("ReagentRobot_SetGripperDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", True)
     def GripperDown(self):
+        log.debug("Gripper Down")
         self.__SetBinaryValue("ReagentRobot_SetGripperUp", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperDown", True)
     def GripperOpen(self):
+        log.debug("Gripper Open")
         self.__SetBinaryValue("ReagentRobot_SetGripperClose", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperOpen", True)
     def GripperClose(self):
+        log.debug("Gripper Close")
         self.__SetBinaryValue("ReagentRobot_SetGripperOpen", False)
         self.__SetBinaryValue("ReagentRobot_SetGripperClose", True)
     def GasTransferUp(self):
+        log.debug("Gas Transfer Up")
         self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", False)
         self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", True)
     def GasTransferDown(self):
+        log.debug("Gas Transfer Down")
         self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", False)
         self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", True)
 
     # Valves
     def GasTransferStart(self):
+        log.info("Gase Transfer Start")
         self.__SetBinaryValue("Valves_GasTransferValve", True)
     def GasTransferStop(self):
+        log.info("Gas Transfer Stop")
         self.__SetBinaryValue("Valves_GasTransferValve", False)
     def LoadF18Start(self):
+        log.debug("Load F18")
         self.__SetBinaryValue("Valves_F18Load", True)
     def LoadF18Stop(self):
+        log.debug("Stop F18")
         self.__SetBinaryValue("Valves_F18Load", False)
     def HPLCLoad(self):
+        log.debug("Load HPLC")
         self.__SetBinaryValue("Valves_HPLCInject", False)
     def HPLCInject(self):
+        log.debug("Inject HPLC")
         self.__SetBinaryValue("Valves_HPLCInject", True)
 
     # Reactor
     def MoveReactor(self, nReactor, sPositionName):
+        log.debug("Move Reactor %d to %s" % (nReactor, sPositionName))
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown():
                 raise Exception("Cannot move reactor robot unless reactor is down")
@@ -470,59 +511,74 @@ class HardwareComm():
         pPosition = self.__LookUpRobotPosition("Reactors_" + sPositionName)
         self.__SetRobotPosition(self.__LookUpReactorAxis(nReactor), nReactorOffset + int(pPosition["y"]))
     def ReactorUp(self, nReactor):
+        log.debug("Reactor %d Up" % nReactor)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", False)
         time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorUp", True)
     def ReactorDown(self, nReactor):
+        log.debug("Reactor %d Down" % nReactor)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorUp", False)
         time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_SetReactorDown", True)
     def ReactorStopcockCW(self, nReactor, nStopcock):
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCCW", False)
+        log.debug("Reactor %d stopcock %d CW" % (nReactor,nStopcock))
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + 
+                str(nStopcock) + "ValveCCW", False)
         time.sleep(0.1)
-        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCW", True)
+        self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + 
+                str(nStopcock) + "ValveCW", True)
     def ReactorStopcockCCW(self, nReactor, nStopcock):
+        log.debug("Reactor %d stopcock %d CCW" % (nReactor,nStopcock))
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCW", False)
         time.sleep(0.1)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_Stopcock" + str(nStopcock) + "ValveCCW", True)
 
     # Temperature controllers
     def HeaterOn(self, nReactor):
+        log.debug("Heater On Reactor %d" % nReactor)
         # Clear the stop bit
         for nHeater in range(1, 4):
             self.SingleHeaterOn(nReactor, nHeater)
     def HeaterOff(self, nReactor):
+        log.debug("Heater Off Reactor %d" % nReactor)
         # Set the stop bit
         for nHeater in range(1, 4):
             self.SingleHeaterOff(nReactor, nHeater)
     def SingleHeaterOn(self, nReactor, nHeater):
+        log.debug("Single Heater %d On @ Reactor %d" % (nHeater,nReactor))
         # Clear the stop bit
         nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
         self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 0)
     def SingleHeaterOff(self, nReactor, nHeater):
+        log.debug("Single Heater %d Off @ Reactor %d" % (nHeater,nReactor))
         # Set the stop bit
         nWordOffset, nBitOffset = self.__LoopUpHeaterStop(nReactor, nHeater)
         self.__SetBinaryValueRaw(nWordOffset, nBitOffset, 1)
     def SetHeaterTemp(self, nReactor, nSetPoint):
         # Set the heater temperature
+        log.debug("Set Reactor %d Heater Temp %f" % (nReactor, nSetPoint)) 
         for nHeater in range(1, 4):
             self.__SetThermocontrollerSetValue("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater), nSetPoint)
 
     # Stir motor
     def SetMotorSpeed(self, nReactor, nMotorSpeed):
+        log.debug("Set Reactor %d motor speed: %d" % (nReactor, nMotorSpeed))
         self.__SetIntegerValue("Reactor" + str(nReactor) + "_StirMotor", nMotorSpeed)
 
     # Home all robots
     def HomeRobots(self):
         # Home the reactors and reagent robots
+        log.debug("Home Robots")
         self.HomeReactorRobots()
         self.HomeReagentRobots()
 
     # Home the reactor robots
     def HomeReactorRobots(self):
+        log.debug("Home Reactor Robots")
         for nReactor in range(1,4):
             self.HomeReactorRobot(nReactor)
     def HomeReactorRobot(self, nReactor):
+        log.debug("Home Reactor %d Robot" % nReactor)
         # Make sure the reactor is down
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["Reactor" + str(nReactor)]["Motion"].getCurrentReactorDown():
@@ -542,6 +598,7 @@ class HardwareComm():
     # Home the reagent robots
     def HomeReagentRobots(self):
         # Make sure the gripper and gas transfer arms are up
+        log.debug("Home Reagent Robots")
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():
@@ -561,6 +618,7 @@ class HardwareComm():
 
     # Disable all robots
     def DisableRobots(self):
+        log.debug("Disable Robots")
         self.DisableReagentRobots()
         time.sleep(0.1)
         for nReactor in range(1, 4):
@@ -570,6 +628,7 @@ class HardwareComm():
         
     # Enable all robots
     def EnableRobots(self):
+        log.info("Enable Robots")
         self.EnableReagentRobots()
         time.sleep(0.1)
         for nReactor in range(1, 4):
@@ -579,28 +638,34 @@ class HardwareComm():
 
     # Disable reagent robots
     def DisableReagentRobots(self):
+        log.info("Disable Reagent Robots")
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x08)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x08)
 
     # Enable reagent robots
     def EnableReagentRobots(self):
+        log.debug("Enable Reagent Robots")
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentXAxis * 4), 0x10)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__nReagentYAxis * 4), 0x10)
 
     # Disable reactor robot
     def DisableReactorRobot(self, nReactor):
+        log.debug("Disable Reactor Robot %d" % nReactor)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x08)
 
     # Enable reactor robot
     def EnableReactorRobot(self, nReactor):
+        log.debug("Enable Reactor Robot %d" % nReactor)
         self.__SetIntegerValueRaw(ROBONET_CONTROL + (self.__LookUpReactorAxis(nReactor) * 4), 0x10)
 
     # Begin logging temperatures
     def StartTempLogging(self):
+        log.debug("Start Temp Logging")
         self.__StartTempLogging()
 
     # Stops logging temperatures
     def StopTempLogging(self):
+        log.debug("Stop Temp Logging")
         self.__StopTempLogging()
 
     ### Fake PLC functions ###
@@ -608,6 +673,7 @@ class HardwareComm():
     # Used by the fake PLC to set the PLC memory
     def FakePLC_SetMemory(self, pMemory, nMemoryLower, nMemoryUpper):
         # Make sure the memory ranges match up
+        log.debug("Fake PLC Set Memory (%d,%d)" % (nMemoryLower, nMemoryUpper))
         if (nMemoryLower != self.__nMemoryLower) or (nMemoryUpper != self.__nMemoryUpper):
             raise Exception("Memory range mismatch")
 
@@ -618,6 +684,7 @@ class HardwareComm():
 
     # Used by the fake PLC to read back a range of the fake memory
     def FakePLC_ReadMemory(self, nReadOffset, nReadLength):
+        log.debug("Fake PLC Read Memory (%d,%d)" % (nReadOffset, nReadLength))
         # Scan the memory range
         sMemory = ""
         for nOffset in range(self.__FakePLC_nMemoryLower, self.__FakePLC_nMemoryUpper + 1):
@@ -634,18 +701,28 @@ class HardwareComm():
         
     # Used by the fake PLC to change the state of the system
     def FakePLC_SetVacuumPressure(self, nPressure):
+        log.debug("FAKE:Set Vacuum Pressure %d" % nPressure)
         nPressurePLC = (nPressure - self.__nVacuumGaugeIntercept) / self.__nVacuumGaugeSlope
         self.__SetIntegerValue("VacuumPressure", nPressurePLC)
     def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
-        nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
+        nlog.debug("FAKE:Set Pressure Regulator %d @ %d" % (nPressureRegulator,nPressure))
+        PressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
         self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotSetPosition(self, nPositionX, nPositionZ):
+        log.debug("FAKE:Set Reagent Robot Position->X%d,Y%d" % \
+                (nPositionX,nPositionZ))
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentYAxis * 4), nPositionZ)
     def FakePLC_SetReagentRobotActualPosition(self, nPositionX, nPositionZ):
+        log.debug("FAKE:Set Reagent Robot Actual Position->X%d,Y%d" % \
+                (nPositionX,nPositionZ))
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__nReagentYAxis * 4), nPositionZ)
     def FakePLC_SetReagentRobotGripper(self, bGripperUp, bGripperDown, bGripperOpen, bGripperClose, bGasTransferUp, bGasTransferDown):
+        log.debug("Set Gripper-> UP:%s,DOWN:%s,OPEN:%s,CLOSE:%s,TUP:%s,TDOWN:%s" % \
+                bGripperUp,bGripperDown,bGripperOpen,
+                bGripperClose,bGasTransferUp,bGasTransferDown)
+
         self.__SetBinaryValue("ReagentRobot_GripperUp", bGripperUp)
         self.__SetBinaryValue("ReagentRobot_GripperDown", bGripperDown)
         self.__SetBinaryValue("ReagentRobot_GripperOpen", bGripperOpen)
@@ -653,10 +730,13 @@ class HardwareComm():
         self.__SetBinaryValue("ReagentRobot_GasTransferUp", bGasTransferUp)
         self.__SetBinaryValue("ReagentRobot_GasTransferDown", bGasTransferDown)
     def FakePLC_CheckForHomingReagentRobotX(self):
+        log.debug("Check Homing Reagent Robot X")
         return (self.__FakePLC_nHomingReagentRobotXStep == 2)
     def FakePLC_CheckForHomingReagentRobotY(self):
+        log.info("Check for Homing Reagent Y")
         return (self.__FakePLC_nHomingReagentRobotYStep == 2)
     def FakePLC_CheckForHomingReactorRobot(self, nReactor):
+        log.info("Check for Homing Reactor Robot %d" % nReactor)
         if nReactor == 1:
             return (self.__FakePLC_nHomingReactorRobot1Step == 2)
         elif nReactor == 2:
@@ -666,9 +746,11 @@ class HardwareComm():
         else:
             raise Exception("Invalid reactor")
     def FakePLC_ResetReagentRobotHoming(self):
+        log.debug("Reset Reagent Robot Homing")
         self.__FakePLC_nHomingReagentRobotXStep = 0
         self.__FakePLC_nHomingReagentRobotYStep = 0
     def FakePLC_ResetReactorRobotHoming(self, nReactor):
+        log.debug("Reset Reactor Robot Homing")
         if nReactor == 1:
             self.__FakePLC_nHomingReactorRobot1Step = 0
         elif nReactor == 2:
@@ -678,31 +760,46 @@ class HardwareComm():
         else:
             raise Exception("Invalid reactor")
     def FakePLC_HomeReagentRobotX(self):
+        log.debug("Home Reagent Robot X")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_HomeReagentRobotY(self):
+        log.debug("Home Reagent Robot Y")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_HomeReactorRobot(self, nReactor):
+        log.debug("Home Reactor Robot %d" % nReactor)
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_HOMING)
     def FakePLC_EnableReagentRobotX(self):
+        log.debug("Enable Reagent Robot X")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReagentRobotX(self):
+        log.info("Disable Reagent Robot X")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentXAxis * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_EnableReagentRobotY(self):
+        log.debug("Enable Reagent Robot Y")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReagentRobotY(self):
+        log.debuge("Disable Reagent Robot Y")
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__nReagentYAxis * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_EnableReactorRobot(self, nReactor):
+        log.debug("Enable Reactor Robot %d" % nReactor)
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_ENABLED)
     def FakePLC_DisableReactorRobot(self, nReactor):
+        log.debug("Disable Reactor Robot %d" % nReactor)
         self.__SetIntegerValueRaw(ROBONET_CHECK + (self.__LookUpReactorAxis(nReactor) * 4), FAKEPLC_ROBONET_DISABLED)
     def FakePLC_SetReactorLinearSetPosition(self, nReactor, nPositionY):
+        log.debug("Move Reactor %d to Y Pos %d" % (nReactor, nPositionY))
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__LookUpReactorAxis(nReactor) * 4), nPositionY)
     def FakePLC_SetReactorLinearActualPosition(self, nReactor, nPositionY):
+        log.debug("Move Reactor %d to actuatl Y Pos %d" % (nReactor, nPositionY))
         self.__SetIntegerValueRaw(ROBONET_AXISPOSREAD + (self.__LookUpReactorAxis(nReactor) * 4), nPositionY)
     def FakePLC_SetReactorVerticalPosition(self, nReactor, bUpSensor, bDownSensor):
+        log.debug("Set Reactor %d Vertical Position UP:%s,DOWN:%s" \
+                % (nReactor,bUpSensor,bDownSensor))
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorUp", bUpSensor)
         self.__SetBinaryValue("Reactor" + str(nReactor) + "_ReactorDown", bDownSensor)
     def FakePLC_SetReactorActualTemperature(self, nReactor, nHeater, nTemperature):
+        log.debug("Set Reactor %d heater %d Actual Temperature %d"  
+                % (nReactor,nHeater,nTemperature))
         nOffset = self.__LookUpThermocontrollerActualOffset("Reactor" + str(nReactor) + "_TemperatureController" + str(nHeater))
         self.__SetIntegerValueRaw(nOffset, nTemperature)
     def FakePLC_SetBinaryValue(self, nWordOffset, nBitOffset, bValue):

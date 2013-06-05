@@ -12,6 +12,10 @@ import Exceptions
 from CoreServer import InitialRunState
 import time
 
+import logging
+log = logging.getLogger("elixys.web")
+
+
 # Function used to sort strings in a case-insensitive manner
 def LowerIfPossible(x):
     try:
@@ -521,7 +525,7 @@ class GetHandler:
         if self.__pServerState == None:
             self.__pServerState = self.__pCoreServer.GetServerState(self.__sRemoteUser)
             if self.__pServerState == None:
-                self.__pDatabase.SystemLog(LOG_ERROR, self.__sRemoteUser, "GetHandler.__GetServerState() failed, assuming hardware off")
+                log.error("GetHandler.__GetServerState() failed, assuming hardware off")
                 self.__pServerState = {"type":"serverstate"}
                 self.__pServerState["timestamp"] = time.time()
                 self.__pServerState["runstate"] = InitialRunState()

@@ -65,29 +65,30 @@ if __name__ == '__main__':
         pDBComm.Connect()
         pSequenceManager = SequenceManager(pDBComm)
 
-        print "Importing saved sequences..."
-        for pSequence in pDatabase["savedsequences"]:
-        # Make sure the sequence file exists
-            sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
-            if not os.path.isfile(sSequenceFile):
-                print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
-                continue
+        #print "Importing saved sequences..."
         
-            print "  " + sSequenceFile
-            pSequenceManager.ImportSequence("System", sSequenceFile, "Saved")
+        #for pSequence in pDatabase["savedsequences"]:
+        ## Make sure the sequence file exists
+        #    sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
+        #    if not os.path.isfile(sSequenceFile):
+        #        print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
+        #        continue
+        
+        #    print "  " + sSequenceFile
+        #    pSequenceManager.ImportSequence("System", sSequenceFile, "Saved")
 
     # Import the run history
-    print "Importing run history..."
-    for pSequence in pDatabase["runhistory"]:
+    #print "Importing run history..."
+    #for pSequence in pDatabase["runhistory"]:
         # Make sure the sequence file exists
-        sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
-        if not os.path.isfile(sSequenceFile):
-            print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
-            continue
-        print "  " + sSequenceFile
-        pSequenceManager.ImportSequence("System", sSequenceFile, "History")
+    #    sSequenceFile = os.path.join(sTargetDirectory, pSequence["filename"])
+    #    if not os.path.isfile(sSequenceFile):
+    #        print "Warning: sequence file \"" + sSequenceFile + "\" not found, skipping."
+    #        continue
+    #    print "  " + sSequenceFile
+    #    pSequenceManager.ImportSequence("System", sSequenceFile, "History")
 
     # Complete
-    pDBComm.Disconnect()
+    #pDBComm.Disconnect()
     print "Done"
 

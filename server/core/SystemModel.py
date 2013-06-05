@@ -33,6 +33,12 @@ import socket
 import rpyc
 from DBComm import *
 
+
+import logging
+log = logging.getLogger("elixys.core")
+log.info("Starting Elixys System Model")
+
+
 # Constants
 STATECOMMONCOLUMN1WIDTH = 45
 STATECOMMONCOLUMN2WIDTH = 12
@@ -162,11 +168,11 @@ class SystemModel:
       if self.__pStateMonitor == None:
         try:
           self.__pStateMonitor = rpyc.connect("localhost", 18861)
-          self.database.SystemLog(LOG_INFO, "System", "Connection to state monitor established")
+          lof.info("Connection to state monitor established")
           self.__bStateMonitorError = False
         except socket.error, ex:
           if not self.__bStateMonitorError:
-            self.database.SystemLog(LOG_INFO, "System", "Failed to connect to state monitor")
+            log.info("Failed to connect to state monitor")
           self.__pStateMonitor = None
           self.__bStateMonitorError = True
 
@@ -176,7 +182,7 @@ class SystemModel:
           self.__pStateMonitor.root.UpdateState(self.GetStateString())
         except EOFError, ex:
           # Catch EOFErrors in the event that the state monitor process dies
-          self.database.SystemLog(LOG_INFO, "System", "Failed to update state monitor")
+          log.info("Failed to update state monitor")
           self.__pStateMonitor = None
           self.__bStateMonitorError = True
 
