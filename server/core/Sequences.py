@@ -15,9 +15,10 @@ from DBComm import *
 import json
 from SequenceManager import SequenceManager
 from Messaging import Messaging
+import traceback
 
 import logging
-log = logging.getLogger("elixys.core")
+log = logging.getLogger("elixys.seq")
 
 class Sequence(Thread):
   def __init__(self, sRemoteUser, nSourceSequenceID, pSystemModel):
@@ -56,7 +57,7 @@ class Sequence(Thread):
       raise Exceptions("Cannot run an invalid sequence (" + self.sourceSequenceID + ")")
 
     # Create a new sequence in the run history
-    self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, 0, "Starting run of sequence " + str(self.sourceSequenceID) + " (" + self.sourceSequence["metadata"]["name"] + ")")
+    log.debug("Starting run of sequence " + str(self.sourceSequenceID) + " (" + self.sourceSequence["metadata"]["name"] + ")")
     pConfiguration = self.database.GetConfiguration(self.username)
     self.runSequenceID = self.database.CreateSequence(self.username, self.sourceSequence["metadata"]["name"], self.sourceSequence["metadata"]["comment"], "History", 
       pConfiguration["reactors"], pConfiguration["reagentsperreactor"])
@@ -126,10 +127,12 @@ class Sequence(Thread):
     """Thread entry point"""
     sRunError = ""
     self.userSourceIDs = True
+    log.debug("Running Sequence")
     try:
       # Main sequence run loop
+      log.debug("sourceSequence -> %s" % str(self.sourceSequence))
       sMessage = "Run of sequence \"" + self.sourceSequence["metadata"]["name"] + "\" started."
-      self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, sMessage)
+      log.debug(sMessage)
       self.messaging.broadcastMessage(sMessage)
 
       nComponentCount = len(self.sourceSequence["components"])
@@ -141,7 +144,7 @@ class Sequence(Thread):
         # Skip components until we find our start component
         self.sourceComponentID = pSourceComponent["id"]
         if self.initializing and (self.startComponentID != 0) and (self.sourceComponentID != self.startComponentID):
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
+          log.debug("Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
           nCurrentComponent += 1
           continue
 
@@ -151,12 +154,12 @@ class Sequence(Thread):
 
         # Ignore any previous summary component
         if pSourceComponent["componenttype"] == Summary.componentType:
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.sourceComponentID, "Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
+          log.debug("Skipping unit operation (" + pSourceComponent["componenttype"] + ")")
           nCurrentComponent += 1
           continue
 
         # Create and run the next unit operation
-        self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Starting unit operation " + str(self.sourceComponentID) + " (" + 
+        log.debug("Starting unit operation " + str(self.sourceComponentID) + " (" + 
           pSourceComponent["componenttype"] + ")")
         pSourceUnitOperation = UnitOperations.createFromComponent(self.sourceSequenceID, pSourceComponent, self.username, self.sequenceManager.database, self.systemModel)
         self.runComponentID = pSourceUnitOperation.copyComponent(self.sourceSequenceID, self.runSequenceID)
@@ -164,40 +167,48 @@ class Sequence(Thread):
         pRunUnitOperation = UnitOperations.createFromComponent(self.runSequenceID, pRunComponent, self.username, self.sequenceManager.database, self.systemModel)
         pRunUnitOperation.setDaemon(True)
         pRunUnitOperation.start()
+         
         self.systemModel.SetUnitOperation(pRunUnitOperation)
-
+        
+        log.debug( "Unit Op is alive")
         # Wait until the operation completes or we receive an abort signal
         while pRunUnitOperation.is_alive() and not self.runAborted:
+          log.debug( "Unit Op check alive")
           time.sleep(0.25)
         self.systemModel.SetUnitOperation(None)
         if self.runAborted:
+          log.error( "Unit Op ABORTED!")
           pRunUnitOperation.setAbort()
           raise Exception("Run aborted")
 
         # Check for unit operation error
+        log.debug( "Unit check for error")
         sError = pRunUnitOperation.getError()
         if sError != "":
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Unit operation failed: " + sError)
+          log.error("UnitOperation: %s" % pRunUnitOperation.__class__.__name__)
+          log.error( "Unit operation failed: " + sError)
           raise Exception(sError)
-
+        log.debug("Prepare to update operation details")
         # Update the unit operation details in the database
         UnitOperations.updateToComponent(pRunUnitOperation, self.runSequenceID, pRunComponent, self.username, self.sequenceManager.database, self.systemModel)
+        log.debug("After updateToComponent")
         self.sequenceManager.UpdateComponent(self.username, self.runSequenceID, self.runComponentID, None, pRunComponent)
-        self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Completed unit operation (" + pRunComponent["componenttype"] + ")")
+        log.debug("After updateComponent")
+        log.debug("Completed unit operation (" + pRunComponent["componenttype"] + ")")
         self.sourceComponentID = 0
         self.runComponentID = 0
 
         # Check if the user paused the sequence for editing
         if self.runWillPause:
           # Pause until editing is complete
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Pausing run for editing")
+          log.debug("Pausing run for editing")
           self.runWillPause = False
           self.runIsPaused = True
           while self.runIsPaused and not self.runAborted:
             time.sleep(0.25)
           if self.runAborted:
             raise Exception("Sequence aborted")
-          self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Continuing paused run")
+          log.debug("Continuing paused run")
 
           # Reload the sequence and make sure it is still valid
           self.sourceSequence = self.sequenceManager.GetSequence(self.username, self.sourceSequenceID)
@@ -218,6 +229,7 @@ class Sequence(Thread):
         nCurrentComponent += 1
     except Exception as ex:
       log.error("Sequence run failed: " + str(ex))
+      log.error("Trace Back %s" % traceback.format_exc()) 
       sRunError = str(ex)
 
     # Add the Summary unit operation to the sequence
@@ -231,7 +243,7 @@ class Sequence(Thread):
     self.userSourceIDs = False
 
     # Instantiate and start the summary unit operation
-    self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Starting summary unit operation")
+    log.info("Starting summary unit operation")
     pSummaryComponent = self.sequenceManager.GetComponent(self.username, self.runComponentID, self.runSequenceID)
     pSummaryUnitOperation = UnitOperations.createFromComponent(self.runSequenceID, pSummaryComponent, self.username, self.sequenceManager.database, self.systemModel)
     pSummaryUnitOperation.setDaemon(True)
@@ -244,10 +256,10 @@ class Sequence(Thread):
     # Wait until the operation completes
     while pSummaryUnitOperation.is_alive():
       time.sleep(0.25)
-    self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, self.runComponentID, "Summary unit operation complete")
+      log.info("Summary unit operation complete")
     self.runComponentID = 0
 
     # Run complete
-    self.database.RunLog(LOG_INFO, self.username, self.runSequenceID, 0, "Run stopped")
+    log.debug("Run stopped")
     self.running = False
 

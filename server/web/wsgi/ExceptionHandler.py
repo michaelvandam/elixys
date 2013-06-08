@@ -8,16 +8,17 @@ sys.path.append("/opt/elixys/core")
 sys.path.append("/opt/elixys/database")
 import Exceptions
 from DBComm import *
-
+import traceback
 
 import logging
 log = logging.getLogger("elixys.web")
+seqlog = logging.getLogger("elixys.seq")
 
 
 def HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, nSequenceID):
     """Handles the error when the server fails to find a sequence"""
-    log.error("Failed to find sequence " + str(nSequenceID))
-
+    log.error("Failed to find sequence %s " % str(nSequenceID))
+            
     # Was it the sequence that the user is currently on?
     if pClientState["sequenceid"] == nSequenceID:
         # Yes, so return the user to the last Select Sequence screen
@@ -49,6 +50,7 @@ def HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, s
                     str(nSequenceID))
         except Exceptions.SequenceNotFoundException as ex:
             # Sequence not found
+            seqlog.error("Sequence Error Traceback:\n\r\n\r%s\n\r\n\r" % traceback.format_exc()) 
             return HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, nSequenceID)
 
     # Return the state
@@ -79,6 +81,7 @@ def HandleGeneralException(pDatabase, sRemoteUser, sError):
     # Log the actual error and send the client a generic error
     if pDatabase != None:
         log.error(sError)
+        log.error("Traceback: %s" % traceback.format_exc())
     else:
         print sError
     return {"type":"error", "description":"An internal server error occurred"}

@@ -10,6 +10,10 @@ sys.path.append("/opt/elixys/database")
 from DBComm import *
 import urllib
 
+import logging
+log = logging.getLogger("elixys.unitop")
+
+
 #Reactor Y Positions
 REACT_A    = 'React1'
 REACT_B    = 'React2'
@@ -237,14 +241,14 @@ class UnitOperation(threading.Thread):
   def logError(self, sError):
     """Logs an error string."""
     if self.database != None:
-      self.database.RunLog(LOG_ERROR, self.username, self.sequenceID, self.componentID, sError)
+      log.error(sError)
     else:
       print sError
 
   def logInfo(self, sInfo):
     """Logs an information string."""
     if self.database != None:
-      self.database.RunLog(LOG_INFO, self.username, self.sequenceID, self.componentID, sInfo)
+      log.debug(sInfo)
     else:
       print sInfo
     
@@ -291,6 +295,7 @@ class UnitOperation(threading.Thread):
       
   def setStatus(self,status,bUpdate=False):
     self.status = status
+    log.debug("Class:<%s> | setStatus:%s " % (self.__class__.__name__, self.status))
     if not bUpdate:
       self.logInfo(urllib.unquote(status))
 
@@ -303,6 +308,7 @@ class UnitOperation(threading.Thread):
     
   def checkAbort(self):
     if self.abort:
+      log.error("Oberation aborted: <%s>" % self.__class__.__name__)
       self.abortOperation("Operation aborted")
 
   def getError(self):
@@ -348,6 +354,7 @@ class UnitOperation(threading.Thread):
 
   def doStep(self, function, error):
     """Performs the step with error handling"""
+    log.error("Do step: %s" % self.__class__.__name__)
     success = False
     while not success:
       try:
@@ -657,6 +664,7 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.systemModel['ReagentDelivery'].getCurrentPosition,(0,0,0,0),EQUAL,5)
 
   def waitForCondition(self,function,condition,comparator,timeout): #Timeout in seconds, default to 3.
+    log.info("waitForCondition")
     startTime = time.time()
     self.delay = 500
     self.checkAbort()
@@ -829,6 +837,7 @@ class UnitOperation(threading.Thread):
       self.systemModel[sReactor]['Thermocouple'].setHeaterOff()
     self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
     self.error = error
+    log.error("Class:<%s> | Error:%s | Status:%s " % (self.__class__.__name__, self.error, self.status))
     if raiseException:
       raise UnitOpError(error)
     print error
@@ -968,7 +977,9 @@ class UnitOperation(threading.Thread):
       self.pressureRegulator = 'PressureRegulator2'
     if rampTime:
       nRefreshFrequency = 5  # Update pressure this number of times per second
+      #log.error("Break1") # Looks like it took to long to ramp up?
       currentPressure = float(self.systemModel[self.pressureRegulator].getSetPressure())
+      #log.error("Break2")
       rampRate = (float(pressureSetPoint) - float(currentPressure)) / float(rampTime) / float(nRefreshFrequency)
       nElapsedTime = 0
       while (not self.timerStopped) and (nElapsedTime < rampTime):
@@ -976,7 +987,9 @@ class UnitOperation(threading.Thread):
         nElapsedTime += 1 / float(nRefreshFrequency)
         currentPressure += rampRate
         self.systemModel[self.pressureRegulator].setRegulatorPressure(currentPressure) #Set analog value on PLC
+        
         self.checkAbort()
+        #log.error("Break3")
       if self.timerStopped:
         return
     self.pressureSetPoint = pressureSetPoint
@@ -987,6 +1000,9 @@ class UnitOperation(threading.Thread):
     self.waitForCondition(self.pressureSet,True,EQUAL,20)
 
   def pressureSet(self):
+    log.debug("getCurrentPressure: %d, pressureSetPoint: %d" 
+            %(self.systemModel[self.pressureRegulator].getCurrentPressure(),self.pressureSetPoint))
+
     return (self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint - 1,GREATER) and
       self.checkForCondition(self.systemModel[self.pressureRegulator].getCurrentPressure,self.pressureSetPoint + 1,LESS))
 

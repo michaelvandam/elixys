@@ -5,6 +5,9 @@ Pressure regulator thread that adjusts the pressure over time"""
 ### Imports
 import threading
 import time
+import logging
+
+log = logging.getLogger("elixys.plc")
 
 class PressureRegulatorThread(threading.Thread):
     def SetParameters(self, pHardwareComm, nPressureRegulator, nStartPressure, nTargetPressure):
@@ -13,23 +16,29 @@ class PressureRegulatorThread(threading.Thread):
         self.__nPressureRegulator = nPressureRegulator
         self.__nStartPressure = nStartPressure
         self.__nTargetPressure = nTargetPressure
-        
+        log.debug("Starting Pressure Regulator Thread") 
     def run(self):
         """Thread entry point"""
-        # Calculate the step size
-        nPressure = self.__nStartPressure
-        nStep = (self.__nTargetPressure - self.__nStartPressure) / 10
-        
-        # Pressure adjust loop
-        for nCount in range(1, 11):
-            # Sleep
-            time.sleep(0.1) 
-            
-            # Update the pressure
-            nPressure += nStep
-            self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, nPressure)
+        try:
+            log.debug("Running Pressure Regulator Thread")
+            # Calculate the step size
+            nPressure = self.__nStartPressure
+            nStep = (self.__nTargetPressure - self.__nStartPressure) / 10.0
+            log.debug("Start Pressure: %f, Step size: %f ,Stop Pressure: %f" % (self.__nStartPressure, nStep, self.__nTargetPressure)) 
+            # Pressure adjust loop
+            for nCount in range(1, 11):
+                # Sleep
+                time.sleep(0.01) 
+                
+                # Update the pressure
+                nPressure += nStep
+                self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, nPressure)
 
-        # Set the pressure to the final value
-        self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, self.__nTargetPressure)
-        time.sleep(0.1)
-        
+            # Set the pressure to the final value
+            self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, self.__nTargetPressure)
+            log.info("Fake Pressure Reg Done")
+            time.sleep(0.1)
+        except Exception as ex:
+            log.error("Pressure regulator thread failed")
+            import traceback;log.error(traceback.format_exc)
+            

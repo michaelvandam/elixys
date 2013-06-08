@@ -20,12 +20,15 @@ import ExceptionHandler
 import CoreServerProxy
 import Exceptions
 from DBComm import *
-
+import traceback
 import logging.config
 import logging
 
 logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
 log = logging.getLogger("elixys.web")
+seqlog = logging.getLogger("elixys.seq")
+
+
 log.info("Starting Elixys Web Server")
 
 def application(pEnvironment, fStartResponse):
@@ -80,14 +83,19 @@ def application(pEnvironment, fStartResponse):
             pGetHandler = GetHandler.GetHandler(pCoreServer, pDatabase)
             pResponse = pGetHandler.HandleRequest(pClientState, sRemoteUser, "/state", None, 0)
     except Exceptions.SequenceNotFoundException as ex:
+        seqlog.error("Sequence Error Traceback:\n\r%s\n\r" % traceback.format_exc()) 
         pResponse = ExceptionHandler.HandleSequenceNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nSequenceID)
     except Exceptions.ComponentNotFoundException as ex:
+        seqlog.error("Component Error Traceback:\n\r%s\n\r" % traceback.format_exc()) 
         pResponse = ExceptionHandler.HandleComponentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nComponentID)
     except Exceptions.ReagentNotFoundException as ex:
+        seqlog.error("Reagent Error Traceback:\n\r%s\n\r" % traceback.format_exc()) 
         pResponse = ExceptionHandler.HandleReagentNotFound(pCoreServer, pDatabase, pClientState, sRemoteUser, sPath, ex.nReagentID)
     except Exceptions.InvalidSequenceException as ex:
+        seqlog.error("Invalid Sequence Error Traceback:\n\r%s\n\r" % traceback.format_exc()) 
         pResponse = ExceptionHandler.HandleInvalidSequence(pDatabase, sRemoteUser, ex.nSequenceID)
     except Exception as ex:
+        seqlog.error("Unknown Error Traceback:%s" % traceback.format_exc()) 
         pResponse = ExceptionHandler.HandleGeneralException(pDatabase, sRemoteUser, str(ex))
 
     # Initialize the return status and headers

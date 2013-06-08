@@ -132,11 +132,15 @@ class SystemModel:
   def CheckForError(self):
     """Checks if the state update thread has encountered an error"""
     if self.stateUpdateThread != None:
+      #log.info("StateUpdateThread is alive :CheckForError ")
       if self.stateUpdateThread.GetError() != "":
+        log.error("StateUpdateThread Failed: %s" % self.stateUpdateThread.GetError())
         raise Exception(self.stateUpdateThread.GetError())
       if not self.stateUpdateThread.is_alive():
+        log.error("State update thread died expectedly")
         raise Exception("State update thread died expectedly")
-
+    else:
+        log.info("StateUpdateThread is not alive :CheckForError")
   def SetUnitOperation(self, pUnitOperation):
     """Sets the current unit operation"""
     self.__pUnitOperation = pUnitOperation
@@ -160,19 +164,21 @@ class SystemModel:
   def ModelUpdated(self):
     """Called when the system model has been updated"""
     # Are we a fake PLC?
+    #log.debug("ModelUpdate... are we fake?")
     if not self.hardwareComm.IsFakePLC():
       # No, so update the system
+      log.debug("We are not Fake... so update!")
       self.__UpdateState()
 
       # Attempt to connect to the state monitor
       if self.__pStateMonitor == None:
         try:
           self.__pStateMonitor = rpyc.connect("localhost", 18861)
-          lof.info("Connection to state monitor established")
+          log.debug("Connection to state monitor established")
           self.__bStateMonitorError = False
         except socket.error, ex:
           if not self.__bStateMonitorError:
-            log.info("Failed to connect to state monitor")
+            log.error("Failed to connect to state monitor")
           self.__pStateMonitor = None
           self.__bStateMonitorError = True
 
@@ -182,17 +188,24 @@ class SystemModel:
           self.__pStateMonitor.root.UpdateState(self.GetStateString())
         except EOFError, ex:
           # Catch EOFErrors in the event that the state monitor process dies
-          log.info("Failed to update state monitor")
+          log.error("Failed to update state monitor")
+          log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
           self.__pStateMonitor = None
           self.__bStateMonitorError = True
+    else:
+        log.debug("This is a FAKE PLC!")
 
   def GetStateObject(self):
     """Returns the state as an object"""
     self.__pStateLock.Acquire()
     try:
       pStateObject = copy.deepcopy(self.__pStateObject)
+    except Exception, ex:
+        log.error("Failed to copy pStateObject: %s" % ex.strerror)
+        log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
     finally:
       self.__pStateLock.Release()
+    log.info("pStateObject type: %s" % str(type(pStateObject)))
     return pStateObject
 
   def GetStateString(self):
@@ -212,6 +225,7 @@ class SystemModel:
     # Dump the state in a try/except/finally block to make sure we release our locks
     try:
       # Initialize variables
+      log.debug("Updating State Object")
       self.__pStateObject = {"type":"serverstate"}
       self.__sStateString = ""
 
@@ -665,6 +679,9 @@ class SystemModel:
           nReactor3RobotCheckWord, bReactor3SetUp, bReactor3SetDown, bReactor3CurrentUp, bReactor3CurrentDown, sReactor3Stopcock1, bReactor3Collet1On, 
           fReactor3Collet1SetTemperature, fReactor3Collet1CurrentTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2CurrentTemperature,
           bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3CurrentTemperature, nReactor3StirMotorSpeed, fReactor3RadiationDetector)
+    except Exception, ex:
+        log.error("SystemModel Update Fail: %s" % ex.strerror)
+        log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
     finally:
         # Release the locks
         self.UnlockSystemModel()

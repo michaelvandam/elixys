@@ -3,6 +3,9 @@
 # Imports
 from UnitOperation import *
 
+import logging
+log = logging.getLogger("elixys.unitop")
+
 # Component type
 componentType = "CASSETTE"
 
@@ -19,6 +22,7 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 # Cassette class
 class Cassette(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
+    log.debug("Initialize a Cassette")
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
 
   def run(self):
@@ -27,6 +31,8 @@ class Cassette(UnitOperation):
   
   def initializeComponent(self, pComponent):
     """Initializes the component validation fields"""
+    
+    log.debug("Initialize a Component")
     self.component = pComponent
     self.addComponentDetails()
 
@@ -54,6 +60,7 @@ class Cassette(UnitOperation):
 
   def addComponentDetails(self):
     """Adds details to the component after retrieving it from the database and prior to sending it to the client"""
+    log.debug("Add Component Details")
     # Skip if we've already updated the reagents
     if self.component.has_key("reagents") or not self.component.has_key("reagentids"):
       return
@@ -71,6 +78,7 @@ class Cassette(UnitOperation):
     """Creates a copy of the component in the database"""
     # Cassettes can only be copied by the database which needs to be done before this function is called.  Locate the cassette in the
     # new sequence which corresponds to this one
+    log.debug("Copy Component")
     pNewCassette = self.database.GetCassette(self.username, nTargetSequenceID, self.component["reactor"] - 1)
 
     # Update the cassette details

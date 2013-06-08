@@ -29,13 +29,14 @@ import logging
 import logging.config
 
 logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
-log = logging.getLogger("elixys.hw")
+log = logging.getLogger("elixys.plc")
 log.info("Starting Elixys FakePLC Server")
 
 # Fake PLC class
 class FakePLC():
     def __init__(self):
         """Fake PLC class constructor"""
+        log.debug("Initialize FakePLC")
         # Initialize variables
         self.__pCoolingThread = None
         self.__pPressureRegulator1Thread = None
@@ -57,6 +58,7 @@ class FakePLC():
         
     def StartUp(self):
         """Starts up the fake PLC"""
+        log.debug("Start up the FakePLC")
         # Create the hardware layer
         self.__pHardwareComm = HardwareComm()
   
@@ -71,8 +73,10 @@ class FakePLC():
         # Fill the memory buffer from the PLC memory dump
         self.__FillMemoryBuffer("/opt/elixys/hardware/fakeplc/PLC.MEM")
 
-        # Pass a reference to the memory buffer to the HardwareComm so we can read from it and write to it at a higher level
-        self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, self.__nMemoryLower, self.__nMemoryUpper)
+        # Pass a reference to the memory buffer to the HardwareComm 
+        #  so we can read from it and write to it at a higher level
+        self.__pHardwareComm.FakePLC_SetMemory(self.__pMemory, 
+                self.__nMemoryLower, self.__nMemoryUpper)
         
         # Create the system model
         self.__pSystemModel = SystemModel(self.__pHardwareComm, None)
@@ -86,7 +90,7 @@ class FakePLC():
     def Run(self):
         """Runs the fake PLC"""
         # Packet processing loop
-        print "Fake PLC running, type 'q' and press enter to quit..."
+        log.info("Fake PLC running, type 'q' and press enter to quit...")
         while True:
             # Check if the user pressed 'q' to quit
             if Utilities.CheckForQuit():
@@ -94,12 +98,14 @@ class FakePLC():
         
             # Check socket availability
             pRead, pWrite, pError = select.select([self.__pSocket], [], [], 0.25)
+            #log.info("Spinning")
             for pReadable in pRead:
+                #log.info("It is readable")
                 if pReadable == self.__pSocket:
                     # Data is available for receiving
                     pBinaryPacket = self.__pSocket.recv(1024)
                     sPacket = pBinaryPacket.encode("hex")
-
+                    #log.debug("Received Packet of length %d" % len(sPacket))
                     # Check the message length
                     if len(sPacket) >= 36:
                         # Handle read and write messages
@@ -108,12 +114,16 @@ class FakePLC():
                         elif sPacket[20:24] == "0102":
                             self.__HandleWrite(sPacket)
                         else:
-                            print "Unknown command, ignoring"
+                            log.error("FakePLC: Unknown command, ignoring")
                     else:
-                        print "Packet too short, discarding"
+                        log.error("FakePLC: Packet too short, discarding")
             
             # Update the state of the PLC
-            self.__UpdatePLC()
+            try:
+                self.__UpdatePLC()
+            except Exception as ex:
+                import traceback;log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
+                log.error("UpdatePLC error %s" % ex.strerror)
 
     def ShutDown(self):
         """Shuts down the fake PLC"""
@@ -124,6 +134,7 @@ class FakePLC():
 
     def __FillMemoryBuffer(self, sFilename):
         """Fill the buffer from the file containing a dump of the actual PLC memory"""
+        log.debug("FakePLC: Fille the memory buffer")
         # Open the PLC memory file
         pMemoryFile = open(sFilename, "r")
         pMemoryFileLines = pMemoryFile.readlines()
@@ -167,9 +178,10 @@ class FakePLC():
         
     def __HandleRead(self, sPacket):
         """Handle the read command"""
+        #log.debug("FakePLC: HandleRead")
         # We only read words
         if sPacket[24:26] != "b0":
-            print "Invalid I/O memory area code"
+            log.error("Invalid I/O memory area code")
             return
 
         # Determine the read offset and length
@@ -186,6 +198,7 @@ class FakePLC():
 
     def __HandleWrite(self, sPacket):
         """Handle the write command"""
+        log.debug("FakePLC:HandleWrite")
         # Determine the write offsets and length
         nWriteOffsetWord = int(sPacket[26:30], 16)
         nWriteOffsetBit = int(sPacket[30:32], 16)
@@ -195,12 +208,12 @@ class FakePLC():
         if sPacket[24:26] == "30":
             # Bits.  We're only writing this for a single bit at this time
             if nWriteLength != 1:
-                print "Implement multibit writing if needed"
+                log.error("Implement multibit writing if needed")
                 return
                 
             # Verify the packet length
             if len(sPacket) != 38:
-                print "Invalid packet length"
+                log.error("Invalid packet length")
                 return
 
             # Extract the boolean value
@@ -211,12 +224,12 @@ class FakePLC():
         elif sPacket[24:26] == "b0":
             # Bytes.  We're only writing this for a single byte at this time
             if nWriteLength != 1:
-                print "Implement multibyte writing if needed"
+                log.error("Implement multibyte writing if needed")
                 return
                 
             # Verify the packet length
             if len(sPacket) != 40:
-                print "Invalid packet length"
+                log.error("Invalid packet length")
                 return
 
             # Extract the integer value
@@ -225,7 +238,7 @@ class FakePLC():
             # Set the target word
             self.__pHardwareComm.FakePLC_SetWordValue(nWriteOffsetWord, nValue)
         else:
-            print "Invalid I/O memory area code"
+            log.error("Invalid I/O memory area code")
             return
 
         # Send a success packet
@@ -236,8 +249,9 @@ class FakePLC():
     def __UpdatePLC(self):
         """Updates the PLC in response to any changes to system changes"""
         # Check for errors
+        #log.info("FakePLC: UpdatePLC")
         self.__pSystemModel.CheckForError()
-
+        #log.info("Done with CheckForError")
         # Update the various system components
         self.__UpdateVacuumPressure()
         self.__UpdateCoolingSystem()
@@ -246,6 +260,7 @@ class FakePLC():
         self.__UpdateCoolingSystem()
         self.__UpdateReagentRobotStatus()
         self.__UpdateReagentRobotPosition()
+        #log.info("After components")
         self.__UpdateReagentRobotGripper()
         self.__UpdateReactorRobotStatus(1)
         self.__UpdateReactorRobotStatus(2)
@@ -313,10 +328,12 @@ class FakePLC():
         # Get the set and actual pressures
         nSetPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getSetPressure()
         nActualPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getCurrentPressure()
+        
 
         # Compare the pressures.  Add leeway to account for rounding errors
         if ((nActualPressure + 1) < nSetPressure) or ((nActualPressure - 1) > nSetPressure):
             # Get a reference to the pressure regulator thread
+            log.debug("Actual: %f,Setpt: %f" % (nActualPressure,nSetPressure))
             if nPressureRegulator == 1:
                 pThread = self.__pPressureRegulator1Thread
             else:
@@ -372,7 +389,6 @@ class FakePLC():
         # Get the set and actual positions
         nReagentRobotSetPositionRawX, nReagentRobotSetPositionRawZ = self.__pSystemModel.model["ReagentDelivery"].getSetPositionRaw()
         nReagentRobotActualPositionRawX, nReagentRobotActualPositionRawZ = self.__pSystemModel.model["ReagentDelivery"].getCurrentPositionRaw()
-
         # Compare the positions.  Add leeway to account for motor positioning errors
         if ((nReagentRobotSetPositionRawX + 5) < nReagentRobotActualPositionRawX) or ((nReagentRobotSetPositionRawX - 5) > nReagentRobotActualPositionRawX) or \
            ((nReagentRobotSetPositionRawZ + 5) < nReagentRobotActualPositionRawZ) or ((nReagentRobotSetPositionRawZ - 5) > nReagentRobotActualPositionRawZ):
@@ -581,25 +597,34 @@ class FakePLCDaemon(daemon):
         """Initializes the fake PLC daemon"""
         global gFakePLCDaemon
         daemon.__init__(self, sPidFile, "/opt/elixys/logs/FakePLC.log")
+        log.debug("FakePLCDaemon starting")
         self.bTerminate = False
         gFakePLCDaemon = self
-
+    def start(self):
+        log.debug("We really called start... I swear")
+        super(FakePLCDaemon,self).start()
     def run(self):
         """Runs the fake PLC daemon"""
         # Make sure we're in demo mode
+        log.debug("Run FakePLC")
         global gFakePLCDaemon
         if not os.path.isfile("/opt/elixys/demomode"):
+            log.error("Not in demo mode")
             self.bTerminate = True
 
         # Run loop
         while not self.bTerminate:
             try:
                 # Create the fake PLC and run
+                log.debug("Create a FakePLC object")
                 pFakePLC = FakePLC()
+                log.debug("Start a FakePLC object")
                 pFakePLC.StartUp()
+                log.debug("Run a FakePLC object")
                 pFakePLC.Run()
             except Exception as ex:
-                print "Fake PLC error: " + str(ex)
+                log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
+                log.error("Fake PLC error: %s" % ex.strerror)
             finally:
                 pFakePLC.ShutDown()
 
@@ -613,6 +638,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 3:
         pDaemon = FakePLCDaemon(sys.argv[2])
         if 'start' == sys.argv[1]:
+            log.info("Calling start")
             pDaemon.start()
         elif 'stop' == sys.argv[1]:
             pDaemon.stop()

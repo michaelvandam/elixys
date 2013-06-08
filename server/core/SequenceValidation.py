@@ -16,8 +16,8 @@ import time
 from daemon import daemon
 import signal
 import logging
-
-log = logging.getLogger("elixys.validation")
+import traceback
+log = logging.getLogger("elixys.valid")
 
 # Sequence validation daemon exit function
 gSequenceValidationDaemon = None
@@ -73,7 +73,8 @@ class SequenceValidationDaemon(daemon):
                 log.info("Validation process received quit signal")
             except Exception as ex:
                 # Log the error
-                log.info("Validation process failed: " + str(ex))
+                log.error("Validation process failed: " + str(ex))
+                log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             finally:
                 if pSequenceManager != None:
                     pSequenceManager = SequenceManager.SequenceManager(pDatabase)

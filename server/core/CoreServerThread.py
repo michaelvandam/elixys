@@ -4,7 +4,9 @@ Core server thread spawned by CoreServer """
 
 ### Imports
 import threading
-
+import traceback
+import logging
+log = logging.getLogger("elixys.core")
 class CoreServerThread(threading.Thread):
     def __init__(self):
         """Initialize"""
@@ -37,5 +39,6 @@ class CoreServerThread(threading.Thread):
             # Start the server
             self.__pCoreServer.start()
         except Exception as ex:
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             self.__sError = str(ex)
 

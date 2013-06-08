@@ -13,6 +13,8 @@ sys.path.append("/opt/elixys/core/")
 import Utilities
 import logging
 
+log = logging.getLogger("elixys.core")
+
 # The console package we import depends on the OS
 gConsole = None
 if sys.platform == "win32":
@@ -61,11 +63,6 @@ def Print(sText):
                 # Ignore any further errors
                 pass
 
-# Handler that discards all rpyc error messages
-class RpycLogHandler(logging.StreamHandler):
-    def emit(self, record):
-        pass
-
 # State monitoring service
 class StateMonitorService(rpyc.Service):
     def on_connect(self):
@@ -73,18 +70,21 @@ class StateMonitorService(rpyc.Service):
         ClearScreen()
         Print("Elixys state monitoring system")
         Print("Client connected")
- 
+        log.debug("StateMonitorService Connected")
+
     def on_disconnect(self):
         # Clear the screen and notify the user that the client has disconnected
         ClearScreen()
         Print("Elixys state monitoring system")
         Print("Server disconnected, waiting for another connection (press 'q' to quit)...")
+        log.debug("StateMonitorService Disconnected")
  
     def exposed_UpdateState(self, sState):
         # Clear the screen and print the state
         ClearScreen()
         Print(sState)
         Print("Updated at " + time.strftime("%H:%M:%S", time.localtime()))
+        log.debug("Update State")
 
 # Main function
 if __name__ == "__main__":
@@ -97,10 +97,7 @@ if __name__ == "__main__":
         gConsole = curses.initscr()
 
     # Create the RPC server and error handler
-    pLogger = logging.getLogger("rpyc")
-    pLogHandler = RpycLogHandler()
-    pLogger.addHandler(pLogHandler)
-    pServer = ThreadedServer(StateMonitorService, port = 18861, logger = pLogger)
+    pServer = ThreadedServer(StateMonitorService, port = 18861, logger = log)
     
     # Start the RPC server thread
     pStateMonitorThread = StateMonitorThread.StateMonitorThread()

@@ -2,6 +2,8 @@
 
 # Imports
 from UnitOperation import *
+import logging
+log = logging.getLogger("elixys.unitop")
 
 # Component type
 componentType = "INITIALIZE"
@@ -20,11 +22,13 @@ def updateToComponent(pUnitOperation, nSequenceID, pComponent, username, databas
 class Initialize(UnitOperation):
   def __init__(self,systemModel,params,username = "",sequenceID = 0, componentID = 0, database = None):
     UnitOperation.__init__(self,systemModel,username,sequenceID,componentID,database)
+    log.debug("Initialize initialize")
     self.ReactorTuple=('Reactor1','Reactor2','Reactor3')
     self.reagentLoadPositionTuple=(1,2)
     self.description = "Initializing the system hardware."
     
   def run(self):
+    log.debug("Run initialize")
     try:
       #Close all valves (set state)
       self.setStatus("Initializing valves")
@@ -36,6 +40,8 @@ class Initialize(UnitOperation):
         self.setStopcockPosition(F18DEFAULT,self.ReactorID)
       self.systemModel['Valves'].setF18LoadValveOpen(OFF)
 
+      log.debug("After stopcocks")
+
       #Initialize cooling, vacuum, heaters and stir motors
       self.setCoolingSystem(OFF)
       self.setVacuumSystem(OFF)
@@ -46,6 +52,7 @@ class Initialize(UnitOperation):
       #Set pressures
       self.setStatus("Initializing pressures")
       self.setPressureRegulator(1,GAS_TRANSFER_PRESSURE)
+      log.error("Break0")
       self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
       #Raise and open gripper
@@ -71,6 +78,7 @@ class Initialize(UnitOperation):
         self.setReactorPosition(INSTALL)
       self.setStatus("Complete")
     except Exception as e:
+      log.error("Trackback \n\r%s\n\r" % traceback.format_exc())
       self.abortOperation(str(e), False)
   
   def initialize_Step1(self):

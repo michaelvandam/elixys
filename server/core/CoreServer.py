@@ -32,6 +32,7 @@ from Messaging import Messaging
 
 import logging.config
 import logging
+import traceback
 
 logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
 log = logging.getLogger("elixys.core")
@@ -208,6 +209,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.RunSequence() failed: " + str(ex))
+	    log.error("%s" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -243,6 +245,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.RunSequenceFromComponent() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -275,6 +278,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.PauseSequence() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -307,6 +311,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.ContinueSequence() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -338,6 +343,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.WillSequencePause() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -369,6 +375,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.IsSequencePaused() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -404,6 +411,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.ShowAbortSequencePrompt() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -439,6 +447,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.AbortSequence() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -481,6 +490,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.OverrideTimer() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -523,6 +533,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.StopTimer() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -565,6 +576,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.SetSoftErrorDecision() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -607,6 +619,7 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.DeliverUserInput() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
@@ -633,6 +646,7 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             # Log the error
             log.error("CoreServerService.CLIExecuteCommand() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             sResult = "Failed to execute command: " + str(ex)
 
         # Release the lock and return
@@ -657,6 +671,7 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             # Log the error
             log.error("CoreServerService.CLISendCommand() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             sResult = "Failed to send command: " + str(ex)
 
         # Release the lock and return
@@ -687,6 +702,7 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             # Log the error
             log.error("CoreServerService.CLIAbortUnitOperation() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             bResult = False
 
         # Release the lock and return
@@ -711,6 +727,7 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             # Log the error
             log.error("CoreServerService.CLIGetState() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             sResult = "Failed to get system state: " + str(ex)
 
         # Release the lock and return
@@ -738,6 +755,7 @@ class CoreServerService(rpyc.Service):
         except Exception as ex:
             # Log the error
             log.error("CoreServerService.CLIBroadcast() failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             gMessaging = None
             bResult = False
 
@@ -863,6 +881,7 @@ class CoreServerDaemon(daemon):
             except Exception as ex:
                 # Log the error
                 sError = "CoreServer failed: " + str(ex)
+                log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
                 if gDatabase != None:
                     log.error(sError)
                 else:

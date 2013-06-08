@@ -6,6 +6,9 @@ State update thread class spawned by SystemModel """
 import threading
 import time
 
+import logging
+log = logging.getLogger("elixys")
+
 class StateUpdateThread(threading.Thread):
     # Set parameters
     def SetParameters(self, pHardwareComm, pTerminateEvent):
@@ -32,5 +35,6 @@ class StateUpdateThread(threading.Thread):
                 time.sleep(0.5)
         except Exception as ex:
             # Remember the error
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
             self.__sError = str(ex)
 

@@ -15,10 +15,12 @@ from configobj import ConfigObj
 import os
 import TimedLock
 import datetime
-
+import logging
 # Suppress MySQLdb's annoying warnings
 import warnings
 warnings.filterwarnings("ignore", "Unknown table.*")
+
+log = logging.getLogger("elixys.db")
 
 # Error log levels
 LOG_ERROR = 0
@@ -93,6 +95,7 @@ class DBComm:
       self.__pDatabase = MySQLdb.connect(host, user="Elixys", passwd="devel", db="Elixys")
       self.__pDatabase.autocommit(True)
     except:
+      log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
       raise Exception("Unable to connect to SQL database")
 
   def Disconnect(self):
@@ -180,7 +183,7 @@ class DBComm:
   def GetRecentLogsByTimestamp(self, sCurrentUsername, nLevel, pTimestamp):
     """Gets any logs in the SystemLog and RunLog tables that are more recent than the timestamp"""
     # Load the database access and get the raw logs
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetRecentLogsByTimestamp(%s, %i, %s)" % (sCurrentUsername, nLevel, str(pTimestamp)))
+    log.debug("DBComm.GetRecentLogsByTimestamp(%s, %i, %s)" % (sCurrentUsername, nLevel, str(pTimestamp)))
     pLogsRaw = self.__CallStoredProcedure("GetRecentLogsByTimestamp", (nLevel, pTimestamp))
 
     # Create the log array
@@ -192,7 +195,7 @@ class DBComm:
   def GetRecentLogsByCount(self, sCurrentUsername, nLevel, nCount):
     """Gets the N most recent logs in the SystemLog and RunLog tables"""
     # Load the database access and get the raw logs
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetRecentLogsByCount(%s, %i, %i)" % (sCurrentUsername, nLevel, nCount))
+    log.debug("DBComm.GetRecentLogsByCount(%s, %i, %i)" % (sCurrentUsername, nLevel, nCount))
     pLogsRaw = self.__CallStoredProcedure("GetRecentLogsByCount", (nLevel, nCount))
 
     # Create the log array
@@ -205,29 +208,29 @@ class DBComm:
 
   def GetConfiguration(self, sCurrentUsername):
     """Returns the system configuration"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetConfiguration()")
+    log.debug("DBComm.GetConfiguration()")
     return self.__pConfiguration
 
   def GetSupportedOperations(self, sCurrentUsername):
     """Returns the supported operations"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetSupportedOperations()")
+    log.debug("DBComm.GetSupportedOperations()")
     return self.__pSystemConfiguration["UnitOperations"]
 
   def GetReactorPositions(self, sCurrentUsername):
     """Returns the reactor positions"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReactorPositions()")
+    log.debug("DBComm.GetReactorPositions()")
     return self.__pSystemConfiguration["ReactorPositions"]
 
   def GetTwilioConfiguration(self, sCurrentUsername):
     """Returns the Twilio configuration"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetTwilioConfiguration()")
+    log.debug("DBComm.GetTwilioConfiguration()")
     return self.__pTwilioConfiguration
 
   ### Role functions ###
 
   def GetAllRoles(self, sCurrentUsername):
     """Returns all user roles"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetAllRoles()")
+    log.debug("DBComm.GetAllRoles()")
     pRolesRaw = self.__CallStoredProcedure("GetAllRoles", ())
 
     # Create and return the role objects
@@ -239,7 +242,7 @@ class DBComm:
   def GetRole(self, sCurrentUsername, sRoleName):
     """Returns the desired role"""
     # Load the database access and get the role
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetRole(%s)" % (sRoleName, ))
+    log.debug("DBComm.GetRole(%s)" % (sRoleName, ))
     pRoleRaw = self.__CallStoredProcedure("GetRole", (sRoleName, ))
     if len(pRoleRaw) == 0:
         raise Exception("Role " + sUsername + " not found")
@@ -249,24 +252,24 @@ class DBComm:
 
   def CreateRole(self, sCurrentUsername, sRoleName, nFlags):
     """Creates the specified role"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateRole(%s, %i)" % (sRoleName, nFlags))
+    log.debug("DBComm.CreateRole(%s, %i)" % (sRoleName, nFlags))
     return self.__CallStoredProcedure("CreateRole", (sRoleName, nFlags))
 
   def UpdateRole(self, sCurrentUsername, sRoleName, sUpdateRoleName, nUpdatedFlags):
     """Updates the specified role"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateRole(%s, %s, %i)" % (sRoleName, sUpdateRoleName, nUpdatedFlags))
+    log.debug("DBComm.UpdateRole(%s, %s, %i)" % (sRoleName, sUpdateRoleName, nUpdatedFlags))
     return self.__CallStoredProcedure("UpdateRole", (sRoleName, sUpdateRoleName, nUpdatedFlags))
 
   def DeleteRole(self, sCurrentUsername, sRoleName):
     """Deletes the specified role"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.DeleteRole(%s)" % (sRoleName, ))
+    log.debug("DBComm.DeleteRole(%s)" % (sRoleName, ))
     return self.__CallStoredProcedure("DeleteRole", (sRoleName, ))
 
   ### User functions ###
 
   def GetAllUsers(self, sCurrentUsername):
     """Returns details of all system users"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetAllUsers()")
+    log.debug("DBComm.GetAllUsers()")
     pUsersRaw = self.__CallStoredProcedure("GetAllUsers", ())
 
     # Create and return the user objects
@@ -278,7 +281,7 @@ class DBComm:
   def GetUser(self, sCurrentUsername, sUsername):
     """Returns details of the specified user"""
     # Load the database access and get the user data
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetUser(%s)" % (sUsername, ))
+    log.debug("DBComm.GetUser(%s)" % (sUsername, ))
     pUserRaw = self.__CallStoredProcedure("GetUser", (sUsername, ))
     if len(pUserRaw) == 0:
         raise Exception("User " + sUsername + " not found")
@@ -289,7 +292,7 @@ class DBComm:
   def GetUserPasswordHash(self, sCurrentUsername, sUsername):
     """Returns the password hash of the specified user"""
     # Load the database access and get the user password hash
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetUserPasswordHash(%s)" % (sUsername, ))
+    log.debug("DBComm.GetUserPasswordHash(%s)" % (sUsername, ))
     pPasswordHash = self.__CallStoredProcedure("GetUserPasswordHash", (sUsername, ))
     if len(pPasswordHash) == 0:
         raise Exception("User " + sUsername + " not found")
@@ -297,7 +300,7 @@ class DBComm:
 
   def CreateUser(self, sCurrentUsername, sUsername, sPasswordHash, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel):
     """Creates a new user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateUser(%s, %s, %s, %s, %s, %s, %s, %i)" % (sUsername, sPasswordHash, sFirstName, sLastName, \
+    log.debug("DBComm.CreateUser(%s, %s, %s, %s, %s, %s, %s, %i)" % (sUsername, sPasswordHash, sFirstName, sLastName, \
         sRoleName, sEmail, sPhone, nMessageLevel))
     pDefaultClientState = {"type":"clientstate",
       "screen":"HOME",
@@ -328,23 +331,23 @@ class DBComm:
 
   def UpdateUser(self, sCurrentUsername, sUsername, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel):
     """Updates an existing user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateUser(%s, %s, %s, %s, %s, %s, %i)" % (sUsername, sFirstName, sLastName, sRoleName, \
+    log.debug("DBComm.UpdateUser(%s, %s, %s, %s, %s, %s, %i)" % (sUsername, sFirstName, sLastName, sRoleName, \
       sEmail, sPhone, nMessageLevel))
     return self.__CallStoredProcedure("UpdateUser", (sUsername, sFirstName, sLastName, sRoleName, sEmail, sPhone, nMessageLevel))
 
   def UpdateUserPassword(self, sCurrentUsername, sUsername, sPasswordHash):
     """Updates an existing user's password"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateUserPassword(%s, %s)" % (sUsername, sPasswordHash))
+    log.debug("DBComm.UpdateUserPassword(%s, %s)" % (sUsername, sPasswordHash))
     return self.__CallStoredProcedure("UpdateUserPassword", (sUsername, sPasswordHash))
 
   def DeleteUser(self, sCurrentUsername, sUsername):
     """Deletes an existing user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.DeleteUser(%s, %s, %s, %s)" % (sUsername, DeleteUser))
+    log.debug("DBComm.DeleteUser(%s, %s, %s, %s)" % (sUsername, DeleteUser))
     return self.__CallStoredProcedure("DeleteUser", (sUsername, ))
 
   def GetUserClientState(self, sCurrentUsername, sUsername):
     """Returns the client state of a user"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetUserClientState(%s)" % (sUsername, ))
+    log.debug("DBComm.GetUserClientState(%s)" % (sUsername, ))
     pUserClientState = self.__CallStoredProcedure("GetUserClientState", (sUsername, ))
     if (len(pUserClientState) == 0) or (len(pUserClientState[0]) == 0):
        raise Exception("Failed to get client state for user " + sUsername)
@@ -353,7 +356,7 @@ class DBComm:
   def UpdateUserClientState(self, sCurrentUsername, sUsername, pClientState):
     """Updates the client state of a user"""
     sClientState = json.dumps(pClientState)
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateUserClientState(%s, %s)" % (sUsername, sClientState))
+    log.debug("DBComm.UpdateUserClientState(%s, %s)" % (sUsername, sClientState))
     return self.__CallStoredProcedure("UpdateUserClientState", (sUsername, sClientState))
 
   ### Sequence functions ###
@@ -361,7 +364,7 @@ class DBComm:
   def GetAllSequences(self, sCurrentUsername, sType):
     """Return all sequences"""
     # Load the access and get the sequence data
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetAllSequences(%s)" % (sType, ))
+    log.debug("DBComm.GetAllSequences(%s)" % (sType, ))
     pSequencesRaw = self.__CallStoredProcedure("GetAllSequences", (sType, ))
 
     # Fill in each sequence
@@ -385,7 +388,7 @@ class DBComm:
   def GetSequenceMetadata(self, sCurrentUsername, nSequenceID):
     """Gets a sequence"""
     # Log the function call and get the sequence data
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetSequenceMetadata(%i)" % (nSequenceID, ))
+    log.debug("DBComm.GetSequenceMetadata(%i)" % (nSequenceID, ))
     pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
     if len(pSequenceRaw) == 0:
         raise Exceptions.SequenceNotFoundException(nSequenceID)
@@ -409,7 +412,7 @@ class DBComm:
   def GetSequence(self, sCurrentUsername, nSequenceID):
     """Gets a sequence"""
     # Log the function call and get the sequence data
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetSequence(%i)" % (nSequenceID, ))
+    log.debug("DBComm.GetSequence(%i)" % (nSequenceID, ))
     pSequenceRaw = self.__CallStoredProcedure("GetSequence", (nSequenceID, ))
     if len(pSequenceRaw) == 0:
         raise Exceptions.SequenceNotFoundException(nSequenceID)
@@ -424,23 +427,23 @@ class DBComm:
 
   def CreateSequence(self, sCurrentUsername, sName, sComment, sType, nCassettes, nReagents):
     """Creates a new sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateSequence(%s, %s, %s, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents))
+    log.debug("DBComm.CreateSequence(%s, %s, %s, %i, %i)" % (sName, sComment, sType, nCassettes, nReagents))
     pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateSequence", (sName, sComment, sType, sCurrentUsername, nCassettes, nReagents,0))
     return pReturn[0][0]
 
   def UpdateSequence(self, sCurrentUsername, nSequenceID, sName, sComment, bValid):
     """Update a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateSequence(%i, %s, %s, %i)" % (nSequenceID, sName, sComment, bValid))
+    log.debug("DBComm.UpdateSequence(%i, %s, %s, %i)" % (nSequenceID, sName, sComment, bValid))
     return self.__CallStoredProcedure("UpdateSequence", (nSequenceID, sName, sComment, bValid))
 
   def UpdateSequenceDirtyFlag(self, sCurrentUsername, nSequenceID, bDirty):
     """Updates the sequence dirty flag"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateSequenceDirtyFlag(%i, %i)" % (nSequenceID, bDirty))
+    log.debug("DBComm.UpdateSequenceDirtyFlag(%i, %i)" % (nSequenceID, bDirty))
     self.__CallStoredProcedure("UpdateSequenceDirtyFlag", (nSequenceID, bDirty))
 
   def DeleteSequence(self, sCurrentUsername, nSequenceID):
     """Delete a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.DeleteSequence(%i)" % (nSequenceID, ))
+    log.debug("DBComm.DeleteSequence(%i)" % (nSequenceID, ))
     return self.__CallStoredProcedure("DeleteSequence", (nSequenceID, ))
 
   ### Reagent functions ###
@@ -448,7 +451,7 @@ class DBComm:
   def GetReagent(self, sCurrentUsername, nReagentID):
     """Gets the specified reagent"""
     # Log the access and get the reagent
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagent(%i)" % (nReagentID, ))
+    log.debug("DBComm.GetReagent(%i)" % (nReagentID, ))
     pReagentRaw = self.__CallStoredProcedure("GetReagent", (nReagentID, ))
     if len(pReagentRaw) == 0:
         raise Exceptions.ReagentNotFoundException(nReagentID)
@@ -457,7 +460,7 @@ class DBComm:
   def GetReagentsBySequence(self, sCurrentUsername, nSequenceID):
     """Gets all reagents in the sequence"""
     # Log the access and get the reagents
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagentsBySequence(%i)" % (nSequenceID, ))
+    log.debug("DBComm.GetReagentsBySequence(%i)" % (nSequenceID, ))
     pReagentsRaw = self.__CallStoredProcedure("GetReagentsBySequence", (nSequenceID, ))
 
     # Create and return the reagent array
@@ -469,7 +472,7 @@ class DBComm:
   def GetReagentsByName(self, sCurrentUsername, nSequenceID, sName):
     """Gets all reagents in the sequence that match the given name"""
     # Log the access and get the reagents
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagentsByName(%i, %s)" % (nSequenceID, sName))
+    log.debug("DBComm.GetReagentsByName(%i, %s)" % (nSequenceID, sName))
     pReagentsRaw = self.__CallStoredProcedure("GetReagentsByName", (nSequenceID, sName))
 
     # Create and return the reagent array
@@ -480,7 +483,7 @@ class DBComm:
 
   def GetReagentByPosition(self, sCurrentUsername, nSequenceID, nCassette, sPosition):
     """Gets the reagent at the given position"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagentByPosition(%i, %i, %s)" % (nSequenceID, nCassette, sPosition))
+    log.debug("DBComm.GetReagentByPosition(%i, %i, %s)" % (nSequenceID, nCassette, sPosition))
     pReagentRaw = self.__CallStoredProcedure("GetReagentByPosition", (nSequenceID, nCassette, sPosition))
     if len(pReagentRaw) == 0:
         raise Exceptions.ReagentNotFoundException(0, nSequenceID, nCassette, sPosition)
@@ -488,31 +491,31 @@ class DBComm:
 
   def GetReagentCassette(self, sCurrentUsername, nSequenceID, nReagentID):
     """Gets the cassette number that contains the given reagent"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetReagentCassette(%i, %i)" % (nSequenceID, nReagentID))
+    log.debug("DBComm.GetReagentCassette(%i, %i)" % (nSequenceID, nReagentID))
     pCassetteRaw, pReturn = self.__CallStoredProcedureWithReturn("GetReagentCassette", (nSequenceID, nReagentID))
     return pReturn[0][0]
 
   def UpdateReagent(self, sCurrentUsername, nReagentID, sName, sDescription):
     """Updates a existing reagent"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagent(%i, %s, %s)" % (nReagentID, sName, sDescription))
+    log.debug("DBComm.UpdateReagent(%i, %s, %s)" % (nReagentID, sName, sDescription))
     return self.__CallStoredProcedure("UpdateReagent", (nReagentID, sName, sDescription))
 
   def UpdateReagentByPosition(self, sCurrentUsername, nSequenceID, nCassetteNumber, sPosition, sName, sDescription):
     """Update an existing reagent by position"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateReagentByPosition(%i, %i, %s, %s, %s)" % (nSequenceID, nCassetteNumber, sPosition, sName, sDescription))
+    log.debug("DBComm.UpdateReagentByPosition(%i, %i, %s, %s, %s)" % (nSequenceID, nCassetteNumber, sPosition, sName, sDescription))
     return self.__CallStoredProcedure("UpdateReagentByPosition", (nSequenceID, nCassetteNumber, sPosition, sName, sDescription))
 
   ### Component functions ###
 
   def GetComponent(self, sCurrentUsername, nComponentID):
     """Gets the specified component"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetComponent(%i)" % (nComponentID, ))
+    log.debug("DBComm.GetComponent(%i)" % (nComponentID, ))
     pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
     return pComponent
 
   def GetPreviousComponent(self, sCurrentUsername, nComponentID):
     """Gets the component previous to the one specified"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetPreviousComponent(%i)" % (nComponentID, ))
+    log.debug("DBComm.GetPreviousComponent(%i)" % (nComponentID, ))
     pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
     if nPreviousComponentID == 0:
         return None
@@ -521,7 +524,7 @@ class DBComm:
 
   def GetNextComponent(self, sCurrentUsername, nComponentID):
     """Gets the component after to the one specified"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetPreviousComponent(%i)" % (nComponentID, ))
+    log.debug("DBComm.GetPreviousComponent(%i)" % (nComponentID, ))
     pComponent, nPreviousComponentID, nNextComponentID = self.__GetComponent(nComponentID)
     if nNextComponentID == 0:
         return None
@@ -530,7 +533,7 @@ class DBComm:
 
   def GetCassette(self, sCurrentUsername, nSequenceID, nCassetteOffset):
     """Gets the cassette specified by the offset"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetCassette(%i, %i)" % (nSequenceID, nCassetteOffset))
+    log.debug("DBComm.GetCassette(%i, %i)" % (nSequenceID, nCassetteOffset))
     pComponentRaw = self.__CallStoredProcedure("GetCassette", (nSequenceID, nCassetteOffset))
     if len(pComponentRaw) == 0:
         raise Exception("Failed to get cassette " + str(nCassetteOffset) + " of sequence " + str(nSequenceID))
@@ -539,7 +542,7 @@ class DBComm:
 
   def GetComponentsBySequence(self, sCurrentUsername, nSequenceID):
     """Gets all of the components associated with the given sequence ID"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.GetComponentsBySequence(%i)" % (nSequenceID, ))
+    log.debug("DBComm.GetComponentsBySequence(%i)" % (nSequenceID, ))
     pComponentsRaw = self.__CallStoredProcedure("GetComponentsBySequence", (nSequenceID, )) 
     pComponents = []
     for pComponentRaw in pComponentsRaw:
@@ -549,29 +552,29 @@ class DBComm:
 
   def CreateComponent(self, sCurrentUsername, nSequenceID, sType, sNote, sContent):
     """Creates a new component and inserts it at the end of a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sNote, sContent))
+    log.debug("DBComm.CreateComponent(%i, %s, %s, %s)" % (nSequenceID, sType, sNote, sContent))
     pRows, pReturn = self.__CallStoredProcedureWithReturn("CreateComponent", (nSequenceID, sType, sNote, sContent))
     return pReturn[0][0]
 
   def InsertComponent(self, sCurrentUsername, nSequenceID, sType, sNote, sContent, nInsertID):
     """Inserts a component into a sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sNote, sContent, nInsertID))
+    log.debug("DBComm.InsertComponent(%i, %s, %s, %s, %i)" % (nSequenceID, sType, sNote, sContent, nInsertID))
     pRows, pReturn = self.__CallStoredProcedureWithReturn("InsertComponent", (nSequenceID, sType, sNote, sContent, nInsertID))
     return pReturn[0][0]
 
   def UpdateComponent(self, sCurrentUsername, nComponentID, sType, sNote, sDetails):
     """Updates the specified component"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.UpdateComponent(%i, %s, %s, %s)" % (nComponentID, sType, sNote, sDetails))
+    log.debug("DBComm.UpdateComponent(%i, %s, %s, %s)" % (nComponentID, sType, sNote, sDetails))
     self.__CallStoredProcedure("UpdateComponent", (nComponentID, sType, sNote, sDetails))
 
   def MoveComponent(self, sCurrentUsername, nComponentID, nInsertAfterID):
     """Moves the specified component"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.MoveComponent(%i, %i)" % (nComponentID, nInsertAfterID))
+    log.debug("DBComm.MoveComponent(%i, %i)" % (nComponentID, nInsertAfterID))
     self.__CallStoredProcedure("MoveComponent", (nComponentID, nInsertAfterID))
 
   def DeleteComponent(self, sCurrentUsername, nComponentID):
     """Deletes the component and removes it from the sequence"""
-    self.SystemLog(LOG_DEBUG, sCurrentUsername, "DBComm.DeleteComponent(%i)" % (nComponentID, ))
+    log.debug("DBComm.DeleteComponent(%i)" % (nComponentID, ))
     return self.__CallStoredProcedure("DeleteComponent", (nComponentID, ))
 
   ### Internal functions ###

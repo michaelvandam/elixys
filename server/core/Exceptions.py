@@ -30,7 +30,8 @@ class ReagentNotFoundException(Exception):
             return ("Reagent " +  str(self.nReagentID) + " not found")
         else:
             return ("Failed to get reagent " + self.sPosition + " of sequence " + str(self.nSequenceID) + ", cassette " + str(self.nCassette))
-# Invalid sequence exception
+
+# Invalid sequence exception
 class InvalidSequenceException(Exception):
     def __init__(self, nSequenceID):
         self.nSequenceID = nSequenceID

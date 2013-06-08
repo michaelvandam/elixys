@@ -1,6 +1,8 @@
 """Unit operations
 Elixys Unit Operations
 """
+import logging
+log = logging.getLogger("elixys.unitop")
 
 # Import unit operations
 import Cassette
