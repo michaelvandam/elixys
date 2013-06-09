@@ -85,7 +85,7 @@ class daemon(object):
 
 				pid = int(pf.read().strip())
 		except IOError, ex:
-            #log.info("No PID %s" % ex.strerror)
+            #log.info("No PID %s" % str(ex))
 			pid = None
 	
 		if pid:

@@ -167,7 +167,7 @@ class SystemModel:
     #log.debug("ModelUpdate... are we fake?")
     if not self.hardwareComm.IsFakePLC():
       # No, so update the system
-      log.debug("We are not Fake... so update!")
+      #log.debug("We are not Fake... so update!")
       self.__UpdateState()
 
       # Attempt to connect to the state monitor
@@ -193,7 +193,8 @@ class SystemModel:
           self.__pStateMonitor = None
           self.__bStateMonitorError = True
     else:
-        log.debug("This is a FAKE PLC!")
+	    pass
+        #log.debug("This is a FAKE PLC!")
 
   def GetStateObject(self):
     """Returns the state as an object"""
@@ -201,7 +202,7 @@ class SystemModel:
     try:
       pStateObject = copy.deepcopy(self.__pStateObject)
     except Exception, ex:
-        log.error("Failed to copy pStateObject: %s" % ex.strerror)
+        log.error("Failed to copy pStateObject: %s" % str(ex))
         log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
     finally:
       self.__pStateLock.Release()
@@ -225,7 +226,7 @@ class SystemModel:
     # Dump the state in a try/except/finally block to make sure we release our locks
     try:
       # Initialize variables
-      log.debug("Updating State Object")
+      #log.debug("Updating State Object")
       self.__pStateObject = {"type":"serverstate"}
       self.__sStateString = ""
 
@@ -680,7 +681,7 @@ class SystemModel:
           fReactor3Collet1SetTemperature, fReactor3Collet1CurrentTemperature, bReactor3Collet2On, fReactor3Collet2SetTemperature, fReactor3Collet2CurrentTemperature,
           bReactor3Collet3On, fReactor3Collet3SetTemperature, fReactor3Collet3CurrentTemperature, nReactor3StirMotorSpeed, fReactor3RadiationDetector)
     except Exception, ex:
-        log.error("SystemModel Update Fail: %s" % ex.strerror)
+        log.error("SystemModel Update Fail: %s" % str(ex))
         log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
     finally:
         # Release the locks

@@ -708,25 +708,10 @@ class HardwareComm():
         self.__SetIntegerValue("VacuumPressure", nPressurePLC)
     def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
         flog.debug("FAKE:Set Pressure Regulator %d -> %f" % (nPressureRegulator,nPressure))
-        PressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
+        nPressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
         self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressurePLC)
     def FakePLC_SetReagentRobotSetPosition(self, nPositionX, nPositionZ):
         #flog.debug("FAKE:Set Reagent Robot Position->X%d,Y%d" % (nPositionX,nPositionZ))
-        self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4), nPositionX)
-        self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentYAxis * 4), nPositionZ)
-
-    # Used by the fake PLC to change the state of the system
-    def FakePLC_SetVacuumPressure(self, nPressure):
-        #flog.debug("FAKE:Set Vacuum Pressure %d" % nPressure)
-        nPressurePLC = (nPressure - self.__nVacuumGaugeIntercept) / self.__nVacuumGaugeSlope
-        self.__SetIntegerValue("VacuumPressure", nPressurePLC)
-    def FakePLC_SetPressureRegulatorActualPressure(self, nPressureRegulator, nPressure):
-        flog.debug("FAKE:Set Pressure Regulator %d -> %f" % (nPressureRegulator,nPressure))
-        PressurePLC = (nPressure - self.__nPressureRegulatorActualIntercept) / self.__nPressureRegulatorActualSlope
-        self.__SetIntegerValue("PressureRegulator" + str(nPressureRegulator) + "_ActualPressure", nPressure)
-    def FakePLC_SetReagentRobotSetPosition(self, nPositionX, nPositionZ):
-        #flog.debug("FAKE:Set Reagent Robot Position->X%d,Y%d" % 
-        #        (nPositionX,nPositionZ))
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentXAxis * 4), nPositionX)
         self.__SetIntegerValueRaw(ROBONET_AXISPOSSET + (self.__nReagentYAxis * 4), nPositionZ)
     def FakePLC_SetReagentRobotActualPosition(self, nPositionX, nPositionZ):

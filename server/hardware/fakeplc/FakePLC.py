@@ -27,6 +27,7 @@ import signal
 
 import logging
 import logging.config
+import traceback;
 
 logging.config.fileConfig("/opt/elixys/config/elixyslog.conf")
 log = logging.getLogger("elixys.plc")
@@ -122,8 +123,8 @@ class FakePLC():
             try:
                 self.__UpdatePLC()
             except Exception as ex:
-                import traceback;log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
-                log.error("UpdatePLC error %s" % ex.strerror)
+                log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
+                log.error("UpdatePLC error %s" % str(ex))
 
     def ShutDown(self):
         """Shuts down the fake PLC"""
@@ -329,7 +330,6 @@ class FakePLC():
         nSetPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getSetPressure()
         nActualPressure = self.__pSystemModel.model["PressureRegulator" + str(nPressureRegulator)].getCurrentPressure()
         
-
         # Compare the pressures.  Add leeway to account for rounding errors
         if ((nActualPressure + 1) < nSetPressure) or ((nActualPressure - 1) > nSetPressure):
             # Get a reference to the pressure regulator thread
@@ -624,7 +624,7 @@ class FakePLCDaemon(daemon):
                 pFakePLC.Run()
             except Exception as ex:
                 log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
-                log.error("Fake PLC error: %s" % ex.strerror)
+                log.error("Fake PLC error: %s" % str(ex))
             finally:
                 pFakePLC.ShutDown()
 

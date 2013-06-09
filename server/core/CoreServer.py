@@ -209,10 +209,11 @@ class CoreServerService(rpyc.Service):
         except Exception, ex:
             # Log the error
             log.error("CoreServerService.RunSequence() failed: " + str(ex))
-	    log.error("%s" % traceback.format_exc())
+            log.error("%s" % traceback.format_exc())
             pResult = self.FailureResult()
 
         # Release the lock and return
+        if bLocked:
             gCoreServerLock.Release()
         return pResult
 

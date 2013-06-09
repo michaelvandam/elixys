@@ -28,7 +28,7 @@ class PressureRegulatorThread(threading.Thread):
             # Pressure adjust loop
             for nCount in range(1, 11):
                 # Sleep
-                time.sleep(0.01) 
+                time.sleep(0.1) 
                 
                 # Update the pressure
                 nPressure += nStep
@@ -37,7 +37,9 @@ class PressureRegulatorThread(threading.Thread):
             # Set the pressure to the final value
             self.__pHardwareComm.FakePLC_SetPressureRegulatorActualPressure(self.__nPressureRegulator, self.__nTargetPressure)
             log.info("Fake Pressure Reg Done")
-            time.sleep(0.1)
+			
+            # Sleep an additional second to allow everything to settle
+            time.sleep(1)
         except Exception as ex:
             log.error("Pressure regulator thread failed")
             import traceback;log.error(traceback.format_exc)
