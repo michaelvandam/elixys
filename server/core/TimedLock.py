@@ -7,9 +7,12 @@ import select
 import sys
 import threading
 import time
+import logging
+
+log = logging.getLogger("elixys.core")
 
 # Default lock timeout in seconds
-LOCK_TIMEOUT = 3.0
+LOCK_TIMEOUT = 5.0
 
 class TimedLock():
     def __init__(self):
@@ -30,6 +33,7 @@ class TimedLock():
                 else:
                     self.pCondition.wait(fTimeout - nCurrentTime + nStartTime)
                     nCurrentTime = time.time()
+        log.debug("TimedLock expired: Waited %f" % fTimeout)
         raise Exception("Timed out acquiring lock")
 
     def Release(self):

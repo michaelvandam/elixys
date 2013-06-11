@@ -50,6 +50,7 @@ gUnitOperationsWrapper = None
 gRunUsername = ""
 gRunSequence = None
 gMessaging = None
+lockTimeout = 3
 
 # Handler that redirects rpyc error messages to the database
 # Core server service
@@ -68,14 +69,14 @@ class CoreServerService(rpyc.Service):
         bCoreServerLocked = False
         try:
             # Acquire the server state lock
-            gServerStateLock.Acquire(1)
+            gServerStateLock.Acquire(lockTimeout)
             bServerStateLocked = True
             log.info("CoreServerService.GetServerState()")
 
             # Update the server state twice per second
             if (gServerState == None) or ((time.time() - gServerStateTime) > 0.5):
                 # Acquire the core server lock
-                gCoreServerLock.Acquire(1)
+                gCoreServerLock.Acquire(lockTimeout)
                 bCoreServerLocked = True
 
                 # Get the server state
@@ -170,6 +171,7 @@ class CoreServerService(rpyc.Service):
             pResult = self.SuccessResult(json.dumps(gServerState))
         except Exception, ex:
             # Log the error
+            log.error("CoreServer Traceback: %s" % traceback.format_exc())
             log.error("CoreServerService.GetServerState() failed: " + str(ex))
             pResult = self.FailureResult()
 
@@ -190,7 +192,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.RunSequence(" + str(nSequenceID) + ")")
 
@@ -227,7 +229,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.RunSequenceFromComponent(" + str(nSequenceID) + ", " + str(nComponentID) + ")")
 
@@ -261,7 +263,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.PauseSequence()")
 
@@ -294,7 +296,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.ContinueSequence()")
 
@@ -327,7 +329,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.WillSequencePause()")
 
@@ -359,7 +361,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.IsSequencePaused()")
 
@@ -394,7 +396,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.ShowAbortSequencePrompt()")
 
@@ -430,7 +432,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.AbortSequence()")
 
@@ -466,7 +468,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.OverrideTimer()")
 
@@ -509,7 +511,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.StopTimer()")
 
@@ -552,7 +554,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.SetSoftErrorDecision()")
 
@@ -595,7 +597,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.DeliverUserInput()")
 
@@ -638,7 +640,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.CLIExecuteCommand(" + sCommand + ")")
 
@@ -663,7 +665,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.CLISendCommand(" + sCommand + ")")
 
@@ -688,7 +690,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.CLIAbortUnitOperation()")
 
@@ -719,7 +721,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.CLIGetState()")
 
