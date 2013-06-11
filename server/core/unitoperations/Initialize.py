@@ -52,7 +52,7 @@ class Initialize(UnitOperation):
       #Set pressures
       self.setStatus("Initializing pressures")
       self.setPressureRegulator(1,GAS_TRANSFER_PRESSURE)
-      log.error("Break0")
+      #log.error("Break0")
       self.setPressureRegulator(2,PNEUMATIC_PRESSURE)
 
       #Raise and open gripper

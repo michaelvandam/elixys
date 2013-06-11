@@ -19,7 +19,7 @@ import logging
 # Suppress MySQLdb's annoying warnings
 import warnings
 warnings.filterwarnings("ignore", "Unknown table.*")
-
+import traceback
 log = logging.getLogger("elixys.db")
 
 # Error log levels

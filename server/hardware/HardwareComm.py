@@ -428,7 +428,7 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
     def MoveRobotToDelivery(self, nReactor, nPosition):
-        log.info("Move Robot & Deliver:Reactor %d->Reagent %d" % (nReactor,nReagent))
+        log.info("Move Robot & Deliver:Reactor %d->Position %d" % (nReactor,nPosition))
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
                not self.__pSystemModel.model["ReagentDelivery"].getCurrentGasTransferUp():

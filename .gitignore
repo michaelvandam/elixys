@@ -14,3 +14,4 @@ client/ElixysiPad/bin-ipa/
 *.swo
 *.swp
 *.pyc
+*~

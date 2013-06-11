@@ -123,6 +123,7 @@ class SystemModel:
         
   def ShutDown(self):
     """Shuts down the system model"""
+    
     if self.stateUpdateThread != None:
       self.stateUpdateThreadTerminateEvent.set()
       self.stateUpdateThread.join()

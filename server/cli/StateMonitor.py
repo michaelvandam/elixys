@@ -14,6 +14,7 @@ import Utilities
 import logging
 
 log = logging.getLogger("elixys.core")
+import traceback
 
 # The console package we import depends on the OS
 gConsole = None

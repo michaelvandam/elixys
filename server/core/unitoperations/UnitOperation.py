@@ -27,8 +27,8 @@ ENABLED    = 'Enabled'
 DISABLED   = 'Disabled'
 
 #Reagent robot position for transfer
-TRANSFERPOSITION = 11
-EVAPORATEPOSITION = 3
+TRANSFERPOSITION = 12
+EVAPORATEPOSITION = 5
 
 #Stopcock positions
 NA = ''
@@ -354,7 +354,7 @@ class UnitOperation(threading.Thread):
 
   def doStep(self, function, error):
     """Performs the step with error handling"""
-    log.error("Do step: %s" % self.__class__.__name__)
+    log.debug("Do step: %s" % self.__class__.__name__)
     success = False
     while not success:
       try:
@@ -837,6 +837,7 @@ class UnitOperation(threading.Thread):
       self.systemModel[sReactor]['Thermocouple'].setHeaterOff()
     self.systemModel['CoolingSystem'].setCoolingSystemOn(OFF)
     self.error = error
+    log.error("Traceback: %s" % traceback.format_exc())
     log.error("Class:<%s> | Error:%s | Status:%s " % (self.__class__.__name__, self.error, self.status))
     if raiseException:
       raise UnitOpError(error)

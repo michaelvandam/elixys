@@ -259,8 +259,8 @@ class SequenceManager:
 
   def DeleteComponent(self, sRemoteUser, nSequenceID, nComponentID):
     """ Deletes a component """
-    log.debug("DeleteComponent(user:%s,seqid:%d,insid:%d,comid:%d)" 
-            % (sRemoteUser,nComponentID,nInsertionID,nComponentID))  
+    log.debug("DeleteComponent(user:%s,seqid:%d,comid:%d)" 
+            % (sRemoteUser,nComponentID,nComponentID))  
     # Delete the component from the database
     self.database.DeleteComponent(sRemoteUser, nComponentID)
 
