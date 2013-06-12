@@ -555,10 +555,6 @@ package
 				{
 					ShowLoginScreen("Connection to server failed");
 				}
-				else
-				{
-					HideConnectionPopup();
-				}
 			}
 			
 

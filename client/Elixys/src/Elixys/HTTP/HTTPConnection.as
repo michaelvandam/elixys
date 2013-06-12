@@ -376,27 +376,15 @@ package Elixys.HTTP
 		protected function OnResponseTimerComplete(event:TimerEvent):void
 		{
 			// Have we exceeded out retry limit?
-			if (m_nRetryCount < 3)
+			if (m_nRetryCount < 10)
 			{
-				// No, so increment our counter and reset our state
-				++m_nRetryCount;
-				m_pHTTPResponseHeader.clear();
-				m_nHTTPResponseHeader = 0;
-				m_pHTTPResponseHeaders = null;
-				m_nStatusCode = 0;
-				m_nContentLength = 0;
-				m_pHTTPResponseBody.clear();
-				m_bWaitingForResponse = false;
-
-				// Send the failed request again
-				SendRequestInternal(m_pOutstandingRequest);
-				
-				// Dispatch a server not responding event if we're posting
-				if (m_pOutstandingRequest.m_sMethod == "POST")
+				// No, so dispatch a server not responding event and increment our counter
+				if ((m_nRetryCount == 0) && (m_pOutstandingRequest.m_sMethod == "POST"))
 				{
 					var pStatusEvent:StatusEvent = new StatusEvent(StatusEvent.SERVERNOTRESPONDING);
 					m_pHTTPConnectionPool.dispatchEvent(pStatusEvent);
 				}
+				++m_nRetryCount;
 			}
 			else
 			{
