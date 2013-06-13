@@ -1520,7 +1520,7 @@ class HardwareComm():
         # Hit test each reactor
         for nReactor in range(1,4):
             # Hit test each reagent position
-            for nReagent in range(1, 12):
+            for nReagent in range(1, 12+1):  # Fix for the Transfer reset issue
                 pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
                 nReagentXOffset = self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"])
                 nReagentYOffset = self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"])

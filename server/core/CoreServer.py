@@ -746,7 +746,7 @@ class CoreServerService(rpyc.Service):
         bLocked = False
         try:
             # Acquire the lock
-            gCoreServerLock.Acquire(1)
+            gCoreServerLock.Acquire(lockTimeout)
             bLocked = True
             log.info("CoreServerService.CLIBroadcast(" + sMessage + ")")
 

@@ -8,7 +8,7 @@ import time
 
 import traceback
 import logging
-log = logging.getLogger("elixys.core")
+log = logging.getLogger("elixys.state")
 
 class StateUpdateThread(threading.Thread):
     # Set parameters
@@ -33,7 +33,7 @@ class StateUpdateThread(threading.Thread):
                 self.__pHardwareComm.UpdateState()
                 # Sleep
                 time.sleep(0.5)
-            log.debug("StateUpdateThread is terminating because event is set")
+            log.error("StateUpdateThread is terminating because event is set")
         except Exception as ex:
             # Remember the error
             log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
