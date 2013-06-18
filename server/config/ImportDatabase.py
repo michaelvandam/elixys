@@ -51,19 +51,32 @@ if __name__ == '__main__':
             print "  " + pRole["name"]
             pDBComm.CreateRole("System", pRole["name"], pRole["flags"])
 
-	    # Create the users
-    	print "Creating users..."
-    	for pUser in pDatabase["users"]:
-        	print "  " + pUser["username"]
-        	pDBComm.CreateUser("System", pUser["username"], pUser["passwordhash"], pUser["firstname"], pUser["lastname"], \
-           		pUser["role"], pUser["email"], pUser["phone"], pUser["messagelevel"])
     except:
-	print "Users not added"
+        print "Failed to add roles. Roles already exist?"
 
+
+
+	    # Create the users
+    print "Creating users..."
+    for pUser in pDatabase["users"]:
+        print "  " + pUser["username"]
+        try:
+            pDBComm.CreateUser("System", pUser["username"],
+                pUser["passwordhash"], 
+                pUser["firstname"], 
+                pUser["lastname"],
+                pUser["role"],
+                pUser["email"], 
+                pUser["phone"], 
+                pUser["messagelevel"])
+        except:
+            print "User %s not added. Exists?" % pUser['username']
+
+        
         # Import the saved sequences
-        pDBComm = DBComm()
-        pDBComm.Connect()
-        pSequenceManager = SequenceManager(pDBComm)
+        #pDBComm = DBComm()
+        #pDBComm.Connect()
+        #pSequenceManager = SequenceManager(pDBComm)
 
         #print "Importing saved sequences..."
         
