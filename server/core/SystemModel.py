@@ -633,16 +633,16 @@ class SystemModel:
 
       # Reactor video
       if not os.path.isfile("/opt/elixys/demomode"):
-        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "Reactor1"
-        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "Reactor2"
-        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "Reactor3"
+        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "reactor1"
+        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "reactor2"
+        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "reactor3"
       else:
         #self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "mp4:elixys.mp4"
         #self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "mp4:elixys.mp4"
         #self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "mp4:elixys.mp4"
-        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "elixys"
-        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "elixys"
-        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "elixys"
+        self.__pStateObject["hardwarestate"]["reactors"][0]["video"] = "reactor1"
+        self.__pStateObject["hardwarestate"]["reactors"][1]["video"] = "reactor2"
+        self.__pStateObject["hardwarestate"]["reactors"][2]["video"] = "reactor3"
 
 
       # Unit operation

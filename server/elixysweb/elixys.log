@@ -1,0 +1,6 @@
+elixys.web|INFO|runserver|7|Starting Elixys Web Server
+elixys.web|DEBUG|basicauth|31|username:devel
+elixys.web|DEBUG|stateview|106|State requested by username:devel
+elixys.web|DEBUG|core|33|Failed to get CoreServer state, hardware available?
+elixys.web|DEBUG|basicauth|31|username:devel
+elixys.web|DEBUG|configview|28|Configuration requested by username:devel

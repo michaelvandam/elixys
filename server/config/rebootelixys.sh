@@ -1,0 +1,4 @@
+service ElixysCoreServer restart
+service ElixysFakePLC restart
+service ElixysValidation restart
+service apache2 restart

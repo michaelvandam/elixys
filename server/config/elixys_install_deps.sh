@@ -25,6 +25,7 @@ apt-get -q -y install apache2 apache2-utils \
 			# \ apache2-prefork-dev
 
 sudo apt-get -q -y install crtmpserver
+sudo apt-get -q -y install supervisor
 
 export ADOBE_POL_PATH_SRC=/usr/local/src/mod_adobe_crossdomainpolicy
 rm -Rf $ADOBE_POL_PATH_SRC
