@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ElixysReboot
+Comment="Reboots Elixys"
+Exec=gksudo /opt/elixys/config/rebootelixys.sh
+Icon=utilities-terminal
+Terminal=true
+StartupNotify=false
+GenericName=ElixysReboot
