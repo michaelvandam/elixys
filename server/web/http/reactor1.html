@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+    
+    <title>Reactor 1</title>
+
+    <link rel="shortcut icon" href="http://flash.flowplayer.org/favicon.ico">
+    <!-- standalone page styling. can be removed -->
+    <style>
+        body{
+            width:982px;
+            margin:50px auto;
+            font-family:sans-serif;
+        }
+        a:active {
+            outline:none;
+        }
+        :focus { -moz-outline-style:none; }
+
+        .palert {
+            padding: 12px;
+            color: black;
+            background-color: #ededed;
+            box-shadow: none;
+        }
+    </style>
+
+    
+    
+    <!-- flowplayer javascript component -->
+    <script src="./flowplayer/flowplayer-3.2.12.min.js"></script>
+
+    </head>
+
+<body>
+
+<h1>Reactor 1</h1>
+    <!-- widescreen container, 560x240 (clip dimensions) * 1.15, center splash -->
+<div id="wowza" style="width:644px;height:276px;margin:0 auto;text-align:center">
+</div>
+<script>
+
+$f("wowza", "./flowplayer/flowplayer-3.2.16.swf", {
+	clip: {
+		url: 'reactor1',
+		live: true,
+		autoPlay: true,
+        provider: 'hddn',
+    },
+    
+    plugins: {
+
+        // here is our rtmp plugin configuration
+        hddn: {
+            url: "flowplayer.rtmp.swf",
+
+            // netConnectionUrl defines where the streams are found
+            //netConnectionUrl: 'rtmp://rtmp01.hddn.com/play'
+			netConnectionUrl: 'rtmp://localhost/flvplayback'
+        }
+    },
+    canvas: {
+        backgroundGradient: 'none'
+    }
+});
+</script>
+
+</body>
+
+</html>
