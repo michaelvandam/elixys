@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DisableRobots
+Comment="Disable Robots"
+Exec=python /opt/elixys/config/disableRobots.py
+Icon=utilities-terminal
+Terminal=true
+StartupNotify=false
+GenericName=DisableRobots

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=InitializeElixys
+Comment="Initialize Elixys"
+Exec=python /opt/elixys/config/initializeElixys.py
+Icon=utilities-terminal
+Terminal=true
+StartupNotify=false
+GenericName=InitializeElixys
