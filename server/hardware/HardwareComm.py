@@ -1604,7 +1604,7 @@ class HardwareComm():
         if sys.platform == "win32":
             self.__sLogFile = "temp_profile.txt"
         else:
-            self.__sLogFile = os.path.join("/home", os.getenv("USERNAME"), "Desktop/temp_profile.txt")
+            self.__sLogFile = os.path.join("/home", "sofiebio", "Desktop/temp_profile.txt")
         self.__startTime = time.time()
         pLogFile = open(self.__sLogFile, "w")
         pLogFile.write("Time,")
