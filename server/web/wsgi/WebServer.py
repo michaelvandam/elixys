@@ -100,7 +100,7 @@ def application(pEnvironment, fStartResponse):
 
     # Initialize the return status and headers
     sStatus = "200 OK"
-    sResponseJSON = json.dumps(pResponse)
+    sResponseJSON = json.dumps(pResponse,indent=4)
     pHeaders = [("Content-type", "text/plain"), ("Content-length", str(len(sResponseJSON)))]
 
     # Log the timestamp
