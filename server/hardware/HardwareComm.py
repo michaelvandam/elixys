@@ -1601,10 +1601,8 @@ class HardwareComm():
 
     # Begin logging temperatures to a file
     def __StartTempLogging(self):
-        if sys.platform == "win32":
-            self.__sLogFile = "temp_profile.txt"
-        else:
-            self.__sLogFile = os.path.join("/home", "sofiebio", "Desktop/temp_profile.txt")
+        self.__sLogFile = os.path.join(os.path.sep,"home", "sofiebio", "Desktop",
+            datetime.now().strftime("%Y-%m-%d_%H_%M") + "_" + "temp_profile.txt")
         self.__startTime = time.time()
         pLogFile = open(self.__sLogFile, "w")
         pLogFile.write("Time,")
