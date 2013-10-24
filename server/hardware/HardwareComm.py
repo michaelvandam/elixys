@@ -7,6 +7,7 @@ from configobj import ConfigObj
 from SocketThread import SocketThread
 from SocketThread import RunawayHeaterException
 import threading
+from datetime import datetime
 import time
 import os
 import sys
@@ -1600,17 +1601,25 @@ class HardwareComm():
             raise RunawayHeaterException(nReactor)
 
     # Begin logging temperatures to a file
-    def __StartTempLogging(self):
-        self.__sLogFile = os.path.join(os.path.sep,"home", "sofiebio", "Desktop",
-            datetime.now().strftime("%Y-%m-%d_%H_%M") + "_" + "temp_profile.txt")
+    def __StartTempLogging(self): 
+        log.debug("Starting Temp Logging")
+        self.__sLogFile = os.path.join(os.path.sep,
+                                       "home", 
+                                       "sofiebio", 
+                                       "Desktop", 
+                                       datetime.now().strftime("%Y-%m-%d_%H_%M")
+                                        + "_" + "temp_profile.txt") 
         self.__startTime = time.time()
-        pLogFile = open(self.__sLogFile, "w")
+        log.debug("Logging to file %s" % self.__sLogFile) 
+        pLogFile = open(self.__sLogFile, "w") 
+        log.debug("Opened logfile %s" %
+                   self.__sLogFile) 
         pLogFile.write("Time,")
         pLogFile.write("H1C1Set,H1C2Set,H1C3Set,H1C1Actual,H1C2Actual,H1C3Actual,")
         pLogFile.write("H2C1Set,H2C2Set,H2C3Set,H2C1Actual,H2C2Actual,H2C3Actual,")
         pLogFile.write("H3C1Set,H3C2Set,H3C3Set,H3C1Actual,H3C2Actual,H3C3Actual\n")
         pLogFile.flush()
-        pLogFile.close()
+        pLogFile.close() 
         self.__bTempLogging = True
 
     # Creates a temperature log file entry
