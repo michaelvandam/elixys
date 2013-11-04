@@ -30,11 +30,13 @@ def obtain_database_data(sequence):
     and obtain all information about sequence
     from the database.
     '''
+    print "\tAttempting to obtain the sequence information..."
     # Check if are given a sequence id or a sequence name.
     if isinstance(sequence, int):
         try:
             sequence_data = db.GetSequence('', sequence)
             #print json.dumps(sequence_data ,indent=1)
+            print "\tSucessfully obtained the sequence information."
             return sequence_data
         except SequenceNotFoundException:
             parser.error("ERROR: Unable to find sequence id on database.\n" 
@@ -49,6 +51,7 @@ def obtain_database_data(sequence):
             sequence_data = db.GetSequence('', sequence_data['id'])
             #print json.dumps(sequence_data,indent=1)
             #print json.dumps(sequence_data,indent=1)
+            print "\tSucessfully obtained the sequence information."
             return sequence_data
         except SequenceNotFoundException:
             parser.error("\nERROR: Unable to find sequence id on database.\n" 
@@ -70,6 +73,7 @@ def obtain_reagent_values(seq_data):
     # key and value. Check if we obtain the reagentIDs list
     # and traverse through each reagent's id. Pull data
     # from each reagent id and add it to the seq_data object.
+    print "\tObtaining all reagent data from the sequence..."
     reagents = []
     if seq_data != None:
         for comp in seq_data['components']:
@@ -82,6 +86,7 @@ def obtain_reagent_values(seq_data):
                         #print json.dumps(reagent_data,indent=1)
     
     seq_data['reagents'] = reagents
+    print "\tSucessfully obtained all reagent data from the sequence."
     return seq_data
 
 
@@ -100,7 +105,7 @@ if args.sequenceID:
     try:
         pickle.dump(seq_data,
                     open('sequence_' + str(args.sequenceID) + '_dump.p', 'wb'))
-        print ("Successfully exported the sequence %s " 
+        print ("\tSuccessfully exported the sequence %s " 
                 "to seqeunce_%s_dump.p" % (args.sequenceID, args.sequenceID))
     except IOError:
         parser.error("\nERROR: Unable to write"
@@ -111,9 +116,10 @@ elif args.name:
     seq_data = obtain_database_data(args.name)
     seq_data = obtain_reagent_values(seq_data)
     try:
-        pickle.dump(seq_data, open('sequence_' + str(args.name) + '_dump.p', 'wb'))
-        print ("Successfully exported the sequence %s "
-                "to seqeunce_%s_dump.p" % (args.name, args.name))
+        filename = str(args.name).replace(" ", "_")
+        pickle.dump(seq_data, open('sequence_' + filename + '_dump.p', 'wb'))
+        print ("\tSuccessfully exported the sequence %s "
+                "to seqeunce_%s_dump.p" % (filename, filename))
     except IOError:
         parser.error("\nERROR: Unable to write \
                 pickle file to current directory.\n" 
