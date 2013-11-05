@@ -169,6 +169,7 @@ class CoreServerService(rpyc.Service):
 
             # Format the server state as a JSON string
             pResult = self.SuccessResult(json.dumps(gServerState))
+            
         except Exception, ex:
             # Log the error
             log.error("CoreServer Traceback: %s" % traceback.format_exc())
@@ -918,6 +919,7 @@ class CoreServerDaemon(daemon):
 if __name__ == "__main__":
     if len(sys.argv) == 3:
         pDaemon = CoreServerDaemon(sys.argv[2])
+        
         if 'start' == sys.argv[1]:
             pDaemon.start()
         elif 'stop' == sys.argv[1]:

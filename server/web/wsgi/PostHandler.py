@@ -9,6 +9,7 @@ import SequenceManager
 import Exceptions
 from CoreServer import InitialRunState
 import time
+from PDFHandler import *
 
 
 import logging
@@ -42,9 +43,8 @@ class PostHandler:
         self.__sPath = sPath
         self.__pBody = pBody
         self.__nBodyLength = nBodyLength
-
         # Initialize server state
-        self.__pServerState = None
+        self.__pServerState = None 
 
         # Call the appropriate handler function
         if self.__sPath == "/HOME":
@@ -59,6 +59,8 @@ class PostHandler:
             return self.__HandlePostRun()
         elif self.__sPath == "/PROMPT":
             return self.__HandlePostPrompt()
+        elif self.__sPath == "/REPORT":
+            return self.__HandlePostReport()
         elif self.__sPath.startswith("/sequence/"):
             if self.__sPath.find("/component/") != -1:
                 return self.__HandlePostComponent()
@@ -67,7 +69,7 @@ class PostHandler:
             else:
                 return self.__HandlePostSequence()
         else:
-            raise Exception("Unknown path: " + sPath)
+            raise Exception("Unknown path: " + self.__sPath)
 
     # Handle POST /HOME
     def __HandlePostHome(self):
@@ -432,6 +434,13 @@ class PostHandler:
                 # Continue the run
                 self.__pCoreServer.ContinueSequence(self.__sRemoteUser)
                 return self.__SaveClientStateAndReturn()
+            elif sActionTargetID == "REPORT":
+                self.__pClientState['pdffilename'] =  self.__HandleReport()
+                self.__pCoreServer.DeliverUserInput(self.__sRemoteUser)
+                return self.__SaveClientStateAndReturn()
+        # Initialize server state
+        self.__pServerState = None
+        return self.__SaveClientStateAndReturn()
 
         # Unhandled use case
         raise Exceptions.StateMisalignmentException()
@@ -665,7 +674,17 @@ class PostHandler:
 
         # Return the new state
         return self.__SaveClientStateAndReturn()
-
+    
+    # Function added by: Luis
+    # Date: 10/16/2013
+    def __HandleReport(self):
+     '''Function will Handle the pdf report generator'''
+     pdfhandle = PDFHandler()
+     # Get the sequences and their components. They will be added to the PDF.
+     # Function (getSequences) will return a filename that will be appended onto the server state
+     filename = pdfhandle.getSequences(self.__pClientState,self.__sRemoteUser,self.__pDatabase)
+     return filename
+   
     # Save the client state and return
     def __SaveClientStateAndReturn(self):
         self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
