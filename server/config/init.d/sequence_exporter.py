@@ -10,8 +10,8 @@ import argparse
 # Import json
 
 # Import DB usage
-sys.path.append("../database")
-sys.path.append("../core")
+sys.path.append("../../database")
+sys.path.append("../../core")
 from DBComm import DBComm
 from Exceptions import SequenceNotFoundException
 import pickle

@@ -9,8 +9,8 @@ store the sequence information onto the database.
 import sys
 import argparse
 import json
-sys.path.append("../database")
-sys.path.append("../core")
+sys.path.append("../../database")
+sys.path.append("../../core")
 from DBComm import DBComm
 import pickle
 
@@ -156,7 +156,6 @@ def insert_component_data(seq_data, sequence_id):
     
     print "\tSucessfully stored all component data onto database."
 
-
 def store_to_database(seq_data):
     '''Top level procedure that will call various functions'''
     # Insert the sequence into the Database.
@@ -167,7 +166,6 @@ def store_to_database(seq_data):
         update_to_database(new_reagent_data)
         insert_component_data(seq_data, sequence_id)
         print "Sucessfully loaded the sequence onto the database!"
-
 
 # Establish the database connection.
 database = DBComm()
