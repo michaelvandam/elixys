@@ -128,6 +128,8 @@ class PDFHandler:
         # Draw the run history panel on the following page.
         page_height = draw_run_history(pdf_text, page_height,
                                     sequence_name, database)
+        page_height = draw_stuff(client_state, pdf_text, page_height)
+
         pdf_text.showPage()
         pdf_text.save()
 
@@ -283,3 +285,12 @@ def draw_run_history(pdf_text, page_height, sequence_name, database):
                 pdf_text.drawString(inch*1.2, page_height, seq_time)
                 page_height -= 20
     return page_height
+
+def draw_stuff(client_state, pdf_text, page_height):
+    for key,value in client_state.iteritems():
+        if page_height <= 40:
+            pdf_text.showPage()
+            page_height = 745
+        pdf_text.drawString(inch*.2, page_height,
+                str(key) + " : " + str(value))
+        page_height -= 20

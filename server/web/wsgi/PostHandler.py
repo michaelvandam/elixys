@@ -677,7 +677,7 @@ class PostHandler:
         Function (getSequences) will return a filename that will be appended onto the server state
         '''
         pdffile = PDFHandler()
-        filename = pdffile.write_pdf(self.__pClientState,self.__sRemoteUser,self.__pDatabase)
+        filename = pdffile.write_pdf(self.__pClientState, self.__sRemoteUser, self.__pDatabase)
         return filename
         
     # Save the client state and return
