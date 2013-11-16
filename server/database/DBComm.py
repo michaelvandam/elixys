@@ -361,6 +361,57 @@ class DBComm:
 
   ### Sequence functions ###
 
+  def GetSequencesByName(self, sCurrentName, sName):
+    '''Function returns sequence data based on sName.
+    Returns all sequences with the same name field as sName
+    '''
+    log.debug("DBComm.GetSequencesByName(%s)" % (sName, ))
+    pSequencesRaw = self.__CallStoredProcedure("GetAllSequencesByName", (sName, ))
+    # Fill in each sequence
+    pSequences = []
+    for pSequenceRaw in pSequencesRaw:
+        pSequence = {}
+        pSequence["id"] = int(pSequenceRaw[0])
+        pSequence["name"] = pSequenceRaw[1]
+        pSequence["comment"] = pSequenceRaw[2]
+        pSequence["date"] = pSequenceRaw[4].strftime("%m/%d/%Y")
+        pSequence["time"] = pSequenceRaw[4].strftime("%H:%M.%S")
+        pSequence["creator"] = pSequenceRaw[5]
+        pSequence["components"] = int(pSequenceRaw[7])
+        pSequence["valid"] = bool(pSequenceRaw[8])
+        pSequence["dirty"] = bool(pSequenceRaw[9])
+        pSequences.append(pSequence)
+
+    # Return
+    return pSequences
+
+  def GetSequencesHistoryByName(self, sCurrentName, sName):
+    '''Function returns sequence data based on sName.
+    Returns all sequences ran with the same name field as sName.
+    This function only returns sequences that have been ran previously
+    (or have a type of "History")
+    '''
+    log.debug("DBComm.GetAllHistorySequencesByName(%s)" % (sName, ))
+    pSequencesRaw = self.__CallStoredProcedure("GetAllHistorySequencesByName", (sName, ))
+    # Fill in each sequence
+    pSequences = []
+    for pSequenceRaw in pSequencesRaw:
+        pSequence = {}
+        pSequence["id"] = int(pSequenceRaw[0])
+        pSequence["name"] = pSequenceRaw[1]
+        pSequence["comment"] = pSequenceRaw[2]
+        pSequence["date"] = pSequenceRaw[4].strftime("%m/%d/%Y")
+        pSequence["time"] = pSequenceRaw[4].strftime("%H:%M.%S")
+        pSequence["creator"] = pSequenceRaw[5]
+        pSequence["components"] = int(pSequenceRaw[7])
+        pSequence["valid"] = bool(pSequenceRaw[8])
+        pSequence["dirty"] = bool(pSequenceRaw[9])
+        pSequences.append(pSequence)
+
+    # Return
+    return pSequences
+
+
   def GetAllSequences(self, sCurrentUsername, sType):
     """Return all sequences"""
     # Load the access and get the sequence data

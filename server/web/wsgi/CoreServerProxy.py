@@ -30,6 +30,15 @@ class CoreServerProxy():
             print "## Failed to get server state"
             pass
         return None
+    
+        try:
+            if self.__pCoreServer != None:
+                pGetHardwareState = self.__pCoreServer.root.GetHardwareState()
+                return pGetHardwareState
+        except Exception, ex:
+            print "## Failed to get server state"
+            pass
+        return None
 
     def RunSequence(self, sUsername, nSequenceID):
         pRunSequence = self.__pCoreServer.root.RunSequence(sUsername, nSequenceID)

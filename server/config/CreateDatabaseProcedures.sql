@@ -429,6 +429,30 @@ CREATE PROCEDURE UpdateUserClientState(IN iUsername VARCHAR(30), IN iClientState
 /* Get a list of sequences:
  *   IN Type - Type of sequence to return (either "Saved", "History" or "" for both)
  */
+
+CREATE PROCEDURE `GetAllSequencesByName`(IN iName VARCHAR(100))
+    BEGIN
+        
+        IF iName != "" THEN
+            
+            SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+                Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.Name = iName AND Sequences.UserID = Users.UserID
+                AND Sequences.Type = "Saved";
+        END IF;
+    END //
+
+
+CREATE PROCEDURE `GetAllHistorySequencesByName`(IN iName VARCHAR(100))
+    BEGIN
+        
+        IF iName != "" THEN
+            
+            SELECT Sequences.SequenceID, Sequences.Name, Sequences.Comment, Sequences.Type, Sequences.CreationDate, Users.Username, Sequences.FirstComponentID,
+                Sequences.ComponentCount, Sequences.Valid, Sequences.Dirty FROM Sequences, Users WHERE Sequences.Name = iName AND Sequences.UserID = Users.UserID
+                AND Sequences.Type = "History";
+        END IF;
+    END //
+
 DROP PROCEDURE IF EXISTS GetAllSequences;
 CREATE PROCEDURE GetAllSequences(IN iType VARCHAR(20))
     BEGIN
