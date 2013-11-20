@@ -8,6 +8,10 @@ import sys
 sys.path.append("/opt/elixys/hardware/")
 from HardwareComm import HardwareComm, ROBOT_POSITION_LIMIT
 from ComponentModel import ComponentModel
+import logging
+
+log = logging.getLogger("elixys.hw")
+log.info("Starting HW Comm")
 
 # Reagent delivery model
 class ReagentDeliveryModel(ComponentModel):
@@ -319,7 +323,7 @@ class ReagentDeliveryModel(ComponentModel):
         sName1 = "Unknown"
         # log error
         log.error("'Unknown' Error in ReagentDeliveryModel.getPositionName. \
-                nRawX: " + nRawX + ", nRawY: " + nRawY)
+                nRawX: " + str(nRawX) + ", nRawY: " + str(nRawY))
       sName2 = ""
     return sName1, sName2
 
