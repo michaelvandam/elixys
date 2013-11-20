@@ -1556,7 +1556,7 @@ class HardwareComm():
         log.error('In HardwareComm.__LookUpReagentRobotPosition(). \
                 Failed to find a match for looking up a Reagent Robot Position. \
                 Could not find a match for passed in parameters. \
-                nPositionX: ' + nPositionX + ', nPositionY: ' + nPositionY)
+                nPositionX: ' + str(nPositionX) + ', nPositionY: ' + str(nPositionY))
         return 0, 0, 0, 0
      
     # Look up the reactor robot position
@@ -1574,7 +1574,7 @@ class HardwareComm():
 
         # Failed to find a named position
         log.error("'Unkown' error in HardwareComm.__LookUpReagentRobotPosition(nX,nY). \
-                nReactor: " + nReactor + ", nPositionY: " + nPositionY)
+                nReactor: " + str(nReactor) + ", nPositionY: " + str(nPositionY))
         return "Unknown" 
 
     # Hit tests the given reagent position
