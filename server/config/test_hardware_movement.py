@@ -26,7 +26,7 @@ parser.add_argument("-r", "--run", action="store_true",
 
 args = parser.parse_args()
 
-def read_CSV_file():
+def read_CSV_file(csv_file):
     ''' Attempt to read the CVS file and store the contents of
     file in a two dim array. Function shall return a two dim.
     array as coordinates.
@@ -34,7 +34,7 @@ def read_CSV_file():
     log.info("Running the Hardware Movement Test...")
     log.info("Reading the CVS file for the coordinates...")
     coords = []
-    with open('coords.csv', 'rb') as csvfile:
+    with open(csv_file, 'rb') as csvfile:
         line = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in line:
             two_coords = []
@@ -44,11 +44,13 @@ def read_CSV_file():
     log.info("Finished reading the CVS file!")
     return coords
 
-def set_gripper_and_gas_transfer_up(proxy, log):
+def set_gripper_and_gas_transfer_up(proxy_hardware, log):
     log.info("Setting Gripper to up position...")
-    proxy.CLIExecuteCommand("System","GripperUp()")
+    proxy_hardware.hardwareComm.GripperUp()
+    #proxy.CLIExecuteCommand("System","GripperUp()")
     log.info("Setting Gas Transfer to up position...")
-    proxy.CLIExecuteCommand("System","GasTransferUp()")
+    proxy_hardware.hardwareComm.GasTransferUp()
+    #proxy.CLIExecuteCommand("System","GasTransferUp()")
     log.info("Successfully set the Gripper and Gas Transfer up!")
 
 def obtain_robot_position(reagent_delivery):
@@ -88,15 +90,18 @@ def is_in_correct_position(current_robot_position, coord):
     # If there isn't an X and Y key in current_robot_position.
     return False
     
-def robot_movement_test(reagent_delivery, coords, proxy, log):
+def robot_movement_test(reagent_delivery, coords, proxy_hardware, log):
     log.info("Now moving robot to each position")
     for coord in coords:
         if coord:
             if (coord[0] != None and coord[1] != None):
                 # coord[0] is x, coord[1] is y.
                 log.info("Attempting to move robot to (" + str(coord[0]) + ", " + str(coord[1]) + ")")
-                proxy.CLIExecuteCommand("System","MoveRobotToX(" + str(coord[0]) + ")")
-                proxy.CLIExecuteCommand("System","MoveRobotToY(" + str(coord[1]) + ")")
+                proxy_hardware.hardwareComm.MoveRobotToX(coord[0])
+                proxy_hardware.hardwareComm.MoveRobotToY(coord[1])
+ 
+                #proxy.CLIExecuteCommand("System","MoveRobotToX(" + str(coord[0]) + ")")
+                #proxy.CLIExecuteCommand("System","MoveRobotToY(" + str(coord[1]) + ")")
                 log.info("Successfully sent the move command. Waiting 10 seconds to verify robot is in position.")
                 time.sleep(10)
                 current_robot_position = obtain_robot_position(reagent_delivery)
@@ -164,19 +169,17 @@ reagent_delivery.getCurrentPositionRaw()
 log.info("Successfully obtained the Hardware object!")
 
 # Set Gripper and Gas Transfer in UP position.
-set_gripper_and_gas_transfer_up(proxy, log)
+set_gripper_and_gas_transfer_up(proxy_hardware, log)
 
 if args.load:
     # Read CSV file and store contents in coords.
-    coords = read_CSV_file()
+    coords = read_CSV_file(args.load)
     # Begin the Robot Movement Test.
-    robot_movement_test(reagent_delivery, coords, proxy, log)
+    robot_movement_test(reagent_delivery, coords, proxy_hardware, log)
 
 if args.run:
     # Run through each reactor and reagent position.
     robot_movement_test_reactors_and_reagents(reagent_delivery, proxy_hardware, log)
-
-
 
 log.info("Successfully finished the Hardware Movement Test!")
     
