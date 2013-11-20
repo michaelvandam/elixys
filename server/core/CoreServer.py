@@ -789,6 +789,10 @@ class CoreServerService(rpyc.Service):
         if bLocked:
             gCoreServerLock.Release()
         return bResult
+    
+    def exposed_GetSystemModel(self):
+        global gSystemModel
+        return gSystemModel
 
     def SuccessResult(self, pReturn = None):
         """Formats a successful result"""

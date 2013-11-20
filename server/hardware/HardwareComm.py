@@ -483,7 +483,13 @@ class HardwareComm():
         log.debug("Gas Transfer Down")
         self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", False)
         self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", True)
-
+    
+    def GetRobotPositionX(self):
+        return self.__GetReagentRobotSetX()
+    
+    def GetRobotPositionY(self):
+        return self.__GetReagentRobotActualY()
+    
     # Valves
     def GasTransferStart(self):
         log.info("Gase Transfer Start")
@@ -1547,6 +1553,10 @@ class HardwareComm():
                 return nReactor, 0, 0, 1
 
         # Failed to find match
+        log.error('In HardwareComm.__LookUpReagentRobotPosition(). \
+                Failed to find a match for looking up a Reagent Robot Position. \
+                Could not find a match for passed in parameters. \
+                nPositionX: ' + nPositionX + ', nPositionY: ' + nPositionY)
         return 0, 0, 0, 0
      
     # Look up the reactor robot position
@@ -1563,6 +1573,8 @@ class HardwareComm():
             return "Home"
 
         # Failed to find a named position
+        log.error("'Unkown' error in HardwareComm.__LookUpReagentRobotPosition(nX,nY). \
+                nReactor: " + nReactor + ", nPositionY: " + nPositionY)
         return "Unknown" 
 
     # Hit tests the given reagent position

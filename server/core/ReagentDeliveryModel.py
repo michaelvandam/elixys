@@ -317,6 +317,9 @@ class ReagentDeliveryModel(ComponentModel):
         sName1 = "Home"
       else:
         sName1 = "Unknown"
+        # log error
+        log.error("'Unknown' Error in ReagentDeliveryModel.getPositionName. \
+                nRawX: " + nRawX + ", nRawY: " + nRawY)
       sName2 = ""
     return sName1, sName2
 
