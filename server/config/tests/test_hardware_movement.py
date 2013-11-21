@@ -11,6 +11,8 @@ import time
 import json
 import argparse
 
+movedelay = 0.5
+
 # Check if user supplied arguments.
 if len(sys.argv) == 1:
     print "Please input '-h' to see all options for script."
@@ -113,6 +115,31 @@ def robot_movement_test(reagent_delivery, coords, proxy_hardware, log):
                 else:
                     print '\nRobot successfully moved to the correct position!\n'
 
+def gripper_routine(proxy_hardware, reagent_delivery):
+    
+    proxy_hardware.hardwareComm.GripperDown()
+    log.info("Moving gripper down")
+    while not reagent_delivery.getCurrentGripperDown():
+        time.sleep(.1)
+
+    log.info("Moving gripper Up")
+    proxy_hardware.hardwareComm.GripperUp()
+    while not reagent_delivery.getCurrentGripperUp():
+        time.sleep(.1)
+    log.info("Gripper Motion Complete")
+
+def gas_transfer_routine(proxy_hardware, reagent_delivery):
+
+    log.info("Moving Gas Transfer down") 
+    proxy_hardware.hardwareComm.GasTransferDown()
+    while not reagent_delivery.getCurrentGasTransferDown():
+        pass
+    log.info("Moving Gas Transfer up")
+    proxy_hardware.hardwareComm.GasTransferUp()
+    while not reagent_delivery.getCurrentGasTransferUp():
+        pass
+    log.info("Gas Transfer Motion Complete")
+
 def robot_movement_test_reactors_and_reagents(reagent_delivery, proxy_hardware, log):
     log.info("Now moving robot to each reactor position with each reagent position")
     for reactor_position in range(1,4):
@@ -127,15 +154,87 @@ def robot_movement_test_reactors_and_reagents(reagent_delivery, proxy_hardware, 
             # Check if robot is in the right position. Display error and exit out.
             log.info("Successfully sent the move command. Waiting 10 seconds to verify robot is in position.")
             current_robot_position = obtain_robot_position(reagent_delivery)
-            time.sleep(1.5)
+            time.sleep(movedelay)
             print str(current_robot_position) 
-            if 'Unkown' in reagent_delivery.getCurrentPositionRaw():
+            if 'Unkown' in reagent_delivery.getCurrentPositionName():
                 print 'Robot is in an incorrect position. Flagging error and exiting...'
                 log.error('Coordinates in CVS file that failed: ' + str(coord))
                 log.error("Robot's current position: " + json.dumps(current_robot_position, indent=1))
                 sys.exit(0)
             else:
                 print '\nRobot successfully moved to the correct position!\n'
+                gripper_routine(proxy_hardware, reagent_delivery)
+
+    # Starting Elute movement test.
+    log.info("Starting elute movement test...")    
+    for reactor_position in range(1,4):
+        proxy_hardware.hardwareComm.MoveRobotToElute(reactor_position)
+
+        current_robot_position = obtain_robot_position(reagent_delivery)
+        time.sleep(movedelay)
+        print str(current_robot_position) 
+        if 'Unkown' in reagent_delivery.getCurrentPositionName():
+            print 'Robot is in an incorrect position. Flagging error and exiting...'
+            log.error('Coordinates in CVS file that failed: ' + str(coord))
+            log.error("Robot's current position: " + json.dumps(current_robot_position, indent=1))
+            sys.exit(0)
+        else:
+            print '\nRobot successfully moved to the correct position!\n'
+            gripper_routine(proxy_hardware, reagent_delivery)
+            gas_transfer_routine(proxy_hardware, reagent_delivery)
+
+    # Starting Add 1 + 2 movement test.
+    log.info("Starting Add 1 and Add 2 movement test...")    
+    for add_position in range(1,3):
+        for reactor_position in range(1,4):
+            proxy_hardware.hardwareComm.MoveRobotToDelivery(reactor_position, add_position)
+
+            current_robot_position = obtain_robot_position(reagent_delivery)
+            time.sleep(movedelay)
+            print str(current_robot_position) 
+            if 'Unkown' in reagent_delivery.getCurrentPositionName():
+                print 'Robot is in an incorrect position. Flagging error and exiting...'
+                log.error('Coordinates in CVS file that failed: ' + str(coord))
+                log.error("Robot's current position: " + json.dumps(current_robot_position, indent=1))
+                sys.exit(0)
+            else:
+                print '\nRobot successfully moved to the correct position!\n'
+                gas_transfer_routine(proxy_hardware, reagent_delivery)
+
+    # Starting Evap movement test.
+    log.info("Starting Evaporate movement test...")    
+    for reactor_position in range(1,4):
+        proxy_hardware.hardwareComm.MoveRobotToReagent(reactor_position,5)
+
+        current_robot_position = obtain_robot_position(reagent_delivery)
+        time.sleep(movedelay)
+        print str(current_robot_position) 
+        if 'Unkown' in reagent_delivery.getCurrentPositionName():
+            print 'Robot is in an incorrect position. Flagging error and exiting...'
+            log.error('Coordinates in CVS file that failed: ' + str(coord))
+            log.error("Robot's current position: " + json.dumps(current_robot_position, indent=1))
+            sys.exit(0)
+        else:
+            print '\nRobot successfully moved to the correct position!\n'
+            gas_transfer_routine(proxy_hardware, reagent_delivery)
+
+    # Starting Evap movement test.
+    log.info("Starting Evaporate movement test...")    
+    for reactor_position in range(1,4):
+        proxy_hardware.hardwareComm.MoveRobotToReagent(reactor_position,12)
+
+        current_robot_position = obtain_robot_position(reagent_delivery)
+        time.sleep(movedelay)
+        print str(current_robot_position) 
+        if 'Unkown' in reagent_delivery.getCurrentPositionName():
+            print 'Robot is in an incorrect position. Flagging error and exiting...'
+            log.error('Coordinates in CVS file that failed: ' + str(coord))
+            log.error("Robot's current position: " + json.dumps(current_robot_position, indent=1))
+            sys.exit(0)
+        else:
+            print '\nRobot successfully moved to the correct position!\n'
+            gas_transfer_routine(proxy_hardware, reagent_delivery)
+               
 
 log = logging.getLogger("elixys.admin")
 log.setLevel(logging.DEBUG)
@@ -149,9 +248,12 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 log.info("Initializing Proxy Instance")
 
+# Connect and Init() robot
 proxy = CoreServerProxy.CoreServerProxy()
 log.info("Connecting to Elixys Core Sever")
 proxy.Connect()
+proxy.CLIExecuteCommand("system", "Init()")
+time.sleep(20)
 
 # Try to get the Hardware Object to find the positions of the robot.
 log.info("Attempting to obtain the Hardware object...")
