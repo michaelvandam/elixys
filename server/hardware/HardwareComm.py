@@ -429,7 +429,7 @@ class HardwareComm():
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
    
-   def MoveRobotToDelivery(self, nReactor, nPosition):
+    def MoveRobotToDelivery(self, nReactor, nPosition):
         log.info("Move Robot & Deliver:Reactor %d->Position %d" % (nReactor,nPosition))
         if self.__pSystemModel != None:
             if not self.__pSystemModel.model["ReagentDelivery"].getCurrentGripperUp() or \
@@ -438,6 +438,7 @@ class HardwareComm():
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+    
     def MoveRobotToHome(self):
         log.debug("Move Robot Home")
         if self.__pSystemModel != None:
