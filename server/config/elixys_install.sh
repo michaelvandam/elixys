@@ -90,4 +90,4 @@ usermod -a -G sofiebio www-data
 chmod 664 $ELIXYS_LOG_PATH/*
 
 # Setup Cameras
-./setup_camears.sh
+./setup_cameras.sh
