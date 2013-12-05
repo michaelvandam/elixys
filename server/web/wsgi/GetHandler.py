@@ -431,24 +431,19 @@ class GetHandler:
             # Update the sequence and component IDs
             self.__pClientState["sequenceid"] = pServerState["runstate"]["sequenceid"]
             self.__pClientState["componentid"] = pServerState["runstate"]["componentid"]
-           
-                       # Update the prompt
+
+            # Update the prompt
             self.__pClientState["prompt"] = copy.copy(pServerState["runstate"]["prompt"])
 
             # Update the client state
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
-        
-        #self.__pClientState["reactor1_temp"] = pServerState["hardwarestate"]['reactors']
-        
-        # Append to the client the reactor temp levels
+    
+        # Store the reactor temps during a RUN sequence.
+        # Added by: Luis
         for reactor in range(0,3):
             self.__pClientState["reactor" + str(reactor) + "_temp"] = \
-                    pServerState["hardwarestate"]["reactors"][reactor]["temperature"]
-            #log.error("NONERROR: " + str(pServerState["hardwarestate"]["reactors"][reactor]["temperature"]))
-
-
+                    self.__pServerState["hardwarestate"]["reactors"][reactor]["temperature"]
         
-
         # Determine if we are the user running the system
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
             # Enable or disable buttons

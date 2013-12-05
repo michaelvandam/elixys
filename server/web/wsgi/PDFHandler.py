@@ -19,6 +19,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from datetime import datetime
 
+# Bar chart imports
+from reportlab.graphics.shapes import *
+from reportlab.lib import colors
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics import renderPDF
+
 class PDFHandler:
     '''The PDFHandler class generates the actual
     PDF File. The write_pdf function generates
@@ -128,8 +135,10 @@ class PDFHandler:
         # Draw the run history panel on the following page.
         page_height = draw_run_history(pdf_text, page_height,
                                     sequence_name, database)
-        page_height = draw_stuff(client_state, pdf_text, page_height)
-
+        
+        page_height = draw_client_state(pdf_text, page_height, client_state)
+        page_height = draw_bar_chart(pdf_text, page_height)
+        
         pdf_text.showPage()
         pdf_text.save()
 
@@ -286,7 +295,6 @@ def draw_run_history(pdf_text, page_height, sequence_name, database):
                 page_height -= 20
     return page_height
 
-def draw_stuff(client_state, pdf_text, page_height):
     for key,value in client_state.iteritems():
         if page_height <= 40:
             pdf_text.showPage()
@@ -294,3 +302,48 @@ def draw_stuff(client_state, pdf_text, page_height):
         pdf_text.drawString(inch*.2, page_height,
                 str(key) + " : " + str(value))
         page_height -= 20
+
+def draw_client_state(pdf_text, page_height, client_state):
+    pdf_text.showPage()
+    page_height = 745
+    for key, value in client_state.iteritems():
+        if page_height <= 40:
+            pdf_text.showPage()
+            page_height = 745
+        pdf_text.drawString(inch*.2, page_height, str(key) + " : " + str(value))
+        page_height -= 20
+    
+
+
+
+def draw_bar_chart(pdf_text, page_height):
+    '''Currently generates a dummy graph.
+    Next, need to pass in data that shall
+    be the reactors temp throughout the
+    sequence.
+    '''
+    pdf_text.showPage()
+    drawing = Drawing(400, 200)
+    data = [
+            (13, 5, 20, 22, 37, 45, 19, 4),
+            (14, 6, 21, 23, 38, 46, 20, 5)
+            ]
+    bc = VerticalBarChart()
+    bc.x = 50
+    bc.y = 50
+    bc.height = 125
+    bc.width = 300
+    bc.data = data
+    bc.strokeColor = colors.black
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 50
+    bc.valueAxis.valueStep = 10
+    bc.categoryAxis.labels.boxAnchor = 'ne'
+    bc.categoryAxis.labels.dx = 8
+    bc.categoryAxis.labels.dy = -2
+    bc.categoryAxis.labels.angle = 30
+    bc.categoryAxis.categoryNames = ['Jan-99','Feb-99','Mar-99','Apr-99','May-99','Jun-99','Jul-99','Aug-99']
+    drawing.add(bc)
+    renderPDF.draw(drawing, pdf_text, inch, inch)
+    
+    return page_height
