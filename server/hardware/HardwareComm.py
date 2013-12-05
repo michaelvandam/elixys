@@ -1555,10 +1555,10 @@ class HardwareComm():
                 return nReactor, 0, 0, 1
 
         # Failed to find match
-        log.error('In HardwareComm.__LookUpReagentRobotPosition(). \
-                Failed to find a match for looking up a Reagent Robot Position. \
-                Could not find a match for passed in parameters. \
-                nPositionX: ' + str(nPositionX) + ', nPositionY: ' + str(nPositionY))
+        #log.error('In HardwareComm.__LookUpReagentRobotPosition(). \
+        #        Failed to find a match for looking up a Reagent Robot Position. \
+        #        Could not find a match for passed in parameters. \parameters           
+        #        nPositionX: ' + str(nPositionX) + ', nPositionY: ' + str(nPositionY))
         return 0, 0, 0, 0
      
     # Look up the reactor robot position

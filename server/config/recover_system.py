@@ -11,26 +11,9 @@ import CoreServerProxy
 import csv
 import time
 import json
-import argparse
 
 # Set the move delay for the robot for a half second.
 movedelay = 0.5
-
-# Check if user supplied arguments.
-if len(sys.argv) == 1:
-    print "Please input '-h' to see all options for script."
-    sys.exit(0)
-
-# Set up parsers for each command.
-parser = argparse.ArgumentParser()
-parser.add_argument("-l", "--load",     
-                help="Loads a CSV file and runs \
-                        the test on the file's coordinates")
-
-parser.add_argument("-r", "--run", action="store_true", 
-                help="Runs through each reactor and reagent position")
-
-args = parser.parse_args()
 
 # Functions
 
@@ -199,29 +182,28 @@ hardware = proxy_core_server.hardwareComm
 # Obtain the model object
 model = proxy_core_server.model
 
-if args.run:
-    # Set the cooling system on then constantly
-    # check if the temperature of 26 C is reached.
-    # If reached, check if the system maintains the
-    # temperature.
-    temp = 26
-    
-    # Turn off the heater for each reactor
-    # Turn on the cooling system
-    set_heating_system_off(hardware, temp)
-    set_cooling_system_on(hardware)
-    turn_on_stir_motor(hardware)
+# Set the cooling system on then constantly
+# check if the temperature of 26 C is reached.
+# If reached, check if the system maintains the
+# temperature.
+temp = 26
 
-    # Set up a wait for three minutes
-    start_time = time.time()
-    log.info("Allowing the system to cool down for three miuntes...")
-    time.sleep(180)
+# Turn off the heater for each reactor
+# Turn on the cooling system
+set_heating_system_off(hardware, temp)
+set_cooling_system_on(hardware)
+turn_on_stir_motor(hardware)
 
-    # Turn off the cooling system
-    turn_off_cooling_system(hardware)
-    turn_off_stir_motor(hardware)
-    log.info("Setting up Init()")
-    proxy.CLIExecuteCommand("system", "Init()")
-    time.sleep(45)
-   
-    log.info("Successfully finished the System Cooling Test!") 
+# Set up a wait for three minutes
+start_time = time.time()
+log.info("Allowing the system to cool down for three miuntes...")
+time.sleep(180)
+
+# Turn off the cooling system
+turn_off_cooling_system(hardware)
+turn_off_stir_motor(hardware)
+log.info("Setting up Init()")
+proxy.CLIExecuteCommand("system", "Init()")
+time.sleep(45)
+
+log.info("Successfully finished the System Cooling Test!") 
