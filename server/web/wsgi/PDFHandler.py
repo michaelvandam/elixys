@@ -136,7 +136,7 @@ class PDFHandler:
         page_height = draw_run_history(pdf_text, page_height,
                                     sequence_name, database)
         
-        page_height = draw_client_state(pdf_text, page_height, client_state)
+        #page_height = draw_client_state(pdf_text, page_height, client_state)
         page_height = draw_bar_chart(pdf_text, page_height)
         
         pdf_text.showPage()
@@ -313,9 +313,6 @@ def draw_client_state(pdf_text, page_height, client_state):
         pdf_text.drawString(inch*.2, page_height, str(key) + " : " + str(value))
         page_height -= 20
     
-
-
-
 def draw_bar_chart(pdf_text, page_height):
     '''Currently generates a dummy graph.
     Next, need to pass in data that shall
