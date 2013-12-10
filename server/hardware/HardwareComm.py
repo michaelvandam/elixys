@@ -428,6 +428,7 @@ class HardwareComm():
         pPosition = self.__LookUpRobotPosition("ReagentRobot_Reagent" + str(nReagent))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+   
     def MoveRobotToDelivery(self, nReactor, nPosition):
         log.info("Move Robot & Deliver:Reactor %d->Position %d" % (nReactor,nPosition))
         if self.__pSystemModel != None:
@@ -437,6 +438,7 @@ class HardwareComm():
         pPosition = self.__LookUpRobotPosition("ReagentRobot_ReagentDelivery" + str(nPosition))
         self.__SetRobotPosition(self.__nReagentXAxis, self.__LookUpReactorCassetteXOffset(nReactor) + int(pPosition["x"]))
         self.__SetRobotPosition(self.__nReagentYAxis, self.__LookUpReactorCassetteYOffset(nReactor) + int(pPosition["y"]))
+    
     def MoveRobotToHome(self):
         log.debug("Move Robot Home")
         if self.__pSystemModel != None:
@@ -483,7 +485,13 @@ class HardwareComm():
         log.debug("Gas Transfer Down")
         self.__SetBinaryValue("ReagentRobot_SetGasTransferUp", False)
         self.__SetBinaryValue("ReagentRobot_SetGasTransferDown", True)
-
+    
+    def GetRobotPositionX(self):
+        return self.__GetReagentRobotSetX()
+    
+    def GetRobotPositionY(self):
+        return self.__GetReagentRobotActualY()
+    
     # Valves
     def GasTransferStart(self):
         log.info("Gase Transfer Start")
@@ -1547,6 +1555,10 @@ class HardwareComm():
                 return nReactor, 0, 0, 1
 
         # Failed to find match
+        #log.error('In HardwareComm.__LookUpReagentRobotPosition(). \
+        #        Failed to find a match for looking up a Reagent Robot Position. \
+        #        Could not find a match for passed in parameters. \parameters           
+        #        nPositionX: ' + str(nPositionX) + ', nPositionY: ' + str(nPositionY))
         return 0, 0, 0, 0
      
     # Look up the reactor robot position
@@ -1563,6 +1575,8 @@ class HardwareComm():
             return "Home"
 
         # Failed to find a named position
+        log.error("'Unkown' error in HardwareComm.__LookUpReagentRobotPosition(nX,nY). \
+                nReactor: " + str(nReactor) + ", nPositionY: " + str(nPositionY))
         return "Unknown" 
 
     # Hit tests the given reagent position

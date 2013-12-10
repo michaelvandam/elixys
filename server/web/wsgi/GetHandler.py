@@ -437,7 +437,13 @@ class GetHandler:
 
             # Update the client state
             self.__pDatabase.UpdateUserClientState(self.__sRemoteUser, self.__sRemoteUser, self.__pClientState)
-
+    
+        # Store the reactor temps during a RUN sequence.
+        # Added by: Luis
+        for reactor in range(0,3):
+            self.__pClientState["reactor" + str(reactor) + "_temp"] = \
+                    self.__pServerState["hardwarestate"]["reactors"][reactor]["temperature"]
+        
         # Determine if we are the user running the system
         if self.__sRemoteUser == pServerState["runstate"]["username"]:
             # Enable or disable buttons

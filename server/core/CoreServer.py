@@ -768,6 +768,32 @@ class CoreServerService(rpyc.Service):
             gCoreServerLock.Release()
         return bResult
 
+    def exposed_GetHardwareState(self):
+        global gCoreServerLock
+        global gDatabase
+        global gHardwareComm
+        bLocked = False
+        try:
+            gCoreServerLock.Acquire(lockTimeout)
+            bLocked = True
+            log.info("Get Hardware State")
+            bResult = gHardwareComm.GetSystemModel()
+
+        except Exception as ex:
+            # Log the error
+            log.error("CoreServerService.exposed_GetHardwareState failed: " + str(ex))
+            log.error("Traceback:\r\n%s\r\n" % traceback.format_exc())
+            bResult = None
+
+        # Release the lock and return
+        if bLocked:
+            gCoreServerLock.Release()
+        return bResult
+    
+    def exposed_GetSystemModel(self):
+        global gSystemModel
+        return gSystemModel
+
     def SuccessResult(self, pReturn = None):
         """Formats a successful result"""
         if pReturn != None:
@@ -864,7 +890,7 @@ class CoreServerDaemon(daemon):
 
                 # Create the core server and error message handler
                 pCoreServer = ThreadedServer(CoreServerService, port = 18862, 
-                        logger = log)
+                        logger = log, protocol_config = {"allow_all_attrs" : True})
 
                 # Start the core server thread
                 pCoreServerThread = CoreServerThread()

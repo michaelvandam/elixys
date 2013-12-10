@@ -85,6 +85,7 @@ class StateMonitorService(rpyc.Service):
         ClearScreen()
         Print(sState)
         Print("Updated at " + time.strftime("%H:%M:%S", time.localtime()))
+        Print("Enter 'q' to exit.")
         log.debug("Update State")
 
 # Main function
@@ -99,7 +100,6 @@ if __name__ == "__main__":
 
     # Create the RPC server and error handler
     pServer = ThreadedServer(StateMonitorService, port = 18861, logger = log)
-    
     # Start the RPC server thread
     pStateMonitorThread = StateMonitorThread.StateMonitorThread()
     pStateMonitorThread.SetParameters(pServer)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # Clean up the console on Linux
     if gOS == "Linux":
         gConsole = curses.endwin()
-
+    
     # Say goodbye
     print "Complete"
 
